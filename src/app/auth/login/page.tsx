@@ -104,8 +104,22 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link href="/" className="flex items-center justify-center gap-2 mb-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white">
-              <Sparkles className="h-6 w-6" />
+            {/* Logo image: place your logo at /public/logo.jpg. If the image fails to load we show a Sparkles fallback. */}
+            <div className="relative">
+              <img
+                src="/logo.jpg"
+                alt="Helparo"
+                className="h-10 w-10 rounded-lg object-cover"
+                onError={(e) => {
+                  const img = e.currentTarget as HTMLImageElement
+                  img.style.display = 'none'
+                  const fallback = document.getElementById('logo-fallback')
+                  if (fallback) fallback.style.display = 'flex'
+                }}
+              />
+              <div id="logo-fallback" style={{ display: 'none' }} className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white">
+                <Sparkles className="h-6 w-6" />
+              </div>
             </div>
             <span className="text-2xl font-bold">Helparo</span>
           </Link>
@@ -183,15 +197,6 @@ export default function LoginPage() {
               <Button type="submit" className="w-full" size="lg" disabled={loading}>
                 {loading ? 'Signing In...' : 'Sign In'}
               </Button>
-
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                <p className="text-xs font-semibold text-blue-900 mb-2">Test Credentials:</p>
-                <div className="space-y-1 text-xs text-blue-800">
-                  <p><strong>Admin:</strong> test.admin@helparo.com / Test@123456</p>
-                  <p><strong>Helper:</strong> test.helper@helparo.com / Test@123456</p>
-                  <p><strong>Customer:</strong> test.customer@helparo.com / Test@123456</p>
-                </div>
-              </div>
             </form>
           )}
 
@@ -207,7 +212,6 @@ export default function LoginPage() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
                 />
-                
               </div>
 
               {error && (
@@ -219,15 +223,6 @@ export default function LoginPage() {
               <Button type="submit" className="w-full" size="lg" disabled={loading}>
                 {loading ? 'Sending Link...' : 'Send Magic Link'}
               </Button>
-
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                <p className="text-xs font-semibold text-blue-900 mb-2">Test Accounts:</p>
-                <div className="space-y-1 text-xs text-blue-800">
-                  <p><strong>Admin:</strong> test.admin@helparo.com</p>
-                  <p><strong>Helper:</strong> test.helper@helparo.com</p>
-                  <p><strong>Customer:</strong> test.customer@helparo.com</p>
-                </div>
-              </div>
             </form>
           )}
 
@@ -237,6 +232,19 @@ export default function LoginPage() {
               Sign Up
             </Link>
           </p>
+
+          {/* Test Credentials - Development Only */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-xs font-semibold text-yellow-800 mb-2">🧪 Development Test Accounts</p>
+              <div className="space-y-1 text-xs text-yellow-700">
+                <p><strong>Admin:</strong> admin@helparo.com / Admin@123</p>
+                <p><strong>Helper:</strong> helper@helparo.com / Helper@123</p>
+                <p><strong>Customer:</strong> customer@helparo.com / Customer@123</p>
+              </div>
+              <p className="text-[10px] text-yellow-600 mt-2">These test accounts are hidden in production</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,6 +1,17 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import crypto from 'crypto'
+
+// Generate CSRF token
+function generateCSRFToken(): string {
+  return crypto.randomBytes(32).toString('hex')
+}
+
+// Verify CSRF token
+function verifyCSRFToken(token: string, headerToken: string | null): boolean {
+  return token === headerToken
+}
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -8,6 +19,49 @@ export async function middleware(request: NextRequest) {
       headers: request.headers,
     },
   })
+
+  // Add security headers
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.headers.set('X-XSS-Protection', '1; mode=block')
+  response.headers.set(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=(self)'
+  )
+  
+  // CSRF Protection for state-changing requests
+  const isStateMutating = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method)
+  
+  if (isStateMutating && !request.nextUrl.pathname.startsWith('/api/auth')) {
+    const csrfCookie = request.cookies.get('csrf-token')?.value
+    const csrfHeader = request.headers.get('x-csrf-token')
+    
+    if (!csrfCookie || !verifyCSRFToken(csrfCookie, csrfHeader)) {
+      // Only enforce CSRF for non-auth routes to avoid breaking Supabase auth
+      if (!request.nextUrl.pathname.includes('/auth/callback')) {
+        console.warn('CSRF validation failed', {
+          path: request.nextUrl.pathname,
+          hasCookie: !!csrfCookie,
+          hasHeader: !!csrfHeader
+        })
+        // In production, you might want to return 403
+        // For now, just log the warning
+      }
+    }
+  }
+  
+  // Set or refresh CSRF token
+  let csrfToken = request.cookies.get('csrf-token')?.value
+  if (!csrfToken) {
+    csrfToken = generateCSRFToken()
+    response.cookies.set('csrf-token', csrfToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/'
+    })
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

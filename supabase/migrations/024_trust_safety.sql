@@ -8,11 +8,21 @@
 CREATE EXTENSION IF NOT EXISTS postgis;
 
 -- ============================================================================
+-- DROP EXISTING TABLES IF THEY EXIST (for clean migration)
+-- ============================================================================
+DROP TABLE IF EXISTS public.helper_trust_scores CASCADE;
+DROP TABLE IF EXISTS public.geofence_violations CASCADE;
+DROP TABLE IF EXISTS public.insurance_claims CASCADE;
+DROP TABLE IF EXISTS public.service_insurance CASCADE;
+DROP TABLE IF EXISTS public.verification_documents CASCADE;
+DROP TABLE IF EXISTS public.background_check_results CASCADE;
+
+-- ============================================================================
 -- BACKGROUND CHECK RESULTS TABLE
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS public.background_check_results (
+CREATE TABLE public.background_check_results (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  assigned_helper_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  helper_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   check_type TEXT NOT NULL CHECK (check_type IN ('identity', 'criminal', 'address', 'employment', 'references', 'driving_license')),
   provider TEXT, -- e.g., 'AuthBridge', 'IDfy', 'SpringVerify'
   provider_request_id TEXT,
@@ -28,7 +38,7 @@ CREATE TABLE IF NOT EXISTS public.background_check_results (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
-CREATE INDEX IF NOT EXISTS idx_bg_check_helper ON public.background_check_results(assigned_helper_id);
+CREATE INDEX IF NOT EXISTS idx_bg_check_helper ON public.background_check_results(helper_id);
 CREATE INDEX IF NOT EXISTS idx_bg_check_status ON public.background_check_results(status);
 CREATE INDEX IF NOT EXISTS idx_bg_check_type ON public.background_check_results(check_type);
 CREATE INDEX IF NOT EXISTS idx_bg_check_expires ON public.background_check_results(expires_at);
@@ -42,7 +52,7 @@ ALTER TABLE public.background_check_results ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Helpers view own checks" ON public.background_check_results;
 CREATE POLICY "Helpers view own checks" ON public.background_check_results
-  FOR SELECT USING (assigned_helper_id = auth.uid());
+  FOR SELECT USING (helper_id = auth.uid());
 
 DROP POLICY IF EXISTS "Admins manage checks" ON public.background_check_results;
 CREATE POLICY "Admins manage checks" ON public.background_check_results
@@ -54,7 +64,7 @@ COMMENT ON TABLE public.background_check_results IS 'Background verification res
 -- ============================================================================
 -- HELPER VERIFICATION DOCUMENTS
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS public.verification_documents (
+CREATE TABLE public.verification_documents (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   helper_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   document_type TEXT NOT NULL CHECK (document_type IN ('aadhar', 'pan', 'driving_license', 'passport', 'voter_id', 'police_verification', 'address_proof')),
@@ -94,11 +104,11 @@ CREATE POLICY "Admins view all docs" ON public.verification_documents
 -- ============================================================================
 -- SERVICE INSURANCE TABLE
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS public.service_insurance (
+CREATE TABLE public.service_insurance (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   request_id UUID NOT NULL REFERENCES public.service_requests(id) ON DELETE CASCADE,
   customer_id UUID NOT NULL REFERENCES public.profiles(id),
-  assigned_helper_id UUID NOT NULL REFERENCES public.profiles(id),
+  helper_id UUID NOT NULL REFERENCES public.profiles(id),
   insurance_type TEXT NOT NULL CHECK (insurance_type IN ('damage_protection', 'theft_protection', 'personal_injury', 'property_damage')),
   coverage_amount DECIMAL(10,2) NOT NULL,
   premium_amount DECIMAL(10,2) NOT NULL,
@@ -113,7 +123,7 @@ CREATE TABLE IF NOT EXISTS public.service_insurance (
 
 CREATE INDEX IF NOT EXISTS idx_insurance_request ON public.service_insurance(request_id);
 CREATE INDEX IF NOT EXISTS idx_insurance_customer ON public.service_insurance(customer_id);
-CREATE INDEX IF NOT EXISTS idx_insurance_helper ON public.service_insurance(assigned_helper_id);
+CREATE INDEX IF NOT EXISTS idx_insurance_helper ON public.service_insurance(helper_id);
 CREATE INDEX IF NOT EXISTS idx_insurance_status ON public.service_insurance(status);
 
 DROP TRIGGER IF EXISTS trg_update_insurance ON public.service_insurance;
@@ -125,12 +135,12 @@ ALTER TABLE public.service_insurance ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users view own insurance" ON public.service_insurance;
 CREATE POLICY "Users view own insurance" ON public.service_insurance
-  FOR SELECT USING (customer_id = auth.uid() OR assigned_helper_id = auth.uid());
+  FOR SELECT USING (customer_id = auth.uid() OR helper_id = auth.uid());
 
 -- ============================================================================
 -- INSURANCE CLAIMS TABLE
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS public.insurance_claims (
+CREATE TABLE public.insurance_claims (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   insurance_id UUID NOT NULL REFERENCES public.service_insurance(id),
   claim_type TEXT NOT NULL CHECK (claim_type IN ('damage', 'theft', 'injury', 'other')),
@@ -164,14 +174,14 @@ CREATE POLICY "Users view own claims" ON public.insurance_claims
     EXISTS (
       SELECT 1 FROM public.service_insurance
       WHERE id = insurance_claims.insurance_id
-        AND (customer_id = auth.uid() OR assigned_helper_id = auth.uid())
+        AND (customer_id = auth.uid() OR helper_id = auth.uid())
     )
   );
 
 -- ============================================================================
 -- GEOFENCE VIOLATIONS TABLE
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS public.geofence_violations (
+CREATE TABLE public.geofence_violations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   request_id UUID NOT NULL REFERENCES public.service_requests(id),
   helper_id UUID NOT NULL REFERENCES public.profiles(id),
@@ -204,7 +214,7 @@ CREATE POLICY "Helpers view own violations" ON public.geofence_violations
 -- ============================================================================
 -- HELPER TRUST SCORE (composite safety score)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS public.helper_trust_scores (
+CREATE TABLE public.helper_trust_scores (
   helper_id UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
   overall_score INTEGER DEFAULT 0 CHECK (overall_score >= 0 AND overall_score <= 100),
   background_check_score INTEGER DEFAULT 0,
@@ -236,8 +246,13 @@ CREATE POLICY "Anyone view trust scores" ON public.helper_trust_scores
 -- ============================================================================
 -- FUNCTIONS
 -- ============================================================================
+-- Drop existing functions if they exist
+DROP FUNCTION IF EXISTS public.validate_job_location CASCADE;
+DROP FUNCTION IF EXISTS public.recalculate_helper_trust_score CASCADE;
+DROP FUNCTION IF EXISTS public.submit_background_check CASCADE;
+
 -- Validate job location (geofencing)
-CREATE OR REPLACE FUNCTION public.validate_job_location(
+CREATE FUNCTION public.validate_job_location(
   p_request_id UUID,
   p_helper_id UUID,
   p_latitude DECIMAL(10,8),
@@ -302,7 +317,7 @@ END;$$;
 COMMENT ON FUNCTION public.validate_job_location IS 'Validates helper location against service request location with geofencing';
 
 -- Calculate helper trust score
-CREATE OR REPLACE FUNCTION public.recalculate_helper_trust_score(p_helper_id UUID)
+CREATE FUNCTION public.recalculate_helper_trust_score(p_helper_id UUID)
 RETURNS INTEGER
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -323,7 +338,7 @@ BEGIN
     END
   INTO v_bg_score
   FROM public.background_check_results
-  WHERE assigned_helper_id = p_helper_id;
+  WHERE helper_id = p_helper_id;
 
   -- Document verification score (0-100)
   SELECT 
@@ -403,7 +418,7 @@ END;$$;
 COMMENT ON FUNCTION public.recalculate_helper_trust_score IS 'Calculates composite trust score from background checks, documents, behavior, feedback, and geofence compliance';
 
 -- Submit background check request (placeholder for API integration)
-CREATE OR REPLACE FUNCTION public.submit_background_check(
+CREATE FUNCTION public.submit_background_check(
   p_helper_id UUID,
   p_check_type TEXT,
   p_provider TEXT DEFAULT 'AuthBridge'
@@ -417,7 +432,7 @@ BEGIN
   END IF;
 
   INSERT INTO public.background_check_results (
-    assigned_helper_id, check_type, provider, status
+    helper_id, check_type, provider, status
   ) VALUES (
     p_helper_id, p_check_type, p_provider, 'pending'
   ) RETURNING id INTO v_check_id;

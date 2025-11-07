@@ -1,17 +1,21 @@
 import type { Metadata } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
+import { Suspense } from 'react'
 import './globals.css'
+import { PerformanceMonitor, WebVitalsReporter, NetworkSpeedIndicator } from '@/components/performance-monitor'
 
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
   display: 'swap',
+  preload: true,
 })
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-jetbrains-mono',
   display: 'swap',
+  preload: true,
 })
 
 export const metadata: Metadata = {
@@ -25,6 +29,11 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
   },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+  },
 }
 
 export default function RootLayout({
@@ -34,7 +43,20 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+      <head>
+        <link rel="dns-prefetch" href="https://opnjibjsddwyojrerbll.supabase.co" />
+        <link rel="preconnect" href="https://opnjibjsddwyojrerbll.supabase.co" crossOrigin="anonymous" />
+      </head>
       <body className={inter.className}>
+        <Suspense fallback={null}>
+          <PerformanceMonitor />
+          {process.env.NODE_ENV === 'development' && (
+            <>
+              <WebVitalsReporter />
+              <NetworkSpeedIndicator />
+            </>
+          )}
+        </Suspense>
         {children}
       </body>
     </html>
