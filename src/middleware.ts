@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import crypto from 'crypto'
 import { logger } from './lib/logger'
 
-// Generate CSRF token
+// Generate CSRF token using Web Crypto API (Edge Runtime compatible)
 function generateCSRFToken(): string {
-  return crypto.randomBytes(32).toString('hex')
+  const array = new Uint8Array(32)
+  crypto.getRandomValues(array)
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
 }
 
 // Verify CSRF token
@@ -54,7 +55,12 @@ export async function middleware(request: NextRequest) {
   // CSRF Protection for state-changing requests
   const isStateMutating = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method)
   
-  if (isStateMutating && !request.nextUrl.pathname.startsWith('/api/auth')) {
+  // Skip CSRF for Server Actions (they have built-in protection) and API routes
+  const isServerAction = request.headers.get('content-type')?.includes('multipart/form-data') || 
+                         request.headers.get('next-action') !== null
+  const isApiRoute = request.nextUrl.pathname.startsWith('/api')
+  
+  if (isStateMutating && !isApiRoute && !isServerAction && !request.nextUrl.pathname.startsWith('/api/auth')) {
     const csrfCookie = request.cookies.get('csrf-token')?.value
     const csrfHeader = request.headers.get('x-csrf-token')
     

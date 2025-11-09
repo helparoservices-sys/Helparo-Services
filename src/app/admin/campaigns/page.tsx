@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { LoadingSpinner, SkeletonCard } from '@/components/ui/loading'
 import { getActiveCampaigns, createSeasonalCampaign, toggleCampaignStatus } from '@/app/actions/bundles'
+import { Megaphone, Plus, Edit2, Trash2, Calendar, TrendingUp, CheckCircle, XCircle, Clock, Target, Zap, Gift, Award, Star, Percent, DollarSign, AlertCircle } from 'lucide-react'
+import { PageLoader, SkeletonCard } from '@/components/ui/loader'
+import { LoadingSpinner } from '@/components/ui/loading'
 
 interface Campaign {
   id: string
@@ -133,15 +135,16 @@ export default function AdminCampaignsPage() {
   }
 
   const getCampaignIcon = (type: string) => {
-    const icons: Record<string, string> = {
-      seasonal: '🎉',
-      promotional: '🎯',
-      flash_sale: '⚡',
-      referral: '🎁',
-      loyalty: '💎',
-      special: '⭐'
+    const icons: Record<string, any> = {
+      seasonal: Star,
+      promotional: Target,
+      flash_sale: Zap,
+      referral: Gift,
+      loyalty: Award,
+      special: Megaphone
     }
-    return icons[type.toLowerCase()] || '🎪'
+    const Icon = icons[type.toLowerCase()] || Megaphone
+    return <Icon className="h-5 w-5" />
   }
 
   const getDaysRemaining = (endDate: string) => {
@@ -158,56 +161,90 @@ export default function AdminCampaignsPage() {
     return days > 0 && days <= 7
   }
 
+  if (loading) {
+    return <PageLoader text="Loading campaigns..." />
+  }
+
   return (
-    <div className="min-h-screen bg-primary-50 py-10 px-4">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Campaign Management</h1>
-            <p className="text-muted-foreground">Create and manage seasonal campaigns and promotions</p>
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Campaign Management</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Create and manage seasonal campaigns and promotions</p>
+        </div>
+        <button 
+          onClick={() => setShowForm(!showForm)}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors shadow-lg"
+        >
+          {showForm ? <XCircle className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          {showForm ? 'Cancel' : 'Create Campaign'}
+        </button>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 backdrop-blur-xl rounded-lg border border-red-200 dark:border-red-800/50 p-4">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+            <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
           </div>
-          <Button onClick={() => setShowForm(!showForm)}>
-            {showForm ? 'Cancel' : '+ Create Campaign'}
-          </Button>
+        </div>
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg border border-white/20 dark:border-slate-700/50 shadow-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-600 dark:text-slate-400">Total Campaigns</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{campaigns.length}</p>
+            </div>
+            <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shadow-lg">
+              <Megaphone className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
         </div>
 
-        {error && (
-          <div className="rounded-lg bg-red-50 border border-red-200 p-4">
-            <p className="text-sm text-red-600">{error}</p>
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg border border-white/20 dark:border-slate-700/50 shadow-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-600 dark:text-slate-400">Active Now</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{campaigns.filter(c => c.is_active).length}</p>
+            </div>
+            <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center shadow-lg">
+              <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+            </div>
           </div>
-        )}
+        </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <div className="text-2xl font-bold text-primary">{campaigns.length}</div>
-              <p className="text-sm text-muted-foreground mt-1">Total Campaigns</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <div className="text-2xl font-bold text-green-600">{campaigns.filter(c => c.is_active).length}</div>
-              <p className="text-sm text-muted-foreground mt-1">Active Now</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <div className="text-2xl font-bold text-yellow-600">
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg border border-white/20 dark:border-slate-700/50 shadow-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-600 dark:text-slate-400">Ending Soon</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
                 {campaigns.filter(c => isEndingSoon(c.end_date) && c.is_active).length}
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">Ending Soon</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <div className="text-2xl font-bold text-blue-600">
-                {campaigns.reduce((sum, c) => sum + c.times_used, 0).toLocaleString()}
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">Total Uses</p>
-            </CardContent>
-          </Card>
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center shadow-lg">
+              <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+            </div>
+          </div>
         </div>
+
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg border border-white/20 dark:border-slate-700/50 shadow-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-600 dark:text-slate-400">Total Uses</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+                {campaigns.reduce((sum, c) => sum + c.times_used, 0).toLocaleString()}
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shadow-lg">
+              <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+            </div>
+          </div>
+        </div>
+      </div>
 
         {/* Create/Edit Form */}
         {showForm && (
@@ -340,8 +377,8 @@ export default function AdminCampaignsPage() {
               </form>
             </CardContent>
           </Card>
-        )}
-
+          )}
+  
         {/* Campaigns List */}
         {loading ? (
           <div className="grid gap-4 md:grid-cols-2">
@@ -450,9 +487,8 @@ export default function AdminCampaignsPage() {
                 </Card>
               )
             })}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

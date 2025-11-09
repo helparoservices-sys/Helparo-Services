@@ -6,8 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Sparkles, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react'
+import { Sparkles, Eye, EyeOff, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
 function SignUpForm() {
@@ -86,57 +85,101 @@ function SignUpForm() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-primary-50 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary text-white">
-                <CheckCircle className="h-8 w-8" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 animate-fade-in relative overflow-hidden">
+        {/* Logo Watermark Background */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <img 
+            src="/logo.jpg" 
+            alt="Helparo" 
+            className="h-96 w-96 object-contain opacity-[0.03] dark:opacity-[0.02] animate-pulse"
+          />
+        </div>
+
+        {/* Success Card */}
+        <div className="w-full max-w-md relative z-10">
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/20 dark:border-slate-700/50 shadow-2xl rounded-2xl p-8">
+            <div className="text-center space-y-6">
+              <div className="flex justify-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg">
+                  <CheckCircle className="h-8 w-8" />
+                </div>
               </div>
+              
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Check Your Email</h1>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  We've sent a verification link to <strong className="text-slate-900 dark:text-white">{formData.email}</strong>
+                </p>
+              </div>
+
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Please check your email and click the verification link to activate your account.
+              </p>
+
+              <Button 
+                className="w-full shadow-lg hover:shadow-xl transition-all duration-300" 
+                onClick={() => router.push('/auth/login')}
+              >
+                Go to Login
+              </Button>
             </div>
-            <CardTitle className="text-2xl">Check Your Email</CardTitle>
-            <CardDescription>
-              We've sent a verification link to <strong>{formData.email}</strong>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground text-center">
-              Please check your email and click the verification link to activate your account.
-            </p>
-            <Button className="w-full" onClick={() => router.push('/auth/login')}>
-              Go to Login
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-primary-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <Link href="/" className="flex items-center justify-center gap-2 mb-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white">
-              <Sparkles className="h-6 w-6" />
-            </div>
-            <span className="text-2xl font-bold">Helparo</span>
-          </Link>
-          <CardTitle className="text-2xl">Create Your Account</CardTitle>
-          <CardDescription>
-            Join thousands of customers and helpers
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 animate-fade-in relative overflow-hidden">
+      {/* Logo Watermark Background */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <img 
+          src="/logo.jpg" 
+          alt="Helparo" 
+          className="h-96 w-96 object-contain opacity-[0.03] dark:opacity-[0.02] animate-pulse"
+        />
+      </div>
+
+      {/* Signup Card */}
+      <div className="w-full max-w-md relative z-10">
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/20 dark:border-slate-700/50 shadow-2xl rounded-2xl p-8">
+          {/* Header with Logo */}
+          <div className="text-center mb-8">
+            <Link href="/" className="inline-flex items-center justify-center gap-2 mb-6 group">
+              <div className="relative">
+                <img
+                  src="/logo.jpg"
+                  alt="Helparo"
+                  className="h-12 w-12 rounded-xl object-cover shadow-lg group-hover:shadow-xl transition-shadow duration-300"
+                  onError={(e) => {
+                    const img = e.currentTarget as HTMLImageElement
+                    img.style.display = 'none'
+                    const fallback = document.getElementById('signup-logo-fallback')
+                    if (fallback) fallback.style.display = 'flex'
+                  }}
+                />
+                <div id="signup-logo-fallback" style={{ display: 'none' }} className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg">
+                  <Sparkles className="h-7 w-7" />
+                </div>
+              </div>
+              <span className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">Helparo</span>
+            </Link>
+            
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Create Your Account</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Join thousands of customers and helpers
+            </p>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Role Selection */}
             <div className="space-y-2">
-              <Label>I want to</Label>
+              <Label className="text-slate-700 dark:text-slate-300">I want to</Label>
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
                   variant={formData.role === 'customer' ? 'default' : 'outline'}
-                  className="w-full"
+                  className={formData.role === 'customer' ? 'shadow-lg' : 'bg-white/50 dark:bg-slate-700/50'}
                   onClick={() => setFormData({ ...formData, role: 'customer' })}
                 >
                   Find Services
@@ -144,7 +187,7 @@ function SignUpForm() {
                 <Button
                   type="button"
                   variant={formData.role === 'helper' ? 'default' : 'outline'}
-                  className="w-full"
+                  className={formData.role === 'helper' ? 'shadow-lg' : 'bg-white/50 dark:bg-slate-700/50'}
                   onClick={() => setFormData({ ...formData, role: 'helper' })}
                 >
                   Offer Services
@@ -154,19 +197,20 @@ function SignUpForm() {
 
             {/* Full Name */}
             <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
+              <Label htmlFor="fullName" className="text-slate-700 dark:text-slate-300">Full Name</Label>
               <Input
                 id="fullName"
                 placeholder="John Doe"
                 value={formData.fullName}
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                 required
+                className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
               />
             </div>
 
             {/* Email */}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-slate-700 dark:text-slate-300">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -174,15 +218,16 @@ function SignUpForm() {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
+                className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
               />
             </div>
 
             {/* Phone with Country Code */}
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
+              <Label htmlFor="phone" className="text-slate-700 dark:text-slate-300">Phone Number</Label>
               <div className="flex gap-2">
                 <select
-                  className="flex h-10 w-24 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="flex h-10 w-24 rounded-md border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
                   value={formData.countryCode}
                   onChange={(e) => setFormData({ ...formData, countryCode: e.target.value })}
                 >
@@ -199,13 +244,14 @@ function SignUpForm() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   required
+                  className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
                 />
               </div>
             </div>
 
             {/* Password */}
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-slate-700 dark:text-slate-300">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -214,11 +260,12 @@ function SignUpForm() {
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
+                  className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -238,7 +285,7 @@ function SignUpForm() {
 
             {/* Confirm Password */}
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-slate-700 dark:text-slate-300">Confirm Password</Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
@@ -247,11 +294,12 @@ function SignUpForm() {
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                   required
+                  className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                 >
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -261,15 +309,15 @@ function SignUpForm() {
               )}
             </div>
 
-            {/* Legal consent (links to latest versions) */}
+            {/* Legal consent */}
             <div className="flex items-start space-x-2">
               <input
                 type="checkbox"
                 id="legalConsent"
                 required
-                className="mt-1 h-4 w-4 rounded border-gray-300"
+                className="mt-1 h-4 w-4 rounded border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-primary/50"
               />
-              <Label htmlFor="legalConsent" className="text-xs leading-tight">
+              <Label htmlFor="legalConsent" className="text-xs leading-tight text-slate-600 dark:text-slate-400">
                 I have read and agree to the{' '}
                 <Link href="/legal/terms" className="text-primary hover:underline">Terms & Conditions</Link>{' '}and{' '}
                 <Link href="/legal/privacy" className="text-primary hover:underline">Privacy Policy</Link>. I understand I may be asked to re-accept if they update.
@@ -278,26 +326,38 @@ function SignUpForm() {
 
             {/* Error Message */}
             {error && (
-              <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded-md">
+              <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg animate-fade-in">
                 {error}
               </div>
             )}
 
             {/* Submit Button */}
-            <Button type="submit" className="w-full" size="lg" disabled={loading}>
-              {loading ? 'Creating Account...' : 'Create Account'}
+            <Button 
+              type="submit" 
+              className="w-full shadow-lg hover:shadow-xl transition-all duration-300" 
+              size="lg" 
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Creating Account...
+                </>
+              ) : (
+                'Create Account'
+              )}
             </Button>
 
             {/* Login Link */}
-            <p className="text-center text-sm text-muted-foreground">
+            <p className="text-center text-sm text-slate-600 dark:text-slate-400">
               Already have an account?{' '}
-              <Link href="/auth/login" className="text-primary font-medium hover:underline">
+              <Link href="/auth/login" className="text-primary font-medium hover:underline transition-colors">
                 Sign In
               </Link>
             </p>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }
@@ -306,11 +366,11 @@ function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
   return (
     <div className="flex items-center gap-2">
       {met ? (
-        <CheckCircle className="h-3 w-3 text-secondary" />
+        <CheckCircle className="h-3 w-3 text-green-500 dark:text-green-400" />
       ) : (
-        <XCircle className="h-3 w-3 text-muted-foreground" />
+        <XCircle className="h-3 w-3 text-slate-400 dark:text-slate-500" />
       )}
-      <span className={met ? 'text-secondary' : 'text-muted-foreground'}>{text}</span>
+      <span className={met ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}>{text}</span>
     </div>
   )
 }

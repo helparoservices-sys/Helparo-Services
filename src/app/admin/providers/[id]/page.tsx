@@ -28,6 +28,25 @@ export default function ProvidersPage() {
   const fetchHelpers = async () => {
     try {
       setLoading(true)
+      
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setError('Not authenticated')
+        setLoading(false)
+        return
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.role !== 'admin') {
+        setError('Unauthorized')
+        setLoading(false)
+        return
+      }
 
       const { data: helpersData, error: helpersError } = await supabase
         .from('helper_profiles')
@@ -84,7 +103,7 @@ export default function ProvidersPage() {
   // Calculate stats
   const totalHelpers = helpers?.length || 0
   const availableHelpers = helpers?.filter(h => h.is_available_now).length || 0
-  const pendingHelpers = helpers?.filter(h => h.verification_status === 'pending').length || 0
+  const pendingHelpers = helpers?.filter(h => !h.is_approved).length || 0
   const verifiedHelpers = helpers?.filter(h => h.verification_status === 'approved').length || 0
 
   return (

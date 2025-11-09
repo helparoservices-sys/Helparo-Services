@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { LoadingSpinner, SkeletonCard } from '@/components/ui/loading'
+import { supabase } from '@/lib/supabase/client'
+import { PageLoader } from '@/components/admin/PageLoader'
 
 interface Badge {
   id: string
@@ -52,14 +54,31 @@ export default function AdminGamificationPage() {
     setLoading(true)
     setError('')
 
-    // For now, showing mock data since these APIs would need to be created
-    // In production, you would call server actions like:
-    // const badgesRes = await getAllBadges()
-    // const achievementsRes = await getAllAchievements()
+    try {
+      // Fetch badges from Supabase
+      const { data: badgesData, error: badgesError } = await supabase
+        .from('badge_definitions')
+        .select('*')
+        .order('created_at', { ascending: false })
 
-    setBadges([])
-    setAchievements([])
-    setLoading(false)
+      if (badgesError) throw badgesError
+
+      // Fetch achievements from Supabase
+      const { data: achievementsData, error: achievementsError } = await supabase
+        .from('achievements')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (achievementsError) throw achievementsError
+
+      setBadges(badgesData || [])
+      setAchievements(achievementsData || [])
+    } catch (error: any) {
+      console.error('Error loading gamification data:', error)
+      setError(error.message || 'Failed to load data')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const getBadgeTypeColor = (type: string) => {
@@ -73,6 +92,10 @@ export default function AdminGamificationPage() {
       expert: 'bg-indigo-100 text-indigo-700'
     }
     return colors[type.toLowerCase()] || 'bg-gray-100 text-gray-700'
+  }
+
+  if (loading) {
+    return <PageLoader text="Loading gamification data..." />
   }
 
   return (

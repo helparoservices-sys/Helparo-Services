@@ -554,8 +554,15 @@ CREATE TABLE public.profiles (
   phone_number character varying,
   phone_verified boolean DEFAULT false,
   phone_verified_at timestamp with time zone,
+  status USER-DEFINED DEFAULT 'active'::user_status,
+  is_banned boolean DEFAULT false,
+  ban_reason text,
+  banned_at timestamp with time zone,
+  banned_by uuid,
+  ban_expires_at timestamp with time zone,
   CONSTRAINT profiles_pkey PRIMARY KEY (id),
-  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id),
+  CONSTRAINT profiles_banned_by_fkey FOREIGN KEY (banned_by) REFERENCES public.profiles(id)
 );
 CREATE TABLE public.promo_code_usages (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
