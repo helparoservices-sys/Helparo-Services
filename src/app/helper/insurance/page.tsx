@@ -43,9 +43,9 @@ export default function HelperInsurancePage() {
 
     const result = await getHelperInsurance(user.id)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
-    } else {
+    } else if ('policies' in result) {
       setPolicies(result.policies || [])
     }
 

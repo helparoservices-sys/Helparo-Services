@@ -45,9 +45,9 @@ export default function HelperBackgroundCheckPage() {
 
     const result = await getHelperBackgroundChecks(user.id)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
-    } else {
+    } else if ('checks' in result) {
       setChecks(result.checks || [])
     }
 
@@ -70,7 +70,7 @@ export default function HelperBackgroundCheckPage() {
 
     const result = await initiateBackgroundCheck(user.id, checkType)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
     } else {
       setShowRequestForm(false)

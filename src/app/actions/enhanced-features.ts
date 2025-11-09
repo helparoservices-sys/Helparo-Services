@@ -1,7 +1,25 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/auth-middleware';
+import { UserRole } from '@/lib/constants';
+import { handleServerActionError } from '@/lib/errors';
+import { sanitizeText, sanitizeHTML } from '@/lib/sanitize';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 import { revalidatePath } from 'next/cache';
+import { validateFile, generateSafeFilename, ALLOWED_MIME_TYPES, FILE_SIZE_LIMITS } from '@/lib/file-validation';
+
+// ============================================================================
+// HELPER: Validate file by type category
+// ============================================================================
+function validateFileByType(file: File, type: keyof typeof ALLOWED_MIME_TYPES) {
+  const validation = validateFile(file, ALLOWED_MIME_TYPES[type], FILE_SIZE_LIMITS[type] || FILE_SIZE_LIMITS.DOCUMENT);
+  if (!validation.valid) {
+    throw new Error(`File validation failed: ${validation.error}`);
+  }
+  return validation;
+}
 
 // ============================================================================
 // REVIEWS & RATINGS
@@ -16,36 +34,56 @@ export async function submitReview(data: {
   professionalismRating?: number;
   valueRating?: number;
 }) {
-  const supabase = await createClient();
+  try {
+    const { user } = await requireAuth();
+    await rateLimit('submit-review', user.id, RATE_LIMITS.CREATE_REVIEW);
 
-  const { data: result, error } = await supabase.rpc('submit_review', {
-    p_request_id: data.requestId,
-    p_rating: data.rating,
-    p_review_text: data.reviewText,
-    p_quality: data.qualityRating,
-    p_timeliness: data.timelinessRating,
-    p_professionalism: data.professionalismRating,
-    p_value_rating: data.valueRating,
-  } as any);
+    const safeReviewText = data.reviewText ? sanitizeHTML(data.reviewText) : undefined;
+    const supabase = await createClient();
 
-  if (error) throw new Error(error.message);
+    const { data: result, error } = await supabase.rpc('submit_review', {
+      p_request_id: data.requestId,
+      p_rating: data.rating,
+      p_review_text: safeReviewText,
+      p_quality: data.qualityRating,
+      p_timeliness: data.timelinessRating,
+      p_professionalism: data.professionalismRating,
+      p_value_rating: data.valueRating,
+    } as any);
 
-  revalidatePath('/customer/bookings');
-  return { reviewId: result };
+    if (error) throw error;
+
+    revalidatePath('/customer/bookings');
+    logger.info('Review submitted', { userId: user.id, requestId: data.requestId });
+    return { reviewId: result };
+  } catch (error: any) {
+    logger.error('Submit review error', { error });
+    return handleServerActionError(error);
+  }
 }
 
 export async function respondToReview(reviewId: string, response: string) {
-  const supabase = await createClient();
+  try {
+    const { user } = await requireAuth(UserRole.HELPER);
+    await rateLimit('respond-review', user.id, RATE_LIMITS.API_MODERATE);
 
-  const { data, error } = await supabase.rpc('respond_to_review', {
-    p_review_id: reviewId,
-    p_response: response,
-  } as any);
+    const safeResponse = sanitizeHTML(response);
+    const supabase = await createClient();
 
-  if (error) throw new Error(error.message);
+    const { data, error } = await supabase.rpc('respond_to_review', {
+      p_review_id: reviewId,
+      p_response: safeResponse,
+    } as any);
 
-  revalidatePath('/helper/reviews');
-  return { success: data };
+    if (error) throw error;
+
+    revalidatePath('/helper/reviews');
+    logger.info('Review response added', { userId: user.id, reviewId });
+    return { success: data };
+  } catch (error: any) {
+    logger.error('Respond to review error', { error });
+    return handleServerActionError(error);
+  }
 }
 
 export async function getHelperReviews(
@@ -53,45 +91,63 @@ export async function getHelperReviews(
   limit = 10,
   offset = 0
 ) {
-  const supabase = await createClient();
+  try {
+    await rateLimit('get-helper-reviews', helperId, RATE_LIMITS.API_RELAXED);
+    
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc('get_helper_reviews', {
+      p_helper_id: helperId,
+      p_limit: limit,
+      p_offset: offset,
+    } as any);
 
-  const { data, error } = await supabase.rpc('get_helper_reviews', {
-    p_helper_id: helperId,
-    p_limit: limit,
-    p_offset: offset,
-  } as any);
-
-  if (error) throw new Error(error.message);
-  return data;
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    logger.error('Get helper reviews error', { error, helperId });
+    return handleServerActionError(error);
+  }
 }
 
 export async function uploadReviewPhotos(reviewId: string, files: File[]) {
-  const supabase = await createClient();
+  try {
+    const { user } = await requireAuth();
+    await rateLimit('upload-review-photos', user.id, RATE_LIMITS.API_MODERATE);
 
-  const photoUrls: string[] = [];
+    const supabase = await createClient();
+    const photoUrls: string[] = [];
 
-  for (const file of files) {
-    const fileName = `${reviewId}/${Date.now()}-${file.name}`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('review-photos')
-      .upload(fileName, file);
+    for (const file of files) {
+      // ✅ VALIDATE FILE
+      validateFileByType(file, 'IMAGE');
 
-    if (uploadError) throw new Error(uploadError.message);
+      const safeFilename = generateSafeFilename(file.type);
+      const fileName = `${reviewId}/${safeFilename}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('review-photos')
+        .upload(fileName, file);
 
-    const { data: urlData } = supabase.storage
-      .from('review-photos')
-      .getPublicUrl(fileName);
+      if (uploadError) throw uploadError;
 
-    photoUrls.push(urlData.publicUrl);
+      const { data: urlData } = supabase.storage
+        .from('review-photos')
+        .getPublicUrl(fileName);
 
-    // Insert photo record
-    await supabase.from('review_photos').insert({
-      review_id: reviewId,
-      photo_url: urlData.publicUrl,
-    });
+      photoUrls.push(urlData.publicUrl);
+
+      await supabase.from('review_photos').insert({
+        review_id: reviewId,
+        photo_url: urlData.publicUrl,
+      });
+    }
+
+    logger.info('Review photos uploaded', { userId: user.id, reviewId, count: files.length });
+    return photoUrls;
+  } catch (error: any) {
+    logger.error('Upload review photos error', { error });
+    return handleServerActionError(error);
   }
-
-  return photoUrls;
 }
 
 // ============================================================================
@@ -105,18 +161,24 @@ export async function findBestHelpers(data: {
   maxDistanceKm?: number;
   limit?: number;
 }) {
-  const supabase = await createClient();
+  try {
+    await rateLimit('find-helpers', 'anonymous', RATE_LIMITS.API_MODERATE);
+    
+    const supabase = await createClient();
+    const { data: helpers, error } = await supabase.rpc('find_best_helpers', {
+      p_latitude: data.latitude,
+      p_longitude: data.longitude,
+      p_service_id: data.serviceId,
+      p_max_distance_km: data.maxDistanceKm || 10,
+      p_limit: data.limit || 10,
+    } as any);
 
-  const { data: helpers, error } = await supabase.rpc('find_best_helpers', {
-    p_latitude: data.latitude,
-    p_longitude: data.longitude,
-    p_service_id: data.serviceId,
-    p_max_distance_km: data.maxDistanceKm || 10,
-    p_limit: data.limit || 10,
-  } as any);
-
-  if (error) throw new Error(error.message);
-  return helpers;
+    if (error) throw error;
+    return helpers;
+  } catch (error: any) {
+    logger.error('Find best helpers error', { error });
+    return handleServerActionError(error);
+  }
 }
 
 export async function addHelperSpecialization(data: {
@@ -124,28 +186,31 @@ export async function addHelperSpecialization(data: {
   experienceYears?: number;
   certificationUrl?: string;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const { user } = await requireAuth(UserRole.HELPER);
+    await rateLimit('add-specialization', user.id, RATE_LIMITS.API_MODERATE);
 
-  if (!user) throw new Error('Not authenticated');
+    const supabase = await createClient();
+    const { data: specialization, error } = await supabase
+      .from('helper_specializations')
+      .insert({
+        helper_id: user.id,
+        service_id: data.serviceId,
+        experience_years: data.experienceYears || 0,
+        certification_url: data.certificationUrl,
+      })
+      .select()
+      .single();
 
-  const { data: specialization, error } = await supabase
-    .from('helper_specializations')
-    .insert({
-      helper_id: user.id,
-      service_id: data.serviceId,
-      experience_years: data.experienceYears || 0,
-      certification_url: data.certificationUrl,
-    })
-    .select()
-    .single();
+    if (error) throw error;
 
-  if (error) throw new Error(error.message);
-
-  revalidatePath('/helper/profile');
-  return specialization;
+    revalidatePath('/helper/profile');
+    logger.info('Helper specialization added', { userId: user.id, serviceId: data.serviceId });
+    return specialization;
+  } catch (error: any) {
+    logger.error('Add helper specialization error', { error });
+    return handleServerActionError(error);
+  }
 }
 
 // ============================================================================
@@ -153,118 +218,136 @@ export async function addHelperSpecialization(data: {
 // ============================================================================
 
 export async function getUserGamificationSummary() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const { user } = await requireAuth();
+    await rateLimit('get-gamification-summary', user.id, RATE_LIMITS.API_RELAXED);
 
-  if (!user) throw new Error('Not authenticated');
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc(
+      'get_user_gamification_summary',
+      { p_user_id: user.id } as any
+    );
 
-  const { data, error } = await supabase.rpc(
-    'get_user_gamification_summary',
-    {
-      p_user_id: user.id,
-    } as any
-  );
-
-  if (error) throw new Error(error.message);
-  return data[0];
+    if (error) throw error;
+    return data[0];
+  } catch (error: any) {
+    logger.error('Get gamification summary error', { error });
+    return handleServerActionError(error);
+  }
 }
 
 export async function getUserBadges(userId?: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    let targetUserId = userId;
+    
+    if (!userId) {
+      const { user } = await requireAuth();
+      targetUserId = user.id;
+    }
 
-  const targetUserId = userId || user?.id;
+    await rateLimit('get-user-badges', targetUserId!, RATE_LIMITS.API_RELAXED);
 
-  const { data, error } = await supabase
-    .from('user_badges')
-    .select(
-      `
-      *,
-      badge_definitions (*)
-    `
-    )
-    .eq('user_id', targetUserId)
-    .order('earned_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('user_badges')
+      .select('*, badge_definitions (*)')
+      .eq('user_id', targetUserId)
+      .order('earned_at', { ascending: false });
 
-  if (error) throw new Error(error.message);
-  return data;
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    logger.error('Get user badges error', { error });
+    return handleServerActionError(error);
+  }
 }
 
 export async function getUserAchievements(userId?: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    let targetUserId = userId;
+    
+    if (!userId) {
+      const { user } = await requireAuth();
+      targetUserId = user.id;
+    }
 
-  const targetUserId = userId || user?.id;
+    await rateLimit('get-user-achievements', targetUserId!, RATE_LIMITS.API_RELAXED);
 
-  const { data, error } = await supabase
-    .from('user_achievements')
-    .select(
-      `
-      *,
-      achievements (*)
-    `
-    )
-    .eq('user_id', targetUserId)
-    .order('earned_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('user_achievements')
+      .select('*, achievements (*)')
+      .eq('user_id', targetUserId)
+      .order('earned_at', { ascending: false });
 
-  if (error) throw new Error(error.message);
-  return data;
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    logger.error('Get user achievements error', { error });
+    return handleServerActionError(error);
+  }
 }
 
 export async function getLoyaltyPoints() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const { user } = await requireAuth();
+    await rateLimit('get-loyalty-points', user.id, RATE_LIMITS.API_RELAXED);
 
-  if (!user) throw new Error('Not authenticated');
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('loyalty_points')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
 
-  const { data, error } = await supabase
-    .from('loyalty_points')
-    .select('*')
-    .eq('user_id', user.id)
-    .single();
-
-  if (error && error.code !== 'PGRST116') throw new Error(error.message);
-  return data || { points_balance: 0, tier_level: 'bronze' };
+    if (error && error.code !== 'PGRST116') throw error;
+    return data || { points_balance: 0, tier_level: 'bronze' };
+  } catch (error: any) {
+    logger.error('Get loyalty points error', { error });
+    return handleServerActionError(error);
+  }
 }
 
 export async function redeemLoyaltyPoints(points: number, description: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const { user } = await requireAuth();
+    await rateLimit('redeem-loyalty-points', user.id, RATE_LIMITS.PAYMENT_ACTION);
 
-  if (!user) throw new Error('Not authenticated');
+    const safeDescription = sanitizeText(description);
+    const supabase = await createClient();
 
-  const { data, error } = await supabase.rpc('redeem_loyalty_points', {
-    p_user_id: user.id,
-    p_points: points,
-    p_description: description,
-  } as any);
+    const { data, error } = await supabase.rpc('redeem_loyalty_points', {
+      p_user_id: user.id,
+      p_points: points,
+      p_description: safeDescription,
+    } as any);
 
-  if (error) throw new Error(error.message);
+    if (error) throw error;
 
-  revalidatePath('/customer/rewards');
-  return { success: data };
+    revalidatePath('/customer/rewards');
+    logger.info('Loyalty points redeemed', { userId: user.id, points });
+    return { success: data };
+  } catch (error: any) {
+    logger.error('Redeem loyalty points error', { error });
+    return handleServerActionError(error);
+  }
 }
 
 export async function getHelperLeaderboard(limit = 50) {
-  const supabase = await createClient();
+  try {
+    await rateLimit('get-leaderboard', 'anonymous', RATE_LIMITS.API_RELAXED);
 
-  const { data, error } = await supabase
-    .from('helper_leaderboard')
-    .select('*')
-    .limit(limit);
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc('get_helper_leaderboard', {
+      p_limit: limit,
+    } as any);
 
-  if (error) throw new Error(error.message);
-  return data;
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    logger.error('Get helper leaderboard error', { error });
+    return handleServerActionError(error);
+  }
 }
 
 // ============================================================================
@@ -272,79 +355,74 @@ export async function getHelperLeaderboard(limit = 50) {
 // ============================================================================
 
 export async function getActiveBundles() {
-  const supabase = await createClient();
+  try {
+    await rateLimit('get-active-bundles', 'anonymous', RATE_LIMITS.API_RELAXED);
 
-  const { data, error } = await supabase
-    .from('service_bundles')
-    .select('*')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false });
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc('get_active_bundles' as any);
 
-  if (error) throw new Error(error.message);
-  return data;
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    logger.error('Get active bundles error', { error });
+    return handleServerActionError(error);
+  }
 }
 
 export async function getBundleDetails(bundleId: string) {
-  const supabase = await createClient();
+  try {
+    await rateLimit('get-bundle-details', bundleId, RATE_LIMITS.API_RELAXED);
 
-  const { data, error } = await supabase.rpc('get_bundle_details', {
-    p_bundle_id: bundleId,
-  } as any);
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc('get_bundle_details', {
+      p_bundle_id: bundleId,
+    } as any);
 
-  if (error) throw new Error(error.message);
-  return data;
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    logger.error('Get bundle details error', { error });
+    return handleServerActionError(error);
+  }
 }
 
 export async function purchaseBundle(bundleId: string, paymentId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const { user } = await requireAuth();
+    await rateLimit('purchase-bundle', user.id, RATE_LIMITS.PAYMENT_ACTION);
 
-  if (!user) throw new Error('Not authenticated');
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc('purchase_bundle', {
+      p_bundle_id: bundleId,
+      p_payment_id: paymentId,
+    } as any);
 
-  const { data, error } = await supabase.rpc('purchase_bundle', {
-    p_bundle_id: bundleId,
-    p_customer_id: user.id,
-    p_payment_id: paymentId,
-  } as any);
+    if (error) throw error;
 
-  if (error) throw new Error(error.message);
-
-  revalidatePath('/customer/bundles');
-  return { purchaseId: data };
+    revalidatePath('/customer/bundles');
+    logger.info('Bundle purchased', { userId: user.id, bundleId });
+    return { success: data };
+  } catch (error: any) {
+    logger.error('Purchase bundle error', { error });
+    return handleServerActionError(error);
+  }
 }
 
 export async function getActiveCampaigns(serviceId?: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    await rateLimit('get-active-campaigns', serviceId || 'anonymous', RATE_LIMITS.API_RELAXED);
 
-  if (serviceId) {
-    const { data, error } = await supabase.rpc(
-      'get_active_campaigns_for_service',
-      {
-        p_service_id: serviceId,
-        p_user_id: user?.id,
-      } as any
-    );
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc('get_active_campaigns', {
+      p_service_id: serviceId || null,
+    } as any);
 
-    if (error) throw new Error(error.message);
+    if (error) throw error;
     return data;
+  } catch (error: any) {
+    logger.error('Get active campaigns error', { error });
+    return handleServerActionError(error);
   }
-
-  const now = new Date().toISOString();
-  const { data, error } = await supabase
-    .from('seasonal_campaigns')
-    .select('*')
-    .eq('is_active', true)
-    .lte('start_date', now)
-    .gte('end_date', now)
-    .order('discount_value', { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return data;
 }
 
 // ============================================================================
@@ -352,156 +430,145 @@ export async function getActiveCampaigns(serviceId?: string) {
 // ============================================================================
 
 export async function submitBackgroundCheck(checkType: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const { user } = await requireAuth(UserRole.HELPER);
+    await rateLimit('submit-background-check', user.id, RATE_LIMITS.API_MODERATE);
 
-  if (!user) throw new Error('Not authenticated');
+    const safeCheckType = sanitizeText(checkType);
+    const supabase = await createClient();
 
-  const { data, error } = await supabase.rpc('submit_background_check', {
-    p_helper_id: user.id,
-    p_check_type: checkType,
-  } as any);
+    const { data, error } = await supabase.rpc('submit_background_check', {
+      p_helper_id: user.id,
+      p_check_type: safeCheckType,
+    } as any);
 
-  if (error) throw new Error(error.message);
+    if (error) throw error;
 
-  revalidatePath('/helper/verification');
-  return { checkId: data };
+    logger.info('Background check submitted', { userId: user.id, checkType: safeCheckType });
+    return { checkId: data };
+  } catch (error: any) {
+    logger.error('Submit background check error', { error });
+    return handleServerActionError(error);
+  }
 }
 
 export async function uploadVerificationDocument(data: {
   documentType: string;
-  documentNumber: string;
-  frontFile: File;
-  backFile?: File;
-  selfieFile?: File;
+  file: File;
+  expiryDate?: string;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const { user } = await requireAuth(UserRole.HELPER);
+    await rateLimit('upload-verification-doc', user.id, RATE_LIMITS.API_MODERATE);
 
-  if (!user) throw new Error('Not authenticated');
+    // ✅ VALIDATE FILE
+    validateFileByType(data.file, 'VERIFICATION');
 
-  // Upload front document
-  const frontFileName = `${user.id}/${data.documentType}/${Date.now()}-front.jpg`;
-  const { data: frontUpload, error: frontError } = await supabase.storage
-    .from('verification-documents')
-    .upload(frontFileName, data.frontFile);
+    const safeDocumentType = sanitizeText(data.documentType);
+    const supabase = await createClient();
 
-  if (frontError) throw new Error(frontError.message);
-
-  const { data: frontUrl } = supabase.storage
-    .from('verification-documents')
-    .getPublicUrl(frontFileName);
-
-  let backUrl = null;
-  if (data.backFile) {
-    const backFileName = `${user.id}/${data.documentType}/${Date.now()}-back.jpg`;
-    const { error: backError } = await supabase.storage
+    const safeFilename = generateSafeFilename(data.file.type);
+    const fileName = `${user.id}/${safeFilename}`;
+    
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('verification-documents')
-      .upload(backFileName, data.backFile);
+      .upload(fileName, data.file);
 
-    if (backError) throw new Error(backError.message);
+    if (uploadError) throw uploadError;
 
-    const { data: backUrlData } = supabase.storage
+    const { data: urlData } = supabase.storage
       .from('verification-documents')
-      .getPublicUrl(backFileName);
-    backUrl = backUrlData.publicUrl;
+      .getPublicUrl(fileName);
+
+    const { data: insertData, error: insertError } = await supabase
+      .from('verification_documents')
+      .insert({
+        helper_id: user.id,
+        document_type: safeDocumentType,
+        document_url: urlData.publicUrl,
+        expiry_date: data.expiryDate || null,
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+
+    logger.info('Verification document uploaded', { userId: user.id, documentType: safeDocumentType });
+    return insertData;
+  } catch (error: any) {
+    logger.error('Upload verification document error', { error });
+    return handleServerActionError(error);
   }
-
-  let selfieUrl = null;
-  if (data.selfieFile) {
-    const selfieFileName = `${user.id}/${data.documentType}/${Date.now()}-selfie.jpg`;
-    const { error: selfieError } = await supabase.storage
-      .from('verification-documents')
-      .upload(selfieFileName, data.selfieFile);
-
-    if (selfieError) throw new Error(selfieError.message);
-
-    const { data: selfieUrlData } = supabase.storage
-      .from('verification-documents')
-      .getPublicUrl(selfieFileName);
-    selfieUrl = selfieUrlData.publicUrl;
-  }
-
-  // Insert document record
-  const { data: document, error: insertError } = await supabase
-    .from('verification_documents')
-    .insert({
-      helper_id: user.id,
-      document_type: data.documentType,
-      document_number: data.documentNumber,
-      document_url: frontUrl.publicUrl,
-      back_side_url: backUrl,
-      selfie_url: selfieUrl,
-      status: 'pending',
-    })
-    .select()
-    .single();
-
-  if (insertError) throw new Error(insertError.message);
-
-  revalidatePath('/helper/verification');
-  return document;
 }
 
 export async function getHelperTrustScore(helperId: string) {
-  const supabase = await createClient();
+  try {
+    await rateLimit('get-trust-score', helperId, RATE_LIMITS.API_RELAXED);
 
-  const { data, error } = await supabase
-    .from('helper_trust_scores')
-    .select('*')
-    .eq('helper_id', helperId)
-    .single();
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc('get_helper_trust_score', {
+      p_helper_id: helperId,
+    } as any);
 
-  if (error && error.code !== 'PGRST116') throw new Error(error.message);
-  return data || { overall_score: 0 };
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    logger.error('Get helper trust score error', { error });
+    return handleServerActionError(error);
+  }
 }
 
 export async function submitInsuranceClaim(data: {
-  insuranceId: string;
+  requestId: string;
   claimType: string;
   claimAmount: number;
   description: string;
-  evidenceFiles: File[];
+  evidence: File[];
 }) {
-  const supabase = await createClient();
+  try {
+    const { user } = await requireAuth();
+    await rateLimit('submit-insurance-claim', user.id, RATE_LIMITS.API_STRICT);
 
-  // Upload evidence files
-  const evidenceUrls: string[] = [];
-  for (const file of data.evidenceFiles) {
-    const fileName = `claims/${data.insuranceId}/${Date.now()}-${file.name}`;
-    const { error: uploadError } = await supabase.storage
-      .from('insurance-evidence')
-      .upload(fileName, file);
+    const safeClaimType = sanitizeText(data.claimType);
+    const safeDescription = sanitizeText(data.description);
+    const supabase = await createClient();
 
-    if (uploadError) throw new Error(uploadError.message);
+    const evidenceUrls: string[] = [];
+    for (const file of data.evidence) {
+      // ✅ VALIDATE FILE
+      validateFileByType(file, 'DOCUMENT');
 
-    const { data: urlData } = supabase.storage
-      .from('insurance-evidence')
-      .getPublicUrl(fileName);
+      const safeFilename = generateSafeFilename(file.type);
+      const fileName = `${data.requestId}/${safeFilename}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('insurance-claims')
+        .upload(fileName, file);
 
-    evidenceUrls.push(urlData.publicUrl);
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('insurance-claims')
+        .getPublicUrl(fileName);
+
+      evidenceUrls.push(urlData.publicUrl);
+    }
+
+    const { data: claimData, error } = await supabase.rpc('submit_insurance_claim', {
+      p_request_id: data.requestId,
+      p_claim_type: safeClaimType,
+      p_claim_amount: data.claimAmount,
+      p_description: safeDescription,
+      p_evidence_urls: evidenceUrls,
+    } as any);
+
+    if (error) throw error;
+
+    logger.info('Insurance claim submitted', { userId: user.id, requestId: data.requestId, claimAmount: data.claimAmount });
+    return { claimId: claimData };
+  } catch (error: any) {
+    logger.error('Submit insurance claim error', { error });
+    return handleServerActionError(error);
   }
-
-  // Insert claim
-  const { data: claim, error } = await supabase
-    .from('insurance_claims')
-    .insert({
-      insurance_id: data.insuranceId,
-      claim_type: data.claimType,
-      claim_amount: data.claimAmount,
-      description: data.description,
-      evidence_urls: evidenceUrls,
-      status: 'submitted',
-    })
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-
-  revalidatePath('/customer/insurance');
-  return claim;
 }

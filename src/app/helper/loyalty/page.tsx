@@ -48,9 +48,9 @@ export default function HelperLoyaltyPage() {
       getLoyaltyTransactions(user.id, 50)
     ])
 
-    if (balanceRes.error) {
+    if ('error' in balanceRes && balanceRes.error) {
       setError(balanceRes.error)
-    } else {
+    } else if ('balance' in balanceRes) {
       const points = balanceRes.balance || 0
       setBalance(points)
       // Calculate tier based on balance
@@ -60,7 +60,9 @@ export default function HelperLoyaltyPage() {
       else setTier('bronze')
     }
 
-    if (!transactionsRes.error) {
+    if ('error' in transactionsRes && transactionsRes.error) {
+      setError(transactionsRes.error)
+      } else if ('transactions' in transactionsRes) {
       setTransactions(transactionsRes.transactions || [])
     }
 
@@ -90,7 +92,7 @@ export default function HelperLoyaltyPage() {
 
     const result = await redeemLoyaltyPoints(formData)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
     } else {
       setRedeemAmount('')

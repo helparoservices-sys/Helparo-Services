@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Database } from '@/lib/supabase/database.types'
+import { VerifiedHelperBadge } from '@/components/trust-badges'
 
 export default async function HelperDashboard() {
   const supabase = await createClient()
@@ -26,7 +27,10 @@ export default async function HelperDashboard() {
   return (
     <div className="min-h-screen bg-primary-50 py-12 px-4">
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="text-3xl font-bold">Helper Dashboard</h1>
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <h1 className="text-3xl font-bold">Helper Dashboard</h1>
+          {!needsVerification && <VerifiedHelperBadge />}
+        </div>
         {needsVerification && (
           <div className="rounded-md border border-yellow-300 bg-yellow-50 p-4 space-y-2">
             <p className="text-sm font-medium text-yellow-800">Verification Required</p>

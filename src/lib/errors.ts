@@ -4,6 +4,7 @@
  */
 
 import { ErrorCode } from './constants'
+import { logger } from './logger'
 
 /**
  * Application Error Class
@@ -110,10 +111,8 @@ export function formatErrorForLogging(error: any, context?: Record<string, any>)
  * Handle server action error with proper formatting
  */
 export function handleServerActionError(error: any, userContext?: string) {
-  // Log full error for debugging (in development)
-  if (process.env.NODE_ENV === 'development') {
-    console.error('Server Action Error:', formatErrorForLogging(error))
-  }
+  // Log full error for debugging
+  logger.error('Server Action Error', { error: formatErrorForLogging(error), userContext })
   
   // Return user-friendly error
   return {
@@ -181,4 +180,11 @@ export function createRateLimitError(): AppError {
     'Too many requests. Please try again in a few minutes.',
     429
   )
+}
+
+/**
+ * Type guard to check if result has error
+ */
+export function isErrorResult(result: any): result is { error: string; code?: string } {
+  return result && typeof result === 'object' && 'error' in result
 }

@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { VerifiedHelperBadge, TrustedProBadge } from '@/components/trust-badges'
+import { validateFile, ALLOWED_MIME_TYPES, FILE_SIZE_LIMITS } from '@/lib/file-validation'
+import { AlertCircle, CheckCircle2, Upload } from 'lucide-react'
 
 export default function HelperVerificationPage() {
   const [status, setStatus] = useState<{ isApproved: boolean; verification_status: string | null }>({ isApproved: false, verification_status: null })
@@ -32,13 +35,28 @@ export default function HelperVerificationPage() {
   }, [])
 
   const uploadDoc = async (userId: string, file: File, docType: 'id_front' | 'id_back' | 'selfie') => {
-    const path = `${userId}/${docType}-${Date.now()}-${file.name}`
-    const { error: upErr } = await supabase.storage.from('kyc').upload(path, file, { cacheControl: '3600', upsert: false })
+    // ✅ SECURE FILE VALIDATION
+    const validation = validateFile(file, ALLOWED_MIME_TYPES.VERIFICATION, FILE_SIZE_LIMITS.DOCUMENT)
+    if (!validation.valid) {
+      throw new Error(`File validation failed: ${validation.error}`)
+    }
+
+    // ✅ SAFE FILENAME FROM VALIDATION (prevents path traversal)
+    const path = `${userId}/${validation.sanitizedName}`
+    
+    const { error: upErr } = await supabase.storage.from('kyc').upload(path, file, { 
+      cacheControl: '3600', 
+      upsert: false 
+    })
     if (upErr) throw upErr
+    
     const { error: insErr } = await (supabase.from('verification_documents') as any).insert({
       user_id: userId,
       doc_type: docType,
       file_path: path,
+      file_size: file.size,
+      mime_type: file.type,
+      original_filename: file.name
     })
     if (insErr) throw insErr
   }
@@ -98,6 +116,20 @@ export default function HelperVerificationPage() {
 
                 {error && <p className="text-sm text-red-500">{error}</p>}
                 {success && <p className="text-sm text-green-600">{success}</p>}
+
+                <div className="rounded-md border border-blue-300 bg-blue-50 p-4 mb-4">
+                  <div className="flex gap-2">
+                    <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-blue-900">
+                      <p className="font-medium mb-1">Accepted file types:</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>Images: JPG, PNG, WebP (max 10MB)</li>
+                        <li>Documents: PDF (max 5MB)</li>
+                      </ul>
+                      <p className="mt-2 text-xs">Files are scanned for security. Malicious files will be rejected.</p>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">ID Front (required)</label>

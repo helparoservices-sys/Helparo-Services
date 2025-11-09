@@ -55,13 +55,15 @@ export default function CustomerBundlesPage() {
       getMyBundles()
     ])
 
-    if (bundlesRes.error) {
+    if ('error' in bundlesRes && bundlesRes.error) {
       setError(bundlesRes.error)
-    } else {
+    } else if ('bundles' in bundlesRes) {
       setBundles(bundlesRes.bundles || [])
     }
 
-    if (!myBundlesRes.error) {
+    if ('error' in myBundlesRes && myBundlesRes.error) {
+      setError(myBundlesRes.error)
+    } else if ('bundles' in myBundlesRes) {
       setMyBundles(myBundlesRes.bundles || [])
     }
 
@@ -74,7 +76,7 @@ export default function CustomerBundlesPage() {
 
     const result = await purchaseBundle(bundleId)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
     } else {
       // Reload data to show purchased bundle

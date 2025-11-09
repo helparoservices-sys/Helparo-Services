@@ -33,9 +33,9 @@ export default function CustomerSupportPage() {
 
     const result = await getMyTickets()
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
-    } else {
+    } else if ('tickets' in result) {
       setTickets(result.tickets || [])
     }
 

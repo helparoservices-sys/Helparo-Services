@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { releaseEscrow } from '@/app/actions/payments'
+import { PaymentSafetyInfo } from '@/components/trust-badges'
 
 interface RequestRow { id: string; title: string; description: string; status: string; created_at: string }
 interface ApplicationRow { id: string; helper_id: string; status: string; created_at: string }
@@ -121,9 +122,11 @@ export default function RequestDetailPage() {
                       if (updErr) { setError(updErr.message); return }
                       
                       // Auto-release escrow
-                      const { error: releaseErr } = await releaseEscrow(request.id)
-                      if (releaseErr) {
-                        setError(`Request completed but escrow release failed: ${releaseErr}`)
+                      const formData = new FormData()
+                      formData.append('requestId', request.id)
+                      const releaseResult = await releaseEscrow(formData)
+                      if ('error' in releaseResult && releaseResult.error) {
+                        setError(`Request completed but escrow release failed: ${releaseResult.error}`)
                       }
                       
                       router.refresh()

@@ -40,9 +40,9 @@ export default function CustomerWalletPage() {
 
       // Load wallet
       const walletRes = await getWalletBalance()
-      if (walletRes.error) {
+      if ('error' in walletRes && walletRes.error) {
         setError(walletRes.error)
-      } else {
+      } else if ('data' in walletRes) {
         setWallet(walletRes.data)
       }
 
@@ -82,14 +82,15 @@ export default function CustomerWalletPage() {
 
     // In production: integrate with Cashfree payment gateway here
     // For now, simulate successful payment
-    const result = await fundEscrow(
-      requestId,
-      amount,
-      `CF_ORDER_${Date.now()}`, // Mock Cashfree order ID
-      `CF_PAY_${Date.now()}` // Mock Cashfree payment ID
-    )
+    const formData = new FormData()
+    formData.append('service_request_id', requestId)
+    formData.append('amount', amount.toString())
+    formData.append('cashfree_order_id', `CF_ORDER_${Date.now()}`)
+    formData.append('cashfree_payment_id', `CF_PAY_${Date.now()}`)
+    
+    const result = await fundEscrow(formData)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
     } else {
       setFundingRequest(null)

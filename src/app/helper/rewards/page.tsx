@@ -153,9 +153,9 @@ export default function HelperRewardsPage() {
 
     const result = await getLoyaltyBalance(user.id)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
-    } else {
+    } else if ('balance' in result) {
       setBalance(result.balance || 0)
     }
 
@@ -177,7 +177,7 @@ export default function HelperRewardsPage() {
 
     const result = await redeemLoyaltyPoints(formData)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
     } else {
       // In a real implementation, you would also:

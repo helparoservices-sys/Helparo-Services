@@ -42,9 +42,9 @@ export default function HelperVideoCallHistoryPage() {
 
     const result = await getMyVideoCallSessions()
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
-    } else {
+    } else if ('sessions' in result) {
       setCalls(result.sessions || [])
     }
 

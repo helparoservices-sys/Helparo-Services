@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { PlatformTrustBadges } from '@/components/trust-badges'
 import { 
   CheckCircle, 
   Shield, 
@@ -225,6 +226,12 @@ export default function LandingPage() {
             All helpers are verified with government IDs, background checks, and skill certifications. 
             Track service progress in real-time with built-in SOS features for emergencies.
           </p>
+          
+          {/* Trust Badges */}
+          <div className="max-w-4xl mx-auto my-12">
+            <PlatformTrustBadges />
+          </div>
+
           <Button size="lg" variant="secondary" asChild>
             <Link href="/auth/signup">Get Started Today</Link>
           </Button>

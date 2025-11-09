@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner, SkeletonCard } from '@/components/ui/loading'
 import { getHelperTrustScore, getHelperBackgroundChecks } from '@/app/actions/trust-safety'
+import { SecurityDashboard } from '@/components/security-dashboard'
 
 interface TrustScoreData {
   score: number
@@ -59,13 +60,13 @@ export default function HelperTrustScorePage() {
       getHelperBackgroundChecks(user.id)
     ])
 
-    if (scoreRes.error) {
+    if ('error' in scoreRes && scoreRes.error) {
       setError(scoreRes.error)
-    } else {
+    } else if ('trustScore' in scoreRes) {
       setTrustScore(scoreRes.trustScore || null)
     }
 
-    if (!checksRes.error) {
+    if ('checks' in checksRes && !('error' in checksRes)) {
       setBackgroundChecks(checksRes.checks || [])
     }
 
@@ -338,6 +339,9 @@ export default function HelperTrustScorePage() {
             </ul>
           </CardContent>
         </Card>
+
+        {/* Security Dashboard */}
+        <SecurityDashboard />
       </div>
     </div>
   )

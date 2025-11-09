@@ -55,13 +55,15 @@ export default function CustomerHelperTrustPage() {
       getHelperBackgroundChecks(helperId)
     ])
 
-    if (scoreRes.error) {
+    if ('error' in scoreRes && scoreRes.error) {
       setError(scoreRes.error)
-    } else {
+    } else if ('trustScore' in scoreRes) {
       setTrustScore(scoreRes.trustScore || null)
     }
 
-    if (!checksRes.error) {
+    if ('error' in checksRes && checksRes.error) {
+      setError(checksRes.error)
+    } else if ('checks' in checksRes) {
       setBackgroundChecks(checksRes.checks || [])
     }
 

@@ -1,6 +1,12 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { requireAuth } from '@/lib/auth-middleware'
+import { UserRole } from '@/lib/constants'
+import { handleServerActionError } from '@/lib/errors'
+import { sanitizeText } from '@/lib/sanitize'
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 import { revalidatePath } from 'next/cache'
 
 /**
@@ -60,8 +66,8 @@ export async function createVideoCallSession(formData: FormData) {
     revalidatePath('/helper/video-calls')
     return { success: true, session }
   } catch (error: any) {
-    console.error('Create video call session error:', error)
-    return { error: error.message }
+    logger.error('Create video call session error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -120,8 +126,8 @@ export async function joinVideoCall(sessionId: string) {
       }
     }
   } catch (error: any) {
-    console.error('Join video call error:', error)
-    return { error: error.message }
+    logger.error('Join video call error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -172,8 +178,8 @@ export async function endVideoCall(sessionId: string) {
     revalidatePath('/helper/video-calls')
     return { success: true, session: data }
   } catch (error: any) {
-    console.error('End video call error:', error)
-    return { error: error.message }
+    logger.error('End video call error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -224,8 +230,8 @@ export async function getMyVideoCallSessions(status?: string) {
 
     return { success: true, sessions: data }
   } catch (error: any) {
-    console.error('Get my video call sessions error:', error)
-    return { error: error.message }
+    logger.error('Get my video call sessions error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -268,8 +274,8 @@ export async function addCallParticipant(sessionId: string, userId: string, role
 
     return { success: true }
   } catch (error: any) {
-    console.error('Add call participant error:', error)
-    return { error: error.message }
+    logger.error('Add call participant error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -291,8 +297,8 @@ export async function updateParticipantStatus(sessionId: string, userId: string,
 
     return { success: true }
   } catch (error: any) {
-    console.error('Update participant status error:', error)
-    return { error: error.message }
+    logger.error('Update participant status error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -310,8 +316,8 @@ export async function recordParticipantLeft(sessionId: string, userId: string) {
 
     return { success: true }
   } catch (error: any) {
-    console.error('Record participant left error:', error)
-    return { error: error.message }
+    logger.error('Record participant left error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -356,8 +362,8 @@ export async function startCallRecording(sessionId: string) {
 
     return { success: true, recording: data }
   } catch (error: any) {
-    console.error('Start call recording error:', error)
-    return { error: error.message }
+    logger.error('Start call recording error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -381,8 +387,8 @@ export async function stopCallRecording(recordingId: string, recordingUrl: strin
 
     return { success: true, recording: data }
   } catch (error: any) {
-    console.error('Stop call recording error:', error)
-    return { error: error.message }
+    logger.error('Stop call recording error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -400,8 +406,8 @@ export async function getSessionRecordings(sessionId: string) {
 
     return { success: true, recordings: data }
   } catch (error: any) {
-    console.error('Get session recordings error:', error)
-    return { error: error.message }
+    logger.error('Get session recordings error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -449,8 +455,8 @@ export async function createCallAnalytics(sessionId: string) {
 
     return { success: true, analytics: data }
   } catch (error: any) {
-    console.error('Create call analytics error:', error)
-    return { error: error.message }
+    logger.error('Create call analytics error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -475,8 +481,8 @@ export async function updateCallAnalytics(sessionId: string, metrics: any) {
 
     return { success: true, analytics: data }
   } catch (error: any) {
-    console.error('Update call analytics error:', error)
-    return { error: error.message }
+    logger.error('Update call analytics error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -494,8 +500,8 @@ export async function getCallAnalytics(sessionId: string) {
 
     return { success: true, analytics: data }
   } catch (error: any) {
-    console.error('Get call analytics error:', error)
-    return { error: error.message }
+    logger.error('Get call analytics error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -554,8 +560,8 @@ export async function getVideoCallStatistics(startDate?: string, endDate?: strin
       }
     }
   } catch (error: any) {
-    console.error('Get video call statistics error:', error)
-    return { error: error.message }
+    logger.error('Get video call statistics error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -580,35 +586,33 @@ async function generateAgoraToken(channelName: string, userId: string): Promise<
 // ============================================
 
 export async function scheduleVideoCall(formData: FormData) {
-  const supabase = await createClient()
-  
-  const serviceRequestId = formData.get('service_request_id') as string
-  const scheduledFor = formData.get('scheduled_for') as string
-  const participantIds = formData.get('participant_ids') as string
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth()
+    await rateLimit('schedule-video-call', user.id, RATE_LIMITS.API_MODERATE)
+
+    const participantIds = formData.get('participant_ids') as string
 
     // Create session
     const result = await createVideoCallSession(formData)
     
-    if (!result.success || !result.session) {
+    if ('error' in result) {
       return result
     }
 
     // Add other participants
-    if (participantIds) {
+    if (participantIds && result.session) {
       const ids = participantIds.split(',')
+      const supabase = await createClient()
       for (const participantId of ids) {
         await addCallParticipant(result.session.id, participantId.trim(), 'participant')
       }
     }
 
+    logger.info('Video call scheduled', { userId: user.id, sessionId: result.session?.id })
     return { success: true, session: result.session }
   } catch (error: any) {
-    console.error('Schedule video call error:', error)
-    return { error: error.message }
+    logger.error('Schedule video call error', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -637,7 +641,8 @@ export async function cancelScheduledCall(sessionId: string, reason: string) {
     revalidatePath('/helper/video-calls')
     return { success: true, session: data }
   } catch (error: any) {
-    console.error('Cancel scheduled call error:', error)
-    return { error: error.message }
+    logger.error('Cancel scheduled call error:', { error })
+    return handleServerActionError(error)
   }
 }
+

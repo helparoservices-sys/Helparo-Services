@@ -2,6 +2,12 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { requireAuth } from '@/lib/auth-middleware'
+import { handleServerActionError } from '@/lib/errors'
+import { sanitizeText, sanitizeHTML } from '@/lib/sanitize'
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit'
+import { UserRole } from '@/lib/constants'
+import { logger } from '@/lib/logger'
 
 /**
  * Server Actions for Gamification (Migration 022)
@@ -13,29 +19,22 @@ import { revalidatePath } from 'next/cache'
 // ============================================
 
 export async function createBadgeDefinition(formData: FormData) {
-  const supabase = await createClient()
-  
-  const name = formData.get('name') as string
-  const description = formData.get('description') as string
-  const iconUrl = formData.get('icon_url') as string
-  const badgeType = formData.get('badge_type') as string
-  const requirement = parseInt(formData.get('requirement') as string)
-  const points = parseInt(formData.get('points') as string)
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth(UserRole.ADMIN)
+    await rateLimit('create-badge', user.id, RATE_LIMITS.ADMIN_APPROVE)
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    const name = sanitizeText(formData.get('name') as string)
+    const description = sanitizeText(formData.get('description') as string)
+    const iconUrl = sanitizeText(formData.get('icon_url') as string)
+    const badgeType = sanitizeText(formData.get('badge_type') as string)
+    const requirement = parseInt(formData.get('requirement') as string)
+    const points = parseInt(formData.get('points') as string)
 
-    if (profile?.role !== 'admin') {
-      return { error: 'Unauthorized' }
+    if (!name || !description || isNaN(requirement) || isNaN(points)) {
+      return { error: 'Invalid input data' }
     }
+
+    const supabase = await createClient()
 
     const { data, error } = await supabase
       .from('badge_definitions')
@@ -53,17 +52,19 @@ export async function createBadgeDefinition(formData: FormData) {
     if (error) throw error
 
     revalidatePath('/admin/gamification')
+    logger.info('Badge definition created', { adminId: user.id, badgeName: name })
     return { success: true, badge: data }
   } catch (error: any) {
-    console.error('Create badge definition error:', error)
-    return { error: error.message }
+    logger.error('Create badge definition error', { error })
+    return handleServerActionError(error)
   }
 }
 
 export async function awardBadgeToUser(userId: string, badgeId: string) {
-  const supabase = await createClient()
-
   try {
+    // Internal function - auth check at call site
+    const supabase = await createClient()
+
     // Check if user already has this badge
     const { data: existing } = await supabase
       .from('user_badges')
@@ -106,10 +107,11 @@ export async function awardBadgeToUser(userId: string, badgeId: string) {
 
     revalidatePath(`/customer/profile`)
     revalidatePath(`/helper/profile`)
+    logger.info('Badge awarded to user', { userId, badgeId, badgeName: badge.name })
     return { success: true, userBadge }
   } catch (error: any) {
-    console.error('Award badge error:', error)
-    return { error: error.message }
+    logger.error('Award badge error', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -117,6 +119,8 @@ export async function getUserBadges(userId: string) {
   const supabase = await createClient()
 
   try {
+    await rateLimit('get-user-badges', userId, RATE_LIMITS.API_MODERATE)
+
     const { data, error } = await supabase
       .from('user_badges')
       .select(`
@@ -136,8 +140,8 @@ export async function getUserBadges(userId: string) {
 
     return { success: true, badges: data }
   } catch (error: any) {
-    console.error('Get user badges error:', error)
-    return { error: error.message }
+    logger.error('Get user badges error', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -146,29 +150,22 @@ export async function getUserBadges(userId: string) {
 // ============================================
 
 export async function createAchievement(formData: FormData) {
-  const supabase = await createClient()
-  
-  const title = formData.get('title') as string
-  const description = formData.get('description') as string
-  const iconUrl = formData.get('icon_url') as string
-  const category = formData.get('category') as string
-  const targetValue = parseInt(formData.get('target_value') as string)
-  const points = parseInt(formData.get('points') as string)
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth(UserRole.ADMIN)
+    await rateLimit('create-achievement', user.id, RATE_LIMITS.ADMIN_APPROVE)
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    const title = sanitizeText(formData.get('title') as string)
+    const description = sanitizeText(formData.get('description') as string)
+    const iconUrl = sanitizeText(formData.get('icon_url') as string)
+    const category = sanitizeText(formData.get('category') as string)
+    const targetValue = parseInt(formData.get('target_value') as string)
+    const points = parseInt(formData.get('points') as string)
 
-    if (profile?.role !== 'admin') {
-      return { error: 'Unauthorized' }
+    if (!title || !description || isNaN(targetValue) || isNaN(points)) {
+      return { error: 'Invalid input data' }
     }
+
+    const supabase = await createClient()
 
     const { data, error } = await supabase
       .from('achievements')
@@ -186,17 +183,19 @@ export async function createAchievement(formData: FormData) {
     if (error) throw error
 
     revalidatePath('/admin/gamification')
+    logger.info('Achievement created', { adminId: user.id, achievementTitle: title })
     return { success: true, achievement: data }
   } catch (error: any) {
-    console.error('Create achievement error:', error)
-    return { error: error.message }
+    logger.error('Create achievement error', { error })
+    return handleServerActionError(error)
   }
 }
 
 export async function updateUserAchievementProgress(userId: string, achievementId: string, currentValue: number) {
-  const supabase = await createClient()
-
   try {
+    // Internal function - typically called by system
+    const supabase = await createClient()
+
     // Get achievement details
     const { data: achievement } = await supabase
       .from('achievements')
@@ -243,6 +242,7 @@ export async function updateUserAchievementProgress(userId: string, achievementI
       // Award points if completed
       if (isCompleted && !existing.is_completed) {
         await addLoyaltyPoints(userId, achievement.points_reward, 'achievement_completed', `Completed ${achievement.title}`)
+        logger.info('Achievement completed', { userId, achievementId, title: achievement.title })
       }
 
       revalidatePath(`/customer/achievements`)
@@ -268,6 +268,7 @@ export async function updateUserAchievementProgress(userId: string, achievementI
       // Award points if completed
       if (isCompleted) {
         await addLoyaltyPoints(userId, achievement.points_reward, 'achievement_completed', `Completed ${achievement.title}`)
+        logger.info('Achievement completed', { userId, achievementId, title: achievement.title })
       }
 
       revalidatePath(`/customer/achievements`)
@@ -275,8 +276,8 @@ export async function updateUserAchievementProgress(userId: string, achievementI
       return { success: true, userAchievement: newRecord }
     }
   } catch (error: any) {
-    console.error('Update user achievement progress error:', error)
-    return { error: error.message }
+    logger.error('Update user achievement progress error', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -284,6 +285,8 @@ export async function getUserAchievements(userId: string) {
   const supabase = await createClient()
 
   try {
+    await rateLimit('get-user-achievements', userId, RATE_LIMITS.API_MODERATE)
+
     const { data, error } = await supabase
       .from('user_achievements')
       .select(`
@@ -304,8 +307,8 @@ export async function getUserAchievements(userId: string) {
 
     return { success: true, achievements: data }
   } catch (error: any) {
-    console.error('Get user achievements error:', error)
-    return { error: error.message }
+    logger.error('Get user achievements error', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -314,9 +317,13 @@ export async function getUserAchievements(userId: string) {
 // ============================================
 
 export async function addLoyaltyPoints(userId: string, points: number, transactionType: string, description: string) {
-  const supabase = await createClient()
-
   try {
+    // Internal function - typically called by system
+    const supabase = await createClient()
+
+    // Sanitize description
+    const safeDescription = sanitizeText(description)
+
     // Get or create loyalty account
     let { data: account } = await supabase
       .from('loyalty_points')
@@ -358,7 +365,7 @@ export async function addLoyaltyPoints(userId: string, points: number, transacti
         user_id: userId,
         points_change: points,
         transaction_type: transactionType,
-        description,
+        description: safeDescription,
         balance_after: account.current_balance + points
       })
       .select()
@@ -368,23 +375,28 @@ export async function addLoyaltyPoints(userId: string, points: number, transacti
 
     revalidatePath(`/customer/loyalty`)
     revalidatePath(`/helper/loyalty`)
+    logger.info('Loyalty points added', { userId, points, type: transactionType })
     return { success: true, transaction }
   } catch (error: any) {
-    console.error('Add loyalty points error:', error)
-    return { error: error.message }
+    logger.error('Add loyalty points error', { error })
+    return handleServerActionError(error)
   }
 }
 
 export async function redeemLoyaltyPoints(formData: FormData) {
-  const supabase = await createClient()
-  
-  const points = parseInt(formData.get('points') as string)
-  const redemptionType = formData.get('redemption_type') as string
-  const description = formData.get('description') as string
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth()
+    await rateLimit('redeem-loyalty-points', user.id, RATE_LIMITS.PAYMENT_ACTION)
+
+    const points = parseInt(formData.get('points') as string)
+    const redemptionType = sanitizeText(formData.get('redemption_type') as string)
+    const description = sanitizeText(formData.get('description') as string)
+
+    if (isNaN(points) || points <= 0) {
+      return { error: 'Invalid points amount' }
+    }
+
+    const supabase = await createClient()
 
     // Get loyalty account
     const { data: account } = await supabase
@@ -425,10 +437,11 @@ export async function redeemLoyaltyPoints(formData: FormData) {
 
     revalidatePath(`/customer/loyalty`)
     revalidatePath(`/helper/loyalty`)
+    logger.info('Loyalty points redeemed', { userId: user.id, points, type: redemptionType })
     return { success: true, transaction }
   } catch (error: any) {
-    console.error('Redeem loyalty points error:', error)
-    return { error: error.message }
+    logger.error('Redeem loyalty points error', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -436,6 +449,8 @@ export async function getLoyaltyBalance(userId: string) {
   const supabase = await createClient()
 
   try {
+    await rateLimit('get-loyalty-balance', userId, RATE_LIMITS.API_MODERATE)
+
     const { data, error } = await supabase
       .from('loyalty_points')
       .select('*')
@@ -446,8 +461,8 @@ export async function getLoyaltyBalance(userId: string) {
 
     return { success: true, balance: data }
   } catch (error: any) {
-    console.error('Get loyalty balance error:', error)
-    return { error: error.message }
+    logger.error('Get loyalty balance error', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -455,6 +470,8 @@ export async function getLoyaltyTransactions(userId: string, limit = 50) {
   const supabase = await createClient()
 
   try {
+    await rateLimit('get-loyalty-transactions', userId, RATE_LIMITS.API_MODERATE)
+
     const { data, error } = await supabase
       .from('loyalty_transactions')
       .select('*')
@@ -466,8 +483,8 @@ export async function getLoyaltyTransactions(userId: string, limit = 50) {
 
     return { success: true, transactions: data }
   } catch (error: any) {
-    console.error('Get loyalty transactions error:', error)
-    return { error: error.message }
+    logger.error('Get loyalty transactions error', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -476,9 +493,10 @@ export async function getLoyaltyTransactions(userId: string, limit = 50) {
 // ============================================
 
 export async function checkAndAwardJobMilestones(helperId: string) {
-  const supabase = await createClient()
-
   try {
+    // Internal function - typically called by system after job completion
+    const supabase = await createClient()
+
     // Get completed jobs count
     const { count: completedJobs } = await supabase
       .from('service_requests')
@@ -510,9 +528,10 @@ export async function checkAndAwardJobMilestones(helperId: string) {
       }
     }
 
+    logger.info('Job milestones checked', { helperId, completedJobs })
     return { success: true }
   } catch (error: any) {
-    console.error('Check and award job milestones error:', error)
-    return { error: error.message }
+    logger.error('Check and award job milestones error', { error })
+    return handleServerActionError(error)
   }
 }

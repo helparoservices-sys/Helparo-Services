@@ -57,13 +57,15 @@ export default function CustomerCampaignsPage() {
       getMyCampaignRedemptions()
     ])
 
-    if (campaignsRes.error) {
+    if ('error' in campaignsRes && campaignsRes.error) {
       setError(campaignsRes.error)
-    } else {
+    } else if ('campaigns' in campaignsRes) {
       setCampaigns(campaignsRes.campaigns || [])
     }
 
-    if (!redemptionsRes.error) {
+    if ('error' in redemptionsRes && redemptionsRes.error) {
+      setError(redemptionsRes.error)
+    } else if ('redemptions' in redemptionsRes) {
       setRedemptions(redemptionsRes.redemptions || [])
     }
 

@@ -2,6 +2,12 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { requireAuth } from '@/lib/auth-middleware'
+import { handleServerActionError } from '@/lib/errors'
+import { sanitizeText, sanitizeHTML } from '@/lib/sanitize'
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit'
+import { UserRole } from '@/lib/constants'
+import { logger } from '@/lib/logger'
 
 /**
  * Server Actions for Support Tickets (Migration 025)
@@ -13,17 +19,21 @@ import { revalidatePath } from 'next/cache'
 // ============================================
 
 export async function createSupportTicket(formData: FormData) {
-  const supabase = await createClient()
-  
-  const subject = formData.get('subject') as string
-  const description = formData.get('description') as string
-  const category = formData.get('category') as string
-  const priority = formData.get('priority') as string
-  const attachments = formData.get('attachments') as string
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth()
+    await rateLimit('create-support-ticket', user.id, RATE_LIMITS.API_MODERATE)
+
+    const subject = sanitizeText(formData.get('subject') as string)
+    const description = sanitizeHTML(formData.get('description') as string)
+    const category = sanitizeText(formData.get('category') as string)
+    const priority = sanitizeText(formData.get('priority') as string)
+    const attachments = sanitizeText(formData.get('attachments') as string)
+
+    if (!subject || !description || !category || !priority) {
+      return { error: 'Invalid input data' }
+    }
+
+    const supabase = await createClient()
 
     // Get user profile for ticket number generation
     const { count: existingCount } = await supabase
@@ -74,19 +84,20 @@ export async function createSupportTicket(formData: FormData) {
 
     revalidatePath('/customer/support')
     revalidatePath('/admin/support')
+    logger.info('Support ticket created', { userId: user.id, ticketId: ticket.id, ticketNumber })
     return { success: true, ticket }
   } catch (error: any) {
-    console.error('Create support ticket error:', error)
-    return { error: error.message }
+    logger.error('Create support ticket error', { error })
+    return handleServerActionError(error)
   }
 }
 
 export async function updateTicketStatus(ticketId: string, status: string, notes?: string) {
-  const supabase = await createClient()
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth()
+    await rateLimit('update-ticket-status', user.id, RATE_LIMITS.API_MODERATE)
+
+    const supabase = await createClient()
 
     const updateData: any = { status }
 
@@ -114,34 +125,25 @@ export async function updateTicketStatus(ticketId: string, status: string, notes
     if (error) throw error
 
     // Log activity
-    await logTicketActivity(ticketId, user.id, 'status_changed', `Status changed to ${status}${notes ? `: ${notes}` : ''}`)
+    const safeNotes = notes ? sanitizeText(notes) : ''
+    await logTicketActivity(ticketId, user.id, 'status_changed', `Status changed to ${status}${safeNotes ? `: ${safeNotes}` : ''}`)
 
     revalidatePath('/customer/support')
     revalidatePath('/admin/support')
+    logger.info('Ticket status updated', { userId: user.id, ticketId, status })
     return { success: true, ticket }
   } catch (error: any) {
-    console.error('Update ticket status error:', error)
-    return { error: error.message }
+    logger.error('Update ticket status error', { error })
+    return handleServerActionError(error)
   }
 }
 
 export async function assignTicketToAgent(ticketId: string, agentId: string) {
-  const supabase = await createClient()
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth(UserRole.ADMIN)
+    await rateLimit('assign-ticket', user.id, RATE_LIMITS.ADMIN_APPROVE)
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return { error: 'Unauthorized' }
-    }
+    const supabase = await createClient()
 
     const { data: ticket, error } = await supabase
       .from('support_tickets')
@@ -166,19 +168,20 @@ export async function assignTicketToAgent(ticketId: string, agentId: string) {
     await logTicketActivity(ticketId, user.id, 'assigned', `Assigned to ${agent?.full_name || 'agent'}`)
 
     revalidatePath('/admin/support')
+    logger.info('Ticket assigned to agent', { adminId: user.id, ticketId, agentId })
     return { success: true, ticket }
   } catch (error: any) {
-    console.error('Assign ticket to agent error:', error)
-    return { error: error.message }
+    logger.error('Assign ticket to agent error', { error })
+    return handleServerActionError(error)
   }
 }
 
 export async function getMyTickets(status?: string) {
-  const supabase = await createClient()
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth()
+    await rateLimit('get-my-tickets', user.id, RATE_LIMITS.API_MODERATE)
+
+    const supabase = await createClient()
 
     let query = supabase
       .from('support_tickets')
@@ -202,28 +205,17 @@ export async function getMyTickets(status?: string) {
 
     return { success: true, tickets: data }
   } catch (error: any) {
-    console.error('Get my tickets error:', error)
-    return { error: error.message }
+    logger.error('Get my tickets error', { error })
+    return handleServerActionError(error)
   }
 }
 
 export async function getAllTickets(filters?: { status?: string, priority?: string, category?: string, assignedTo?: string }) {
-  const supabase = await createClient()
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth(UserRole.ADMIN)
+    await rateLimit('get-all-tickets', user.id, RATE_LIMITS.ADMIN_APPROVE)
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return { error: 'Unauthorized' }
-    }
+    const supabase = await createClient()
 
     let query = supabase
       .from('support_tickets')
@@ -263,15 +255,17 @@ export async function getAllTickets(filters?: { status?: string, priority?: stri
 
     return { success: true, tickets: data }
   } catch (error: any) {
-    console.error('Get all tickets error:', error)
-    return { error: error.message }
+    logger.error('Get all tickets error', { error })
+    return handleServerActionError(error)
   }
 }
 
 export async function getTicketDetails(ticketId: string) {
-  const supabase = await createClient()
-
   try {
+    await rateLimit('get-ticket-details', ticketId, RATE_LIMITS.API_MODERATE)
+
+    const supabase = await createClient()
+
     const { data, error } = await supabase
       .from('support_tickets')
       .select(`
@@ -303,8 +297,8 @@ export async function getTicketDetails(ticketId: string) {
 
     return { success: true, ticket: data }
   } catch (error: any) {
-    console.error('Get ticket details error:', error)
-    return { error: error.message }
+    logger.error('Get ticket details error', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -313,15 +307,19 @@ export async function getTicketDetails(ticketId: string) {
 // ============================================
 
 export async function sendTicketMessage(formData: FormData) {
-  const supabase = await createClient()
-  
-  const ticketId = formData.get('ticket_id') as string
-  const message = formData.get('message') as string
-  const attachments = formData.get('attachments') as string
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth()
+    await rateLimit('send-ticket-message', user.id, RATE_LIMITS.SEND_MESSAGE)
+
+    const ticketId = sanitizeText(formData.get('ticket_id') as string)
+    const message = sanitizeHTML(formData.get('message') as string)
+    const attachments = sanitizeText(formData.get('attachments') as string)
+
+    if (!ticketId || !message) {
+      return { error: 'Invalid input data' }
+    }
+
+    const supabase = await createClient()
 
     // Check if user is customer or assigned agent
     const { data: ticket } = await supabase
@@ -371,10 +369,11 @@ export async function sendTicketMessage(formData: FormData) {
 
     revalidatePath('/customer/support')
     revalidatePath('/admin/support')
+    logger.info('Ticket message sent', { userId: user.id, ticketId, isInternal })
     return { success: true, message: ticketMessage }
   } catch (error: any) {
-    console.error('Send ticket message error:', error)
-    return { error: error.message }
+    logger.error('Send ticket message error', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -409,8 +408,8 @@ export async function getTicketMessages(ticketId: string, includeInternal = fals
 
     return { success: true, messages: data }
   } catch (error: any) {
-    console.error('Get ticket messages error:', error)
-    return { error: error.message }
+    logger.error('Get ticket messages error:', error)
+    return handleServerActionError(error)
   }
 }
 
@@ -419,27 +418,20 @@ export async function getTicketMessages(ticketId: string, includeInternal = fals
 // ============================================
 
 export async function createSLAConfiguration(formData: FormData) {
-  const supabase = await createClient()
-  
-  const category = formData.get('category') as string
-  const priority = formData.get('priority') as string
-  const responseTime = parseInt(formData.get('response_time_hours') as string)
-  const resolutionTime = parseInt(formData.get('resolution_time_hours') as string)
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth(UserRole.ADMIN)
+    await rateLimit('create-sla-config', user.id, RATE_LIMITS.ADMIN_APPROVE)
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    const category = sanitizeText(formData.get('category') as string)
+    const priority = sanitizeText(formData.get('priority') as string)
+    const responseTime = parseInt(formData.get('response_time_hours') as string)
+    const resolutionTime = parseInt(formData.get('resolution_time_hours') as string)
 
-    if (profile?.role !== 'admin') {
-      return { error: 'Unauthorized' }
+    if (!category || !priority || isNaN(responseTime) || isNaN(resolutionTime)) {
+      return { error: 'Invalid input data' }
     }
+
+    const supabase = await createClient()
 
     const { data, error } = await supabase
       .from('sla_configurations')
@@ -456,34 +448,28 @@ export async function createSLAConfiguration(formData: FormData) {
     if (error) throw error
 
     revalidatePath('/admin/support/sla')
+    logger.info('SLA configuration created', { adminId: user.id, category, priority })
     return { success: true, slaConfig: data }
   } catch (error: any) {
-    console.error('Create SLA configuration error:', error)
-    return { error: error.message }
+    logger.error('Create SLA configuration error:', error)
+    return handleServerActionError(error)
   }
 }
 
 export async function updateSLAConfiguration(configId: string, formData: FormData) {
-  const supabase = await createClient()
-  
-  const responseTime = parseInt(formData.get('response_time_hours') as string)
-  const resolutionTime = parseInt(formData.get('resolution_time_hours') as string)
-  const isActive = formData.get('is_active') === 'true'
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth(UserRole.ADMIN)
+    await rateLimit('update-sla-config', user.id, RATE_LIMITS.ADMIN_APPROVE)
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    const responseTime = parseInt(formData.get('response_time_hours') as string)
+    const resolutionTime = parseInt(formData.get('resolution_time_hours') as string)
+    const isActive = formData.get('is_active') === 'true'
 
-    if (profile?.role !== 'admin') {
-      return { error: 'Unauthorized' }
+    if (isNaN(responseTime) || isNaN(resolutionTime)) {
+      return { error: 'Invalid input data' }
     }
+
+    const supabase = await createClient()
 
     const { data, error } = await supabase
       .from('sla_configurations')
@@ -499,10 +485,11 @@ export async function updateSLAConfiguration(configId: string, formData: FormDat
     if (error) throw error
 
     revalidatePath('/admin/support/sla')
+    logger.info('SLA configuration updated', { adminId: user.id, configId })
     return { success: true, slaConfig: data }
   } catch (error: any) {
-    console.error('Update SLA configuration error:', error)
-    return { error: error.message }
+    logger.error('Update SLA configuration error:', error)
+    return handleServerActionError(error)
   }
 }
 
@@ -520,8 +507,8 @@ export async function getSLAConfigurations() {
 
     return { success: true, configs: data }
   } catch (error: any) {
-    console.error('Get SLA configurations error:', error)
-    return { error: error.message }
+    logger.error('Get SLA configurations error:', error)
+    return handleServerActionError(error)
   }
 }
 
@@ -571,8 +558,8 @@ export async function getTicketSLAStatus(ticketId: string) {
       }
     }
   } catch (error: any) {
-    console.error('Get ticket SLA status error:', error)
-    return { error: error.message }
+    logger.error('Get ticket SLA status error:', error)
+    return handleServerActionError(error)
   }
 }
 
@@ -597,8 +584,8 @@ export async function logTicketActivity(ticketId: string, userId: string, activi
 
     return { success: true }
   } catch (error: any) {
-    console.error('Log ticket activity error:', error)
-    return { error: error.message }
+    logger.error('Log ticket activity error:', error)
+    return handleServerActionError(error)
   }
 }
 
@@ -622,8 +609,8 @@ export async function getTicketActivityLog(ticketId: string) {
 
     return { success: true, activities: data }
   } catch (error: any) {
-    console.error('Get ticket activity log error:', error)
-    return { error: error.message }
+    logger.error('Get ticket activity log error:', error)
+    return handleServerActionError(error)
   }
 }
 
@@ -711,7 +698,7 @@ export async function getTicketAnalytics(startDate?: string, endDate?: string) {
       }
     }
   } catch (error: any) {
-    console.error('Get ticket analytics error:', error)
-    return { error: error.message }
+    logger.error('Get ticket analytics error:', error)
+    return handleServerActionError(error)
   }
 }

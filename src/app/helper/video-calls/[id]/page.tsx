@@ -46,9 +46,9 @@ export default function HelperVideoCallInterfacePage() {
     setLoading(true)
     const result = await joinVideoCall(callId)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
-    } else if (result.session) {
+    } else if ('session' in result && result.session) {
       setCallDetails(result.session)
       // In production, initialize Agora SDK here with the token
       initializeVideoCall(result.session)
@@ -72,7 +72,7 @@ export default function HelperVideoCallInterfacePage() {
   const handleEndCall = async () => {
     const result = await endVideoCall(callId)
     
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
     } else {
       router.push('/helper/video-calls/history')

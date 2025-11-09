@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { LoadingSpinner, SkeletonCard } from '@/components/ui/loading'
 import { getActiveServiceBundles, createServiceBundle } from '@/app/actions/bundles'
+import { isErrorResult } from '@/lib/errors'
 
 interface ServiceBundle {
   id: string
@@ -46,9 +47,9 @@ export default function AdminBundlesPage() {
 
     const result = await getActiveServiceBundles()
 
-    if (result.error) {
+    if (isErrorResult(result)) {
       setError(result.error)
-    } else {
+    } else if ('bundles' in result) {
       setBundles(result.bundles || [])
     }
 
@@ -99,7 +100,7 @@ export default function AdminBundlesPage() {
 
     const result = await createServiceBundle(formData)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
     } else {
       handleCancelEdit()

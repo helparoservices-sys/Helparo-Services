@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PaymentProtectionBadge, MoneyBackGuarantee } from '@/components/trust-badges'
+import { createServiceRequest, getServiceCategories } from '@/app/actions/service-requests'
+import { AlertCircle, CheckCircle2 } from 'lucide-react'
 
 interface Category { id: string; name: string }
 
@@ -28,13 +30,12 @@ export default function NewRequestPage() {
   useEffect(() => {
     const load = async () => {
       setLoading(true)
-      const { data, error: catErr } = await supabase
-        .from('service_categories')
-        .select('id, name')
-        .eq('is_active', true)
-        .order('name')
-      if (catErr) setError('Failed to load categories')
-      else setCategories(data || [])
+      const result = await getServiceCategories()
+      if ('error' in result && result.error) {
+        setError('Failed to load categories')
+      } else if (result.data) {
+        setCategories(result.data)
+      }
       setLoading(false)
     }
     load()
@@ -45,25 +46,37 @@ export default function NewRequestPage() {
     setError('')
     setSaving(true)
     setSuccess('')
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setError('Not authenticated'); setSaving(false); return }
+    
     try {
-      if (!form.category_id || !form.title || !form.description) throw new Error('Missing required fields')
-      const payload = {
-        customer_id: user.id,
+      if (!form.category_id || !form.title || !form.description) {
+        throw new Error('Missing required fields')
+      }
+
+      // Call secure server action (with validation + sanitization)
+      const result = await createServiceRequest({
         category_id: form.category_id,
         title: form.title,
         description: form.description,
-        city: form.city || null,
-        country: form.country || null,
-        budget_min: form.budget_min ? Number(form.budget_min) : null,
-        budget_max: form.budget_max ? Number(form.budget_max) : null,
-        status: 'open' as const,
+        city: form.city || undefined,
+        country: form.country || undefined,
+        budget_min: form.budget_min ? Number(form.budget_min) : undefined,
+        budget_max: form.budget_max ? Number(form.budget_max) : undefined,
+      })
+
+      if ('error' in result && result.error) {
+        throw new Error(result.error)
       }
-      const { error: insErr } = await (supabase.from('service_requests') as any).insert(payload)
-      if (insErr) throw insErr
-      setSuccess('Request created successfully.')
-      setForm({ category_id: '', title: '', description: '', city: '', country: '', budget_min: '', budget_max: '' })
+
+      setSuccess('✅ Request created successfully! Matching helpers will be notified.')
+      setForm({ 
+        category_id: '', 
+        title: '', 
+        description: '', 
+        city: '', 
+        country: '', 
+        budget_min: '', 
+        budget_max: '' 
+      })
     } catch (e: any) {
       setError(e.message || 'Failed to create request')
     } finally {
@@ -77,10 +90,30 @@ export default function NewRequestPage() {
         <Card>
           <CardHeader>
             <CardTitle>Create a Service Request</CardTitle>
+            <p className="text-sm text-gray-600 mt-2">
+              ✅ All inputs are validated and sanitized for your security
+            </p>
           </CardHeader>
           <CardContent>
-            {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
-            {success && <p className="text-sm text-green-600 mb-2">{success}</p>}
+            {error && (
+              <div className="mb-4 rounded-md border border-red-300 bg-red-50 p-3 flex gap-2">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
+            {success && (
+              <div className="mb-4 rounded-md border border-green-300 bg-green-50 p-4">
+                <div className="flex gap-2 mb-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <p className="text-sm font-medium text-green-900">{success}</p>
+                </div>
+                <div className="ml-7 space-y-1 text-xs text-green-700">
+                  <p>✓ Smart matching algorithm finding best helpers</p>
+                  <p>✓ You'll receive notifications when helpers apply</p>
+                  <p>✓ Your payment is protected until service completion</p>
+                </div>
+              </div>
+            )}
             {loading ? (
               <p className="text-sm text-muted-foreground">Loading...</p>
             ) : (
@@ -135,6 +168,17 @@ export default function NewRequestPage() {
                 <Button type="submit" disabled={saving}>{saving ? 'Creating...' : 'Create Request'}</Button>
               </form>
             )}
+
+            {/* Trust Badges */}
+            <div className="mt-6 pt-6 border-t space-y-4">
+              <PaymentProtectionBadge />
+              <MoneyBackGuarantee />
+              <div className="rounded-md bg-blue-50 border border-blue-200 p-3">
+                <p className="text-sm text-blue-900">
+                  <strong>🔒 Your data is secure:</strong> All inputs are validated, sanitized, and rate-limited to prevent abuse.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

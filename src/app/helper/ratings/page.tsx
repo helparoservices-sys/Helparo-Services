@@ -56,13 +56,15 @@ export default function HelperRatingsPage() {
       getHelperReviews(user.id, 20)
     ])
 
-    if (summaryRes.error) {
+    if ('error' in summaryRes && summaryRes.error) {
       setError(summaryRes.error)
-    } else {
+    } else if ('summary' in summaryRes) {
       setSummary(summaryRes.summary)
     }
 
-    if (!reviewsRes.error) {
+    if ('error' in reviewsRes && reviewsRes.error) {
+      setError(reviewsRes.error)
+      } else if ('reviews' in reviewsRes) {
       setReviews(reviewsRes.reviews || [])
     }
 

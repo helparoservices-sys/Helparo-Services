@@ -63,13 +63,13 @@ export default function TicketDetailsPage() {
 
     const result = await getTicketDetails(ticketId)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
-    } else {
+    } else if ('ticket' in result) {
       setTicket(result.ticket)
       // Load messages separately
       const messagesResult = await getTicketMessages(ticketId)
-      if (!messagesResult.error) {
+      if ('messages' in messagesResult) {
         setMessages(messagesResult.messages || [])
       }
     }
@@ -79,7 +79,7 @@ export default function TicketDetailsPage() {
 
   const loadMessages = async () => {
     const result = await getTicketMessages(ticketId)
-    if (!result.error) {
+    if ('messages' in result) {
       setMessages(result.messages || [])
     }
   }
@@ -99,7 +99,7 @@ export default function TicketDetailsPage() {
 
     const result = await sendTicketMessage(formData)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
     } else {
       setNewMessage('')

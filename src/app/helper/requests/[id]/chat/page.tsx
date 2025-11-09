@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { sendChatMessage } from '@/app/actions/messages'
+import { AlertCircle } from 'lucide-react'
 
 interface Msg { id: string; sender_id: string; content: string; created_at: string }
 
@@ -40,14 +42,21 @@ export default function HelperChatPage() {
   }, [requestId])
 
   const send = async () => {
+    if (!text.trim()) return
+    
     setError('')
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const payload = { request_id: requestId as string, sender_id: user.id, content: text.trim() }
-    if (!payload.content) return
-    const { error } = await (supabase.from('messages') as any).insert(payload)
-    if (error) setError(error.message)
-    else setText('')
+    
+    // Call secure server action (with validation + sanitization)
+    const result = await sendChatMessage({
+      request_id: requestId as string,
+      content: text.trim(),
+    })
+
+    if ('error' in result && result.error) {
+      setError(result.error)
+    } else {
+      setText('')
+    }
   }
 
   return (
@@ -58,7 +67,12 @@ export default function HelperChatPage() {
             <CardTitle>Chat</CardTitle>
           </CardHeader>
           <CardContent>
-            {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
+            {error && (
+              <div className="mb-4 rounded-md border border-red-300 bg-red-50 p-3 flex gap-2">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
             <div className="h-[50vh] overflow-y-auto rounded border bg-white p-3 space-y-2">
               {msgs.map(m => (
                 <div key={m.id} className="text-sm">

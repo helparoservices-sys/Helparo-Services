@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { LoadingSpinner, SkeletonCard } from '@/components/ui/loading'
+import { TrustScoreIndicator, VerifiedHelperBadge } from '@/components/trust-badges'
 
 interface MatchedHelper {
   helper_id: string

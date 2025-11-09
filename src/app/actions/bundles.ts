@@ -2,6 +2,12 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { requireAuth } from '@/lib/auth-middleware'
+import { handleServerActionError } from '@/lib/errors'
+import { sanitizeText, sanitizeHTML } from '@/lib/sanitize'
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit'
+import { UserRole } from '@/lib/constants'
+import { logger } from '@/lib/logger'
 
 /**
  * Server Actions for Bundles & Campaigns (Migration 023)
@@ -13,30 +19,23 @@ import { revalidatePath } from 'next/cache'
 // ============================================
 
 export async function createServiceBundle(formData: FormData) {
-  const supabase = await createClient()
-  
-  const name = formData.get('name') as string
-  const description = formData.get('description') as string
-  const imageUrl = formData.get('image_url') as string
-  const regularPrice = parseFloat(formData.get('regular_price') as string)
-  const bundlePrice = parseFloat(formData.get('bundle_price') as string)
-  const validityDays = parseInt(formData.get('validity_days') as string)
-  const maxRedemptions = parseInt(formData.get('max_redemptions') as string)
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth(UserRole.ADMIN)
+    await rateLimit('create-service-bundle', user.id, RATE_LIMITS.ADMIN_APPROVE)
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    const name = sanitizeText(formData.get('name') as string)
+    const description = sanitizeText(formData.get('description') as string)
+    const imageUrl = sanitizeText(formData.get('image_url') as string)
+    const regularPrice = parseFloat(formData.get('regular_price') as string)
+    const bundlePrice = parseFloat(formData.get('bundle_price') as string)
+    const validityDays = parseInt(formData.get('validity_days') as string)
+    const maxRedemptions = parseInt(formData.get('max_redemptions') as string)
 
-    if (profile?.role !== 'admin') {
-      return { error: 'Unauthorized' }
+    if (!name || !description || isNaN(regularPrice) || isNaN(bundlePrice)) {
+      return { error: 'Invalid input data' }
     }
+
+    const supabase = await createClient()
 
     const discountPercent = ((regularPrice - bundlePrice) / regularPrice) * 100
 
@@ -60,10 +59,11 @@ export async function createServiceBundle(formData: FormData) {
 
     revalidatePath('/admin/bundles')
     revalidatePath('/customer/bundles')
+    logger.info('Service bundle created', { adminId: user.id, bundleId: bundle.id, name })
     return { success: true, bundle }
   } catch (error: any) {
-    console.error('Create service bundle error:', error)
-    return { error: error.message }
+    logger.error('Create service bundle error:', error)
+    return handleServerActionError(error)
   }
 }
 
@@ -71,19 +71,10 @@ export async function addServiceToBundle(bundleId: string, categoryId: string, q
   const supabase = await createClient()
 
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth(UserRole.ADMIN)
+    await rateLimit('admin-action', user.id, RATE_LIMITS.ADMIN_APPROVE)
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return { error: 'Unauthorized' }
-    }
+    const supabase = await createClient()
 
     const { data, error } = await supabase
       .from('bundle_services')
@@ -101,8 +92,8 @@ export async function addServiceToBundle(bundleId: string, categoryId: string, q
     revalidatePath('/admin/bundles')
     return { success: true, bundleService: data }
   } catch (error: any) {
-    console.error('Add service to bundle error:', error)
-    return { error: error.message }
+    logger.error('Add service to bundle error:', error)
+    return handleServerActionError(error)
   }
 }
 
@@ -131,8 +122,8 @@ export async function getActiveServiceBundles() {
 
     return { success: true, bundles: data }
   } catch (error: any) {
-    console.error('Get active service bundles error:', error)
-    return { error: error.message }
+    logger.error('Get active service bundles error:', error)
+    return handleServerActionError(error)
   }
 }
 
@@ -207,8 +198,8 @@ export async function purchaseBundle(bundleId: string) {
     revalidatePath('/customer/wallet')
     return { success: true, purchase }
   } catch (error: any) {
-    console.error('Purchase bundle error:', error)
-    return { error: error.message }
+    logger.error('Purchase bundle error:', error)
+    return handleServerActionError(error)
   }
 }
 
@@ -242,8 +233,8 @@ export async function getMyBundles() {
 
     return { success: true, bundles: data }
   } catch (error: any) {
-    console.error('Get my bundles error:', error)
-    return { error: error.message }
+    logger.error('Get my bundles error:', error)
+    return handleServerActionError(error)
   }
 }
 
@@ -285,8 +276,8 @@ export async function redeemBundleService(purchaseId: string, categoryId: string
     revalidatePath('/customer/bundles')
     return { success: true }
   } catch (error: any) {
-    console.error('Redeem bundle service error:', error)
-    return { error: error.message }
+    logger.error('Redeem bundle service error:', error)
+    return handleServerActionError(error)
   }
 }
 
@@ -309,19 +300,10 @@ export async function createSeasonalCampaign(formData: FormData) {
   const minOrderAmount = parseFloat(formData.get('min_order_amount') as string)
 
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth(UserRole.ADMIN)
+    await rateLimit('admin-action', user.id, RATE_LIMITS.ADMIN_APPROVE)
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return { error: 'Unauthorized' }
-    }
+    const supabase = await createClient()
 
     const { data: campaign, error } = await supabase
       .from('seasonal_campaigns')
@@ -347,8 +329,8 @@ export async function createSeasonalCampaign(formData: FormData) {
     revalidatePath('/customer/offers')
     return { success: true, campaign }
   } catch (error: any) {
-    console.error('Create seasonal campaign error:', error)
-    return { error: error.message }
+    logger.error('Create seasonal campaign error:', error)
+    return handleServerActionError(error)
   }
 }
 
@@ -356,19 +338,10 @@ export async function addServiceToCampaign(campaignId: string, categoryId: strin
   const supabase = await createClient()
 
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth(UserRole.ADMIN)
+    await rateLimit('admin-action', user.id, RATE_LIMITS.ADMIN_APPROVE)
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return { error: 'Unauthorized' }
-    }
+    const supabase = await createClient()
 
     const { data, error } = await supabase
       .from('campaign_applicable_services')
@@ -384,8 +357,8 @@ export async function addServiceToCampaign(campaignId: string, categoryId: strin
     revalidatePath('/admin/campaigns')
     return { success: true, campaignService: data }
   } catch (error: any) {
-    console.error('Add service to campaign error:', error)
-    return { error: error.message }
+    logger.error('Add service to campaign error:', error)
+    return handleServerActionError(error)
   }
 }
 
@@ -416,8 +389,8 @@ export async function getActiveCampaigns() {
 
     return { success: true, campaigns: data }
   } catch (error: any) {
-    console.error('Get active campaigns error:', error)
-    return { error: error.message }
+    logger.error('Get active campaigns error:', error)
+    return handleServerActionError(error)
   }
 }
 
@@ -500,8 +473,8 @@ export async function applyCampaignToOrder(campaignId: string, serviceRequestId:
     revalidatePath('/customer/requests')
     return { success: true, redemption, finalAmount, discountAmount }
   } catch (error: any) {
-    console.error('Apply campaign to order error:', error)
-    return { error: error.message }
+    logger.error('Apply campaign to order error:', error)
+    return handleServerActionError(error)
   }
 }
 
@@ -534,8 +507,8 @@ export async function getMyCampaignRedemptions() {
 
     return { success: true, redemptions: data }
   } catch (error: any) {
-    console.error('Get my campaign redemptions error:', error)
-    return { error: error.message }
+    logger.error('Get my campaign redemptions error:', error)
+    return handleServerActionError(error)
   }
 }
 
@@ -543,19 +516,10 @@ export async function toggleBundleStatus(bundleId: string, isActive: boolean) {
   const supabase = await createClient()
 
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth(UserRole.ADMIN)
+    await rateLimit('admin-action', user.id, RATE_LIMITS.ADMIN_APPROVE)
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return { error: 'Unauthorized' }
-    }
+    const supabase = await createClient()
 
     const { error } = await supabase
       .from('service_bundles')
@@ -568,8 +532,8 @@ export async function toggleBundleStatus(bundleId: string, isActive: boolean) {
     revalidatePath('/customer/bundles')
     return { success: true }
   } catch (error: any) {
-    console.error('Toggle bundle status error:', error)
-    return { error: error.message }
+    logger.error('Toggle bundle status error:', error)
+    return handleServerActionError(error)
   }
 }
 
@@ -577,19 +541,10 @@ export async function toggleCampaignStatus(campaignId: string, isActive: boolean
   const supabase = await createClient()
 
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth(UserRole.ADMIN)
+    await rateLimit('admin-action', user.id, RATE_LIMITS.ADMIN_APPROVE)
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return { error: 'Unauthorized' }
-    }
+    const supabase = await createClient()
 
     const { error } = await supabase
       .from('seasonal_campaigns')
@@ -602,7 +557,8 @@ export async function toggleCampaignStatus(campaignId: string, isActive: boolean
     revalidatePath('/customer/offers')
     return { success: true }
   } catch (error: any) {
-    console.error('Toggle campaign status error:', error)
-    return { error: error.message }
+    logger.error('Toggle campaign status error:', error)
+    return handleServerActionError(error)
   }
 }
+

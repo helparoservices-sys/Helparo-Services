@@ -38,10 +38,10 @@ export default function NewTicketPage() {
 
     const result = await createSupportTicket(data)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
       setSubmitting(false)
-    } else {
+    } else if ('ticket' in result && result.ticket) {
       router.push(`/customer/support/${result.ticket.id}`)
     }
   }

@@ -1,6 +1,12 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { requireAuth } from '@/lib/auth-middleware'
+import { UserRole } from '@/lib/constants'
+import { handleServerActionError } from '@/lib/errors'
+import { sanitizeText } from '@/lib/sanitize'
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 import { revalidatePath } from 'next/cache'
 
 /**
@@ -47,8 +53,8 @@ export async function initiateBackgroundCheck(helperId: string, checkType: strin
     revalidatePath('/helper/verification')
     return { success: true, backgroundCheck: data }
   } catch (error: any) {
-    console.error('Initiate background check error:', error)
-    return { error: error.message }
+    logger.error('Initiate background check error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -112,8 +118,8 @@ export async function updateBackgroundCheckResult(formData: FormData) {
     revalidatePath('/helper/verification')
     return { success: true, backgroundCheck: data }
   } catch (error: any) {
-    console.error('Update background check result error:', error)
-    return { error: error.message }
+    logger.error('Update background check result error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -131,8 +137,8 @@ export async function getHelperBackgroundChecks(helperId: string) {
 
     return { success: true, checks: data }
   } catch (error: any) {
-    console.error('Get helper background checks error:', error)
-    return { error: error.message }
+    logger.error('Get helper background checks error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -189,8 +195,8 @@ export async function createInsurancePolicy(formData: FormData) {
     revalidatePath('/helper/insurance')
     return { success: true, insurance: data }
   } catch (error: any) {
-    console.error('Create insurance policy error:', error)
-    return { error: error.message }
+    logger.error('Create insurance policy error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -244,8 +250,8 @@ export async function verifyInsurancePolicy(policyId: string, isVerified: boolea
     revalidatePath('/helper/insurance')
     return { success: true, insurance: data }
   } catch (error: any) {
-    console.error('Verify insurance policy error:', error)
-    return { error: error.message }
+    logger.error('Verify insurance policy error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -263,8 +269,8 @@ export async function getHelperInsurance(helperId: string) {
 
     return { success: true, policies: data }
   } catch (error: any) {
-    console.error('Get helper insurance error:', error)
-    return { error: error.message }
+    logger.error('Get helper insurance error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -307,8 +313,8 @@ export async function fileInsuranceClaim(formData: FormData) {
     revalidatePath('/helper/claims')
     return { success: true, claim: data }
   } catch (error: any) {
-    console.error('File insurance claim error:', error)
-    return { error: error.message }
+    logger.error('File insurance claim error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -364,8 +370,8 @@ export async function updateClaimStatus(formData: FormData) {
     revalidatePath('/helper/claims')
     return { success: true, claim: data }
   } catch (error: any) {
-    console.error('Update claim status error:', error)
-    return { error: error.message }
+    logger.error('Update claim status error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -399,8 +405,8 @@ export async function getInsuranceClaims(filters?: { helperId?: string, customer
 
     return { success: true, claims: data }
   } catch (error: any) {
-    console.error('Get insurance claims error:', error)
-    return { error: error.message }
+    logger.error('Get insurance claims error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -443,8 +449,8 @@ export async function recordGeofenceViolation(formData: FormData) {
     revalidatePath('/admin/trust-safety')
     return { success: true, violation: data }
   } catch (error: any) {
-    console.error('Record geofence violation error:', error)
-    return { error: error.message }
+    logger.error('Record geofence violation error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -483,8 +489,8 @@ export async function reviewGeofenceViolation(violationId: string, actionTaken: 
     revalidatePath('/admin/trust-safety')
     return { success: true, violation: data }
   } catch (error: any) {
-    console.error('Review geofence violation error:', error)
-    return { error: error.message }
+    logger.error('Review geofence violation error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -508,8 +514,8 @@ export async function getHelperViolations(helperId: string) {
 
     return { success: true, violations: data }
   } catch (error: any) {
-    console.error('Get helper violations error:', error)
-    return { error: error.message }
+    logger.error('Get helper violations error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -620,8 +626,8 @@ export async function updateHelperTrustScore(helperId: string) {
     revalidatePath('/admin/trust-safety')
     return { success: true, trustScore: totalScore, trustLevel }
   } catch (error: any) {
-    console.error('Update helper trust score error:', error)
-    return { error: error.message }
+    logger.error('Update helper trust score error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -639,8 +645,8 @@ export async function getHelperTrustScore(helperId: string) {
 
     return { success: true, trustScore: data }
   } catch (error: any) {
-    console.error('Get helper trust score error:', error)
-    return { error: error.message }
+    logger.error('Get helper trust score error:', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -688,7 +694,7 @@ export async function getAllTrustScores(filters?: { trustLevel?: string, minScor
 
     return { success: true, trustScores: data }
   } catch (error: any) {
-    console.error('Get all trust scores error:', error)
-    return { error: error.message }
+    logger.error('Get all trust scores error:', { error })
+    return handleServerActionError(error)
   }
 }

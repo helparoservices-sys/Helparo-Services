@@ -52,9 +52,9 @@ export default function AdminReviewsPage() {
 
     const result = await getReportedReviews()
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
-    } else {
+    } else if ('reviews' in result) {
       setReviews(result.reviews || [])
     }
 
@@ -89,7 +89,7 @@ export default function AdminReviewsPage() {
 
     const result = await reportReview(reviewId, reason)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
     } else {
       await loadReviews()
@@ -99,7 +99,7 @@ export default function AdminReviewsPage() {
   const handleApprove = async (reviewId: string) => {
     const result = await hideReview(reviewId)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
     } else {
       await loadReviews()

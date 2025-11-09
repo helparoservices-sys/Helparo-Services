@@ -64,13 +64,15 @@ export default function CustomerBadgesPage() {
       getUserAchievements(user.id)
     ])
 
-    if (badgesRes.error) {
+    if ('error' in badgesRes && badgesRes.error) {
       setError(badgesRes.error)
-    } else {
+    } else if ('badges' in badgesRes) {
       setBadges(badgesRes.badges || [])
     }
 
-    if (!achievementsRes.error) {
+    if ('error' in achievementsRes && achievementsRes.error) {
+      setError(achievementsRes.error)
+    } else if ('achievements' in achievementsRes) {
       setAchievements(achievementsRes.achievements || [])
     }
 

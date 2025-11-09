@@ -1,6 +1,7 @@
 'use server'
 
 import Link from 'next/link'
+import { PlatformTrustBadges, PaymentSafetyInfo } from '@/components/trust-badges'
 
 export default async function CustomerDashboard() {
   return (
@@ -9,6 +10,14 @@ export default async function CustomerDashboard() {
         <div>
           <h1 className="text-3xl font-bold">Customer Dashboard</h1>
           <p className="text-muted-foreground">Welcome to Helparo. Manage your service requests and payments.</p>
+        </div>
+        
+        {/* Trust Badges */}
+        <div className="bg-white p-6 rounded-lg border">
+          <PlatformTrustBadges />
+          <div className="mt-6">
+            <PaymentSafetyInfo />
+          </div>
         </div>
         
         {/* Main Services */}

@@ -93,7 +93,7 @@ export default function AdminUsersPage() {
 
     const result = await updateUserRole(userId, newRole)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
     } else {
       await loadUsers()
@@ -111,9 +111,15 @@ export default function AdminUsersPage() {
     setActionLoading(userId)
     setError('')
 
-    const result = await banUser(userId, banReason, banDuration)
+    const formData = new FormData()
+    formData.append('user_id', userId)
+    formData.append('reason', banReason)
+    formData.append('duration_hours', banDuration)
+    formData.append('is_permanent', 'false')
 
-    if (result.error) {
+    const result = await banUser(formData)
+
+    if ('error' in result && result.error) {
       setError(result.error)
     } else {
       setShowBanModal(null)
@@ -131,7 +137,7 @@ export default function AdminUsersPage() {
 
     const result = await unbanUser(userId)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
     } else {
       await loadUsers()
@@ -144,9 +150,12 @@ export default function AdminUsersPage() {
     setActionLoading(userId)
     setError('')
 
-    const result = await approveHelper(userId)
+    const formData = new FormData()
+    formData.append('helper_id', userId)
 
-    if (result.error) {
+    const result = await approveHelper(formData)
+
+    if ('error' in result && result.error) {
       setError(result.error)
     } else {
       await loadUsers()

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import crypto from 'crypto'
+import { logger } from './lib/logger'
 
 // Generate CSRF token
 function generateCSRFToken(): string {
@@ -30,6 +31,26 @@ export async function middleware(request: NextRequest) {
     'camera=(), microphone=(), geolocation=(self)'
   )
   
+  // Content Security Policy
+  response.headers.set(
+    'Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://opnjibjsddwyojrerbll.supabase.co; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data: https: blob:; " +
+    "font-src 'self' data:; " +
+    "connect-src 'self' https://opnjibjsddwyojrerbll.supabase.co wss://opnjibjsddwyojrerbll.supabase.co; " +
+    "frame-ancestors 'none';"
+  )
+  
+  // HSTS for production
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set(
+      'Strict-Transport-Security',
+      'max-age=31536000; includeSubDomains; preload'
+    )
+  }
+  
   // CSRF Protection for state-changing requests
   const isStateMutating = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method)
   
@@ -40,13 +61,17 @@ export async function middleware(request: NextRequest) {
     if (!csrfCookie || !verifyCSRFToken(csrfCookie, csrfHeader)) {
       // Only enforce CSRF for non-auth routes to avoid breaking Supabase auth
       if (!request.nextUrl.pathname.includes('/auth/callback')) {
-        console.warn('CSRF validation failed', {
+        logger.warn('CSRF validation failed', {
           path: request.nextUrl.pathname,
           hasCookie: !!csrfCookie,
           hasHeader: !!csrfHeader
         })
-        // In production, you might want to return 403
-        // For now, just log the warning
+        
+        // PRODUCTION: Block invalid CSRF tokens
+        return NextResponse.json(
+          { error: 'Invalid security token. Please refresh the page and try again.' },
+          { status: 403 }
+        )
       }
     }
   }

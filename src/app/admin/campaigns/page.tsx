@@ -50,9 +50,9 @@ export default function AdminCampaignsPage() {
 
     const result = await getActiveCampaigns()
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
-    } else {
+    } else if ('campaigns' in result) {
       setCampaigns(result.campaigns || [])
     }
 
@@ -108,7 +108,7 @@ export default function AdminCampaignsPage() {
 
     const result = await createSeasonalCampaign(formData)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
     } else {
       handleCancelEdit()
@@ -121,7 +121,7 @@ export default function AdminCampaignsPage() {
   const handleToggleActive = async (campaignId: string, currentStatus: boolean) => {
     const result = await toggleCampaignStatus(campaignId, !currentStatus)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
     } else {
       await loadCampaigns()

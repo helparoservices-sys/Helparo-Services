@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Database } from '@/lib/supabase/database.types'
 import Link from 'next/link'
+import { SecurityBadge, PaymentProtectionBadge } from '@/components/trust-badges'
 
 type Category = Pick<Database['public']['Tables']['service_categories']['Row'], 'id' | 'name' | 'slug' | 'description' | 'parent_id'>
 
@@ -33,6 +34,12 @@ export default async function ServicesPage() {
       <div className="mx-auto max-w-5xl">
         <h1 className="text-4xl font-bold mb-6">Browse Services</h1>
         <p className="text-muted-foreground mb-10 max-w-2xl">Explore categories and find the right expert for your task.</p>
+        
+        {/* Trust Indicators */}
+        <div className="flex gap-4 mb-8 flex-wrap">
+          <SecurityBadge />
+          <PaymentProtectionBadge />
+        </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {roots.map(root => (
             <div key={root.id} className="rounded-lg border bg-white p-5 shadow-sm">

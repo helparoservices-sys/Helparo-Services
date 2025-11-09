@@ -35,15 +35,15 @@ export default function HelperWalletPage() {
         getTransactionHistory(20)
       ])
 
-      if (walletRes.error) {
+      if ('error' in walletRes && walletRes.error) {
         setError(walletRes.error)
-      } else {
+      } else if ('data' in walletRes) {
         setWallet(walletRes.data)
       }
 
-      if (txRes.error) {
+      if ('error' in txRes && txRes.error) {
         setError(txRes.error)
-      } else {
+      } else if ('data' in txRes) {
         setTransactions(txRes.data as any || [])
       }
 

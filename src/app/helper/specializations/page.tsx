@@ -53,9 +53,9 @@ export default function HelperSpecializationsPage() {
 
     const result = await getHelperSpecializations(user.id)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
-    } else {
+    } else if ('specializations' in result) {
       setSpecializations(result.specializations || [])
     }
 
@@ -81,7 +81,7 @@ export default function HelperSpecializationsPage() {
 
     const result = await addHelperSpecialization(data)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
     } else {
       setFormData({
@@ -102,7 +102,7 @@ export default function HelperSpecializationsPage() {
 
     const result = await deleteHelperSpecialization(id)
     
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
     } else {
       await loadData()

@@ -94,27 +94,29 @@ export async function createReview(formData: FormData) {
 }
 
 export async function addReviewPhotos(reviewId: string, photoUrls: string[]) {
-  const supabase = await createClient()
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    // Auth + rate-limit
+    const { user } = await requireAuth()
+    await rateLimit('add-review-photos', user.id, RATE_LIMITS.CREATE_REVIEW)
+
+    const supabase = await createClient()
 
     // Verify review ownership
-    const { data: review } = await supabase
+    const { data: review, error: reviewErr } = await supabase
       .from('reviews')
       .select('customer_id')
       .eq('id', reviewId)
       .single()
 
+    if (reviewErr) throw reviewErr
     if (review?.customer_id !== user.id) {
       return { error: 'Unauthorized' }
     }
 
-    // Insert photos
+    // Sanitize photo urls
     const photos = photoUrls.map(url => ({
       review_id: reviewId,
-      photo_url: url
+      photo_url: sanitizeText(url)
     }))
 
     const { data, error } = await supabase
@@ -125,10 +127,11 @@ export async function addReviewPhotos(reviewId: string, photoUrls: string[]) {
     if (error) throw error
 
     revalidatePath('/customer/requests')
+    logger.info('Added review photos', { userId: user.id, reviewId, count: photos.length })
     return { success: true, photos: data }
   } catch (error: any) {
-    console.error('Add review photos error:', error)
-    return { error: error.message }
+    logger.error('Add review photos error', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -136,6 +139,9 @@ export async function getHelperReviews(helperId: string, limit = 10, offset = 0)
   const supabase = await createClient()
 
   try {
+    // Public endpoint - rate limit by helperId to avoid scraping
+    await rateLimit('get-helper-reviews', helperId, RATE_LIMITS.API_MODERATE)
+
     const { data, error } = await supabase
       .from('reviews')
       .select(`
@@ -158,8 +164,8 @@ export async function getHelperReviews(helperId: string, limit = 10, offset = 0)
 
     return { success: true, reviews: data }
   } catch (error: any) {
-    console.error('Get helper reviews error:', error)
-    return { error: error.message }
+    logger.error('Get helper reviews error', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -213,8 +219,8 @@ export async function updateHelperRatingSummary(helperId: string) {
     revalidatePath(`/helper/${helperId}`)
     return { success: true }
   } catch (error: any) {
-    console.error('Update helper rating summary error:', error)
-    return { error: error.message }
+    logger.error('Update helper rating summary error', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -232,24 +238,27 @@ export async function getHelperRatingSummary(helperId: string) {
 
     return { success: true, summary: data }
   } catch (error: any) {
-    console.error('Get helper rating summary error:', error)
-    return { error: error.message }
+    logger.error('Get helper rating summary error', { error })
+    return handleServerActionError(error)
   }
 }
 
 export async function reportReview(reviewId: string, reason: string) {
-  const supabase = await createClient()
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth()
+    await rateLimit('report-review', user.id, RATE_LIMITS.API_STRICT)
+
+    const supabase = await createClient()
+
+    // Sanitize reason
+    const safeReason = sanitizeText(reason)
 
     // Mark review as reported (admin will review)
     const { error } = await supabase
       .from('reviews')
       .update({
         is_reported: true,
-        report_reason: reason,
+        report_reason: safeReason,
         reported_at: new Date().toISOString(),
         reported_by: user.id
       })
@@ -257,10 +266,11 @@ export async function reportReview(reviewId: string, reason: string) {
 
     if (error) throw error
 
+    logger.info('Review reported', { userId: user.id, reviewId })
     return { success: true }
   } catch (error: any) {
-    console.error('Report review error:', error)
-    return { error: error.message }
+    logger.error('Report review error', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -269,22 +279,11 @@ export async function reportReview(reviewId: string, reason: string) {
 // ============================================
 
 export async function hideReview(reviewId: string) {
-  const supabase = await createClient()
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth(UserRole.ADMIN)
+    await rateLimit('admin-hide-review', user.id, RATE_LIMITS.ADMIN_BAN)
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return { error: 'Unauthorized' }
-    }
+    const supabase = await createClient()
 
     const { error } = await supabase
       .from('reviews')
@@ -294,30 +293,20 @@ export async function hideReview(reviewId: string) {
     if (error) throw error
 
     revalidatePath('/admin/reviews')
+    logger.info('Review hidden by admin', { adminId: user.id, reviewId })
     return { success: true }
   } catch (error: any) {
-    console.error('Hide review error:', error)
-    return { error: error.message }
+    logger.error('Hide review error', { error })
+    return handleServerActionError(error)
   }
 }
 
 export async function getReportedReviews() {
-  const supabase = await createClient()
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth(UserRole.ADMIN)
+    await rateLimit('admin-get-reported-reviews', user.id, RATE_LIMITS.ADMIN_APPROVE)
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return { error: 'Unauthorized' }
-    }
+    const supabase = await createClient()
 
     const { data, error } = await supabase
       .from('reviews')
@@ -334,7 +323,7 @@ export async function getReportedReviews() {
 
     return { success: true, reviews: data }
   } catch (error: any) {
-    console.error('Get reported reviews error:', error)
-    return { error: error.message }
+    logger.error('Get reported reviews error', { error })
+    return handleServerActionError(error)
   }
 }

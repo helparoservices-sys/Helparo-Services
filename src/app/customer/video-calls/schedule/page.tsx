@@ -29,10 +29,10 @@ export default function CustomerScheduleVideoCallPage() {
 
     const result = await createVideoCallSession(formData)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
       setLoading(false)
-    } else if (result.session) {
+    } else if ('session' in result && result.session) {
       router.push(`/customer/video-calls/${result.session.id}`)
     }
   }

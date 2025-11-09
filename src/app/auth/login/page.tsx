@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Sparkles, Eye, EyeOff, Mail } from 'lucide-react'
 import { loginAction, sendMagicLinkAction } from '@/app/actions/auth'
+import { logger } from '@/lib/logger'
 
 export default function LoginPage() {
   const [loginMethod, setLoginMethod] = useState<'password' | 'magic-link'>('password')
@@ -37,7 +38,7 @@ export default function LoginPage() {
       }
       // If successful, loginAction handles the redirect
     } catch (err: any) {
-      console.error('Login error:', err)
+      logger.error('Login error', { error: err })
       setError(err.message || 'Invalid email or password')
     } finally {
       setLoading(false)
@@ -57,11 +58,11 @@ export default function LoginPage() {
       
       if (result?.error) {
         setError(result.error)
-      } else if (result?.success) {
+      } else if ('success' in result && result.success) {
         setMagicLinkSent(true)
       }
     } catch (err: any) {
-      console.error('Magic link error:', err)
+      logger.error('Magic link error', { error: err })
       setError(err.message || 'Failed to send magic link')
     } finally {
       setLoading(false)

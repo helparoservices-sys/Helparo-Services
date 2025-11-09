@@ -2,6 +2,12 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { requireAuth } from '@/lib/auth-middleware'
+import { handleServerActionError } from '@/lib/errors'
+import { sanitizeText } from '@/lib/sanitize'
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit'
+import { UserRole } from '@/lib/constants'
+import { logger } from '@/lib/logger'
 
 /**
  * Server Actions for Smart Matching (Migration 021)
@@ -13,9 +19,10 @@ import { revalidatePath } from 'next/cache'
 // ============================================
 
 export async function updateHelperStatistics(helperId: string) {
-  const supabase = await createClient()
-
   try {
+    // Internal function - typically called by system
+    const supabase = await createClient()
+
     // Get completed jobs count
     const { count: completedJobs } = await supabase
       .from('service_requests')
@@ -107,10 +114,11 @@ export async function updateHelperStatistics(helperId: string) {
     if (error) throw error
 
     revalidatePath(`/helper/${helperId}`)
+    logger.info('Helper statistics updated', { helperId })
     return { success: true }
   } catch (error: any) {
-    console.error('Update helper statistics error:', error)
-    return { error: error.message }
+    logger.error('Update helper statistics error', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -118,6 +126,8 @@ export async function getHelperStatistics(helperId: string) {
   const supabase = await createClient()
 
   try {
+    await rateLimit('get-helper-statistics', helperId, RATE_LIMITS.API_MODERATE)
+
     const { data, error } = await supabase
       .from('helper_statistics')
       .select('*')
@@ -128,8 +138,8 @@ export async function getHelperStatistics(helperId: string) {
 
     return { success: true, statistics: data }
   } catch (error: any) {
-    console.error('Get helper statistics error:', error)
-    return { error: error.message }
+    logger.error('Get helper statistics error', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -138,26 +148,19 @@ export async function getHelperStatistics(helperId: string) {
 // ============================================
 
 export async function addHelperSpecialization(formData: FormData) {
-  const supabase = await createClient()
-  
-  const categoryId = formData.get('category_id') as string
-  const yearsOfExperience = parseInt(formData.get('years_of_experience') as string)
-  const certifications = formData.get('certifications') as string
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth(UserRole.HELPER)
+    await rateLimit('add-specialization', user.id, RATE_LIMITS.API_MODERATE)
 
-    // Check if helper
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    const categoryId = sanitizeText(formData.get('category_id') as string)
+    const yearsOfExperience = parseInt(formData.get('years_of_experience') as string)
+    const certifications = sanitizeText(formData.get('certifications') as string)
 
-    if (profile?.role !== 'helper') {
-      return { error: 'Only helpers can add specializations' }
+    if (!categoryId || isNaN(yearsOfExperience)) {
+      return { error: 'Invalid input data' }
     }
+
+    const supabase = await createClient()
 
     // Check if specialization already exists
     const { data: existing } = await supabase
@@ -185,24 +188,29 @@ export async function addHelperSpecialization(formData: FormData) {
     if (error) throw error
 
     revalidatePath('/helper/services')
+    logger.info('Helper specialization added', { userId: user.id, categoryId })
     return { success: true, specialization: data }
   } catch (error: any) {
-    console.error('Add helper specialization error:', error)
-    return { error: error.message }
+    logger.error('Add helper specialization error', { error })
+    return handleServerActionError(error)
   }
 }
 
 export async function updateHelperSpecialization(formData: FormData) {
-  const supabase = await createClient()
-  
-  const specializationId = formData.get('specialization_id') as string
-  const yearsOfExperience = parseInt(formData.get('years_of_experience') as string)
-  const certifications = formData.get('certifications') as string
-  const isVerified = formData.get('is_verified') === 'true'
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth()
+    await rateLimit('update-specialization', user.id, RATE_LIMITS.API_MODERATE)
+
+    const specializationId = sanitizeText(formData.get('specialization_id') as string)
+    const yearsOfExperience = parseInt(formData.get('years_of_experience') as string)
+    const certifications = sanitizeText(formData.get('certifications') as string)
+    const isVerified = formData.get('is_verified') === 'true'
+
+    if (!specializationId || isNaN(yearsOfExperience)) {
+      return { error: 'Invalid input data' }
+    }
+
+    const supabase = await createClient()
 
     // Verify ownership or admin
     const { data: specialization } = await supabase
@@ -245,10 +253,11 @@ export async function updateHelperSpecialization(formData: FormData) {
 
     revalidatePath('/helper/services')
     revalidatePath('/admin/verification')
+    logger.info('Helper specialization updated', { userId: user.id, specializationId })
     return { success: true, specialization: data }
   } catch (error: any) {
-    console.error('Update helper specialization error:', error)
-    return { error: error.message }
+    logger.error('Update helper specialization error', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -256,6 +265,8 @@ export async function getHelperSpecializations(helperId: string) {
   const supabase = await createClient()
 
   try {
+    await rateLimit('get-helper-specializations', helperId, RATE_LIMITS.API_MODERATE)
+
     const { data, error } = await supabase
       .from('helper_specializations')
       .select(`
@@ -273,17 +284,17 @@ export async function getHelperSpecializations(helperId: string) {
 
     return { success: true, specializations: data }
   } catch (error: any) {
-    console.error('Get helper specializations error:', error)
-    return { error: error.message }
+    logger.error('Get helper specializations error', { error })
+    return handleServerActionError(error)
   }
 }
 
 export async function deleteHelperSpecialization(specializationId: string) {
-  const supabase = await createClient()
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const { user } = await requireAuth()
+    await rateLimit('delete-specialization', user.id, RATE_LIMITS.API_MODERATE)
+
+    const supabase = await createClient()
 
     // Verify ownership
     const { data: specialization } = await supabase
@@ -304,10 +315,11 @@ export async function deleteHelperSpecialization(specializationId: string) {
     if (error) throw error
 
     revalidatePath('/helper/services')
+    logger.info('Helper specialization deleted', { userId: user.id, specializationId })
     return { success: true }
   } catch (error: any) {
-    console.error('Delete helper specialization error:', error)
-    return { error: error.message }
+    logger.error('Delete helper specialization error', { error })
+    return handleServerActionError(error)
   }
 }
 
@@ -316,9 +328,12 @@ export async function deleteHelperSpecialization(specializationId: string) {
 // ============================================
 
 export async function findBestMatchingHelpers(serviceRequestId: string, limit = 10) {
-  const supabase = await createClient()
-
   try {
+    // Public/internal function - rate limit by request ID
+    await rateLimit('find-matching-helpers', serviceRequestId, RATE_LIMITS.API_MODERATE)
+
+    const supabase = await createClient()
+
     // Get service request details
     const { data: request } = await supabase
       .from('service_requests')
@@ -416,10 +431,11 @@ export async function findBestMatchingHelpers(serviceRequestId: string, limit = 
     // Sort by match score and return top matches
     matches.sort((a, b) => b.match_score - a.match_score)
     
+    logger.info('Matching helpers found', { serviceRequestId, matchCount: matches.length })
     return { success: true, matches: matches.slice(0, limit) }
   } catch (error: any) {
-    console.error('Find best matching helpers error:', error)
-    return { error: error.message }
+    logger.error('Find best matching helpers error', { error })
+    return handleServerActionError(error)
   }
 }
 

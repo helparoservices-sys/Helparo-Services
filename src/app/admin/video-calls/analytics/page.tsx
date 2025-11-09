@@ -38,9 +38,9 @@ export default function AdminVideoAnalyticsPage() {
 
     const result = await getVideoCallStatistics(start, end)
 
-    if (result.error) {
+    if ('error' in result && result.error) {
       setError(result.error)
-    } else if (result.statistics) {
+    } else if ('statistics' in result && result.statistics) {
       // Map the API response to our local stats structure
       setStats({
         total_calls: result.statistics.totalCalls,

@@ -63,17 +63,21 @@ export default function HelperBadgesPage() {
       getLoyaltyBalance(user.id)
     ])
 
-    if (badgesRes.error) {
+    if ('error' in badgesRes && badgesRes.error) {
       setError(badgesRes.error)
-    } else {
+    } else if ('badges' in badgesRes) {
       setBadges(badgesRes.badges || [])
     }
 
-    if (!achievementsRes.error) {
+    if ('error' in achievementsRes && achievementsRes.error) {
+      setError(achievementsRes.error)
+      } else if ('achievements' in achievementsRes) {
       setAchievements(achievementsRes.achievements || [])
     }
 
-    if (!loyaltyRes.error) {
+    if ('error' in loyaltyRes && loyaltyRes.error) {
+      setError(loyaltyRes.error)
+      } else if ('balance' in loyaltyRes) {
       setLoyaltyPoints(loyaltyRes.balance || 0)
     }
 

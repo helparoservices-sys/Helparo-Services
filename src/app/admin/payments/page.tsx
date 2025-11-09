@@ -20,15 +20,15 @@ export default function AdminPaymentsPage() {
         getCommissionPercent()
       ])
 
-      if (statsRes.error) {
+      if ('error' in statsRes && statsRes.error) {
         setError(statsRes.error)
-      } else {
+      } else if ('data' in statsRes) {
         setStats(statsRes.data)
       }
 
-      if (commRes.error) {
+      if ('error' in commRes && commRes.error) {
         setError(commRes.error)
-      } else {
+      } else if ('data' in commRes) {
         setCommission(commRes.data || 12)
       }
 

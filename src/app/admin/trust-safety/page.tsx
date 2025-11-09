@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SkeletonCard } from '@/components/ui/loading'
+import { SecurityFeatures } from '@/components/trust-badges'
 
 interface BackgroundCheck {
   id: string

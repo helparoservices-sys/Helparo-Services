@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Sparkles, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
-export default function SignUpPage() {
+function SignUpForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const defaultRole = searchParams.get('role') || 'customer'
@@ -312,5 +312,13 @@ function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
       )}
       <span className={met ? 'text-secondary' : 'text-muted-foreground'}>{text}</span>
     </div>
+  )
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <SignUpForm />
+    </Suspense>
   )
 }
