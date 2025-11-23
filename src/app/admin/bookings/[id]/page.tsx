@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { ArrowLeft, User, Calendar, Clock, CheckCircle, XCircle, AlertCircle, Package, FileText } from 'lucide-react'
+import { ArrowLeft, User, Calendar, Clock, Package, FileText } from 'lucide-react'
 import { BookingActions } from '@/components/admin/booking-actions'
 
 export const dynamic = 'force-dynamic'

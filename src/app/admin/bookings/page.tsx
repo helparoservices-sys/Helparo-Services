@@ -8,7 +8,6 @@ import {
   XCircle, 
   AlertCircle,
   ExternalLink,
-  Filter,
   Calendar,
   DollarSign,
   Package
@@ -68,7 +67,7 @@ export default async function AdminBookingsPage({ searchParams }: { searchParams
 
   const start = (page - 1) * pageSize
   const end = start + pageSize - 1
-  const { data: rawBookings, error } = await baseQuery.range(start, end)
+  const { data: rawBookings } = await baseQuery.range(start, end)
 
   // Graceful handling for empty/error state
   const bookings: BookingRow[] = (rawBookings || []).map((b: any) => ({
@@ -299,7 +298,7 @@ export default async function AdminBookingsPage({ searchParams }: { searchParams
           <div className="flex gap-2">
             <Link href={makePageLink(Math.max(1, page - 1))} className={`px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors ${page === 1 ? 'pointer-events-none opacity-50' : ''}`}>Prev</Link>
             <Link href={makePageLink(Math.min(totalPages, page + 1))} className={`px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors ${page === totalPages ? 'pointer-events-none opacity-50' : ''}`}>Next</Link>
-            <Link href={`/admin/bookings/export?${new URLSearchParams(Object.entries(searchParams).filter(([k,v])=>v) as [string, string][]).toString()}`} className="px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-500 text-white transition-colors">Export CSV</Link>
+            <Link href={`/admin/bookings/export?${new URLSearchParams(Object.entries(searchParams).filter(([,v])=>v) as [string, string][]).toString()}`} className="px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-500 text-white transition-colors">Export CSV</Link>
           </div>
         </div>
       </div>
