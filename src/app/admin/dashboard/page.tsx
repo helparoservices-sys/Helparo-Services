@@ -1,129 +1,128 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { 
-  Users, 
-  UserCheck, 
-  ShoppingCart, 
-  DollarSign, 
-  TrendingUp, 
-  TrendingDown,
+import {
+  Users,
+  UserCheck,
+  ShoppingCart,
+  DollarSign,
   AlertCircle,
   CheckCircle,
   Clock,
   Activity
 } from 'lucide-react'
 
+// Revalidate every 60 seconds to reduce unnecessary DB calls
+export const revalidate = 60
+export const dynamic = 'force-dynamic' // Required for auth
+
 export default async function AdminDashboard() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    redirect('/auth/login')
-  }
 
-  // Verify admin role
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
+  // Fetch dashboard stats with optimized queries
+  // Use Promise.all for parallel execution
+  const [
+    { count: totalUsers },
+    { count: totalCustomers },
+    { count: totalHelpers },
+    { count: activeUsers },
+    { count: suspendedUsers },
+    { count: bannedUsers },
+    { count: totalBookings },
+    { count: activeBookings },
+    { data: recentBookings },
+    { count: pendingVerifications },
+    { count: supportTickets },
+    { data: todayBookings }
+  ] = await Promise.all([
+    // Total Users = Customers + Helpers (not including admins)
+    supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .in('role', ['customer', 'helper']),
+    
+    // Total Customers
+    supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'customer'),
+    
+    // Total Helpers
+    supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'helper'),
+    
+    // Active users (status = active)
+    supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .in('role', ['customer', 'helper'])
+      .eq('status', 'active'),
+    
+    // Suspended users (status = suspended)
+    supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .in('role', ['customer', 'helper'])
+      .eq('status', 'suspended'),
+    
+    // Banned users
+    supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .in('role', ['customer', 'helper'])
+      .eq('is_banned', true),
+    
+    // Total bookings
+    supabase
+      .from('service_requests')
+      .select('*', { count: 'exact', head: true }),
+    
+    // Active bookings: open and assigned (not completed or cancelled)
+    supabase
+      .from('service_requests')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['open', 'assigned']),
+    
+    // Recent bookings
+    supabase
+      .from('service_requests')
+      .select(`
+        id,
+        status,
+        created_at,
+        title,
+        description,
+        profiles!service_requests_customer_id_fkey (full_name)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(5),
+    
+    // Pending verifications (helper_profiles with pending verification_status)
+    supabase
+      .from('helper_profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('verification_status', 'pending'),
+    
+    // Active support tickets (open, assigned, in_progress)
+    supabase
+      .from('support_tickets')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['open', 'assigned', 'in_progress']),
+    
+    // Today's revenue (from released escrows today, not estimated prices)
+    (() => {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      return supabase
+        .from('escrows')
+        .select('amount')
+        .eq('status', 'released')
+        .gte('released_at', today.toISOString())
+    })()
+  ])
 
-  if ((profile as any)?.role !== 'admin') {
-    redirect('/') // Redirect non-admins
-  }
-
-  // Fetch dashboard stats
-  // Total Users = Customers + Helpers (not including admins)
-  const { count: totalUsers } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true })
-    .in('role', ['customer', 'helper'])
-
-  // Total Customers only
-  const { count: totalCustomers } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true })
-    .eq('role', 'customer')
-
-  const { count: totalHelpers } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true })
-    .eq('role', 'helper')
-
-  // Active users (status = active)
-  const { count: activeUsers } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true })
-    .in('role', ['customer', 'helper'])
-    .eq('status', 'active')
-
-  // Suspended users (status = suspended)
-  const { count: suspendedUsers } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true })
-    .in('role', ['customer', 'helper'])
-    .eq('status', 'suspended')
-
-  // Banned users
-  const { count: bannedUsers } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true })
-    .in('role', ['customer', 'helper'])
-    .eq('is_banned', true)
-
-  // Changed from 'booking_requests' to 'service_requests' (correct table name)
-  const { count: totalBookings } = await supabase
-    .from('service_requests')
-    .select('*', { count: 'exact', head: true })
-
-  // Active bookings: open and assigned (not completed or cancelled)
-  const { count: activeBookings, error: activeError } = await supabase
-    .from('service_requests')
-    .select('*', { count: 'exact', head: true })
-    .in('status', ['open', 'assigned'])
-  
-  // Log any errors for debugging
-  if (activeError) {
-    console.error('Active bookings query error:', activeError)
-  }
-
-  // Get recent bookings
-  const { data: recentBookings } = await supabase
-    .from('service_requests')
-    .select(`
-      id,
-      status,
-      created_at,
-      title,
-      description,
-      profiles!service_requests_customer_id_fkey (full_name)
-    `)
-    .order('created_at', { ascending: false })
-    .limit(5)
-
-  // Get pending verifications (helper_profiles with pending verification_status)
-  const { count: pendingVerifications } = await supabase
-    .from('helper_profiles')
-    .select('*', { count: 'exact', head: true })
-    .eq('verification_status', 'pending')
-
-  // Get active support tickets (open, assigned, in_progress)
-  const { count: supportTickets } = await supabase
-    .from('support_tickets')
-    .select('*', { count: 'exact', head: true })
-    .in('status', ['open', 'assigned', 'in_progress'])
-
-  // Get today's revenue (completed bookings from today)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  
-  const { data: todayBookings } = await supabase
-    .from('service_requests')
-    .select('estimated_price')
-    .eq('status', 'completed')
-    .gte('job_completed_at', today.toISOString())
-
-  const todayRevenue = todayBookings?.reduce((sum, b) => sum + (b.estimated_price || 0), 0) || 0
+  const todayRevenue = todayBookings?.reduce((sum: number, b: any) => sum + (Number(b.amount) || 0), 0) || 0
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -141,10 +140,6 @@ export default async function AdminDashboard() {
             <div>
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Users</p>
               <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">{totalUsers || 0}</p>
-              <div className="flex items-center gap-1 mt-2">
-                <TrendingUp className="h-4 w-4 text-green-600" />
-                <span className="text-sm text-green-600 font-medium">+12.5%</span>
-              </div>
             </div>
             <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
               <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
@@ -209,10 +204,6 @@ export default async function AdminDashboard() {
             <div>
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Customers</p>
               <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">{totalCustomers || 0}</p>
-              <div className="flex items-center gap-1 mt-2">
-                <TrendingUp className="h-4 w-4 text-green-600" />
-                <span className="text-sm text-green-600 font-medium">+10.1%</span>
-              </div>
             </div>
             <div className="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
               <Users className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
@@ -226,10 +217,6 @@ export default async function AdminDashboard() {
             <div>
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Helpers</p>
               <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">{totalHelpers || 0}</p>
-              <div className="flex items-center gap-1 mt-2">
-                <TrendingUp className="h-4 w-4 text-green-600" />
-                <span className="text-sm text-green-600 font-medium">+8.2%</span>
-              </div>
             </div>
             <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
               <UserCheck className="h-6 w-6 text-green-600 dark:text-green-400" />
@@ -243,10 +230,6 @@ export default async function AdminDashboard() {
             <div>
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Bookings</p>
               <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">{totalBookings || 0}</p>
-              <div className="flex items-center gap-1 mt-2">
-                <TrendingUp className="h-4 w-4 text-green-600" />
-                <span className="text-sm text-green-600 font-medium">+15.3%</span>
-              </div>
             </div>
             <div className="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
               <ShoppingCart className="h-6 w-6 text-purple-600 dark:text-purple-400" />

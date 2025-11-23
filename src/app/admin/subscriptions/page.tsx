@@ -5,11 +5,8 @@ import Link from 'next/link'
 
 export default async function AdminSubscriptionsPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return <div className="p-6">Not authenticated</div>
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if ((profile as any)?.role !== 'admin') return <div className="p-6">Unauthorized</div>
 
+  // Auth handled by middleware
   const { data: plans } = await supabase.from('subscription_plans').select('*').order('price_cents')
 
   return (

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { requireAuth } from '@/lib/auth-middleware'
 import { handleServerActionError } from '@/lib/errors'
-import { sanitizeText, sanitizeHTML } from '@/lib/sanitize'
+import { sanitizeText } from '@/lib/sanitize'
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { UserRole } from '@/lib/constants'
 import { logger } from '@/lib/logger'
@@ -285,39 +285,52 @@ export async function redeemBundleService(purchaseId: string, categoryId: string
 // SEASONAL CAMPAIGNS
 // ============================================
 
-export async function createSeasonalCampaign(formData: FormData) {
-  const supabase = await createClient()
-  
-  const title = formData.get('title') as string
-  const description = formData.get('description') as string
-  const bannerUrl = formData.get('banner_url') as string
-  const campaignType = formData.get('campaign_type') as string
-  const discountPercent = parseFloat(formData.get('discount_percent') as string)
-  const flatDiscount = parseFloat(formData.get('flat_discount') as string)
-  const startDate = formData.get('start_date') as string
-  const endDate = formData.get('end_date') as string
-  const maxRedemptions = parseInt(formData.get('max_redemptions') as string)
-  const minOrderAmount = parseFloat(formData.get('min_order_amount') as string)
-
+// New aligned create function (keeps compatibility by exporting old name wrapper)
+export async function createCampaign(formData: FormData) {
   try {
     const { user } = await requireAuth(UserRole.ADMIN)
-    await rateLimit('admin-action', user.id, RATE_LIMITS.ADMIN_APPROVE)
+    await rateLimit('create-campaign', user.id, RATE_LIMITS.ADMIN_APPROVE)
 
     const supabase = await createClient()
+
+    const name = sanitizeText(formData.get('name') as string)
+    const description = sanitizeText(formData.get('description') as string)
+    const bannerUrl = sanitizeText(formData.get('banner_url') as string)
+    const campaignType = sanitizeText(formData.get('campaign_type') as string)
+    const discountType = sanitizeText(formData.get('discount_type') as string)
+    const discountValue = parseFloat(formData.get('discount_value') as string)
+    const minOrderAmountRaw = formData.get('min_order_amount') as string
+    const maxDiscountAmountRaw = formData.get('max_discount_amount') as string
+    const applicableTo = sanitizeText(formData.get('applicable_to') as string)
+    const targetUserSegment = sanitizeText(formData.get('target_user_segment') as string)
+    const startDate = formData.get('start_date') as string
+    const endDate = formData.get('end_date') as string
+    const maxRedemptionsPerUserRaw = formData.get('max_redemptions_per_user') as string
+
+    if (!name || !campaignType || !discountType || isNaN(discountValue) || !startDate || !endDate) {
+      return { error: 'Missing required fields' }
+    }
+
+    const minOrderAmount = minOrderAmountRaw ? parseFloat(minOrderAmountRaw) : null
+    const maxDiscountAmount = maxDiscountAmountRaw ? parseFloat(maxDiscountAmountRaw) : null
+    const maxRedemptionsPerUser = maxRedemptionsPerUserRaw ? parseInt(maxRedemptionsPerUserRaw) : null
 
     const { data: campaign, error } = await supabase
       .from('seasonal_campaigns')
       .insert({
-        title,
+        name,
         description,
-        banner_url: bannerUrl,
+        banner_url: bannerUrl || null,
         campaign_type: campaignType,
-        discount_percent: discountPercent,
-        flat_discount_amount: flatDiscount,
+        discount_type: discountType,
+        discount_value: discountValue,
+        min_order_amount: minOrderAmount,
+        max_discount_amount: maxDiscountAmount,
+        applicable_to: applicableTo || 'all_services',
+        target_user_segment: targetUserSegment || 'all',
         start_date: startDate,
         end_date: endDate,
-        max_redemptions_per_user: maxRedemptions,
-        min_order_amount: minOrderAmount,
+        max_redemptions_per_user: maxRedemptionsPerUser,
         is_active: true
       })
       .select()
@@ -325,11 +338,117 @@ export async function createSeasonalCampaign(formData: FormData) {
 
     if (error) throw error
 
+    // Handle category associations if provided and scope requires
+    const categoryIds = formData.getAll('category_ids[]') as string[]
+    if (campaign && applicableTo === 'specific_categories' && categoryIds.length) {
+      const rows = categoryIds.map(id => ({ campaign_id: campaign.id, category_id: id }))
+      const { error: catError } = await supabase.from('campaign_applicable_services').insert(rows)
+      if (catError) throw catError
+    }
+
     revalidatePath('/admin/campaigns')
     revalidatePath('/customer/offers')
+    logger.info('Campaign created', { adminId: user.id, campaignId: campaign.id })
     return { success: true, campaign }
   } catch (error: any) {
-    logger.error('Create seasonal campaign error:', error)
+    logger.error('Create campaign error:', error)
+    return handleServerActionError(error)
+  }
+}
+
+// Backwards compatibility wrapper (old name)
+export async function createSeasonalCampaign(formData: FormData) {
+  return createCampaign(formData)
+}
+
+export async function updateCampaign(campaignId: string, formData: FormData) {
+  try {
+    const { user } = await requireAuth(UserRole.ADMIN)
+    await rateLimit('update-campaign', user.id, RATE_LIMITS.ADMIN_APPROVE)
+    const supabase = await createClient()
+
+    const updates: any = {}
+    const directFields = [
+      'name','description','campaign_type','discount_type','discount_value','min_order_amount','max_discount_amount','applicable_to','target_user_segment','start_date','end_date','max_redemptions_per_user','banner_url'
+    ]
+    directFields.forEach(f => {
+      const val = formData.get(f)
+      if (val !== null && val !== '') {
+        updates[f] = f.includes('amount') || f === 'discount_value' ? parseFloat(val as string) : sanitizeText(val as string)
+      }
+    })
+
+    if (Object.keys(updates).length === 0) return { error: 'No updates provided' }
+
+    const { data, error } = await supabase
+      .from('seasonal_campaigns')
+      .update(updates)
+      .eq('id', campaignId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    // Replace category links if provided and scope requires
+    const categoryIds = formData.getAll('category_ids[]') as string[]
+    if (updates.applicable_to === 'specific_categories') {
+      // remove existing
+      const { error: delError } = await supabase.from('campaign_applicable_services').delete().eq('campaign_id', campaignId)
+      if (delError) throw delError
+      if (categoryIds.length) {
+        const rows = categoryIds.map(id => ({ campaign_id: campaignId, category_id: id }))
+        const { error: insError } = await supabase.from('campaign_applicable_services').insert(rows)
+        if (insError) throw insError
+      }
+    }
+
+    revalidatePath('/admin/campaigns')
+    revalidatePath('/customer/offers')
+    logger.info('Campaign updated', { adminId: user.id, campaignId })
+    return { success: true, campaign: data }
+  } catch (error: any) {
+    logger.error('Update campaign error:', error)
+    return handleServerActionError(error)
+  }
+}
+
+export async function deleteCampaign(campaignId: string) {
+  try {
+    const { user } = await requireAuth(UserRole.ADMIN)
+    await rateLimit('delete-campaign', user.id, RATE_LIMITS.ADMIN_APPROVE)
+    const supabase = await createClient()
+
+    const { error } = await supabase
+      .from('seasonal_campaigns')
+      .delete()
+      .eq('id', campaignId)
+
+    if (error) throw error
+    revalidatePath('/admin/campaigns')
+    revalidatePath('/customer/offers')
+    logger.info('Campaign deleted', { adminId: user.id, campaignId })
+    return { success: true }
+  } catch (error: any) {
+    logger.error('Delete campaign error:', error)
+    return handleServerActionError(error)
+  }
+}
+
+export async function getAllCampaigns() {
+  try {
+    const { user } = await requireAuth(UserRole.ADMIN)
+    await rateLimit('list-campaigns', user.id, RATE_LIMITS.API_RELAXED)
+    const supabase = await createClient()
+
+    const { data, error } = await supabase
+      .from('seasonal_campaigns')
+      .select('*, categories:campaign_applicable_services(category_id)')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return { success: true, campaigns: data }
+  } catch (error: any) {
+    logger.error('Get all campaigns error:', error)
     return handleServerActionError(error)
   }
 }
@@ -363,30 +482,17 @@ export async function addServiceToCampaign(campaignId: string, categoryId: strin
 }
 
 export async function getActiveCampaigns() {
-  const supabase = await createClient()
-
   try {
+    const supabase = await createClient()
     const now = new Date().toISOString()
-
     const { data, error } = await supabase
       .from('seasonal_campaigns')
-      .select(`
-        *,
-        applicable_services:campaign_applicable_services(
-          category:service_categories(
-            id,
-            name,
-            icon
-          )
-        )
-      `)
+      .select('*')
       .eq('is_active', true)
       .lte('start_date', now)
       .gte('end_date', now)
       .order('created_at', { ascending: false })
-
     if (error) throw error
-
     return { success: true, campaigns: data }
   } catch (error: any) {
     logger.error('Get active campaigns error:', error)
@@ -419,7 +525,7 @@ export async function applyCampaignToOrder(campaignId: string, serviceRequestId:
     }
 
     // Check min order amount
-    if (originalAmount < campaign.min_order_amount) {
+    if (campaign.min_order_amount && originalAmount < campaign.min_order_amount) {
       return { error: `Minimum order amount is ₹${campaign.min_order_amount}` }
     }
 
@@ -436,10 +542,13 @@ export async function applyCampaignToOrder(campaignId: string, serviceRequestId:
 
     // Calculate discount
     let discountAmount = 0
-    if (campaign.campaign_type === 'percentage') {
-      discountAmount = (originalAmount * campaign.discount_percent) / 100
-    } else if (campaign.campaign_type === 'flat') {
-      discountAmount = campaign.flat_discount_amount
+    if (campaign.discount_type === 'percentage') {
+      discountAmount = (originalAmount * campaign.discount_value) / 100
+    } else if (campaign.discount_type === 'flat') {
+      discountAmount = campaign.discount_value
+    }
+    if (campaign.max_discount_amount && discountAmount > campaign.max_discount_amount) {
+      discountAmount = campaign.max_discount_amount
     }
 
     const finalAmount = Math.max(0, originalAmount - discountAmount)
@@ -450,9 +559,9 @@ export async function applyCampaignToOrder(campaignId: string, serviceRequestId:
       .insert({
         campaign_id: campaignId,
         customer_id: user.id,
-        service_request_id: serviceRequestId,
+        request_id: serviceRequestId,
         original_amount: originalAmount,
-        discount_amount: discountAmount,
+        discount_applied: discountAmount,
         final_amount: finalAmount
       })
       .select()
@@ -464,7 +573,8 @@ export async function applyCampaignToOrder(campaignId: string, serviceRequestId:
     const { error: updateError } = await supabase
       .from('seasonal_campaigns')
       .update({ 
-        total_redemptions: campaign.total_redemptions + 1 
+        total_redemptions: (campaign.total_redemptions || 0) + 1,
+        total_revenue: (campaign.total_revenue || 0) + finalAmount
       })
       .eq('id', campaignId)
 
@@ -538,21 +648,15 @@ export async function toggleBundleStatus(bundleId: string, isActive: boolean) {
 }
 
 export async function toggleCampaignStatus(campaignId: string, isActive: boolean) {
-  const supabase = await createClient()
-
   try {
     const { user } = await requireAuth(UserRole.ADMIN)
-    await rateLimit('admin-action', user.id, RATE_LIMITS.ADMIN_APPROVE)
-
+    await rateLimit('toggle-campaign', user.id, RATE_LIMITS.ADMIN_APPROVE)
     const supabase = await createClient()
-
     const { error } = await supabase
       .from('seasonal_campaigns')
       .update({ is_active: isActive })
       .eq('id', campaignId)
-
     if (error) throw error
-
     revalidatePath('/admin/campaigns')
     revalidatePath('/customer/offers')
     return { success: true }

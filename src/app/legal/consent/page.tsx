@@ -1,122 +1,75 @@
-'use client'
+// Static generate with periodic revalidation
+export const revalidate = 3600 // 1 hour
+export const dynamic = 'force-static'
 
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase/client'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import { Button } from '@/components/ui/button'
-import type { Database } from '@/lib/supabase/database.types'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { createClient } from '@/lib/supabase/server'
+import { Database } from '@/lib/supabase/database.types'
+import LegalDoc from '@/components/legal/legal-doc'
+import { unstable_cache } from 'next/cache'
+import type { Metadata } from 'next'
 
-interface LegalDoc {
-  id: string
-  type: 'terms' | 'privacy'
-  version: number
-  title: string
-  content_md: string
+export const metadata: Metadata = {
+  title: 'Legal Documents | Helparo',
+  description: 'Review and accept Helparo terms of service and privacy policy.',
+  robots: 'noindex, nofollow',
 }
 
-type AcceptanceInsert = import('@/lib/supabase/database.types').Database['public']['Tables']['legal_acceptances']['Insert']
+type LegalDocRow = Pick<Database['public']['Tables']['legal_documents']['Row'], 'title' | 'content_md' | 'version' | 'type' | 'is_active' | 'updated_at'>
 
-export default function ConsentGate() {
-  const [docs, setDocs] = useState<LegalDoc[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [accepting, setAccepting] = useState(false)
-  const [accepted, setAccepted] = useState(false)
+const getLatestConsent = unstable_cache(
+  async (): Promise<{ terms: LegalDocRow | null; privacy: LegalDocRow | null }> => {
+    const supabase = await createClient()
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true)
-      const { data: terms, error: termsErr } = await supabase
-        .from('legal_documents')
-        .select('*')
-        .eq('type', 'terms')
-        .eq('is_active', true)
-        .order('version', { ascending: false })
-        .limit(1)
-      const { data: priv, error: privErr } = await supabase
-        .from('legal_documents')
-        .select('*')
-        .eq('type', 'privacy')
-        .eq('is_active', true)
-        .order('version', { ascending: false })
-        .limit(1)
-      if (termsErr || privErr) {
-        setError('Failed to load legal documents.')
-      } else {
-        setDocs([...(terms || []), ...(priv || [])])
-      }
-      setLoading(false)
+    const { data: terms } = await supabase
+      .from('legal_documents')
+      .select('title, content_md, version, type, is_active, updated_at')
+      .eq('type', 'terms')
+      .eq('is_active', true)
+      .order('version', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const { data: privacy } = await supabase
+      .from('legal_documents')
+      .select('title, content_md, version, type, is_active, updated_at')
+      .eq('type', 'privacy')
+      .eq('is_active', true)
+      .order('version', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    return {
+      terms: terms ? (terms as LegalDocRow) : null,
+      privacy: privacy ? (privacy as LegalDocRow) : null,
     }
-    load()
-  }, [])
+  },
+  ['legal-consent'],
+  { tags: ['legal-docs'], revalidate: 3600 }
+)
 
-  const handleAccept = async () => {
-    setError('')
-    setAccepting(true)
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
-      const ua = navigator.userAgent
-      const ip = null // could call an IP service later
-      for (const doc of docs) {
-        const payload: AcceptanceInsert = {
-          user_id: user.id,
-          document_type: doc.type,
-          document_version: doc.version,
-          user_agent: ua,
-          ip: ip as any,
-        }
-  const { error: insertErr } = await (supabase.from('legal_acceptances') as any).insert(payload)
-        if (insertErr && insertErr.code !== '23505') { // unique violation means already accepted
-          throw insertErr
-        }
-      }
-      setAccepted(true)
-      // After acceptance redirect user
-      window.location.href = '/'
-    } catch (e: any) {
-      setError(e.message || 'Failed to record acceptance')
-    } finally {
-      setAccepting(false)
-    }
-  }
+export default async function ConsentPage() {
+  const { terms, privacy } = await getLatestConsent()
+
+  // For consent page, we'll show both documents with a combined content
+  const combinedContent = `
+${terms ? `## ${terms.title} (Version ${terms.version})\n\n${terms.content_md}\n\n---\n\n` : '## Terms & Conditions\n\nNo terms available.\n\n---\n\n'}
+${privacy ? `## ${privacy.title} (Version ${privacy.version})\n\n${privacy.content_md}` : '## Privacy Policy\n\nNo privacy policy available.'}
+  `.trim()
+
+  // Use the most recent update date
+  const latestUpdate =
+    terms?.updated_at && privacy?.updated_at
+      ? new Date(terms.updated_at) > new Date(privacy.updated_at)
+        ? terms.updated_at
+        : privacy.updated_at
+      : terms?.updated_at || privacy?.updated_at
 
   return (
-    <div className="min-h-screen bg-primary-50 py-10 px-4">
-      <div className="mx-auto max-w-4xl space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Review & Accept Updated Terms</CardTitle>
-            <CardDescription>
-              You must accept the latest Terms & Conditions and Privacy Policy to continue using Helparo.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
-            {error && <p className="text-sm text-red-500">{error}</p>}
-            {!loading && !error && (
-              <div className="space-y-10">
-                {docs.map(doc => (
-                  <div key={doc.id} className="space-y-4">
-                    <h2 className="text-xl font-semibold">{doc.title} (v{doc.version})</h2>
-                    <article className="prose prose-sm max-w-none bg-white p-4 rounded-md border">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{doc.content_md}</ReactMarkdown>
-                    </article>
-                  </div>
-                ))}
-                <div className="flex flex-col gap-3">
-                  <Button onClick={handleAccept} disabled={accepting || docs.length === 0} size="lg">
-                    {accepting ? 'Recording Acceptance...' : 'I Accept'}
-                  </Button>
-                  {accepted && <p className="text-green-600 text-sm">Acceptance recorded. Redirecting...</p>}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <LegalDoc
+      title="Review & Accept Legal Documents"
+      contentMd={combinedContent}
+      updatedAt={latestUpdate}
+      backHref="/"
+    />
   )
 }

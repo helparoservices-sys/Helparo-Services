@@ -59,6 +59,35 @@ CREATE TABLE public.bid_history (
   CONSTRAINT bid_history_application_id_fkey FOREIGN KEY (application_id) REFERENCES public.request_applications(id),
   CONSTRAINT bid_history_proposed_by_fkey FOREIGN KEY (proposed_by) REFERENCES public.profiles(id)
 );
+CREATE TABLE public.bundle_purchases (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  bundle_id uuid NOT NULL,
+  customer_id uuid NOT NULL,
+  purchase_price numeric NOT NULL,
+  payment_id uuid,
+  valid_until timestamp with time zone,
+  services_used integer DEFAULT 0,
+  services_total integer NOT NULL,
+  is_expired boolean DEFAULT false,
+  purchased_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT bundle_purchases_pkey PRIMARY KEY (id),
+  CONSTRAINT bundle_purchases_bundle_id_fkey FOREIGN KEY (bundle_id) REFERENCES public.service_bundles(id),
+  CONSTRAINT bundle_purchases_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.profiles(id),
+  CONSTRAINT bundle_purchases_payment_id_fkey FOREIGN KEY (payment_id) REFERENCES public.payment_orders(id)
+);
+CREATE TABLE public.bundle_services (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  bundle_id uuid NOT NULL,
+  category_id uuid NOT NULL,
+  quantity integer DEFAULT 1,
+  individual_price numeric NOT NULL,
+  sort_order integer DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT bundle_services_pkey PRIMARY KEY (id),
+  CONSTRAINT bundle_services_bundle_id_fkey FOREIGN KEY (bundle_id) REFERENCES public.service_bundles(id),
+  CONSTRAINT bundle_services_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.service_categories(id)
+);
 CREATE TABLE public.call_analytics (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   session_id uuid NOT NULL,
@@ -99,11 +128,40 @@ CREATE TABLE public.call_recordings (
   CONSTRAINT call_recordings_pkey PRIMARY KEY (id),
   CONSTRAINT call_recordings_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.video_call_sessions(id)
 );
+CREATE TABLE public.campaign_applicable_services (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  campaign_id uuid NOT NULL,
+  category_id uuid,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT campaign_applicable_services_pkey PRIMARY KEY (id),
+  CONSTRAINT campaign_applicable_services_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.seasonal_campaigns(id),
+  CONSTRAINT campaign_applicable_services_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.service_categories(id)
+);
+CREATE TABLE public.campaign_redemptions (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  campaign_id uuid NOT NULL,
+  customer_id uuid NOT NULL,
+  request_id uuid,
+  discount_applied numeric NOT NULL,
+  original_amount numeric NOT NULL,
+  final_amount numeric NOT NULL,
+  redeemed_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT campaign_redemptions_pkey PRIMARY KEY (id),
+  CONSTRAINT campaign_redemptions_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.seasonal_campaigns(id),
+  CONSTRAINT campaign_redemptions_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.profiles(id),
+  CONSTRAINT campaign_redemptions_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.service_requests(id)
+);
 CREATE TABLE public.commission_settings (
   id integer NOT NULL DEFAULT nextval('commission_settings_id_seq'::regclass),
   percent numeric NOT NULL CHECK (percent >= 0::numeric AND percent <= 100::numeric),
   effective_from timestamp with time zone NOT NULL DEFAULT now(),
   created_at timestamp with time zone NOT NULL DEFAULT now(),
+  surge_multiplier numeric DEFAULT 1.5 CHECK (surge_multiplier >= 1.0 AND surge_multiplier <= 5.0),
+  service_radius_km integer DEFAULT 10 CHECK (service_radius_km >= 1 AND service_radius_km <= 100),
+  emergency_radius_km integer DEFAULT 20 CHECK (emergency_radius_km >= 1 AND emergency_radius_km <= 100),
+  min_withdrawal_amount integer DEFAULT 100 CHECK (min_withdrawal_amount >= 1),
+  auto_payout_threshold integer DEFAULT 1000 CHECK (auto_payout_threshold >= 100),
+  updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT commission_settings_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.device_tokens (
@@ -240,8 +298,7 @@ CREATE TABLE public.helper_services (
   response_time_minutes integer DEFAULT 60,
   is_available boolean DEFAULT true,
   CONSTRAINT helper_services_pkey PRIMARY KEY (id),
-  CONSTRAINT helper_services_helper_id_fkey FOREIGN KEY (helper_id) REFERENCES public.profiles(id),
-  CONSTRAINT helper_services_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.service_categories(id)
+  CONSTRAINT helper_services_helper_id_fkey FOREIGN KEY (helper_id) REFERENCES public.profiles(id)
 );
 CREATE TABLE public.helper_specializations (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -253,8 +310,7 @@ CREATE TABLE public.helper_specializations (
   is_verified boolean DEFAULT false,
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   CONSTRAINT helper_specializations_pkey PRIMARY KEY (id),
-  CONSTRAINT helper_specializations_helper_id_fkey FOREIGN KEY (helper_id) REFERENCES public.profiles(id),
-  CONSTRAINT helper_specializations_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.service_categories(id)
+  CONSTRAINT helper_specializations_helper_id_fkey FOREIGN KEY (helper_id) REFERENCES public.profiles(id)
 );
 CREATE TABLE public.helper_statistics (
   helper_id uuid NOT NULL,
@@ -691,6 +747,51 @@ CREATE TABLE public.reviews (
   CONSTRAINT reviews_reviewer_id_fkey FOREIGN KEY (reviewer_id) REFERENCES public.profiles(id),
   CONSTRAINT reviews_reviewee_id_fkey FOREIGN KEY (reviewee_id) REFERENCES public.profiles(id)
 );
+CREATE TABLE public.seasonal_campaigns (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  name text NOT NULL,
+  description text,
+  campaign_type text NOT NULL CHECK (campaign_type = ANY (ARRAY['festival'::text, 'monsoon'::text, 'summer'::text, 'winter'::text, 'new_year'::text, 'special_event'::text, 'flash_sale'::text])),
+  discount_type text NOT NULL CHECK (discount_type = ANY (ARRAY['percentage'::text, 'flat'::text, 'bundle'::text])),
+  discount_value numeric NOT NULL,
+  min_order_amount numeric,
+  max_discount_amount numeric,
+  applicable_to text NOT NULL CHECK (applicable_to = ANY (ARRAY['all_services'::text, 'specific_services'::text, 'specific_categories'::text])),
+  target_user_segment text CHECK (target_user_segment = ANY (ARRAY['all'::text, 'new_users'::text, 'existing_users'::text, 'premium_users'::text, 'inactive_users'::text])),
+  start_date timestamp with time zone NOT NULL,
+  end_date timestamp with time zone NOT NULL,
+  is_active boolean DEFAULT true,
+  banner_url text,
+  terms_conditions text,
+  max_redemptions_per_user integer DEFAULT 1,
+  total_redemptions integer DEFAULT 0,
+  total_revenue numeric DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT seasonal_campaigns_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.service_bundles (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  name text NOT NULL,
+  description text,
+  bundle_type text NOT NULL CHECK (bundle_type = ANY (ARRAY['combo'::text, 'package'::text, 'subscription'::text, 'seasonal'::text])),
+  total_original_price numeric NOT NULL,
+  bundle_price numeric NOT NULL,
+  discount_percentage numeric DEFAULT 
+CASE
+    WHEN (total_original_price > (0)::numeric) THEN (((total_original_price - bundle_price) / total_original_price) * (100)::numeric)
+    ELSE (0)::numeric
+END,
+  validity_days integer,
+  max_redemptions integer,
+  is_active boolean DEFAULT true,
+  icon_url text,
+  banner_url text,
+  terms_conditions text,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT service_bundles_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.service_categories (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   parent_id uuid,
@@ -772,7 +873,6 @@ CREATE TABLE public.service_requests (
   requires_proof boolean DEFAULT true,
   CONSTRAINT service_requests_pkey PRIMARY KEY (id),
   CONSTRAINT service_requests_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.profiles(id),
-  CONSTRAINT service_requests_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.service_categories(id),
   CONSTRAINT service_requests_assigned_helper_id_fkey FOREIGN KEY (assigned_helper_id) REFERENCES public.profiles(id)
 );
 CREATE TABLE public.sla_configurations (
@@ -897,8 +997,16 @@ CREATE TABLE public.surge_pricing_rules (
   is_active boolean DEFAULT true,
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT surge_pricing_rules_pkey PRIMARY KEY (id),
-  CONSTRAINT surge_pricing_rules_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.service_categories(id)
+  CONSTRAINT surge_pricing_rules_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.system_settings (
+  id integer NOT NULL DEFAULT nextval('system_settings_id_seq'::regclass),
+  key text NOT NULL UNIQUE,
+  value jsonb NOT NULL,
+  description text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT system_settings_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.ticket_activity_log (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),

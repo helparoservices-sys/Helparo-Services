@@ -63,11 +63,6 @@ const menuItems = [
     href: '/admin/payments',
   },
   {
-    label: 'Categories',
-    icon: Tag,
-    href: '/admin/categories',
-  },
-  {
     label: 'Promocodes',
     icon: Ticket,
     href: '/admin/promos',

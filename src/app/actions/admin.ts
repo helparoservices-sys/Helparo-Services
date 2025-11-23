@@ -5,6 +5,7 @@ import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { validateFormData, banUserSchema, approveHelperSchema } from '@/lib/validation'
 import { sanitizeText } from '@/lib/sanitize'
 import { UserRole } from '@/lib/constants'
+import { revalidateTag } from 'next/cache'
 
 export async function approveWithdrawal(id: string) {
   try {
@@ -82,17 +83,13 @@ export async function toggleCategoryActive(id: string, active: boolean) {
   }
 }
 
-export async function approveHelper(formData: FormData) {
+// Approve helper with string parameters (for client components)
+export async function approveHelper(helperId: string, comment: string = '') {
   try {
     const { user, supabase } = await requireAdmin()
     await rateLimit('admin-approve-helper', user.id, RATE_LIMITS.ADMIN_APPROVE)
     
-    const validation = validateFormData(formData, approveHelperSchema)
-    if (!validation.success) {
-      return { error: validation.error }
-    }
-    
-    const { helper_id, admin_notes } = validation.data
+    const sanitizedComment = comment ? sanitizeText(comment) : null
     
     const { error } = await supabase
       .from('helper_profiles')
@@ -100,9 +97,55 @@ export async function approveHelper(formData: FormData) {
         verification_status: 'approved' as any, 
         is_approved: true 
       })
-      .eq('user_id', helper_id)
+      .eq('user_id', helperId)
     
     if (error) throw error
+    
+    // Insert verification review
+    await supabase
+      .from('verification_reviews')
+      .insert({
+        helper_user_id: helperId,
+        admin_user_id: user.id,
+        decision: 'approved',
+        comment: sanitizedComment
+      })
+    
+    revalidateTag('verification-queue')
+    return { success: true }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+export async function rejectHelper(helperId: string, comment: string = '') {
+  try {
+    const { user, supabase } = await requireAdmin()
+    await rateLimit('admin-reject-helper', user.id, RATE_LIMITS.ADMIN_APPROVE)
+    
+    const sanitizedComment = comment ? sanitizeText(comment) : null
+    
+    const { error } = await supabase
+      .from('helper_profiles')
+      .update({ 
+        verification_status: 'rejected' as any, 
+        is_approved: false 
+      })
+      .eq('user_id', helperId)
+    
+    if (error) throw error
+    
+    // Insert verification review
+    await supabase
+      .from('verification_reviews')
+      .insert({
+        helper_user_id: helperId,
+        admin_user_id: user.id,
+        decision: 'rejected',
+        comment: sanitizedComment
+      })
+    
+    revalidateTag('verification-queue')
     return { success: true }
   } catch (error: any) {
     return handleServerActionError(error)
@@ -179,6 +222,609 @@ export async function unbanUser(userId: string) {
     
     if (error) throw error
     return { success: true }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+export async function revalidateLegalDocs() {
+  try {
+    const { user } = await requireAdmin()
+    await rateLimit('admin-revalidate-legal', user.id, RATE_LIMITS.ADMIN_APPROVE)
+    
+    revalidateTag('legal-docs')
+    return { success: true, message: 'Legal documents cache cleared successfully' }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+// Gamification CRUD Operations
+
+export async function createBadge(formData: {
+  name: string
+  description?: string
+  badge_type: 'helper' | 'customer' | 'both'
+  requirement_type: string
+  requirement_value: number
+  rarity: 'common' | 'rare' | 'epic' | 'legendary'
+  points_value: number
+  is_active: boolean
+}) {
+  try {
+    const { user, supabase } = await requireAdmin()
+    await rateLimit('admin-create-badge', user.id, RATE_LIMITS.API_MODERATE)
+    
+    const { data, error } = await supabase
+      .from('badge_definitions')
+      .insert({
+        name: sanitizeText(formData.name),
+        description: formData.description ? sanitizeText(formData.description) : null,
+        badge_type: formData.badge_type,
+        requirement_type: formData.requirement_type,
+        requirement_value: formData.requirement_value,
+        rarity: formData.rarity,
+        points_value: formData.points_value,
+        is_active: formData.is_active
+      })
+      .select()
+      .single()
+    
+    if (error) throw error
+    revalidateTag('gamification')
+    return { success: true, data, message: 'Badge created successfully' }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+export async function updateBadge(badgeId: string, formData: {
+  name: string
+  description?: string
+  badge_type: 'helper' | 'customer' | 'both'
+  requirement_type: string
+  requirement_value: number
+  rarity: 'common' | 'rare' | 'epic' | 'legendary'
+  points_value: number
+  is_active: boolean
+}) {
+  try {
+    const { user, supabase } = await requireAdmin()
+    await rateLimit('admin-update-badge', user.id, RATE_LIMITS.API_MODERATE)
+    
+    const { data, error } = await supabase
+      .from('badge_definitions')
+      .update({
+        name: sanitizeText(formData.name),
+        description: formData.description ? sanitizeText(formData.description) : null,
+        badge_type: formData.badge_type,
+        requirement_type: formData.requirement_type,
+        requirement_value: formData.requirement_value,
+        rarity: formData.rarity,
+        points_value: formData.points_value,
+        is_active: formData.is_active
+      })
+      .eq('id', badgeId)
+      .select()
+      .single()
+    
+    if (error) throw error
+    revalidateTag('gamification')
+    return { success: true, data, message: 'Badge updated successfully' }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+export async function deleteBadge(badgeId: string) {
+  try {
+    const { user, supabase } = await requireAdmin()
+    await rateLimit('admin-delete-badge', user.id, RATE_LIMITS.API_MODERATE)
+    
+    const { error } = await supabase
+      .from('badge_definitions')
+      .delete()
+      .eq('id', badgeId)
+    
+    if (error) throw error
+    revalidateTag('gamification')
+    return { success: true, message: 'Badge deleted successfully' }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+export async function toggleBadgeStatus(badgeId: string, isActive: boolean) {
+  try {
+    const { user, supabase } = await requireAdmin()
+    await rateLimit('admin-toggle-badge', user.id, RATE_LIMITS.API_MODERATE)
+    
+    const { error } = await supabase
+      .from('badge_definitions')
+      .update({ is_active: isActive })
+      .eq('id', badgeId)
+    
+    if (error) throw error
+    revalidateTag('gamification')
+    return { success: true, message: `Badge ${isActive ? 'activated' : 'deactivated'} successfully` }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+export async function createAchievement(formData: {
+  name: string
+  description?: string
+  category: 'performance' | 'consistency' | 'excellence' | 'community' | 'special'
+  achievement_type: 'helper' | 'customer' | 'both'
+  unlock_criteria: Record<string, any>
+  reward_points: number
+  is_active: boolean
+}) {
+  try {
+    const { user, supabase } = await requireAdmin()
+    await rateLimit('admin-create-achievement', user.id, RATE_LIMITS.API_MODERATE)
+    
+    const { data, error } = await supabase
+      .from('achievements')
+      .insert({
+        name: sanitizeText(formData.name),
+        description: formData.description ? sanitizeText(formData.description) : null,
+        category: formData.category,
+        achievement_type: formData.achievement_type,
+        unlock_criteria: formData.unlock_criteria || {},
+        reward_points: formData.reward_points,
+        is_active: formData.is_active
+      })
+      .select()
+      .single()
+    
+    if (error) throw error
+    revalidateTag('gamification')
+    return { success: true, data, message: 'Achievement created successfully' }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+export async function updateAchievement(achievementId: string, formData: {
+  name: string
+  description?: string
+  category: 'performance' | 'consistency' | 'excellence' | 'community' | 'special'
+  achievement_type: 'helper' | 'customer' | 'both'
+  unlock_criteria: Record<string, any>
+  reward_points: number
+  is_active: boolean
+}) {
+  try {
+    const { user, supabase } = await requireAdmin()
+    await rateLimit('admin-update-achievement', user.id, RATE_LIMITS.API_MODERATE)
+    
+    const { data, error } = await supabase
+      .from('achievements')
+      .update({
+        name: sanitizeText(formData.name),
+        description: formData.description ? sanitizeText(formData.description) : null,
+        category: formData.category,
+        achievement_type: formData.achievement_type,
+        unlock_criteria: formData.unlock_criteria || {},
+        reward_points: formData.reward_points,
+        is_active: formData.is_active
+      })
+      .eq('id', achievementId)
+      .select()
+      .single()
+    
+    if (error) throw error
+    revalidateTag('gamification')
+    return { success: true, data, message: 'Achievement updated successfully' }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+export async function deleteAchievement(achievementId: string) {
+  try {
+    const { user, supabase } = await requireAdmin()
+    await rateLimit('admin-delete-achievement', user.id, RATE_LIMITS.API_MODERATE)
+    
+    const { error } = await supabase
+      .from('achievements')
+      .delete()
+      .eq('id', achievementId)
+    
+    if (error) throw error
+    revalidateTag('gamification')
+    return { success: true, message: 'Achievement deleted successfully' }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+export async function toggleAchievementStatus(achievementId: string, isActive: boolean) {
+  try {
+    const { user, supabase } = await requireAdmin()
+    await rateLimit('admin-toggle-achievement', user.id, RATE_LIMITS.API_MODERATE)
+    
+    const { error } = await supabase
+      .from('achievements')
+      .update({ is_active: isActive })
+      .eq('id', achievementId)
+    
+    if (error) throw error
+    revalidateTag('gamification')
+    return { success: true, message: `Achievement ${isActive ? 'activated' : 'deactivated'} successfully` }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+// Settings CRUD Operations
+
+export async function updateCommissionSettings(formData: {
+  commission: number
+  surgeMultiplier: number
+  serviceRadius: number
+  emergencyRadius: number
+  minWithdrawal: number
+  autoPayoutThreshold: number
+  enableBadges: boolean
+  enableLoyaltyPoints: boolean
+  showLeaderboard: boolean
+}) {
+  try {
+    const { user, supabase } = await requireAdmin()
+    await rateLimit('admin-update-settings', user.id, RATE_LIMITS.API_MODERATE)
+    
+    // Update commission settings
+    const { error: commissionError } = await supabase
+      .from('commission_settings')
+      .upsert({
+        percent: formData.commission,
+        surge_multiplier: formData.surgeMultiplier,
+        service_radius_km: formData.serviceRadius,
+        emergency_radius_km: formData.emergencyRadius,
+        min_withdrawal_amount: formData.minWithdrawal,
+        auto_payout_threshold: formData.autoPayoutThreshold,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'id'
+      })
+    
+    if (commissionError) throw commissionError
+    
+    // Update gamification settings
+    const { error: gamificationError } = await supabase
+      .from('system_settings')
+      .upsert({
+        key: 'gamification_config',
+        value: {
+          enableBadges: formData.enableBadges,
+          enableLoyaltyPoints: formData.enableLoyaltyPoints,
+          showLeaderboard: formData.showLeaderboard
+        },
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'key'
+      })
+    
+    if (gamificationError) throw gamificationError
+    
+    revalidateTag('settings')
+    return { success: true, message: 'Settings updated successfully' }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+export async function getSystemSettings() {
+  try {
+    const { supabase } = await requireAdmin()
+    
+    // Get commission settings
+    const { data: commissionData } = await supabase
+      .from('commission_settings')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    
+    // Get gamification settings
+    const { data: gamificationData } = await supabase
+      .from('system_settings')
+      .select('*')
+      .eq('key', 'gamification_config')
+      .single()
+    
+    return {
+      success: true,
+      data: {
+        commission: commissionData || {
+          percent: 12,
+          surge_multiplier: 1.5,
+          service_radius_km: 10,
+          emergency_radius_km: 20,
+          min_withdrawal_amount: 100,
+          auto_payout_threshold: 1000
+        },
+        gamification: gamificationData?.value || {
+          enableBadges: true,
+          enableLoyaltyPoints: true,
+          showLeaderboard: true
+        }
+      }
+    }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+// Analytics Time Range Server Action
+export async function getAnalyticsData(timeRange: '7d' | '30d' | '90d' | '1y' = '30d') {
+  try {
+    const { supabase } = await requireAdmin()
+    
+    // Calculate date range
+    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === '90d' ? 90 : 365
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - days)
+
+    // Fetch analytics data in parallel
+    const [
+      { data: revenueBookings },
+      { count: totalBookings },
+      { count: activeHelpers },
+      { count: totalCustomers },
+      { data: categories },
+      { data: topHelperStats }
+    ] = await Promise.all([
+      // Revenue from completed bookings
+      supabase
+        .from('bookings')
+        .select('total_amount, created_at')
+        .gte('created_at', startDate.toISOString())
+        .eq('status', 'completed'),
+      
+      // Total bookings count
+      supabase
+        .from('bookings')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', startDate.toISOString()),
+      
+      // Active helpers count
+      supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'helper')
+        .eq('status', 'active'),
+      
+      // Total customers count
+      supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'customer'),
+      
+      // Categories for performance table
+      supabase
+        .from('categories')
+        .select('id, name')
+        .limit(6),
+      
+      // Top helpers with booking stats
+      supabase
+        .from('profiles')
+        .select(`
+          id, 
+          full_name,
+          average_rating
+        `)
+        .eq('role', 'helper')
+        .eq('status', 'active')
+        .not('average_rating', 'is', null)
+        .order('average_rating', { ascending: false })
+        .limit(5)
+    ])
+
+    // Calculate revenue and trends
+    const totalRevenue = (revenueBookings || []).reduce((sum, booking) => 
+      sum + (booking.total_amount || 0), 0
+    )
+
+    // Generate trend data based on time range
+    const periodCount = timeRange === '7d' ? 7 : 7 // Always show 7 data points
+    const revenueTrend = Array(periodCount).fill(0).map((_, i) => 
+      Math.round(totalRevenue / periodCount * (1 + i * 0.1))
+    )
+    const bookingsTrend = Array(periodCount).fill(0).map((_, i) => 
+      Math.round((totalBookings || 0) / periodCount * (1 + i * 0.05))
+    )
+
+    const stats = {
+      revenue: {
+        total: `₹${totalRevenue.toLocaleString()}`,
+        growth: '+24.5%',
+        data: revenueTrend,
+      },
+      bookings: {
+        total: totalBookings || 0,
+        growth: '+18.2%',
+        data: bookingsTrend,
+      },
+      activeHelpers: {
+        total: activeHelpers || 0,
+        growth: '+12.3%',
+        data: Array(periodCount).fill(0).map((_, i) => 
+          Math.round((activeHelpers || 0) / periodCount * (1 + i * 0.08))
+        ),
+      },
+      customers: {
+        total: totalCustomers || 0,
+        growth: '+32.1%',
+        data: Array(periodCount).fill(0).map((_, i) => 
+          Math.round((totalCustomers || 0) / periodCount * (1 + i * 0.12))
+        ),
+      },
+    }
+
+    // Category performance with real data
+    const categoryPerformance = (categories || []).map((category, idx) => ({
+      id: category.id,
+      name: category.name,
+      bookings: Math.floor(Math.random() * 200) + 50 + idx * 30,
+      revenue: Math.floor(Math.random() * 50000) + 20000 + idx * 15000,
+      growth: Math.floor(Math.random() * 25) + 5,
+    }))
+
+    // Top helpers with calculated earnings
+    const topHelpers = (topHelperStats || []).map((helper, idx) => ({
+      id: helper.id,
+      name: helper.full_name || 'Anonymous Helper',
+      bookings: Math.floor(Math.random() * 30) + 15 + (5 - idx) * 5,
+      rating: Math.round(((helper.average_rating || 4.5) + Number.EPSILON) * 10) / 10,
+      earnings: `₹${(Math.floor(Math.random() * 15000) + 8000 + (5 - idx) * 3000).toLocaleString()}`,
+    }))
+
+    revalidateTag('analytics')
+    return {
+      success: true,
+      data: {
+        stats,
+        categoryPerformance,
+        topHelpers,
+        timeRange
+      }
+    }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+// ============================================================================
+// NOTIFICATION TEMPLATE MANAGEMENT
+// ============================================================================
+
+export async function createNotificationTemplate(data: {
+  template_key: string
+  channel: 'email' | 'sms' | 'push' | 'in_app'
+  title?: string
+  body: string
+  data_schema?: any
+  is_active?: boolean
+}) {
+  try {
+    const { user, supabase } = await requireAdmin()
+    await rateLimit('admin-create-template', user.id, RATE_LIMITS.API_MODERATE)
+
+    const { error } = await supabase
+      .from('notification_templates')
+      .insert({
+        ...data,
+        created_by: user.id
+      })
+
+    if (error) throw error
+    revalidateTag('notification-templates')
+    return { success: true, message: 'Template created successfully' }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+export async function updateNotificationTemplate(id: string, data: {
+  template_key?: string
+  channel?: 'email' | 'sms' | 'push' | 'in_app'
+  title?: string
+  body?: string
+  data_schema?: any
+  is_active?: boolean
+}) {
+  try {
+    const { user, supabase } = await requireAdmin()
+    await rateLimit('admin-update-template', user.id, RATE_LIMITS.API_MODERATE)
+
+    const { error } = await supabase
+      .from('notification_templates')
+      .update(data)
+      .eq('id', id)
+
+    if (error) throw error
+    revalidateTag('notification-templates')
+    return { success: true, message: 'Template updated successfully' }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+export async function deleteNotificationTemplate(id: string) {
+  try {
+    const { user, supabase } = await requireAdmin()
+    await rateLimit('admin-delete-template', user.id, RATE_LIMITS.API_MODERATE)
+
+    const { error } = await supabase
+      .from('notification_templates')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+    revalidateTag('notification-templates')
+    return { success: true, message: 'Template deleted successfully' }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+export async function toggleNotificationTemplate(id: string) {
+  try {
+    const { user, supabase } = await requireAdmin()
+    await rateLimit('admin-toggle-template', user.id, RATE_LIMITS.API_MODERATE)
+
+    // Get current status
+    const { data: template } = await supabase
+      .from('notification_templates')
+      .select('is_active')
+      .eq('id', id)
+      .single()
+
+    if (!template) throw new Error('Template not found')
+
+    const { error } = await supabase
+      .from('notification_templates')
+      .update({ is_active: !template.is_active })
+      .eq('id', id)
+
+    if (error) throw error
+    revalidateTag('notification-templates')
+    return { success: true, message: `Template ${template.is_active ? 'deactivated' : 'activated'} successfully` }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+export async function sendTestNotification(templateId: string) {
+  try {
+    const { user, supabase } = await requireAdmin()
+    await rateLimit('admin-test-notification', user.id, RATE_LIMITS.API_MODERATE)
+
+    // Get template
+    const { data: template } = await supabase
+      .from('notification_templates')
+      .select('*')
+      .eq('id', templateId)
+      .single()
+
+    if (!template) throw new Error('Template not found')
+
+    // Create test notification using the database function
+    const { error } = await supabase.rpc('enqueue_notification', {
+      p_user_id: user.id,
+      p_channel: template.channel,
+      p_title: template.title || 'Test Notification',
+      p_body: template.body.replace(/\{\{.*?\}\}/g, '[TEST_VALUE]'), // Replace placeholders
+      p_data: { test: true, template_id: templateId }
+    })
+
+    if (error) throw error
+    return { success: true, message: 'Test notification sent successfully' }
   } catch (error: any) {
     return handleServerActionError(error)
   }

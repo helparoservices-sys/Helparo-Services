@@ -23,8 +23,14 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white">
-              <Sparkles className="h-6 w-6" />
+            <div className="relative h-10 w-10 overflow-hidden rounded-lg bg-primary/10">
+              <img
+                src="/logo.jpg"
+                alt="Helparo"
+                className="h-full w-full object-cover"
+                loading="eager"
+                decoding="async"
+              />
             </div>
             <span className="text-xl font-bold">Helparo</span>
           </div>
@@ -244,8 +250,14 @@ export default function LandingPage() {
           <div className="grid gap-8 md:grid-cols-4">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white">
-                  <Sparkles className="h-5 w-5" />
+                <div className="relative h-8 w-8 overflow-hidden rounded-lg bg-primary/10">
+                  <img
+                    src="/logo.jpg"
+                    alt="Helparo"
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
                 <span className="text-lg font-bold">Helparo</span>
               </div>

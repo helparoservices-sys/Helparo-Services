@@ -137,6 +137,8 @@ function SignUpForm() {
           src="/logo.jpg" 
           alt="Helparo" 
           className="h-96 w-96 object-contain opacity-[0.03] dark:opacity-[0.02] animate-pulse"
+          loading="lazy"
+          decoding="async"
         />
       </div>
 
@@ -151,6 +153,8 @@ function SignUpForm() {
                   src="/logo.jpg"
                   alt="Helparo"
                   className="h-12 w-12 rounded-xl object-cover shadow-lg group-hover:shadow-xl transition-shadow duration-300"
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     const img = e.currentTarget as HTMLImageElement
                     img.style.display = 'none'

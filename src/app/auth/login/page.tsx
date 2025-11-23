@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Sparkles, Eye, EyeOff, Mail, Loader2 } from 'lucide-react'
-import { loginAction, sendMagicLinkAction } from '@/app/actions/auth'
+import { loginAction /*, sendMagicLinkAction*/ } from '@/app/actions/auth'
 import { logger } from '@/lib/logger'
 
 export default function LoginPage() {
-  const [loginMethod, setLoginMethod] = useState<'password' | 'magic-link'>('password')
+  // Magic Link temporarily disabled. Keep code commented for future re-enable.
+  const [loginMethod, setLoginMethod] = useState<'password'>('password')
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -18,7 +19,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [magicLinkSent, setMagicLinkSent] = useState(false)
+  // const [magicLinkSent, setMagicLinkSent] = useState(false)
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,11 +36,10 @@ export default function LoginPage() {
       if (result?.error) {
         setError(result.error)
         setLoading(false)
-      } else {
-        // Login successful - refresh the page to ensure auth state is updated
-        window.location.reload()
       }
-      // If successful, loginAction handles the redirect after refresh
+      else{
+        location.reload();
+      }
     } catch (err: any) {
       logger.error('Login error', { error: err })
       setError(err.message || 'Invalid email or password')
@@ -47,81 +47,30 @@ export default function LoginPage() {
     }
   }
 
-  const handleMagicLink = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+  // const handleMagicLink = async (e: React.FormEvent) => {
+  //   e.preventDefault()
+  //   setError('')
+  //   setLoading(true)
+  //   try {
+  //     const formDataObj = new FormData()
+  //     formDataObj.append('email', formData.email)
+  //     const result = await sendMagicLinkAction(formDataObj)
+  //     if (result?.error) {
+  //       setError(result.error)
+  //     } else if ('success' in result && result.success) {
+  //       setMagicLinkSent(true)
+  //     }
+  //   } catch (err: any) {
+  //     logger.error('Magic link error', { error: err })
+  //     setError(err.message || 'Failed to send magic link')
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // }
 
-    try {
-      const formDataObj = new FormData()
-      formDataObj.append('email', formData.email)
-      
-      const result = await sendMagicLinkAction(formDataObj)
-      
-      if (result?.error) {
-        setError(result.error)
-      } else if ('success' in result && result.success) {
-        setMagicLinkSent(true)
-      }
-    } catch (err: any) {
-      logger.error('Magic link error', { error: err })
-      setError(err.message || 'Failed to send magic link')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (magicLinkSent) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 animate-fade-in relative overflow-hidden">
-        {/* Logo Watermark Background */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <img 
-            src="/logo.jpg" 
-            alt="Helparo" 
-            className="h-96 w-96 object-contain opacity-[0.03] dark:opacity-[0.02] animate-pulse"
-          />
-        </div>
-
-        {/* Success Card */}
-        <div className="w-full max-w-md relative z-10">
-          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/20 dark:border-slate-700/50 shadow-2xl rounded-2xl p-8">
-            <div className="text-center space-y-6">
-              <div className="flex justify-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg">
-                  <Mail className="h-8 w-8" />
-                </div>
-              </div>
-              
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Check Your Email</h1>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  We've sent a magic link to <strong className="text-slate-900 dark:text-white">{formData.email}</strong>
-                </p>
-              </div>
-
-              <div className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
-                <p>
-                  Click the link in the email to sign in. The email is sent from <strong className="text-slate-900 dark:text-white">helparonotifications@gmail.com</strong>
-                </p>
-                <p className="text-xs">
-                  Don't see it? Check your spam folder.
-                </p>
-              </div>
-
-              <Button 
-                variant="outline" 
-                className="w-full bg-white/50 dark:bg-slate-700/50 hover:bg-white dark:hover:bg-slate-700 transition-all duration-300" 
-                onClick={() => setMagicLinkSent(false)}
-              >
-                Back to Login
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // if (magicLinkSent) {
+  //   return (/* Magic link confirmation UI disabled temporarily */ null)
+  // }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 animate-fade-in relative overflow-hidden">
@@ -131,6 +80,8 @@ export default function LoginPage() {
           src="/logo.jpg" 
           alt="Helparo" 
           className="h-96 w-96 object-contain opacity-[0.03] dark:opacity-[0.02] animate-pulse"
+          loading="lazy"
+          decoding="async"
         />
       </div>
 
@@ -145,6 +96,8 @@ export default function LoginPage() {
                   src="/logo.jpg"
                   alt="Helparo"
                   className="h-12 w-12 rounded-xl object-cover shadow-lg group-hover:shadow-xl transition-shadow duration-300"
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     const img = e.currentTarget as HTMLImageElement
                     img.style.display = 'none'
@@ -163,28 +116,6 @@ export default function LoginPage() {
             <p className="text-sm text-slate-600 dark:text-slate-400">
               Sign in to your account
             </p>
-          </div>
-
-          {/* Login Method Toggle */}
-          <div className="grid grid-cols-2 gap-2 mb-6">
-            <Button
-              type="button"
-              variant={loginMethod === 'password' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setLoginMethod('password')}
-              className={loginMethod === 'password' ? 'shadow-lg' : 'bg-white/50 dark:bg-slate-700/50'}
-            >
-              Password
-            </Button>
-            <Button
-              type="button"
-              variant={loginMethod === 'magic-link' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setLoginMethod('magic-link')}
-              className={loginMethod === 'magic-link' ? 'shadow-lg' : 'bg-white/50 dark:bg-slate-700/50'}
-            >
-              Magic Link
-            </Button>
           </div>
 
           {/* Password Login Form */}
@@ -254,45 +185,7 @@ export default function LoginPage() {
             </form>
           )}
 
-          {/* Magic Link Form */}
-          {loginMethod === 'magic-link' && (
-            <form onSubmit={handleMagicLink} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email-magic" className="text-slate-700 dark:text-slate-300">Email</Label>
-                <Input
-                  id="email-magic"
-                  type="email"
-                  placeholder="john@example.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                  className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
-                />
-              </div>
-
-              {error && (
-                <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg animate-fade-in">
-                  {error}
-                </div>
-              )}
-
-              <Button 
-                type="submit" 
-                className="w-full shadow-lg hover:shadow-xl transition-all duration-300" 
-                size="lg" 
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Sending Link...
-                  </>
-                ) : (
-                  'Send Magic Link'
-                )}
-              </Button>
-            </form>
-          )}
+          {/* Magic Link Form disabled temporarily */}
 
           {/* Sign Up Link */}
           <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-6">
@@ -301,19 +194,6 @@ export default function LoginPage() {
               Sign Up
             </Link>
           </p>
-
-          {/* Test Credentials - Development Only */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-6 p-4 bg-yellow-50/80 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg backdrop-blur-sm">
-              <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300 mb-2">🧪 Development Test Accounts</p>
-              <div className="space-y-1 text-xs text-yellow-700 dark:text-yellow-400">
-                <p><strong>Admin:</strong> admin@helparo.com / Admin@123</p>
-                <p><strong>Helper:</strong> helper@helparo.com / Helper@123</p>
-                <p><strong>Customer:</strong> customer@helparo.com / Customer@123</p>
-              </div>
-              <p className="text-[10px] text-yellow-600 dark:text-yellow-500 mt-2">These test accounts are hidden in production</p>
-            </div>
-          )}
         </div>
       </div>
     </div>

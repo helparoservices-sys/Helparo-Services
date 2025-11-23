@@ -39,6 +39,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [user, setUser] = useState<UserDetails | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string>('')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [recentBookings, setRecentBookings] = useState<any[]>([])
 
@@ -48,14 +49,34 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
 
   const fetchUserDetails = async () => {
     try {
-      // Fetch user profile
+      // Optimized single query with all user data
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          *,
+          helper_profiles (
+            service_categories,
+            hourly_rate,
+            experience_years,
+            verification_status,
+            is_approved,
+            address,
+            pincode
+          )
+        `)
         .eq('id', params.id)
         .single()
 
-      if (profileError) throw profileError
+      if (profileError) {
+        console.error('Profile fetch error:', profileError)
+        throw profileError
+      }
+
+      if (!profile) {
+        setUser(null)
+        setLoading(false)
+        return
+      }
 
       let userDetails: UserDetails = {
         id: profile.id,
@@ -68,117 +89,232 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
         ban_reason: profile.ban_reason,
         profile_image: profile.profile_image,
         joined_date: profile.created_at,
-        address: profile.address,
-        pincode: profile.pincode,
-        bio: profile.bio,
+        address: profile.helper_profiles?.[0]?.address,
+        pincode: profile.helper_profiles?.[0]?.pincode,
+        bio: undefined,
         total_bookings: 0,
         total_spent: 0
       }
 
-      // Role-specific data fetching
-      if (profile.role === 'customer') {
-        // Fetch customer bookings stats
-        const { data: bookings } = await supabase
-          .from('service_requests')
-          .select('id, final_price, estimated_price, status, created_at, service_categories!inner(name)')
-          .eq('customer_id', params.id)
-          .order('created_at', { ascending: false })
-          .limit(5)
+      // Parallel queries for role-specific data
+      const queries: Promise<any>[] = []
 
+      if (profile.role === 'customer') {
+        // Customer bookings query
+        queries.push(
+          supabase
+            .from('service_requests')
+            .select('id, estimated_price, status, created_at, title, category_id, service_categories!inner(name)')
+            .eq('customer_id', params.id)
+            .order('created_at', { ascending: false })
+            .limit(5)
+        )
+      } else if (profile.role === 'helper') {
+        // Helper jobs query
+        queries.push(
+          supabase
+            .from('service_requests')
+            .select('id, estimated_price, status, created_at, title')
+            .eq('assigned_helper_id', params.id)
+            .order('created_at', { ascending: false })
+            .limit(5)
+        )
+
+        // Helper reviews query
+        queries.push(
+          supabase
+            .from('reviews')
+            .select('rating')
+            .eq('helper_id', params.id)
+        )
+
+        // Helper badges query
+        queries.push(
+          supabase
+            .from('helper_badges')
+            .select('badge_definitions(name, icon_url)')
+            .eq('helper_id', params.id)
+        )
+      }
+
+      const results = await Promise.all(queries)
+
+      if (profile.role === 'customer') {
+        const { data: bookings } = results[0]
         const totalBookings = bookings?.length || 0
         const totalSpent = bookings?.filter(b => b.status === 'completed')
-          .reduce((sum, b) => sum + (b.final_price || b.estimated_price || 0), 0) || 0
+          .reduce((sum, b) => sum + (Number(b.estimated_price) || 0), 0) || 0
 
         userDetails.total_bookings = totalBookings
         userDetails.total_spent = totalSpent
         setRecentBookings(bookings || [])
 
       } else if (profile.role === 'helper') {
-        // Fetch helper profile and stats
-        const { data: helperProfile } = await supabase
-          .from('helper_profiles')
-          .select('*, service_categories')
-          .eq('user_id', params.id)
-          .single()
-
-        // Fetch helper jobs
-        const { data: jobs } = await supabase
-          .from('service_requests')
-          .select('id, final_price, status, created_at')
-          .eq('assigned_helper_id', params.id)
+        const { data: jobs } = results[0]
+        const { data: reviews } = results[1]
+        const { data: helperBadges } = results[2]
 
         const completedJobs = jobs?.filter(j => j.status === 'completed') || []
-        const totalEarnings = completedJobs.reduce((sum, j) => sum + (j.final_price || 0), 0)
-
-        // Fetch helper rating
-        const { data: reviews } = await supabase
-          .from('reviews')
-          .select('rating')
-          .eq('helper_id', params.id)
+        const totalEarnings = completedJobs.reduce((sum, j) => sum + (Number(j.estimated_price) || 0), 0)
 
         const rating = reviews && reviews.length > 0
           ? Math.round((reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) * 10) / 10
           : 0
 
-        // Fetch badges
-        const { data: helperBadges } = await supabase
-          .from('helper_badges')
-          .select('badge_definitions(name, icon_url)')
-          .eq('helper_id', params.id)
-
         userDetails.total_jobs_completed = completedJobs.length
         userDetails.total_earnings = totalEarnings
         userDetails.rating = rating
-        userDetails.service_categories = helperProfile?.service_categories || []
+        userDetails.service_categories = profile.helper_profiles?.[0]?.service_categories || []
         userDetails.badges = helperBadges?.map((b: any) => b.badge_definitions).filter(Boolean) || []
         setRecentBookings(jobs || [])
       }
 
       setUser(userDetails)
-    } catch (error) {
-      console.error('Error fetching user:', error)
+    } catch (error: any) {
+      console.error('Error fetching user details:', error)
+      setError(error.message || 'Failed to load user details')
     } finally {
       setLoading(false)
     }
   }
 
   const updateUserStatus = async (newStatus: 'active' | 'inactive' | 'suspended') => {
+    if (user?.status === newStatus) return
+    
     setActionLoading('status')
+    setError('')
+    
     try {
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
-        .update({ status: newStatus })
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', params.id)
 
-      if (error) throw error
+      if (updateError) {
+        console.error('Status update error:', updateError)
+        throw new Error(updateError.message)
+      }
 
       setUser(prev => prev ? { ...prev, status: newStatus } : null)
-    } catch (error) {
+      
+      // Show success (you can add a toast notification here)
+      console.log(`User status updated to ${newStatus}`)
+    } catch (error: any) {
       console.error('Error updating user status:', error)
+      setError(error.message || 'Failed to update status')
     } finally {
       setActionLoading(null)
     }
   }
 
   const handleBan = async () => {
+    if (!user) return
+    
+    const shouldBan = !user.is_banned
     setActionLoading('ban')
+    setError('')
+    
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_banned: !user?.is_banned })
-        .eq('id', params.id)
+      if (shouldBan) {
+        // Banning - require confirmation
+        const reason = prompt('Enter ban reason (required):')
+        if (!reason || reason.trim().length < 10) {
+          setError('Ban reason must be at least 10 characters')
+          setActionLoading(null)
+          return
+        }
 
-      if (error) throw error
+        const duration = prompt('Enter ban duration in days (0 for permanent):')
+        const durationDays = parseInt(duration || '0')
+        
+        if (isNaN(durationDays) || durationDays < 0) {
+          setError('Invalid duration')
+          setActionLoading(null)
+          return
+        }
 
-      setUser(prev => prev ? { ...prev, is_banned: !prev.is_banned } : null)
-    } catch (error) {
-      console.error('Error banning user:', error)
+        let ban_expires_at = null
+        if (durationDays > 0) {
+          const expiryDate = new Date()
+          expiryDate.setDate(expiryDate.getDate() + durationDays)
+          ban_expires_at = expiryDate.toISOString()
+        }
+
+        const { error: banError } = await supabase
+          .from('profiles')
+          .update({ 
+            is_banned: true,
+            ban_reason: reason.trim(),
+            banned_at: new Date().toISOString(),
+            ban_expires_at: ban_expires_at,
+            status: 'suspended', // Also suspend the account
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', params.id)
+
+        if (banError) {
+          console.error('Ban error:', banError)
+          throw new Error(banError.message)
+        }
+
+        setUser(prev => prev ? { 
+          ...prev, 
+          is_banned: true, 
+          ban_reason: reason.trim(),
+          status: 'suspended'
+        } : null)
+        
+        console.log('User banned successfully')
+      } else {
+        // Unbanning
+        const { error: unbanError } = await supabase
+          .from('profiles')
+          .update({ 
+            is_banned: false,
+            ban_reason: null,
+            banned_at: null,
+            banned_by: null,
+            ban_expires_at: null,
+            status: 'active', // Reactivate on unban
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', params.id)
+
+        if (unbanError) {
+          console.error('Unban error:', unbanError)
+          throw new Error(unbanError.message)
+        }
+
+        setUser(prev => prev ? { 
+          ...prev, 
+          is_banned: false, 
+          ban_reason: null,
+          status: 'active'
+        } : null)
+        
+        console.log('User unbanned successfully')
+      }
+    } catch (error: any) {
+      console.error('Error in ban/unban operation:', error)
+      setError(error.message || 'Failed to update ban status')
     } finally {
       setActionLoading(null)
     }
   }
 
-  if (loading) return <PageLoader />
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-700 dark:text-slate-300 font-medium">Loading user details...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!user) {
     return (
@@ -210,6 +346,25 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
             Back to Users
           </Button>
         </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-red-900 dark:text-red-300">Error</h3>
+                <p className="text-sm text-red-700 dark:text-red-400 mt-1">{error}</p>
+              </div>
+              <button
+                onClick={() => setError('')}
+                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* User Profile Card */}
         <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/20 dark:border-slate-700/50 shadow-lg rounded-2xl p-8">

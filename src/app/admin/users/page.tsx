@@ -58,7 +58,7 @@ export default function AdminUsersPage() {
     setError('')
 
     try {
-      // Use the imported supabase client
+      // Optimized query with better caching
       let query = supabase
         .from('profiles')
         .select(`
@@ -71,17 +71,17 @@ export default function AdminUsersPage() {
           is_banned,
           ban_reason,
           created_at,
-          helper_profiles (
+          helper_profiles!left (
             is_approved,
             service_categories
           )
-        `)
+        `, { count: 'exact' })
 
       if (roleFilter !== 'all') {
         query = query.eq('role', roleFilter)
       }
 
-      const { data, error: fetchError } = await query
+      const { data, error: fetchError, count } = await query
         .order('created_at', { ascending: false })
         .limit(100)
 
@@ -89,8 +89,6 @@ export default function AdminUsersPage() {
         console.error('Supabase error:', fetchError)
         setError(fetchError.message)
       } else {
-        console.log('Users loaded:', data?.length)
-        console.log('Users data:', data)
         setUsers((data as User[]) || [])
       }
     } catch (err: any) {
@@ -135,16 +133,12 @@ export default function AdminUsersPage() {
         banExpiresAt = expiryDate.toISOString()
       }
 
-      // Get current admin user ID
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
-
       const { error } = await supabase
         .from('profiles')
         .update({
           is_banned: true,
-          ban_reason: banReason,
+          ban_reason: banReason.trim(),
           banned_at: new Date().toISOString(),
-          banned_by: currentUser?.id || null,
           ban_expires_at: banExpiresAt,
           status: 'banned' // Set status to banned
         })
@@ -302,9 +296,6 @@ export default function AdminUsersPage() {
     setError('')
 
     try {
-      // Get current admin user ID
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
-
       // Update helper_profiles table
       const { error: helperError } = await supabase
         .from('helper_profiles')
@@ -358,7 +349,14 @@ export default function AdminUsersPage() {
   })
 
   if (loading) {
-    return <PageLoader text="Loading users..." />
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-700 dark:text-slate-300 font-medium">Loading users...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

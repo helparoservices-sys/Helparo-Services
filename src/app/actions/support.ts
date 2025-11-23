@@ -26,66 +26,32 @@ export async function createSupportTicket(formData: FormData) {
     const subject = sanitizeText(formData.get('subject') as string)
     const description = sanitizeHTML(formData.get('description') as string)
     const category = sanitizeText(formData.get('category') as string)
-    const priority = sanitizeText(formData.get('priority') as string)
-    const attachments = sanitizeText(formData.get('attachments') as string)
+    const priority = sanitizeText(formData.get('priority') as string || 'medium')
+    const requestId = formData.get('request_id') as string | null
 
-    if (!subject || !description || !category || !priority) {
-      return { error: 'Invalid input data' }
+    if (!subject || !description || !category) {
+      return { error: 'Missing required fields' }
     }
 
     const supabase = await createClient()
 
-    // Get user profile for ticket number generation
-    const { count: existingCount } = await supabase
-      .from('support_tickets')
-      .select('*', { count: 'exact', head: true })
-
-    const ticketNumber = `TICK-${String(existingCount! + 1).padStart(6, '0')}`
-
-    // Get SLA configuration for this category
-    const { data: slaConfig } = await supabase
-      .from('sla_configurations')
-      .select('response_time_hours, resolution_time_hours')
-      .eq('category', category)
-      .eq('priority', priority)
-      .eq('is_active', true)
-      .maybeSingle()
-
-    let responseDeadline = null
-    let resolutionDeadline = null
-
-    if (slaConfig) {
-      const now = new Date()
-      responseDeadline = new Date(now.getTime() + slaConfig.response_time_hours * 60 * 60 * 1000).toISOString()
-      resolutionDeadline = new Date(now.getTime() + slaConfig.resolution_time_hours * 60 * 60 * 1000).toISOString()
-    }
-
-    const { data: ticket, error } = await supabase
-      .from('support_tickets')
-      .insert({
-        ticket_number: ticketNumber,
-        customer_id: user.id,
-        subject,
-        description,
-        category,
-        priority,
-        status: 'open',
-        attachments: attachments ? attachments.split(',') : [],
-        sla_response_deadline: responseDeadline,
-        sla_resolution_deadline: resolutionDeadline
-      })
-      .select()
-      .single()
+    // Use RPC function from migration
+    const { data: ticketId, error } = await supabase.rpc('create_support_ticket', {
+      p_user_id: user.id,
+      p_category: category,
+      p_priority: priority,
+      p_subject: subject,
+      p_description: description,
+      p_request_id: requestId,
+      p_attachments: null
+    })
 
     if (error) throw error
 
-    // Log activity
-    await logTicketActivity(ticket.id, user.id, 'created', 'Ticket created')
-
     revalidatePath('/customer/support')
     revalidatePath('/admin/support')
-    logger.info('Support ticket created', { userId: user.id, ticketId: ticket.id, ticketNumber })
-    return { success: true, ticket }
+    logger.info('Support ticket created', { userId: user.id, ticketId })
+    return { success: true, ticketId }
   } catch (error: any) {
     logger.error('Create support ticket error', { error })
     return handleServerActionError(error)
@@ -99,39 +65,19 @@ export async function updateTicketStatus(ticketId: string, status: string, notes
 
     const supabase = await createClient()
 
-    const updateData: any = { status }
-
-    if (status === 'in_progress' && !updateData.first_response_at) {
-      updateData.first_response_at = new Date().toISOString()
-    }
-
-    if (status === 'resolved') {
-      updateData.resolved_at = new Date().toISOString()
-      updateData.resolved_by = user.id
-    }
-
-    if (status === 'closed') {
-      updateData.closed_at = new Date().toISOString()
-      updateData.closed_by = user.id
-    }
-
-    const { data: ticket, error } = await supabase
-      .from('support_tickets')
-      .update(updateData)
-      .eq('id', ticketId)
-      .select()
-      .single()
+    // Use RPC function from migration
+    const { data, error } = await supabase.rpc('update_ticket_status', {
+      p_ticket_id: ticketId,
+      p_status: status,
+      p_resolution_notes: notes || null
+    })
 
     if (error) throw error
-
-    // Log activity
-    const safeNotes = notes ? sanitizeText(notes) : ''
-    await logTicketActivity(ticketId, user.id, 'status_changed', `Status changed to ${status}${safeNotes ? `: ${safeNotes}` : ''}`)
 
     revalidatePath('/customer/support')
     revalidatePath('/admin/support')
     logger.info('Ticket status updated', { userId: user.id, ticketId, status })
-    return { success: true, ticket }
+    return { success: true }
   } catch (error: any) {
     logger.error('Update ticket status error', { error })
     return handleServerActionError(error)
@@ -145,31 +91,17 @@ export async function assignTicketToAgent(ticketId: string, agentId: string) {
 
     const supabase = await createClient()
 
-    const { data: ticket, error } = await supabase
-      .from('support_tickets')
-      .update({
-        assigned_to: agentId,
-        status: 'in_progress'
-      })
-      .eq('id', ticketId)
-      .select()
-      .single()
+    // Use RPC function from migration
+    const { data, error } = await supabase.rpc('assign_ticket', {
+      p_ticket_id: ticketId,
+      p_agent_id: agentId
+    })
 
     if (error) throw error
 
-    // Get agent name
-    const { data: agent } = await supabase
-      .from('profiles')
-      .select('full_name')
-      .eq('id', agentId)
-      .single()
-
-    // Log activity
-    await logTicketActivity(ticketId, user.id, 'assigned', `Assigned to ${agent?.full_name || 'agent'}`)
-
     revalidatePath('/admin/support')
     logger.info('Ticket assigned to agent', { adminId: user.id, ticketId, agentId })
-    return { success: true, ticket }
+    return { success: true }
   } catch (error: any) {
     logger.error('Assign ticket to agent error', { error })
     return handleServerActionError(error)
@@ -192,7 +124,7 @@ export async function getMyTickets(status?: string) {
           avatar_url
         )
       `)
-      .eq('customer_id', user.id)
+      .eq('user_id', user.id)
 
     if (status) {
       query = query.eq('status', status)
@@ -221,7 +153,7 @@ export async function getAllTickets(filters?: { status?: string, priority?: stri
       .from('support_tickets')
       .select(`
         *,
-        customer:profiles!support_tickets_customer_id_fkey(
+        customer:profiles!support_tickets_user_id_fkey(
           full_name,
           email,
           phone
@@ -270,7 +202,7 @@ export async function getTicketDetails(ticketId: string) {
       .from('support_tickets')
       .select(`
         *,
-        customer:profiles!support_tickets_customer_id_fkey(
+        customer:profiles!support_tickets_user_id_fkey(
           full_name,
           email,
           phone,
@@ -287,7 +219,7 @@ export async function getTicketDetails(ticketId: string) {
         ),
         activity_log:ticket_activity_log(
           *,
-          user:profiles(full_name)
+          actor:profiles(full_name)
         )
       `)
       .eq('id', ticketId)
@@ -313,10 +245,10 @@ export async function sendTicketMessage(formData: FormData) {
 
     const ticketId = sanitizeText(formData.get('ticket_id') as string)
     const message = sanitizeHTML(formData.get('message') as string)
-    const attachments = sanitizeText(formData.get('attachments') as string)
+    const attachments = formData.get('attachments') as string
 
     if (!ticketId || !message) {
-      return { error: 'Invalid input data' }
+      return { error: 'Missing required fields' }
     }
 
     const supabase = await createClient()
@@ -324,7 +256,7 @@ export async function sendTicketMessage(formData: FormData) {
     // Check if user is customer or assigned agent
     const { data: ticket } = await supabase
       .from('support_tickets')
-      .select('customer_id, assigned_to')
+      .select('user_id, assigned_to')
       .eq('id', ticketId)
       .single()
 
@@ -338,11 +270,11 @@ export async function sendTicketMessage(formData: FormData) {
       .eq('id', user.id)
       .single()
 
-    if (ticket.customer_id !== user.id && ticket.assigned_to !== user.id && profile?.role !== 'admin') {
+    if (ticket.user_id !== user.id && ticket.assigned_to !== user.id && profile?.role !== 'admin') {
       return { error: 'Unauthorized' }
     }
 
-    const isInternal = profile?.role === 'admin' && ticket.customer_id !== user.id
+    const isInternal = profile?.role === 'admin' && ticket.user_id !== user.id
 
     const { data: ticketMessage, error } = await supabase
       .from('ticket_messages')
@@ -350,22 +282,13 @@ export async function sendTicketMessage(formData: FormData) {
         ticket_id: ticketId,
         sender_id: user.id,
         message,
-        attachments: attachments ? attachments.split(',') : [],
+        attachments: attachments ? JSON.parse(attachments) : null,
         is_internal: isInternal
       })
       .select()
       .single()
 
     if (error) throw error
-
-    // Update ticket's last_message_at
-    await supabase
-      .from('support_tickets')
-      .update({ last_message_at: new Date().toISOString() })
-      .eq('id', ticketId)
-
-    // Log activity
-    await logTicketActivity(ticketId, user.id, 'message_added', isInternal ? 'Internal note added' : 'Message sent')
 
     revalidatePath('/customer/support')
     revalidatePath('/admin/support')
@@ -417,82 +340,6 @@ export async function getTicketMessages(ticketId: string, includeInternal = fals
 // SLA CONFIGURATIONS
 // ============================================
 
-export async function createSLAConfiguration(formData: FormData) {
-  try {
-    const { user } = await requireAuth(UserRole.ADMIN)
-    await rateLimit('create-sla-config', user.id, RATE_LIMITS.ADMIN_APPROVE)
-
-    const category = sanitizeText(formData.get('category') as string)
-    const priority = sanitizeText(formData.get('priority') as string)
-    const responseTime = parseInt(formData.get('response_time_hours') as string)
-    const resolutionTime = parseInt(formData.get('resolution_time_hours') as string)
-
-    if (!category || !priority || isNaN(responseTime) || isNaN(resolutionTime)) {
-      return { error: 'Invalid input data' }
-    }
-
-    const supabase = await createClient()
-
-    const { data, error } = await supabase
-      .from('sla_configurations')
-      .insert({
-        category,
-        priority,
-        response_time_hours: responseTime,
-        resolution_time_hours: resolutionTime,
-        is_active: true
-      })
-      .select()
-      .single()
-
-    if (error) throw error
-
-    revalidatePath('/admin/support/sla')
-    logger.info('SLA configuration created', { adminId: user.id, category, priority })
-    return { success: true, slaConfig: data }
-  } catch (error: any) {
-    logger.error('Create SLA configuration error:', error)
-    return handleServerActionError(error)
-  }
-}
-
-export async function updateSLAConfiguration(configId: string, formData: FormData) {
-  try {
-    const { user } = await requireAuth(UserRole.ADMIN)
-    await rateLimit('update-sla-config', user.id, RATE_LIMITS.ADMIN_APPROVE)
-
-    const responseTime = parseInt(formData.get('response_time_hours') as string)
-    const resolutionTime = parseInt(formData.get('resolution_time_hours') as string)
-    const isActive = formData.get('is_active') === 'true'
-
-    if (isNaN(responseTime) || isNaN(resolutionTime)) {
-      return { error: 'Invalid input data' }
-    }
-
-    const supabase = await createClient()
-
-    const { data, error } = await supabase
-      .from('sla_configurations')
-      .update({
-        response_time_hours: responseTime,
-        resolution_time_hours: resolutionTime,
-        is_active: isActive
-      })
-      .eq('id', configId)
-      .select()
-      .single()
-
-    if (error) throw error
-
-    revalidatePath('/admin/support/sla')
-    logger.info('SLA configuration updated', { adminId: user.id, configId })
-    return { success: true, slaConfig: data }
-  } catch (error: any) {
-    logger.error('Update SLA configuration error:', error)
-    return handleServerActionError(error)
-  }
-}
-
 export async function getSLAConfigurations() {
   const supabase = await createClient()
 
@@ -500,7 +347,6 @@ export async function getSLAConfigurations() {
     const { data, error } = await supabase
       .from('sla_configurations')
       .select('*')
-      .order('category')
       .order('priority')
 
     if (error) throw error
@@ -516,47 +362,14 @@ export async function getTicketSLAStatus(ticketId: string) {
   const supabase = await createClient()
 
   try {
-    const { data: ticket } = await supabase
-      .from('support_tickets')
-      .select('sla_response_deadline, sla_resolution_deadline, first_response_at, resolved_at, status')
-      .eq('id', ticketId)
-      .single()
+    // Use RPC function from migration
+    const { data, error } = await supabase.rpc('get_ticket_sla_status', {
+      p_ticket_id: ticketId
+    })
 
-    if (!ticket) {
-      return { error: 'Ticket not found' }
-    }
+    if (error) throw error
 
-    const now = new Date()
-    let responseStatus: 'met' | 'breached' | 'pending' = 'pending'
-    let resolutionStatus: 'met' | 'breached' | 'pending' = 'pending'
-
-    // Check response SLA
-    if (ticket.first_response_at) {
-      const responseDeadline = new Date(ticket.sla_response_deadline!)
-      const responseTime = new Date(ticket.first_response_at)
-      responseStatus = responseTime <= responseDeadline ? 'met' : 'breached'
-    } else if (ticket.sla_response_deadline && now > new Date(ticket.sla_response_deadline)) {
-      responseStatus = 'breached'
-    }
-
-    // Check resolution SLA
-    if (ticket.resolved_at) {
-      const resolutionDeadline = new Date(ticket.sla_resolution_deadline!)
-      const resolutionTime = new Date(ticket.resolved_at)
-      resolutionStatus = resolutionTime <= resolutionDeadline ? 'met' : 'breached'
-    } else if (ticket.sla_resolution_deadline && now > new Date(ticket.sla_resolution_deadline)) {
-      resolutionStatus = 'breached'
-    }
-
-    return {
-      success: true,
-      slaStatus: {
-        responseStatus,
-        resolutionStatus,
-        responseDeadline: ticket.sla_response_deadline,
-        resolutionDeadline: ticket.sla_resolution_deadline
-      }
-    }
+    return { success: true, slaStatus: data?.[0] }
   } catch (error: any) {
     logger.error('Get ticket SLA status error:', error)
     return handleServerActionError(error)
@@ -567,7 +380,7 @@ export async function getTicketSLAStatus(ticketId: string) {
 // TICKET ACTIVITY LOG
 // ============================================
 
-export async function logTicketActivity(ticketId: string, userId: string, activityType: string, description: string) {
+export async function logTicketActivity(ticketId: string, actorId: string, action: string, notes?: string, oldValue?: string, newValue?: string) {
   const supabase = await createClient()
 
   try {
@@ -575,9 +388,11 @@ export async function logTicketActivity(ticketId: string, userId: string, activi
       .from('ticket_activity_log')
       .insert({
         ticket_id: ticketId,
-        user_id: userId,
-        activity_type: activityType,
-        description
+        actor_id: actorId,
+        action,
+        old_value: oldValue,
+        new_value: newValue,
+        notes
       })
 
     if (error) throw error
@@ -597,7 +412,7 @@ export async function getTicketActivityLog(ticketId: string) {
       .from('ticket_activity_log')
       .select(`
         *,
-        user:profiles(
+        actor:profiles(
           full_name,
           avatar_url
         )

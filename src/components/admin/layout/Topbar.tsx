@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import {
   Search,
   Bell,
@@ -12,34 +12,50 @@ import {
   User,
   LogOut,
   Settings,
-  HelpCircle,
   Loader2
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
 interface TopbarProps {
-  sidebarCollapsed: boolean
   onToggleSidebar: () => void
 }
 
-export default function Topbar({ sidebarCollapsed, onToggleSidebar }: TopbarProps) {
-  const router = useRouter()
+interface Notification {
+  id: string
+  title: string | null
+  body: string
+  created_at: string
+  read_at: string | null
+}
+
+export default function Topbar({ onToggleSidebar }: TopbarProps) {
   const [darkMode, setDarkMode] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [userEmail, setUserEmail] = useState('')
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
-    // Get user info
-    const getUser = async () => {
+    // Get user info and notifications
+    const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUserEmail(user.email || '')
+        fetchNotifications(user.id)
       }
     }
-    getUser()
+    init()
+
+    // Set up auto-refresh for notifications every 30 seconds
+    const interval = setInterval(async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        fetchNotifications(user.id)
+      }
+    }, 30000)
 
     // Check dark mode preference
     const isDark = localStorage.getItem('darkMode') === 'true'
@@ -47,7 +63,61 @@ export default function Topbar({ sidebarCollapsed, onToggleSidebar }: TopbarProp
     if (isDark) {
       document.documentElement.classList.add('dark')
     }
+
+    // Handle click outside to close dropdowns
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      if (!target.closest('.notification-dropdown')) {
+        setShowNotifications(false)
+      }
+      if (!target.closest('.profile-dropdown')) {
+        setShowProfile(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
   }, [])
+
+  const fetchNotifications = async (userId: string) => {
+    try {
+      const { data: notifs } = await supabase
+        .from('notifications')
+        .select('id, title, body, created_at, read_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(5)
+      
+      if (notifs) {
+        setNotifications(notifs)
+        setUnreadCount(notifs.filter(n => !n.read_at).length)
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error)
+    }
+  }
+
+  const markAsRead = async (notificationId: string) => {
+    try {
+      await supabase
+        .from('notifications')
+        .update({ read_at: new Date().toISOString() })
+        .eq('id', notificationId)
+      
+      // Update local state
+      setNotifications(prev => 
+        prev.map(n => 
+          n.id === notificationId ? { ...n, read_at: new Date().toISOString() } : n
+        )
+      )
+      setUnreadCount(prev => Math.max(0, prev - 1))
+    } catch (error) {
+      console.error('Error marking notification as read:', error)
+    }
+  }
 
   const toggleDarkMode = () => {
     const newMode = !darkMode
@@ -110,9 +180,11 @@ export default function Topbar({ sidebarCollapsed, onToggleSidebar }: TopbarProp
           {/* Logo */}
           <Link href="/admin/dashboard" className="flex items-center gap-2 group">
             <div className="relative w-8 h-8 rounded-lg overflow-hidden shadow-lg group-hover:shadow-xl transition-shadow">
-              <img
+              <Image
                 src="/logo.jpg"
                 alt="Helparo"
+                width={32}
+                height={32}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   const img = e.currentTarget as HTMLImageElement
@@ -133,7 +205,7 @@ export default function Topbar({ sidebarCollapsed, onToggleSidebar }: TopbarProp
 
         {/* Center - Search Bar */}
         <div className="flex-1 max-w-2xl">
-          <div className="relative">
+          <form onSubmit={(e) => e.preventDefault()} className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
@@ -142,7 +214,7 @@ export default function Topbar({ sidebarCollapsed, onToggleSidebar }: TopbarProp
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
             />
-          </div>
+          </form>
         </div>
 
         {/* Right Section */}
@@ -161,55 +233,79 @@ export default function Topbar({ sidebarCollapsed, onToggleSidebar }: TopbarProp
           </button>
 
           {/* Notifications */}
-          <div className="relative">
+          <div className="relative notification-dropdown">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="relative p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               aria-label="Notifications"
             >
-              <Bell className="h-5 w-5 text-slate-700 dark:text-slate-300" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              <Bell className={`h-5 w-5 text-slate-700 dark:text-slate-300 transition-all ${unreadCount > 0 ? 'animate-bounce text-red-500 dark:text-red-400' : ''}`} />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </button>
 
             {/* Notifications Dropdown */}
             {showNotifications && (
-              <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
                 <div className="p-4 border-b border-slate-200 dark:border-slate-700">
                   <h3 className="font-semibold text-sm">Notifications</h3>
+                  {unreadCount > 0 && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{unreadCount} unread</p>
+                  )}
                 </div>
                 <div className="max-h-96 overflow-y-auto">
-                  <div className="p-4 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
-                    <p className="text-sm font-medium">New helper verification pending</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">2 minutes ago</p>
-                  </div>
-                  <div className="p-4 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
-                    <p className="text-sm font-medium">Support ticket requires attention</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">15 minutes ago</p>
-                  </div>
-                  <div className="p-4 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
-                    <p className="text-sm font-medium">Payment dispute reported</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">1 hour ago</p>
-                  </div>
+                  {notifications.length > 0 ? (
+                    notifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer border-b border-slate-100 dark:border-slate-700/50 last:border-0 transition-all ${
+                          !notif.read_at ? 'bg-blue-50/50 dark:bg-blue-900/10 border-l-4 border-l-blue-500' : ''
+                        }`}
+                        onClick={() => !notif.read_at && markAsRead(notif.id)}
+                      >
+                        {notif.title && (
+                          <div className="flex items-center gap-2">
+                            {!notif.read_at && <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />}
+                            <p className="text-sm font-medium text-slate-900 dark:text-white">{notif.title}</p>
+                          </div>
+                        )}
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{notif.body}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                          {new Date(notif.created_at).toLocaleString('en-IN', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            timeZone: 'Asia/Kolkata'
+                          })}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-8 text-center">
+                      <Bell className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+                      <p className="text-sm text-slate-600 dark:text-slate-400">No notifications yet</p>
+                    </div>
+                  )}
                 </div>
                 <div className="p-3 border-t border-slate-200 dark:border-slate-700 text-center">
-                  <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                  <Link
+                    href="/admin/notifications/all"
+                    className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                    onClick={() => setShowNotifications(false)}
+                  >
                     View All Notifications
-                  </button>
+                  </Link>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Help */}
-          <button
-            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            aria-label="Help"
-          >
-            <HelpCircle className="h-5 w-5 text-slate-700 dark:text-slate-300" />
-          </button>
-
           {/* Profile Dropdown */}
-          <div className="relative">
+          <div className="relative profile-dropdown">
             <button
               onClick={() => setShowProfile(!showProfile)}
               className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -236,13 +332,6 @@ export default function Topbar({ sidebarCollapsed, onToggleSidebar }: TopbarProp
                   >
                     <Settings className="h-4 w-4" />
                     Settings
-                  </Link>
-                  <Link
-                    href="/admin/help"
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 text-sm"
-                  >
-                    <HelpCircle className="h-4 w-4" />
-                    Help & Support
                   </Link>
                 </div>
                 <div className="p-2 border-t border-slate-200 dark:border-slate-700">

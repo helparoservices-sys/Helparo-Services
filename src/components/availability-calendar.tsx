@@ -109,7 +109,7 @@ export function HelperAvailabilityCalendar({
           }`}
         >
           <div className="text-xs text-gray-600 mb-1">
-            {date.toLocaleDateString('en-US', { weekday: 'short' })}
+            {date.toLocaleDateString('en-IN', { weekday: 'short' })}
           </div>
           <div className={`text-2xl font-bold ${
             isToday ? 'text-purple-600' : 'text-gray-900'
@@ -245,7 +245,7 @@ export function HelperAvailabilityCalendar({
                 ← Previous Week
               </Button>
               <span className="font-medium">
-                {selectedDate.toLocaleDateString('en-US', { 
+                {selectedDate.toLocaleDateString('en-IN', { 
                   month: 'long', 
                   year: 'numeric' 
                 })}
@@ -263,7 +263,7 @@ export function HelperAvailabilityCalendar({
             {/* Time Slots */}
             <div>
               <h3 className="font-medium mb-3">
-                Available Times - {selectedDate.toLocaleDateString('en-US', { 
+                Available Times - {selectedDate.toLocaleDateString('en-IN', { 
                   weekday: 'long',
                   month: 'long',
                   day: 'numeric'
