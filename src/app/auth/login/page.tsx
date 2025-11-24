@@ -37,9 +37,8 @@ export default function LoginPage() {
         setError(result.error)
         setLoading(false)
       }
-      else{
-        location.reload();
-      }
+      // Success - loginAction handles the redirect server-side
+      // No need to do anything here, just keep loading state
     } catch (err: any) {
       logger.error('Login error', { error: err })
       setError(err.message || 'Invalid email or password')
