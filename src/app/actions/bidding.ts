@@ -19,13 +19,13 @@ export async function counterOffer(applicationId: string, newAmount: number, not
       p_application_id: applicationId, 
       p_new_amount: newAmount, 
       p_note: safeNote 
-    } as any)
+    } as unknown)
     
     if (error) throw error
 
     logger.info('Counter offer made', { userId: user.id, applicationId, newAmount })
     return { data }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Counter offer error', { error })
     return handleServerActionError(error)
   }
@@ -37,13 +37,13 @@ export async function acceptBid(applicationId: string) {
     await rateLimit('accept-bid', user.id, RATE_LIMITS.API_MODERATE)
 
     const supabase = await createClient()
-    const { data, error } = await supabase.rpc('accept_bid', { p_application_id: applicationId } as any)
+    const { data, error } = await supabase.rpc('accept_bid', { p_application_id: applicationId } as unknown)
     
     if (error) throw error
 
     logger.info('Bid accepted', { userId: user.id, applicationId })
     return { data }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Accept bid error', { error })
     return handleServerActionError(error)
   }
@@ -60,13 +60,13 @@ export async function rejectBid(applicationId: string, reason?: string) {
     const { data, error } = await supabase.rpc('reject_bid', { 
       p_application_id: applicationId, 
       p_reason: safeReason 
-    } as any)
+    } as unknown)
     
     if (error) throw error
 
     logger.info('Bid rejected', { userId: user.id, applicationId })
     return { data }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Reject bid error', { error })
     return handleServerActionError(error)
   }
@@ -83,13 +83,13 @@ export async function withdrawBid(applicationId: string, reason?: string) {
     const { data, error } = await supabase.rpc('withdraw_bid', { 
       p_application_id: applicationId, 
       p_reason: safeReason 
-    } as any)
+    } as unknown)
     
     if (error) throw error
 
     logger.info('Bid withdrawn', { userId: user.id, applicationId })
     return { data }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Withdraw bid error', { error })
     return handleServerActionError(error)
   }
@@ -100,12 +100,12 @@ export async function getBidStats(requestId: string) {
     await rateLimit('get-bid-stats', requestId, RATE_LIMITS.API_MODERATE)
 
     const supabase = await createClient()
-    const { data: stats, error } = await supabase.rpc('get_bid_statistics', { p_request_id: requestId } as any)
+    const { data: stats, error } = await supabase.rpc('get_bid_statistics', { p_request_id: requestId } as unknown)
     
     if (error) throw error
 
     return { data: stats }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Get bid stats error', { error })
     return handleServerActionError(error)
   }

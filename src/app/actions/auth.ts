@@ -6,7 +6,7 @@ import { rateLimit, RATE_LIMITS, clearRateLimit } from '@/lib/rate-limit'
 import { validateFormData, loginSchema, magicLinkSchema } from '@/lib/validation'
 import { handleServerActionError } from '@/lib/errors'
 import { sanitizeEmail } from '@/lib/sanitize'
-import { UserRole } from '@/lib/constants'
+
 
 export async function loginAction(formData: FormData) {
   try {

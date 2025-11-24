@@ -34,7 +34,25 @@ export default async function AdminReferralsPage() {
     .limit(50)
 
   // Calculate statistics
-  const referrals = Array.isArray(referralsData) ? referralsData : []
+  const rawReferrals = Array.isArray(referralsData) ? referralsData : []
+  
+  // Transform referrals to flatten user profiles from array to object
+  const referrals = rawReferrals.map(ref => ({
+    id: ref.id,
+    referrer_id: ref.referrer_id,
+    referred_user_id: ref.referred_user_id,
+    referral_code: ref.referral_code,
+    status: ref.status,
+    created_at: ref.created_at,
+    converted_at: ref.converted_at,
+    rewarded_at: ref.rewarded_at,
+    referrer: Array.isArray(ref.referrer) && ref.referrer.length > 0
+      ? ref.referrer[0]
+      : { id: ref.referrer_id, full_name: 'Unknown', email: '', avatar_url: null },
+    referred_user: Array.isArray(ref.referred_user) && ref.referred_user.length > 0
+      ? ref.referred_user[0]
+      : { id: ref.referred_user_id, full_name: 'Unknown', email: '', avatar_url: null }
+  }))
   
   const stats = {
     totalReferrals: referrals.length,

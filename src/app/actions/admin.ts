@@ -2,7 +2,7 @@
 import { requireAdmin } from '@/lib/auth'
 import { handleServerActionError } from '@/lib/errors'
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit'
-import { validateFormData, banUserSchema, approveHelperSchema } from '@/lib/validation'
+import { validateFormData, banUserSchema } from '@/lib/validation'
 import { sanitizeText } from '@/lib/sanitize'
 import { UserRole } from '@/lib/constants'
 import { revalidateTag } from 'next/cache'
@@ -14,11 +14,11 @@ export async function approveWithdrawal(id: string) {
     
     const { data, error } = await supabase.rpc('approve_withdrawal', { 
       p_withdrawal_id: id 
-    } as any)
+    } as unknown)
     
     if (error) throw error
     return { success: true, data }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -34,11 +34,11 @@ export async function updateWithdrawalStatus(id: string, status: string, failure
       p_withdrawal_id: id, 
       p_new_status: status, 
       p_failure_reason: sanitizedReason 
-    } as any)
+    } as unknown)
     
     if (error) throw error
     return { success: true, data }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -61,7 +61,7 @@ export async function createCategory(name: string, slug: string, description?: s
     
     if (error) throw error
     return { success: true }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -78,7 +78,7 @@ export async function toggleCategoryActive(id: string, active: boolean) {
     
     if (error) throw error
     return { success: true }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -94,7 +94,7 @@ export async function approveHelper(helperId: string, comment: string = '') {
     const { error } = await supabase
       .from('helper_profiles')
       .update({ 
-        verification_status: 'approved' as any, 
+        verification_status: 'approved' as unknown, 
         is_approved: true 
       })
       .eq('user_id', helperId)
@@ -113,7 +113,7 @@ export async function approveHelper(helperId: string, comment: string = '') {
     
     revalidateTag('verification-queue')
     return { success: true }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -128,7 +128,7 @@ export async function rejectHelper(helperId: string, comment: string = '') {
     const { error } = await supabase
       .from('helper_profiles')
       .update({ 
-        verification_status: 'rejected' as any, 
+        verification_status: 'rejected' as unknown, 
         is_approved: false 
       })
       .eq('user_id', helperId)
@@ -147,7 +147,7 @@ export async function rejectHelper(helperId: string, comment: string = '') {
     
     revalidateTag('verification-queue')
     return { success: true }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -169,7 +169,7 @@ export async function updateUserRole(userId: string, newRole: string) {
     
     if (error) throw error
     return { success: true }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -202,7 +202,7 @@ export async function banUser(formData: FormData) {
     
     if (error) throw error
     return { success: true }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -222,7 +222,7 @@ export async function unbanUser(userId: string) {
     
     if (error) throw error
     return { success: true }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -234,7 +234,7 @@ export async function revalidateLegalDocs() {
     
     revalidateTag('legal-docs')
     return { success: true, message: 'Legal documents cache cleared successfully' }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -273,7 +273,7 @@ export async function createBadge(formData: {
     if (error) throw error
     revalidateTag('gamification')
     return { success: true, data, message: 'Badge created successfully' }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -311,7 +311,7 @@ export async function updateBadge(badgeId: string, formData: {
     if (error) throw error
     revalidateTag('gamification')
     return { success: true, data, message: 'Badge updated successfully' }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -329,7 +329,7 @@ export async function deleteBadge(badgeId: string) {
     if (error) throw error
     revalidateTag('gamification')
     return { success: true, message: 'Badge deleted successfully' }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -347,7 +347,7 @@ export async function toggleBadgeStatus(badgeId: string, isActive: boolean) {
     if (error) throw error
     revalidateTag('gamification')
     return { success: true, message: `Badge ${isActive ? 'activated' : 'deactivated'} successfully` }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -357,7 +357,7 @@ export async function createAchievement(formData: {
   description?: string
   category: 'performance' | 'consistency' | 'excellence' | 'community' | 'special'
   achievement_type: 'helper' | 'customer' | 'both'
-  unlock_criteria: Record<string, any>
+  unlock_criteria: Record<string, unknown>
   reward_points: number
   is_active: boolean
 }) {
@@ -382,7 +382,7 @@ export async function createAchievement(formData: {
     if (error) throw error
     revalidateTag('gamification')
     return { success: true, data, message: 'Achievement created successfully' }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -392,7 +392,7 @@ export async function updateAchievement(achievementId: string, formData: {
   description?: string
   category: 'performance' | 'consistency' | 'excellence' | 'community' | 'special'
   achievement_type: 'helper' | 'customer' | 'both'
-  unlock_criteria: Record<string, any>
+  unlock_criteria: Record<string, unknown>
   reward_points: number
   is_active: boolean
 }) {
@@ -418,7 +418,7 @@ export async function updateAchievement(achievementId: string, formData: {
     if (error) throw error
     revalidateTag('gamification')
     return { success: true, data, message: 'Achievement updated successfully' }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -436,7 +436,7 @@ export async function deleteAchievement(achievementId: string) {
     if (error) throw error
     revalidateTag('gamification')
     return { success: true, message: 'Achievement deleted successfully' }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -454,7 +454,7 @@ export async function toggleAchievementStatus(achievementId: string, isActive: b
     if (error) throw error
     revalidateTag('gamification')
     return { success: true, message: `Achievement ${isActive ? 'activated' : 'deactivated'} successfully` }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -512,7 +512,7 @@ export async function updateCommissionSettings(formData: {
     
     revalidateTag('settings')
     return { success: true, message: 'Settings updated successfully' }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -554,7 +554,7 @@ export async function getSystemSettings() {
         }
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -694,7 +694,7 @@ export async function getAnalyticsData(timeRange: '7d' | '30d' | '90d' | '1y' = 
         timeRange
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -708,7 +708,7 @@ export async function createNotificationTemplate(data: {
   channel: 'email' | 'sms' | 'push' | 'in_app'
   title?: string
   body: string
-  data_schema?: any
+  data_schema?: unknown
   is_active?: boolean
 }) {
   try {
@@ -725,7 +725,7 @@ export async function createNotificationTemplate(data: {
     if (error) throw error
     revalidateTag('notification-templates')
     return { success: true, message: 'Template created successfully' }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -735,7 +735,7 @@ export async function updateNotificationTemplate(id: string, data: {
   channel?: 'email' | 'sms' | 'push' | 'in_app'
   title?: string
   body?: string
-  data_schema?: any
+  data_schema?: unknown
   is_active?: boolean
 }) {
   try {
@@ -750,7 +750,7 @@ export async function updateNotificationTemplate(id: string, data: {
     if (error) throw error
     revalidateTag('notification-templates')
     return { success: true, message: 'Template updated successfully' }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -768,7 +768,7 @@ export async function deleteNotificationTemplate(id: string) {
     if (error) throw error
     revalidateTag('notification-templates')
     return { success: true, message: 'Template deleted successfully' }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -795,7 +795,7 @@ export async function toggleNotificationTemplate(id: string) {
     if (error) throw error
     revalidateTag('notification-templates')
     return { success: true, message: `Template ${template.is_active ? 'deactivated' : 'activated'} successfully` }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }
@@ -825,7 +825,7 @@ export async function sendTestNotification(templateId: string) {
 
     if (error) throw error
     return { success: true, message: 'Test notification sent successfully' }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return handleServerActionError(error)
   }
 }

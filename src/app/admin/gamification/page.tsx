@@ -47,8 +47,28 @@ export default async function AdminGamificationPage() {
   // Process data with Array.isArray checks
   const badges = Array.isArray(badgesResult.data) ? badgesResult.data : []
   const achievements = Array.isArray(achievementsResult.data) ? achievementsResult.data : []
-  const userBadges = Array.isArray(userBadgesResult.data) ? userBadgesResult.data : []
-  const userAchievements = Array.isArray(userAchievementsResult.data) ? userAchievementsResult.data : []
+  
+  // Transform userBadges to flatten badge_definitions from array to object
+  const userBadges = Array.isArray(userBadgesResult.data) 
+    ? userBadgesResult.data.map(ub => ({
+        badge_id: ub.badge_id,
+        earned_at: ub.earned_at,
+        badge_definitions: Array.isArray(ub.badge_definitions) && ub.badge_definitions.length > 0
+          ? ub.badge_definitions[0]
+          : { name: 'Unknown', badge_type: 'both' }
+      }))
+    : []
+  
+  // Transform userAchievements to flatten achievements from array to object
+  const userAchievements = Array.isArray(userAchievementsResult.data)
+    ? userAchievementsResult.data.map(ua => ({
+        achievement_id: ua.achievement_id,
+        earned_at: ua.earned_at,
+        achievements: Array.isArray(ua.achievements) && ua.achievements.length > 0
+          ? ua.achievements[0]
+          : { name: 'Unknown', achievement_type: 'both' }
+      }))
+    : []
 
   // Calculate statistics
   const stats = {
