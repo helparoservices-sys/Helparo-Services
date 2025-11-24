@@ -111,6 +111,11 @@ export function formatErrorForLogging(error: any, context?: Record<string, any>)
  * Handle server action error with proper formatting
  */
 export function handleServerActionError(error: any, userContext?: string) {
+  // Skip logging for Next.js redirect errors (these are normal control flow)
+  if (error?.message === 'NEXT_REDIRECT' || error?.digest?.startsWith('NEXT_REDIRECT')) {
+    throw error // Re-throw to let Next.js handle the redirect
+  }
+  
   // Log full error for debugging
   logger.error('Server Action Error', { error: formatErrorForLogging(error), userContext })
   
