@@ -37,14 +37,8 @@ export async function loginAction(formData: FormData) {
       // Clear rate limit on successful login
       clearRateLimit('login', sanitizedEmail)
       
-      // Get user profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single()
-
-      const role = (profile as any)?.role || 'customer'
+      // Get user role from metadata (fallback to profile query if needed)
+      const role = (data.user.user_metadata?.role as string) || 'customer'
       
       // Server-side redirect
       redirect(`/${role}/dashboard`)
