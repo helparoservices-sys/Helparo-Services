@@ -3,10 +3,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { rateLimit, RATE_LIMITS, clearRateLimit } from '@/lib/rate-limit'
-import { validateFormData, loginSchema, magicLinkSchema } from '@/lib/validation'
+import { validateFormData, loginSchema, magicLinkSchema, emailSchema, passwordSchema } from '@/lib/validation'
 import { handleServerActionError } from '@/lib/errors'
 import { sanitizeEmail } from '@/lib/sanitize'
-import { emailSchema, passwordSchema, validateFormData } from '@/lib/validation'
 
 
 export async function loginAction(formData: FormData) {
