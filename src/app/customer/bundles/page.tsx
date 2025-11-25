@@ -1,272 +1,259 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { LoadingSpinner, SkeletonCard } from '@/components/ui/loading'
-import { getActiveServiceBundles, purchaseBundle, getMyBundles } from '@/app/actions/bundles'
+import { createClient } from '@/lib/supabase/client'
+import { Package, Tag, Calendar, TrendingUp, Gift, Check } from 'lucide-react'
 
 interface Bundle {
   id: string
   name: string
   description: string
-  price: number
-  original_price: number
-  image_url: string | null
-  validity_days: number
-  total_redemptions: number
+  bundle_type: string
+  total_original_price: number
+  bundle_price: number
+  discount_percentage: number
+  validity_days: number | null
+  max_redemptions: number | null
   is_active: boolean
-}
-
-interface MyBundle {
-  id: string
-  bundle_id: string
-  purchase_date: string
-  expiry_date: string
-  remaining_redemptions: number
-  bundle: {
-    name: string
-    description: string
-    image_url: string | null
-  }
+  icon_url: string | null
+  banner_url: string | null
 }
 
 export default function CustomerBundlesPage() {
-  const router = useRouter()
+  const supabase = createClient()
   const [loading, setLoading] = useState(true)
-  const [purchasing, setPurchasing] = useState<string | null>(null)
   const [bundles, setBundles] = useState<Bundle[]>([])
-  const [myBundles, setMyBundles] = useState<MyBundle[]>([])
-  const [error, setError] = useState('')
-  const [activeTab, setActiveTab] = useState<'marketplace' | 'my-bundles'>('marketplace')
+  const [selectedBundle, setSelectedBundle] = useState<Bundle | null>(null)
+  const [isPurchasing, setIsPurchasing] = useState(false)
 
   useEffect(() => {
-    loadData()
+    loadBundles()
   }, [])
 
-  const loadData = async () => {
+  const loadBundles = async () => {
     setLoading(true)
-    setError('')
 
-    const [bundlesRes, myBundlesRes] = await Promise.all([
-      getActiveServiceBundles(),
-      getMyBundles()
-    ])
+    const { data } = await supabase
+      .from('service_bundles')
+      .select('*')
+      .eq('is_active', true)
+      .order('bundle_price', { ascending: true })
 
-    if ('error' in bundlesRes && bundlesRes.error) {
-      setError(bundlesRes.error)
-    } else if ('bundles' in bundlesRes) {
-      setBundles(bundlesRes.bundles || [])
-    }
-
-    if ('error' in myBundlesRes && myBundlesRes.error) {
-      setError(myBundlesRes.error)
-    } else if ('bundles' in myBundlesRes) {
-      setMyBundles(myBundlesRes.bundles || [])
-    }
-
+    setBundles(data || [])
     setLoading(false)
   }
 
-  const handlePurchase = async (bundleId: string) => {
-    setPurchasing(bundleId)
-    setError('')
+  const handlePurchase = async () => {
+    if (!selectedBundle) return
 
-    const result = await purchaseBundle(bundleId)
+    setIsPurchasing(true)
 
-    if ('error' in result && result.error) {
-      setError(result.error)
-    } else {
-      // Reload data to show purchased bundle
-      await loadData()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setIsPurchasing(false)
+      return
     }
 
-    setPurchasing(null)
+    // Get bundle services count
+    const { count } = await supabase
+      .from('bundle_services')
+      .select('*', { count: 'exact', head: true })
+      .eq('bundle_id', selectedBundle.id)
+
+    // Create bundle purchase
+    const { error } = await supabase
+      .from('bundle_purchases')
+      .insert({
+        bundle_id: selectedBundle.id,
+        customer_id: user.id,
+        purchase_price: selectedBundle.bundle_price,
+        services_total: count || 0,
+        valid_until: selectedBundle.validity_days 
+          ? new Date(Date.now() + selectedBundle.validity_days * 24 * 60 * 60 * 1000).toISOString()
+          : null
+      })
+
+    if (!error) {
+      setSelectedBundle(null)
+      loadBundles()
+    }
+
+    setIsPurchasing(false)
   }
 
-  const calculateSavings = (originalPrice: number, price: number) => {
-    const savings = originalPrice - price
-    const percentage = Math.round((savings / originalPrice) * 100)
-    return { savings, percentage }
+  const formatAmount = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+    }).format(amount)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading bundles...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-primary-50 py-10 px-4">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Service Bundles</h1>
-          <p className="text-muted-foreground">Save more with our combo packages</p>
-        </div>
-
-        {error && (
-          <div className="rounded-lg bg-red-50 border border-red-200 p-4">
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-        )}
-
-        {/* Tabs */}
-        <div className="flex gap-2 border-b">
-          <button
-            onClick={() => setActiveTab('marketplace')}
-            className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-              activeTab === 'marketplace'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Marketplace
-          </button>
-          <button
-            onClick={() => setActiveTab('my-bundles')}
-            className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-              activeTab === 'my-bundles'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            My Bundles ({myBundles.length})
-          </button>
-        </div>
-
-        {loading ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-          </div>
-        ) : activeTab === 'marketplace' ? (
-          <>
-            {/* Marketplace */}
-            {bundles.length === 0 ? (
-              <Card>
-                <CardContent className="pt-6">
-                  <p className="text-sm text-muted-foreground text-center">No bundles available at the moment</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {bundles.map(bundle => {
-                  const { savings, percentage } = calculateSavings(bundle.original_price, bundle.price)
-                  
-                  return (
-                    <Card key={bundle.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                      {bundle.image_url && (
-                        <div className="h-48 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                          <span className="text-6xl">🎁</span>
-                        </div>
-                      )}
-                      
-                      <CardHeader>
-                        <CardTitle className="text-lg">{bundle.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground line-clamp-2">{bundle.description}</p>
-                      </CardHeader>
-                      
-                      <CardContent className="space-y-4">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-2xl font-bold text-primary">₹{bundle.price}</span>
-                          <span className="text-sm text-muted-foreground line-through">₹{bundle.original_price}</span>
-                          <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">
-                            Save {percentage}%
-                          </span>
-                        </div>
-
-                        <div className="space-y-1 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-2">
-                            <span>📦</span>
-                            <span>{bundle.total_redemptions} services included</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span>⏰</span>
-                            <span>Valid for {bundle.validity_days} days</span>
-                          </div>
-                        </div>
-
-                        <Button
-                          onClick={() => handlePurchase(bundle.id)}
-                          disabled={purchasing === bundle.id}
-                          className="w-full"
-                        >
-                          {purchasing === bundle.id ? (
-                            <>
-                              <LoadingSpinner size="sm" />
-                              <span>Processing...</span>
-                            </>
-                          ) : (
-                            'Purchase Bundle'
-                          )}
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            {/* My Bundles */}
-            {myBundles.length === 0 ? (
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center space-y-4">
-                    <p className="text-sm text-muted-foreground">You haven't purchased any bundles yet</p>
-                    <Button onClick={() => setActiveTab('marketplace')}>
-                      Browse Bundles
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2">
-                {myBundles.map(myBundle => {
-                  const expiryDate = new Date(myBundle.expiry_date)
-                  const daysRemaining = Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-                  const isExpiringSoon = daysRemaining <= 7
-
-                  return (
-                    <Card key={myBundle.id} className={isExpiringSoon ? 'border-orange-300' : ''}>
-                      <CardHeader>
-                        <CardTitle className="text-lg">{myBundle.bundle.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground">{myBundle.bundle.description}</p>
-                      </CardHeader>
-                      
-                      <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Redemptions Left</span>
-                            <span className="font-medium">{myBundle.remaining_redemptions}</span>
-                          </div>
-                          
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Expires</span>
-                            <span className={`font-medium ${isExpiringSoon ? 'text-orange-600' : ''}`}>
-                              {expiryDate.toLocaleDateString()} ({daysRemaining}d)
-                            </span>
-                          </div>
-                        </div>
-
-                        {isExpiringSoon && (
-                          <div className="rounded bg-orange-50 border border-orange-200 p-3">
-                            <p className="text-xs text-orange-700">⚠️ Expiring soon! Use your remaining services</p>
-                          </div>
-                        )}
-
-                        <Link href={`/customer/bundles/redeem?id=${myBundle.id}`}>
-                          <Button className="w-full" variant="outline">
-                            Redeem Service
-                          </Button>
-                        </Link>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-            )}
-          </>
-        )}
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Service Bundles</h1>
+        <p className="text-slate-600 dark:text-slate-400">Save big with our combo packages</p>
       </div>
+
+      {/* Info Banner */}
+      <div className="bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-2">
+          <Gift className="h-8 w-8" />
+          <h2 className="text-2xl font-bold">Save up to 40% with Bundles!</h2>
+        </div>
+        <p className="text-purple-100">Get multiple services at discounted rates with our special packages</p>
+      </div>
+
+      {/* Bundles Grid */}
+      {bundles.length === 0 ? (
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-12 text-center shadow-sm border border-slate-200 dark:border-slate-700">
+          <Package className="h-16 w-16 mx-auto mb-4 text-slate-400" />
+          <p className="text-slate-600 dark:text-slate-400">No bundles available at the moment</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {bundles.map((bundle) => (
+            <div
+              key={bundle.id}
+              className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all overflow-hidden"
+            >
+              {/* Bundle Type Badge */}
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-white font-semibold capitalize">{bundle.bundle_type}</span>
+                  {bundle.discount_percentage && (
+                    <span className="bg-white/20 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm font-bold">
+                      {bundle.discount_percentage.toFixed(0)}% OFF
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-6 space-y-4">
+                {/* Bundle Name */}
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{bundle.name}</h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">{bundle.description}</p>
+                </div>
+
+                {/* Pricing */}
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold text-blue-600">{formatAmount(bundle.bundle_price)}</span>
+                  {bundle.total_original_price > bundle.bundle_price && (
+                    <span className="text-lg text-slate-400 line-through">{formatAmount(bundle.total_original_price)}</span>
+                  )}
+                </div>
+
+                {/* Features */}
+                <div className="space-y-2">
+                  {bundle.validity_days && (
+                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                      <Calendar className="h-4 w-4 text-blue-600" />
+                      <span>Valid for {bundle.validity_days} days</span>
+                    </div>
+                  )}
+                  {bundle.max_redemptions && (
+                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                      <Package className="h-4 w-4 text-blue-600" />
+                      <span>{bundle.max_redemptions} services included</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                    <Check className="h-4 w-4" />
+                    <span>Save {formatAmount(bundle.total_original_price - bundle.bundle_price)}</span>
+                  </div>
+                </div>
+
+                {/* Purchase Button */}
+                <button
+                  onClick={() => setSelectedBundle(bundle)}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold"
+                >
+                  Purchase Bundle
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Purchase Modal */}
+      {selectedBundle && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Confirm Purchase</h2>
+              <button
+                onClick={() => setSelectedBundle(null)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4">
+                <h3 className="font-bold text-slate-900 dark:text-white mb-2">{selectedBundle.name}</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{selectedBundle.description}</p>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600 dark:text-slate-400">Original Price:</span>
+                    <span className="line-through text-slate-400">{formatAmount(selectedBundle.total_original_price)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600 dark:text-slate-400">Discount:</span>
+                    <span className="text-green-600 dark:text-green-400">
+                      -{formatAmount(selectedBundle.total_original_price - selectedBundle.bundle_price)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                    <span className="text-slate-900 dark:text-white">Total:</span>
+                    <span className="text-blue-600">{formatAmount(selectedBundle.bundle_price)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                <p className="text-xs text-slate-700 dark:text-slate-300">
+                  <strong>Note:</strong> Bundle will be activated immediately upon purchase
+                  {selectedBundle.validity_days && ` and valid for ${selectedBundle.validity_days} days`}.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setSelectedBundle(null)}
+                  className="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  disabled={isPurchasing}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePurchase}
+                  disabled={isPurchasing}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isPurchasing ? 'Processing...' : 'Confirm Purchase'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

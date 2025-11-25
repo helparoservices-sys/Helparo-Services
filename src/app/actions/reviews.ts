@@ -253,23 +253,21 @@ export async function reportReview(reviewId: string, reason: string) {
     // Sanitize reason
     const safeReason = sanitizeText(reason)
 
-    // Mark review as reported (admin will review)
+    // Mark review as flagged (admin will review)
     const { error } = await supabase
       .from('reviews')
       .update({
-        is_reported: true,
-        report_reason: safeReason,
-        reported_at: new Date().toISOString(),
-        reported_by: user.id
+        is_flagged: true,
+        flag_reason: safeReason
       })
       .eq('id', reviewId)
 
     if (error) throw error
 
-    logger.info('Review reported', { userId: user.id, reviewId })
+    logger.info('Review flagged', { userId: user.id, reviewId })
     return { success: true }
   } catch (error: any) {
-    logger.error('Report review error', { error })
+    logger.error('Flag review error', { error })
     return handleServerActionError(error)
   }
 }
@@ -277,6 +275,29 @@ export async function reportReview(reviewId: string, reason: string) {
 // ============================================
 // ADMIN ACTIONS
 // ============================================
+
+export async function approveReview(reviewId: string) {
+  try {
+    const { user } = await requireAuth(UserRole.ADMIN)
+    await rateLimit('admin-approve-review', user.id, RATE_LIMITS.ADMIN_BAN)
+
+    const supabase = await createClient()
+
+    const { error } = await supabase
+      .from('reviews')
+      .update({ is_moderated: false, is_flagged: false })
+      .eq('id', reviewId)
+
+    if (error) throw error
+
+    revalidatePath('/admin/reviews')
+    logger.info('Review approved by admin', { adminId: user.id, reviewId })
+    return { success: true }
+  } catch (error: any) {
+    logger.error('Approve review error', { error })
+    return handleServerActionError(error)
+  }
+}
 
 export async function hideReview(reviewId: string) {
   try {
@@ -287,7 +308,7 @@ export async function hideReview(reviewId: string) {
 
     const { error } = await supabase
       .from('reviews')
-      .update({ is_visible: false })
+      .update({ is_moderated: true })
       .eq('id', reviewId)
 
     if (error) throw error
@@ -311,17 +332,52 @@ export async function getReportedReviews() {
     const { data, error } = await supabase
       .from('reviews')
       .select(`
-        *,
-        customer:profiles!reviews_customer_id_fkey(full_name, email),
-        helper:profiles!reviews_helper_id_fkey(full_name, email),
-        reported_by_user:profiles!reviews_reported_by_fkey(full_name, email)
+        id,
+        rating,
+        review_text,
+        is_flagged,
+        is_moderated,
+        flag_reason,
+        created_at,
+        updated_at,
+        customer:customer_id(full_name, avatar_url),
+        helper:helper_id(full_name, avatar_url),
+        request:request_id(id, category_id)
       `)
-      .eq('is_reported', true)
-      .order('reported_at', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(100)
 
     if (error) throw error
 
-    return { success: true, reviews: data }
+    // Get category names for each request
+    const reviewsWithCategories = await Promise.all(
+      (data || []).map(async (review: any) => {
+        if (review.request?.category_id) {
+          const { data: category } = await supabase
+            .from('service_categories')
+            .select('name')
+            .eq('id', review.request.category_id)
+            .single()
+          
+          return {
+            ...review,
+            booking: {
+              id: review.request?.id,
+              category_name: category?.name || 'Unknown'
+            }
+          }
+        }
+        return {
+          ...review,
+          booking: {
+            id: review.request?.id,
+            category_name: 'Unknown'
+          }
+        }
+      })
+    )
+
+    return { success: true, reviews: reviewsWithCategories }
   } catch (error: any) {
     logger.error('Get reported reviews error', { error })
     return handleServerActionError(error)

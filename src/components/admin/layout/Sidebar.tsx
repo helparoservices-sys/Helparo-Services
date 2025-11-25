@@ -16,15 +16,16 @@ import {
   FileText,
   AlertCircle,
   BarChart3,
-  Settings,
   ChevronLeft,
   ChevronRight,
   Shield,
   Gift,
-  Bell,
   Video,
   Award,
-  CheckCircle
+  CheckCircle,
+  ShoppingBag,
+  Sparkles,
+  MapPin
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -53,6 +54,11 @@ const menuItems = [
     href: '/admin/services',
   },
   {
+    label: 'Service Areas',
+    icon: MapPin,
+    href: '/admin/service-areas',
+  },
+  {
     label: 'Bookings',
     icon: Calendar,
     href: '/admin/bookings',
@@ -63,6 +69,16 @@ const menuItems = [
     href: '/admin/payments',
   },
   {
+    label: 'Bundles',
+    icon: ShoppingBag,
+    href: '/admin/bundles',
+  },
+  {
+    label: 'Subscriptions',
+    icon: Sparkles,
+    href: '/admin/subscriptions',
+  },
+  {
     label: 'Promocodes',
     icon: Ticket,
     href: '/admin/promos',
@@ -71,6 +87,16 @@ const menuItems = [
     label: 'Campaigns',
     icon: Gift,
     href: '/admin/campaigns',
+  },
+  {
+    label: 'Referrals',
+    icon: Users,
+    href: '/admin/referrals',
+  },
+  {
+    label: 'Reviews',
+    icon: Award,
+    href: '/admin/reviews',
   },
   {
     label: 'Support',
@@ -109,19 +135,9 @@ const menuItems = [
     href: '/admin/gamification',
   },
   {
-    label: 'Referrals',
-    icon: Gift,
-    href: '/admin/referrals',
-  },
-  {
     label: 'Analytics',
     icon: BarChart3,
     href: '/admin/analytics',
-  },
-  {
-    label: 'Settings',
-    icon: Settings,
-    href: '/admin/settings',
   },
 ]
 

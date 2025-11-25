@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline'; " +
     "img-src 'self' data: https: blob:; " +
     "font-src 'self' data:; " +
-    "connect-src 'self' https://opnjibjsddwyojrerbll.supabase.co wss://opnjibjsddwyojrerbll.supabase.co; " +
+    "connect-src 'self' https://opnjibjsddwyojrerbll.supabase.co wss://opnjibjsddwyojrerbll.supabase.co https://geocode.maps.co https://nominatim.openstreetmap.org; " +
     "frame-ancestors 'none';"
   )
   

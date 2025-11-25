@@ -1,123 +1,248 @@
-'use server'
-
+import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { PlatformTrustBadges, PaymentSafetyInfo } from '@/components/trust-badges'
+import { 
+  Search, 
+  Plus, 
+  Wallet, 
+  Star, 
+  Gift, 
+  TrendingUp,
+  CheckCircle,
+  Clock,
+  ArrowRight
+} from 'lucide-react'
 
 export default async function CustomerDashboard() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    return <div>Not authenticated</div>
+  }
+
+  // Fetch user data
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', user.id)
+    .single()
+
+  // Fetch wallet balance
+  const { data: wallet } = await supabase
+    .from('wallet_accounts')
+    .select('available_balance, escrow_balance')
+    .eq('user_id', user.id)
+    .single()
+
+  // Fetch loyalty points
+  const { data: loyalty } = await supabase
+    .from('loyalty_points')
+    .select('points_balance, tier_level')
+    .eq('user_id', user.id)
+    .single()
+
+  // Fetch recent requests
+  const { data: requests, count: totalRequests } = await supabase
+    .from('service_requests')
+    .select('id, title, status, created_at', { count: 'exact' })
+    .eq('customer_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  // Count active requests
+  const { count: activeRequests } = await supabase
+    .from('service_requests')
+    .select('id', { count: 'exact', head: true })
+    .eq('customer_id', user.id)
+    .in('status', ['open', 'assigned', 'in_progress'])
+
+  const { count: completedRequests } = await supabase
+    .from('service_requests')
+    .select('id', { count: 'exact', head: true })
+    .eq('customer_id', user.id)
+    .eq('status', 'completed')
+
+  const firstName = profile?.full_name?.split(' ')[0] || 'Customer'
+  const availableBalance = Number(wallet?.available_balance || 0)
+  const escrowBalance = Number(wallet?.escrow_balance || 0)
+  const loyaltyPoints = loyalty?.points_balance || 0
+  const tier = loyalty?.tier_level || 'bronze'
+
   return (
-    <div className="min-h-screen bg-primary-50 py-12 px-4">
-      <div className="mx-auto max-w-6xl space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold">Customer Dashboard</h1>
-          <p className="text-muted-foreground">Welcome to Helparo. Manage your service requests and payments.</p>
-        </div>
-        
-        {/* Trust Badges */}
-        <div className="bg-white p-6 rounded-lg border">
-          <PlatformTrustBadges />
-          <div className="mt-6">
-            <PaymentSafetyInfo />
+    <div className="space-y-6">
+      {/* Welcome Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white shadow-lg">
+        <h1 className="text-3xl font-bold mb-2">Welcome back, {firstName}!</h1>
+        <p className="text-blue-100">Manage your service requests and track your rewards</p>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-slate-600 dark:text-slate-400">Wallet Balance</span>
+            <Wallet className="h-5 w-5 text-green-600" />
           </div>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">₹{availableBalance.toFixed(2)}</p>
+          <p className="text-xs text-slate-500 mt-1">Escrow: ₹{escrowBalance.toFixed(2)}</p>
         </div>
-        
-        {/* Main Services */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Services</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Link href="/services" className="block p-6 bg-white rounded-lg border hover:border-primary transition-colors">
-              <h3 className="font-semibold text-lg mb-2">🔍 Browse Services</h3>
-              <p className="text-sm text-muted-foreground">Explore available service categories</p>
-            </Link>
-            
-            <Link href="/customer/requests/new" className="block p-6 bg-white rounded-lg border hover:border-primary transition-colors">
-              <h3 className="font-semibold text-lg mb-2">➕ Create Request</h3>
-              <p className="text-sm text-muted-foreground">Post a new service request</p>
-            </Link>
-            
-            <Link href="/customer/requests" className="block p-6 bg-white rounded-lg border hover:border-primary transition-colors">
-              <h3 className="font-semibold text-lg mb-2">📋 My Requests</h3>
-              <p className="text-sm text-muted-foreground">View and manage your requests</p>
-            </Link>
 
-            <Link href="/customer/bids" className="block p-6 bg-white rounded-lg border hover:border-primary transition-colors">
-              <h3 className="font-semibold text-lg mb-2">💼 Bids</h3>
-              <p className="text-sm text-muted-foreground">Review helper bids</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-slate-600 dark:text-slate-400">Loyalty Points</span>
+            <Star className="h-5 w-5 text-yellow-600" />
+          </div>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">{loyaltyPoints}</p>
+          <p className="text-xs text-slate-500 mt-1 capitalize">Tier: {tier}</p>
+        </div>
+
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-slate-600 dark:text-slate-400">Active Requests</span>
+            <Clock className="h-5 w-5 text-blue-600" />
+          </div>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">{activeRequests || 0}</p>
+          <p className="text-xs text-slate-500 mt-1">In progress</p>
+        </div>
+
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-slate-600 dark:text-slate-400">Completed</span>
+            <CheckCircle className="h-5 w-5 text-green-600" />
+          </div>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">{completedRequests || 0}</p>
+          <p className="text-xs text-slate-500 mt-1">Total jobs done</p>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Link 
+          href="/customer/requests/new"
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all group"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-white/20 rounded-lg">
+              <Plus className="h-6 w-6" />
+            </div>
+            <h3 className="text-lg font-semibold">New Request</h3>
+          </div>
+          <p className="text-sm text-blue-100 mb-3">Post a service request and get bids from helpers</p>
+          <div className="flex items-center text-sm font-medium group-hover:gap-2 transition-all">
+            Create Now <ArrowRight className="h-4 w-4 ml-1" />
+          </div>
+        </Link>
+
+        <Link 
+          href="/customer/find-helpers"
+          className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all group"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <Search className="h-6 w-6 text-blue-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Find Helpers</h3>
+          </div>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">Browse verified professionals by category</p>
+          <div className="flex items-center text-sm font-medium text-blue-600 group-hover:gap-2 transition-all">
+            Browse Now <ArrowRight className="h-4 w-4 ml-1" />
+          </div>
+        </Link>
+
+        <Link 
+          href="/customer/bundles"
+          className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all group"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+              <Gift className="h-6 w-6 text-purple-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Service Bundles</h3>
+          </div>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">Save money with combo packages</p>
+          <div className="flex items-center text-sm font-medium text-purple-600 group-hover:gap-2 transition-all">
+            View Deals <ArrowRight className="h-4 w-4 ml-1" />
+          </div>
+        </Link>
+      </div>
+
+      {/* Recent Requests */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Recent Requests</h2>
+          <Link href="/customer/requests" className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+            View All <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+
+        {requests && requests.length > 0 ? (
+          <div className="space-y-3">
+            {requests.map((req: any) => (
+              <Link
+                key={req.id}
+                href={`/customer/requests/${req.id}`}
+                className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+              >
+                <div className="flex-1">
+                  <h3 className="font-medium text-slate-900 dark:text-white">{req.title}</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    {new Date(req.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                  req.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                  req.status === 'in_progress' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                  req.status === 'assigned' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                  'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+                }`}>
+                  {req.status.replace('_', ' ')}
+                </span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+            <p>No service requests yet</p>
+            <Link href="/customer/requests/new" className="text-blue-600 hover:underline text-sm mt-2 inline-block">
+              Create your first request
             </Link>
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Payments & Rewards */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Payments & Rewards</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Link href="/customer/wallet" className="block p-6 bg-white rounded-lg border hover:border-primary transition-colors">
-              <h3 className="font-semibold text-lg mb-2">💰 Wallet</h3>
-              <p className="text-sm text-muted-foreground">Fund escrows and view balance</p>
-            </Link>
-
-            <Link href="/customer/withdrawals" className="block p-6 bg-white rounded-lg border hover:border-primary transition-colors">
-              <h3 className="font-semibold text-lg mb-2">💸 Withdrawals</h3>
-              <p className="text-sm text-muted-foreground">Request withdrawals</p>
-            </Link>
-
-            <Link href="/customer/loyalty" className="block p-6 bg-white rounded-lg border hover:border-primary transition-colors">
-              <h3 className="font-semibold text-lg mb-2">⭐ Loyalty Points</h3>
-              <p className="text-sm text-muted-foreground">Earn & redeem points</p>
-            </Link>
-
-            <Link href="/customer/badges" className="block p-6 bg-white rounded-lg border hover:border-primary transition-colors">
-              <h3 className="font-semibold text-lg mb-2">🏆 Badges</h3>
-              <p className="text-sm text-muted-foreground">Achievements & rewards</p>
-            </Link>
+      {/* Feature Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Link href="/customer/loyalty" className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all">
+          <div className="flex items-center gap-3 mb-2">
+            <Star className="h-6 w-6 text-yellow-600" />
+            <h3 className="font-semibold text-slate-900 dark:text-white">Loyalty Program</h3>
           </div>
-        </div>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Earn points & unlock rewards</p>
+        </Link>
 
-        {/* Deals & Offers */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Deals & Offers</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Link href="/customer/bundles" className="block p-6 bg-white rounded-lg border hover:border-primary transition-colors">
-              <h3 className="font-semibold text-lg mb-2">🎁 Service Bundles</h3>
-              <p className="text-sm text-muted-foreground">Save with combo packages</p>
-            </Link>
-
-            <Link href="/customer/campaigns" className="block p-6 bg-white rounded-lg border hover:border-primary transition-colors">
-              <h3 className="font-semibold text-lg mb-2">🎉 Campaigns</h3>
-              <p className="text-sm text-muted-foreground">Seasonal offers & discounts</p>
-            </Link>
-
-            <Link href="/customer/promos" className="block p-6 bg-white rounded-lg border hover:border-primary transition-colors">
-              <h3 className="font-semibold text-lg mb-2">🎫 Promo Codes</h3>
-              <p className="text-sm text-muted-foreground">Apply discount codes</p>
-            </Link>
+        <Link href="/customer/referrals" className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all">
+          <div className="flex items-center gap-3 mb-2">
+            <TrendingUp className="h-6 w-6 text-green-600" />
+            <h3 className="font-semibold text-slate-900 dark:text-white">Refer & Earn</h3>
           </div>
-        </div>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Get rewards for referrals</p>
+        </Link>
 
-        {/* Account & Support */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Account & Support</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Link href="/customer/subscriptions" className="block p-6 bg-white rounded-lg border hover:border-primary transition-colors">
-              <h3 className="font-semibold text-lg mb-2">📱 Subscriptions</h3>
-              <p className="text-sm text-muted-foreground">Manage subscriptions</p>
-            </Link>
-
-            <Link href="/customer/referrals" className="block p-6 bg-white rounded-lg border hover:border-primary transition-colors">
-              <h3 className="font-semibold text-lg mb-2">🤝 Referrals</h3>
-              <p className="text-sm text-muted-foreground">Refer friends & earn</p>
-            </Link>
-
-            <Link href="/customer/support" className="block p-6 bg-white rounded-lg border hover:border-primary transition-colors">
-              <h3 className="font-semibold text-lg mb-2">🎧 Support</h3>
-              <p className="text-sm text-muted-foreground">Get help & support</p>
-            </Link>
-
-            <Link href="/customer/notifications" className="block p-6 bg-white rounded-lg border hover:border-primary transition-colors">
-              <h3 className="font-semibold text-lg mb-2">🔔 Notifications</h3>
-              <p className="text-sm text-muted-foreground">View notifications</p>
-            </Link>
+        <Link href="/customer/promos" className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all">
+          <div className="flex items-center gap-3 mb-2">
+            <Gift className="h-6 w-6 text-purple-600" />
+            <h3 className="font-semibold text-slate-900 dark:text-white">Promo Codes</h3>
           </div>
-        </div>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Apply discounts at checkout</p>
+        </Link>
+
+        <Link href="/customer/support" className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all">
+          <div className="flex items-center gap-3 mb-2">
+            <Plus className="h-6 w-6 text-blue-600" />
+            <h3 className="font-semibold text-slate-900 dark:text-white">Get Support</h3>
+          </div>
+          <p className="text-sm text-slate-600 dark:text-slate-400">24/7 customer assistance</p>
+        </Link>
       </div>
     </div>
   )

@@ -267,3 +267,305 @@ export async function deleteServiceRequest(requestId: string) {
     return { error: 'An unexpected error occurred' }
   }
 }
+
+/**
+ * GET SERVICE REQUESTS FOR HELPER
+ * ✅ Authentication required (helper role)
+ * ✅ Returns only open requests
+ * ✅ Includes bid information
+ * ✅ Distance calculation
+ */
+export async function getHelperServiceRequests() {
+  try {
+    const { user } = await requireAuth(UserRole.HELPER)
+
+    const supabase = await createClient()
+
+    // Get helper profile
+    const { data: helperProfile } = await supabase
+      .from('helper_profiles')
+      .select('id, latitude, longitude')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (!helperProfile) {
+      return { error: 'Helper profile not found' }
+    }
+
+    // Get all open service requests
+    const { data: requests, error } = await supabase
+      .from('service_requests')
+      .select(`
+        id,
+        title,
+        description,
+        category_id,
+        location_address,
+        scheduled_time,
+        pricing_type,
+        budget_min,
+        budget_max,
+        status,
+        created_at,
+        latitude,
+        longitude,
+        profiles:customer_id(full_name),
+        service_categories(name),
+        bids(id, helper_id, amount, status, message)
+      `)
+      .eq('status', 'open')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      logger.error('Failed to fetch service requests', { error })
+      return { error: 'Failed to load service requests' }
+    }
+
+    type RequestWithRelations = {
+      id: string
+      title: string | null
+      description: string | null
+      category_id: string | null
+      location_address: string | null
+      scheduled_time: string | null
+      pricing_type: string | null
+      budget_min: number | null
+      budget_max: number | null
+      status: string
+      created_at: string
+      latitude: number | null
+      longitude: number | null
+      profiles: { full_name: string | null } | null
+      service_categories: { name: string | null } | null
+      bids: Array<{
+        id: string
+        helper_id: string
+        amount: number
+        status: string
+        message: string | null
+      }> | null
+    }
+
+    // Transform requests
+    const transformedRequests = (requests as RequestWithRelations[]).map(req => {
+      // Calculate distance if both coordinates available
+      let distance = null
+      if (
+        helperProfile.latitude &&
+        helperProfile.longitude &&
+        req.latitude &&
+        req.longitude
+      ) {
+        const R = 6371 // Earth's radius in km
+        const dLat = ((req.latitude - helperProfile.latitude) * Math.PI) / 180
+        const dLon = ((req.longitude - helperProfile.longitude) * Math.PI) / 180
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos((helperProfile.latitude * Math.PI) / 180) *
+            Math.cos((req.latitude * Math.PI) / 180) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2)
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        distance = R * c
+      }
+
+      // Find helper's bid if exists
+      const myBid = req.bids?.find(bid => bid.helper_id === helperProfile.id)
+
+      return {
+        id: req.id,
+        title: req.title || 'Untitled Request',
+        description: req.description || '',
+        category: req.service_categories?.name || 'Uncategorized',
+        location_address: req.location_address || 'Location not specified',
+        scheduled_time: req.scheduled_time,
+        pricing_type: req.pricing_type || 'fixed',
+        budget_min: req.budget_min,
+        budget_max: req.budget_max,
+        status: req.status,
+        created_at: req.created_at,
+        customer_name: req.profiles?.full_name || 'Unknown Customer',
+        distance,
+        bid_count: req.bids?.length || 0,
+        my_bid: myBid
+          ? {
+              id: myBid.id,
+              amount: myBid.amount,
+              status: myBid.status,
+              message: myBid.message || '',
+            }
+          : null,
+      }
+    })
+
+    return { requests: transformedRequests }
+  } catch (error) {
+    logger.error('Get helper service requests error', { error })
+    return { error: 'An unexpected error occurred' }
+  }
+}
+
+/**
+ * SUBMIT BID ON SERVICE REQUEST
+ * ✅ Authentication required (helper role)
+ * ✅ Input validation
+ * ✅ Rate limiting
+ * ✅ Prevents duplicate bids
+ */
+export async function submitBid(data: {
+  requestId: string
+  amount: number
+  message?: string
+}) {
+  try {
+    const { user } = await requireAuth(UserRole.HELPER)
+
+    // Rate limiting: 20 bids per hour
+    const rateLimitResult = await checkRateLimit(`submit-bid:${user.id}`, {
+      maxRequests: 20,
+      windowMs: 3600000,
+    })
+    if (!rateLimitResult.allowed) {
+      return { error: 'Rate limit exceeded. Please try again later.' }
+    }
+
+    const supabase = await createClient()
+
+    // Get helper profile
+    const { data: helperProfile } = await supabase
+      .from('helper_profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (!helperProfile) {
+      return { error: 'Helper profile not found' }
+    }
+
+    // Validate amount
+    if (!data.amount || data.amount <= 0) {
+      return { error: 'Invalid bid amount' }
+    }
+
+    // Check if request exists and is open
+    const { data: request, error: requestError } = await supabase
+      .from('service_requests')
+      .select('id, status')
+      .eq('id', data.requestId)
+      .maybeSingle()
+
+    if (requestError || !request) {
+      return { error: 'Service request not found' }
+    }
+
+    if (request.status !== 'open') {
+      return { error: 'This request is no longer accepting bids' }
+    }
+
+    // Check for existing bid
+    const { data: existingBid } = await supabase
+      .from('bids')
+      .select('id')
+      .eq('request_id', data.requestId)
+      .eq('helper_id', helperProfile.id)
+      .maybeSingle()
+
+    if (existingBid) {
+      return { error: 'You have already submitted a bid for this request' }
+    }
+
+    // Submit bid
+    const { error: bidError } = await supabase.from('bids').insert({
+      request_id: data.requestId,
+      helper_id: helperProfile.id,
+      amount: data.amount,
+      message: data.message ? sanitizeText(data.message) : null,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+    })
+
+    if (bidError) {
+      logger.error('Failed to submit bid', { error: bidError })
+      return { error: 'Failed to submit bid. Please try again.' }
+    }
+
+    logger.info('Bid submitted', {
+      request_id: data.requestId,
+      helper_id: helperProfile.id,
+      amount: data.amount,
+    })
+
+    return { success: true }
+  } catch (error) {
+    logger.error('Submit bid error', { error })
+    return { error: 'An unexpected error occurred' }
+  }
+}
+
+/**
+ * WITHDRAW BID
+ * ✅ Authentication required (helper role)
+ * ✅ Only pending bids can be withdrawn
+ */
+export async function withdrawBid(bidId: string) {
+  try {
+    const { user } = await requireAuth(UserRole.HELPER)
+
+    const supabase = await createClient()
+
+    // Get helper profile
+    const { data: helperProfile } = await supabase
+      .from('helper_profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (!helperProfile) {
+      return { error: 'Helper profile not found' }
+    }
+
+    // Check if bid exists and belongs to helper
+    const { data: bid, error: bidError } = await supabase
+      .from('bids')
+      .select('id, status, helper_id')
+      .eq('id', bidId)
+      .maybeSingle()
+
+    if (bidError || !bid) {
+      return { error: 'Bid not found' }
+    }
+
+    if (bid.helper_id !== helperProfile.id) {
+      return { error: 'You do not have permission to withdraw this bid' }
+    }
+
+    if (bid.status !== 'pending') {
+      return { error: 'Only pending bids can be withdrawn' }
+    }
+
+    // Withdraw bid (soft delete - update status)
+    const { error: updateError } = await supabase
+      .from('bids')
+      .update({
+        status: 'withdrawn',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', bidId)
+
+    if (updateError) {
+      logger.error('Failed to withdraw bid', { error: updateError })
+      return { error: 'Failed to withdraw bid. Please try again.' }
+    }
+
+    logger.info('Bid withdrawn', {
+      bid_id: bidId,
+      helper_id: helperProfile.id,
+    })
+
+    return { success: true }
+  } catch (error) {
+    logger.error('Withdraw bid error', { error })
+    return { error: 'An unexpected error occurred' }
+  }
+}
+

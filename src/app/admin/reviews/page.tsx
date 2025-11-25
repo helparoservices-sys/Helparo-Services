@@ -6,23 +6,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PageLoader } from '@/components/admin/PageLoader'
-import { getReportedReviews, hideReview, reportReview } from '@/app/actions/reviews'
-import { Star, MessageSquare, Flag, CheckCircle, Clock, AlertCircle, Search, Eye, ThumbsUp } from 'lucide-react'
+import { getReportedReviews, hideReview, reportReview, approveReview } from '@/app/actions/reviews'
+import { Star, MessageSquare, Flag, CheckCircle, Clock, AlertCircle, Search, Eye, ThumbsUp, Ban } from 'lucide-react'
 
 interface Review {
   id: string
   rating: number
-  comment: string | null
+  review_text: string | null
   is_flagged: boolean
-  is_approved: boolean
+  is_moderated: boolean
+  flag_reason?: string | null
   created_at: string
   updated_at: string
   customer: {
-    name: string
+    full_name: string
     avatar_url: string | null
   }
   helper: {
-    name: string
+    full_name: string
     avatar_url: string | null
   }
   booking: {
@@ -66,18 +67,18 @@ export default function AdminReviewsPage() {
     let filtered = reviews
 
     if (filter === 'pending') {
-      filtered = filtered.filter(r => !r.is_approved)
+      filtered = filtered.filter(r => !r.is_moderated && !r.is_flagged)
     } else if (filter === 'flagged') {
       filtered = filtered.filter(r => r.is_flagged)
     } else if (filter === 'approved') {
-      filtered = filtered.filter(r => r.is_approved)
+      filtered = filtered.filter(r => !r.is_moderated && !r.is_flagged)
     }
 
     if (searchTerm) {
       filtered = filtered.filter(r => 
-        r.helper?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.customer?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.comment?.toLowerCase().includes(searchTerm.toLowerCase())
+        r.helper?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.customer?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.review_text?.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
 
@@ -98,6 +99,20 @@ export default function AdminReviewsPage() {
   }
 
   const handleApprove = async (reviewId: string) => {
+    if (!confirm('Approve this review and clear any flags?')) return
+
+    const result = await approveReview(reviewId)
+
+    if ('error' in result && result.error) {
+      setError(result.error)
+    } else {
+      await loadReviews()
+    }
+  }
+
+  const handleHide = async (reviewId: string) => {
+    if (!confirm('Hide this review from public view?')) return
+
     const result = await hideReview(reviewId)
 
     if ('error' in result && result.error) {
@@ -115,9 +130,9 @@ export default function AdminReviewsPage() {
     ))
   }
 
-  const pendingCount = reviews.filter(r => !r.is_approved).length
+  const pendingCount = reviews.filter(r => !r.is_moderated && !r.is_flagged).length
   const flaggedCount = reviews.filter(r => r.is_flagged).length
-  const approvedCount = reviews.filter(r => r.is_approved).length
+  const approvedCount = reviews.filter(r => !r.is_moderated && !r.is_flagged).length
   const avgRating = reviews.length > 0 
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : '0.0'
@@ -284,11 +299,11 @@ export default function AdminReviewsPage() {
                 <div className="flex-1 space-y-3">
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="font-medium text-slate-900 dark:text-white">{review.customer?.name || 'Anonymous'}</div>
+                      <div className="font-medium text-slate-900 dark:text-white">{review.customer?.full_name || 'Anonymous'}</div>
                       <div className="text-sm text-slate-600 dark:text-slate-400">
-                        reviewed <Link href={`/admin/helpers/${review.helper?.name}`} className="text-primary-600 dark:text-primary-400 hover:underline">
-                          {review.helper?.name || 'Unknown Helper'}
-                        </Link>
+                        reviewed <span className="text-primary-600 dark:text-primary-400 font-medium">
+                          {review.helper?.full_name || 'Unknown Helper'}
+                        </span>
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                         {review.booking?.category_name} • {new Date(review.created_at).toLocaleString()}
@@ -315,30 +330,36 @@ export default function AdminReviewsPage() {
                             Flagged
                           </span>
                         )}
-                        {review.is_approved && (
+                        {review.is_moderated && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-400">
+                            <Ban className="h-3 w-3" />
+                            Hidden
+                          </span>
+                        )}
+                        {!review.is_moderated && !review.is_flagged && (
                           <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
                             <CheckCircle className="h-3 w-3" />
                             Approved
-                          </span>
-                        )}
-                        {!review.is_approved && !review.is_flagged && (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">
-                            <Clock className="h-3 w-3" />
-                            Pending
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  {review.comment && (
+                  {review.review_text && (
                     <div className="text-sm bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
-                      {review.comment}
+                      {review.review_text}
+                    </div>
+                  )}
+
+                  {review.flag_reason && (
+                    <div className="text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300">
+                      <span className="font-medium">Flag Reason:</span> {review.flag_reason}
                     </div>
                   )}
 
                   <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                    {!review.is_approved && (
+                    {!review.is_moderated && review.is_flagged && (
                       <Button 
                         size="sm" 
                         variant="outline" 
@@ -360,12 +381,17 @@ export default function AdminReviewsPage() {
                         Flag
                       </Button>
                     )}
-                    <Button size="sm" variant="outline" asChild className="inline-flex items-center gap-1">
-                      <Link href={`/admin/bookings/${review.booking?.id}`}>
-                        <Eye className="h-4 w-4" />
-                        View Booking
-                      </Link>
-                    </Button>
+                    {!review.is_moderated && (
+                      <Button 
+                        size="sm" 
+                        variant="destructive" 
+                        onClick={() => handleHide(review.id)}
+                        className="inline-flex items-center gap-1"
+                      >
+                        <Ban className="h-4 w-4" />
+                        Hide
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
