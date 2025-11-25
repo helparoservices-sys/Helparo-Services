@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Sparkles, Eye, EyeOff, Mail, Loader2 } from 'lucide-react'
 import { loginAction /*, sendMagicLinkAction*/ } from '@/app/actions/auth'
+import { LegalModal } from '@/components/legal/legal-modal'
 import { logger } from '@/lib/logger'
 
 export default function LoginPage() {
@@ -19,6 +20,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showTerms, setShowTerms] = useState(false)
+  const [showPrivacy, setShowPrivacy] = useState(false)
   // const [magicLinkSent, setMagicLinkSent] = useState(false)
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
@@ -72,13 +75,13 @@ export default function LoginPage() {
   // }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 animate-fade-in relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 relative overflow-hidden">
       {/* Logo Watermark Background */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <img 
           src="/logo.jpg" 
           alt="Helparo" 
-          className="h-96 w-96 object-contain opacity-[0.03] dark:opacity-[0.02] animate-pulse"
+          className="h-96 w-96 object-contain opacity-[0.03] dark:opacity-[0.02]"
           loading="lazy"
           decoding="async"
         />
@@ -193,6 +196,17 @@ export default function LoginPage() {
               Sign Up
             </Link>
           </p>
+
+          {/* Legal links as modal */}
+          <div className="text-center text-xs text-slate-500 dark:text-slate-400 mt-3">
+            By signing in, you agree to our{' '}
+            <a href="/legal/terms" onClick={(e) => { e.preventDefault(); setShowTerms(true); }} className="text-primary hover:underline">Terms</a>
+            {' '}and{' '}
+            <a href="/legal/privacy" onClick={(e) => { e.preventDefault(); setShowPrivacy(true); }} className="text-primary hover:underline">Privacy Policy</a>.
+          </div>
+
+          <LegalModal type="terms" open={showTerms} onOpenChange={setShowTerms} />
+          <LegalModal type="privacy" open={showPrivacy} onOpenChange={setShowPrivacy} />
         </div>
       </div>
     </div>

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Sparkles, Mail, Loader2, ArrowLeft } from 'lucide-react'
 import { logger } from '@/lib/logger'
+import { requestPasswordResetAction } from '@/app/actions/auth'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -21,9 +22,14 @@ export default function ForgotPasswordPage() {
     setLoading(true)
 
     try {
-      // For now, just show a message that password reset is not implemented
-      // In a real app, you'd call a server action to send reset email
-      setMessage('Password reset functionality is not yet implemented. Please contact support.')
+      const fd = new FormData()
+      fd.append('email', email)
+      const result = await requestPasswordResetAction(fd)
+      if (result?.error) {
+        setError(result.error)
+      } else {
+        setMessage('If the email exists, we sent a reset link.')
+      }
     } catch (err: any) {
       logger.error('Forgot password error', { error: err })
       setError('Failed to send reset email. Please try again.')
@@ -33,13 +39,13 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 animate-fade-in relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 relative overflow-hidden">
       {/* Logo Watermark Background */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <img
           src="/logo.jpg"
           alt="Helparo"
-          className="h-96 w-96 object-contain opacity-[0.03] dark:opacity-[0.02] animate-pulse"
+          className="h-96 w-96 object-contain opacity-[0.03] dark:opacity-[0.02]"
           loading="lazy"
           decoding="async"
         />

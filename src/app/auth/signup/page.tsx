@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Sparkles, Eye, EyeOff, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
+import { LegalModal } from '@/components/legal/legal-modal'
 
 function SignUpForm() {
   const router = useRouter()
@@ -29,6 +30,8 @@ function SignUpForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [showTerms, setShowTerms] = useState(false)
+  const [showPrivacy, setShowPrivacy] = useState(false)
 
   // Password strength validation
   const passwordStrength = {
@@ -85,13 +88,13 @@ function SignUpForm() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 animate-fade-in relative overflow-hidden">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 relative overflow-hidden">
         {/* Logo Watermark Background */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <img 
             src="/logo.jpg" 
             alt="Helparo" 
-            className="h-96 w-96 object-contain opacity-[0.03] dark:opacity-[0.02] animate-pulse"
+            className="h-96 w-96 object-contain opacity-[0.03] dark:opacity-[0.02]"
           />
         </div>
 
@@ -130,13 +133,13 @@ function SignUpForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 animate-fade-in relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 relative overflow-hidden">
       {/* Logo Watermark Background */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <img 
           src="/logo.jpg" 
           alt="Helparo" 
-          className="h-96 w-96 object-contain opacity-[0.03] dark:opacity-[0.02] animate-pulse"
+          className="h-96 w-96 object-contain opacity-[0.03] dark:opacity-[0.02]"
           loading="lazy"
           decoding="async"
         />
@@ -323,8 +326,8 @@ function SignUpForm() {
               />
               <Label htmlFor="legalConsent" className="text-xs leading-tight text-slate-600 dark:text-slate-400">
                 I have read and agree to the{' '}
-                <Link href="/legal/terms" className="text-primary hover:underline">Terms & Conditions</Link>{' '}and{' '}
-                <Link href="/legal/privacy" className="text-primary hover:underline">Privacy Policy</Link>. I understand I may be asked to re-accept if they update.
+                <Link href="/legal/terms" onClick={(e) => { e.preventDefault(); setShowTerms(true); }} className="text-primary hover:underline">Terms & Conditions</Link>{' '}and{' '}
+                <Link href="/legal/privacy" onClick={(e) => { e.preventDefault(); setShowPrivacy(true); }} className="text-primary hover:underline">Privacy Policy</Link>. I understand I may be asked to re-accept if they update.
               </Label>
             </div>
 
@@ -361,6 +364,10 @@ function SignUpForm() {
             </p>
           </form>
         </div>
+
+        {/* Modals */}
+        <LegalModal type="terms" open={showTerms} onOpenChange={setShowTerms} />
+        <LegalModal type="privacy" open={showPrivacy} onOpenChange={setShowPrivacy} />
       </div>
     </div>
   )
