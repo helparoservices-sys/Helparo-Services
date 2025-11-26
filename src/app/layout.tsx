@@ -1,22 +1,7 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, JetBrains_Mono } from 'next/font/google'
 import { Suspense } from 'react'
 import './globals.css'
 import { PerformanceMonitor, WebVitalsReporter, NetworkSpeedIndicator } from '@/components/performance-monitor'
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-  preload: true,
-})
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-jetbrains-mono',
-  display: 'swap',
-  preload: true,
-})
 
 export const metadata: Metadata = {
   title: 'Helparo - Your Trusted Service Marketplace',
@@ -43,12 +28,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" className="font-sans">
       <head>
         <link rel="dns-prefetch" href="https://opnjibjsddwyojrerbll.supabase.co" />
         <link rel="preconnect" href="https://opnjibjsddwyojrerbll.supabase.co" crossOrigin="anonymous" />
       </head>
-      <body className={inter.className}>
+      <body className="antialiased">
         <Suspense fallback={null}>
           <PerformanceMonitor />
           {process.env.NODE_ENV === 'development' && (

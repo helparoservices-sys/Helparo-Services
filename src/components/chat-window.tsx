@@ -404,3 +404,5 @@ export function ChatWindow({ requestId, currentUserId, otherUser }: ChatWindowPr
     </div>
   )
 }
+
+export default ChatWindow

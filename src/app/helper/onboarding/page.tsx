@@ -20,7 +20,6 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { LoadingSpinner } from '@/components/ui/loading'
-import { CascadingAreaSelector } from '@/components/helper/cascading-area-selector'
 import { uploadOnboardingDocuments } from '@/app/actions/helper-verification'
 
 // Step 1: Service Details
@@ -395,6 +394,93 @@ function Step1ServiceDetails({ data, onChange, onNext }: any) {
 function Step2Location({ data, onChange, onNext, onBack }: any) {
   const [detecting, setDetecting] = useState(false)
   const [locationError, setLocationError] = useState('')
+  const [validationError, setValidationError] = useState('')
+  
+  // Service area state with backend filtering
+  const [states, setStates] = useState<any[]>([])
+  const [districts, setDistricts] = useState<any[]>([])
+  const [cities, setCities] = useState<any[]>([])
+  const [selectedState, setSelectedState] = useState('')
+  const [selectedDistrict, setSelectedDistrict] = useState('')
+  const [selectedCities, setSelectedCities] = useState<string[]>([])
+  const [loadingAreas, setLoadingAreas] = useState(false)
+  const supabase = createClient()
+
+  useEffect(() => {
+    loadStates()
+  }, [])
+
+  const loadStates = async () => {
+    setLoadingAreas(true)
+    const { data: statesData } = await supabase
+      .from('service_areas')
+      .select('state')
+      .eq('level', 'state')
+      .not('state', 'is', null)
+      .order('state')
+    
+    const uniqueStates = [...new Set(statesData?.map(s => s.state) || [])]
+    setStates(uniqueStates.map(s => ({ name: s })))
+    setLoadingAreas(false)
+  }
+
+  const loadDistricts = async (state: string) => {
+    setLoadingAreas(true)
+    const { data: districtsData } = await supabase
+      .from('service_areas')
+      .select('district')
+      .eq('state', state)
+      .eq('level', 'district')
+      .not('district', 'is', null)
+      .order('district')
+    
+    const uniqueDistricts = [...new Set(districtsData?.map(d => d.district) || [])]
+    setDistricts(uniqueDistricts.map(d => ({ name: d })))
+    setLoadingAreas(false)
+  }
+
+  const loadCities = async (state: string, district: string) => {
+    setLoadingAreas(true)
+    const { data: citiesData } = await supabase
+      .from('service_areas')
+      .select('id, city, state, district')
+      .eq('state', state)
+      .eq('district', district)
+      .eq('level', 'city')
+      .not('city', 'is', null)
+      .order('city')
+    
+    setCities(citiesData || [])
+    setLoadingAreas(false)
+  }
+
+  const handleStateChange = (state: string) => {
+    setSelectedState(state)
+    setSelectedDistrict('')
+    setSelectedCities([])
+    setDistricts([])
+    setCities([])
+    if (state) {
+      loadDistricts(state)
+    }
+  }
+
+  const handleDistrictChange = (district: string) => {
+    setSelectedDistrict(district)
+    setSelectedCities([])
+    setCities([])
+    if (district && selectedState) {
+      loadCities(selectedState, district)
+    }
+  }
+
+  const toggleCity = (cityId: string) => {
+    const updated = selectedCities.includes(cityId)
+      ? selectedCities.filter(id => id !== cityId)
+      : [...selectedCities, cityId]
+    setSelectedCities(updated)
+    onChange({ service_area_ids: updated })
+  }
 
   const detectLocation = async () => {
     setDetecting(true)
@@ -411,10 +497,8 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
         const { latitude, longitude } = position.coords
         
         try {
-          // Try multiple geocoding services as fallback
           let geoData = null
           
-          // Try geocode.maps.co first (no API key needed, CORS-friendly)
           try {
             const response1 = await fetch(
               `https://geocode.maps.co/reverse?lat=${latitude}&lon=${longitude}`
@@ -426,7 +510,6 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
             console.log('geocode.maps.co failed, trying nominatim')
           }
 
-          // Fallback to nominatim if first fails
           if (!geoData || !geoData.address) {
             const response2 = await fetch(
               `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
@@ -462,7 +545,6 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
 
             toast.success('✓ Location detected and address filled successfully!')
           } else {
-            // If no address details, still save coordinates
             onChange({
               latitude: latitude.toFixed(6),
               longitude: longitude.toFixed(6)
@@ -471,7 +553,6 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
           }
         } catch (error) {
           console.error('Geocoding error:', error)
-          // Still save coordinates even if address fetch fails
           onChange({
             latitude: latitude.toFixed(6),
             longitude: longitude.toFixed(6)
@@ -508,8 +589,32 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
     )
   }
 
+  const handleNext = () => {
+    setValidationError('')
+    
+    if (!data.address?.trim()) {
+      setValidationError('Full Address is required')
+      toast.error('Please enter your full address')
+      return
+    }
+    
+    if (!data.pincode?.trim()) {
+      setValidationError('Pincode is required')
+      toast.error('Please enter your pincode')
+      return
+    }
+    
+    if (!selectedCities.length) {
+      setValidationError('Please select at least one service area (city)')
+      toast.error('Please select at least one city where you provide services')
+      return
+    }
+    
+    onNext()
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
           Location & Service Area
@@ -519,130 +624,268 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
         </p>
       </div>
 
-      {/* Auto-Detect Location Button */}
-      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-2 border-purple-200 dark:border-purple-800 rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-300 mb-1">
-              Auto-Detect Your Location
+      {validationError && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-center gap-2 text-red-700 dark:text-red-300">
+          <AlertCircle className="h-5 w-5 flex-shrink-0" />
+          <span className="font-medium">{validationError}</span>
+        </div>
+      )}
+
+      {/* ===== SECTION 1: YOUR ADDRESS ===== */}
+      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-6 space-y-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-blue-600 rounded-lg">
+            <MapPin className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-blue-900 dark:text-blue-300">
+              Your Address
             </h3>
-            <p className="text-xs text-purple-700 dark:text-purple-400">
-              Allow location access to automatically fill your address details
+            <p className="text-sm text-blue-700 dark:text-blue-400">
+              Where you are based
             </p>
           </div>
-          <button
-            type="button"
-            onClick={detectLocation}
-            disabled={detecting}
-            className="ml-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-400 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-          >
-            {detecting ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                Detecting...
-              </>
-            ) : (
-              <>
-                <MapPin className="h-4 w-4" />
-                Detect Location
-              </>
-            )}
-          </button>
         </div>
-        {locationError && (
-          <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-300">
-            {locationError}
+
+        {/* Auto-Detect Location Button */}
+        <div className="bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">
+                Auto-Detect Your Location
+              </h4>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Allow location access to automatically fill your address details
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={detectLocation}
+              disabled={detecting}
+              className="ml-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+            >
+              {detecting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  Detecting...
+                </>
+              ) : (
+                <>
+                  <MapPin className="h-4 w-4" />
+                  Detect
+                </>
+              )}
+            </button>
+          </div>
+          {locationError && (
+            <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-300">
+              {locationError}
+            </div>
+          )}
+        </div>
+
+        {/* Address */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Full Address <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            value={data.address || ''}
+            onChange={(e) => onChange({ address: e.target.value })}
+            placeholder="Enter your complete address"
+            className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            rows={3}
+          />
+        </div>
+
+        {/* Pincode & Service Radius */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Pincode <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={data.pincode || ''}
+              onChange={(e) => onChange({ pincode: e.target.value })}
+              maxLength={10}
+              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="400001"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Service Radius (km) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              value={data.service_radius_km || 10}
+              onChange={(e) => onChange({ service_radius_km: parseInt(e.target.value) || 10 })}
+              min="1"
+              max="100"
+              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="10"
+            />
+            <p className="text-xs text-slate-500 mt-1">How far you can travel for jobs</p>
+          </div>
+        </div>
+
+        {/* Coordinates (Optional) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Latitude (Optional)
+            </label>
+            <input
+              type="number"
+              value={data.latitude || ''}
+              onChange={(e) => onChange({ latitude: parseFloat(e.target.value) || null })}
+              step="0.000001"
+              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="19.0760"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Longitude (Optional)
+            </label>
+            <input
+              type="number"
+              value={data.longitude || ''}
+              onChange={(e) => onChange({ longitude: parseFloat(e.target.value) || null })}
+              step="0.000001"
+              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="72.8777"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="border-t-4 border-dashed border-slate-300 dark:border-slate-600"></div>
+
+      {/* ===== SECTION 2: SERVICE AREAS ===== */}
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-200 dark:border-purple-800 rounded-xl p-6 space-y-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-purple-600 rounded-lg">
+            <MapPin className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-purple-900 dark:text-purple-300">
+              Service Areas
+            </h3>
+            <p className="text-sm text-purple-700 dark:text-purple-400">
+              Where you provide services (select cities)
+            </p>
+          </div>
+        </div>
+
+        {/* Cascading Selectors */}
+        <div className="space-y-4">
+          {/* State Selector */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Select State <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={selectedState}
+              onChange={(e) => handleStateChange(e.target.value)}
+              disabled={loadingAreas}
+              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            >
+              <option value="">-- Select State --</option>
+              {states.map((state, idx) => (
+                <option key={idx} value={state.name}>{state.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* District Selector (only visible when state selected) */}
+          {selectedState && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Select District <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={selectedDistrict}
+                onChange={(e) => handleDistrictChange(e.target.value)}
+                disabled={loadingAreas || !districts.length}
+                className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="">-- Select District --</option>
+                {districts.map((district, idx) => (
+                  <option key={idx} value={district.name}>{district.name}</option>
+                ))}
+              </select>
+              {!loadingAreas && !districts.length && (
+                <p className="text-xs text-slate-500 mt-1">No districts available for this state</p>
+              )}
+            </div>
+          )}
+
+          {/* City Multi-Selector (only visible when district selected) */}
+          {selectedDistrict && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Select Cities <span className="text-red-500">*</span> ({selectedCities.length} selected)
+              </label>
+              <div className="max-h-60 overflow-y-auto border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
+                {loadingAreas ? (
+                  <div className="p-4 text-center text-slate-500">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-600 border-t-transparent mx-auto mb-2"></div>
+                    Loading cities...
+                  </div>
+                ) : cities.length === 0 ? (
+                  <div className="p-4 text-center text-slate-500">
+                    No cities available for this district
+                  </div>
+                ) : (
+                  cities.map((city) => (
+                    <label
+                      key={city.id}
+                      className="flex items-center gap-3 p-3 hover:bg-purple-50 dark:hover:bg-purple-900/20 cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedCities.includes(city.id)}
+                        onChange={() => toggleCity(city.id)}
+                        className="h-4 w-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                      />
+                      <span className="text-sm text-slate-900 dark:text-white">{city.city}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Selected Cities Summary */}
+        {selectedCities.length > 0 && (
+          <div className="bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700 rounded-lg p-4">
+            <p className="text-sm font-semibold text-purple-900 dark:text-purple-300 mb-2">
+              ✓ Service Areas Selected ({selectedCities.length} cities)
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {selectedCities.map((cityId) => {
+                const city = cities.find(c => c.id === cityId)
+                return city ? (
+                  <span
+                    key={cityId}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-white dark:bg-slate-800 border border-purple-400 dark:border-purple-600 rounded-full text-xs text-purple-700 dark:text-purple-300 font-medium"
+                  >
+                    {city.city}
+                    <button onClick={() => toggleCity(cityId)} className="hover:text-red-600">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ) : null
+              })}
+            </div>
           </div>
         )}
-      </div>
-
-      {/* Address */}
-      <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-          Full Address <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          value={data.address || ''}
-          onChange={(e) => onChange({ address: e.target.value })}
-          placeholder="Enter your complete address"
-          className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          rows={3}
-        />
-      </div>
-
-      {/* Pincode & Service Radius */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Pincode <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={data.pincode || ''}
-            onChange={(e) => onChange({ pincode: e.target.value })}
-            maxLength={10}
-            className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            placeholder="400001"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Service Radius (km) <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="number"
-            value={data.service_radius_km || 10}
-            onChange={(e) => onChange({ service_radius_km: parseInt(e.target.value) || 10 })}
-            min="1"
-            max="100"
-            className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            placeholder="10"
-          />
-          <p className="text-xs text-slate-500 mt-1">How far you can travel for jobs</p>
-        </div>
-      </div>
-
-      {/* Service Areas - Hierarchical Selector */}
-      <div>
-        <CascadingAreaSelector
-          selectedAreaIds={data.service_area_ids || []}
-          onChange={(areaIds) => onChange({ service_area_ids: areaIds })}
-        />
-        <p className="text-xs text-slate-500 mt-2">
-          Select the specific areas where you provide services
-        </p>
-      </div>
-
-      {/* Coordinates (Optional) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Latitude (Optional)
-          </label>
-          <input
-            type="number"
-            value={data.latitude || ''}
-            onChange={(e) => onChange({ latitude: parseFloat(e.target.value) || null })}
-            step="0.000001"
-            className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            placeholder="19.0760"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Longitude (Optional)
-          </label>
-          <input
-            type="number"
-            value={data.longitude || ''}
-            onChange={(e) => onChange({ longitude: parseFloat(e.target.value) || null })}
-            step="0.000001"
-            className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            placeholder="72.8777"
-          />
-        </div>
       </div>
 
       <div className="flex gap-4">
@@ -654,9 +897,8 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
           Back
         </button>
         <button
-          onClick={onNext}
-          disabled={!data.address || !data.pincode}
-          className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-6 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          onClick={handleNext}
+          className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-6 rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2"
         >
           Continue to Availability
           <ChevronRight className="h-5 w-5" />
