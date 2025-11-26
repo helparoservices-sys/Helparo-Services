@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getUserBonuses, getUserBonusStats } from '@/app/actions/bonuses'
 import { 
   Wallet as WalletIcon, 
   Plus, 
@@ -11,7 +12,8 @@ import {
   TrendingUp,
   DollarSign,
   CreditCard,
-  History
+  History,
+  Gift
 } from 'lucide-react'
 
 
@@ -24,10 +26,22 @@ interface Transaction {
   description: string
 }
 
+interface Bonus {
+  id: string
+  bonus_type: string
+  amount: number
+  status: string
+  description: string | null
+  credited_at: string | null
+  created_at: string
+}
+
 export default function CustomerWalletPage() {
   const supabase = createClient()
   const [wallet, setWallet] = useState<any>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [bonuses, setBonuses] = useState<Bonus[]>([])
+  const [bonusStats, setBonusStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showAddFunds, setShowAddFunds] = useState(false)
@@ -36,7 +50,20 @@ export default function CustomerWalletPage() {
 
   useEffect(() => {
     loadWalletData()
+    loadBonusData()
   }, [])
+
+  const loadBonusData = async () => {
+    const bonusesResult = await getUserBonuses()
+    const statsResult = await getUserBonusStats()
+    
+    if (bonusesResult.data) {
+      setBonuses(bonusesResult.data)
+    }
+    if (statsResult.data) {
+      setBonusStats(statsResult.data)
+    }
+  }
 
   const loadWalletData = async () => {
     setLoading(true)
@@ -222,6 +249,82 @@ export default function CustomerWalletPage() {
           <p className="text-sm opacity-75 mt-2">All funds</p>
         </div>
       </div>
+
+      {/* Bonuses Section */}
+      {bonusStats && bonusStats.total_bonuses > 0 && (
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-200 dark:border-purple-800 rounded-xl p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-purple-600 rounded-lg">
+              <Gift className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-purple-900 dark:text-purple-300">Bonuses Earned</h3>
+              <p className="text-sm text-purple-700 dark:text-purple-400">
+                Total: ₹{bonusStats.total_amount.toFixed(2)} from {bonusStats.total_bonuses} bonuses
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {bonusStats.by_type.welcome > 0 && (
+              <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-purple-200 dark:border-purple-700">
+                <p className="text-xs text-slate-600 dark:text-slate-400">Welcome</p>
+                <p className="text-lg font-bold text-purple-600">₹{bonusStats.by_type.welcome.toFixed(2)}</p>
+              </div>
+            )}
+            {bonusStats.by_type.referral > 0 && (
+              <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-purple-200 dark:border-purple-700">
+                <p className="text-xs text-slate-600 dark:text-slate-400">Referral</p>
+                <p className="text-lg font-bold text-purple-600">₹{bonusStats.by_type.referral.toFixed(2)}</p>
+              </div>
+            )}
+            {bonusStats.by_type.campaign > 0 && (
+              <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-purple-200 dark:border-purple-700">
+                <p className="text-xs text-slate-600 dark:text-slate-400">Campaign</p>
+                <p className="text-lg font-bold text-purple-600">₹{bonusStats.by_type.campaign.toFixed(2)}</p>
+              </div>
+            )}
+            {bonusStats.by_type.loyalty > 0 && (
+              <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-purple-200 dark:border-purple-700">
+                <p className="text-xs text-slate-600 dark:text-slate-400">Loyalty</p>
+                <p className="text-lg font-bold text-purple-600">₹{bonusStats.by_type.loyalty.toFixed(2)}</p>
+              </div>
+            )}
+            {bonusStats.by_type.promotion > 0 && (
+              <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-purple-200 dark:border-purple-700">
+                <p className="text-xs text-slate-600 dark:text-slate-400">Promotion</p>
+                <p className="text-lg font-bold text-purple-600">₹{bonusStats.by_type.promotion.toFixed(2)}</p>
+              </div>
+            )}
+          </div>
+
+          {bonuses.length > 0 && (
+            <div className="mt-4">
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Recent Bonuses</h4>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {bonuses.slice(0, 5).map((bonus) => (
+                  <div key={bonus.id} className="flex items-center justify-between bg-white dark:bg-slate-800 rounded-lg p-3 border border-purple-100 dark:border-purple-800">
+                    <div>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white capitalize">
+                        {bonus.bonus_type} Bonus
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {bonus.description || 'Bonus credited'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-green-600">+₹{bonus.amount.toFixed(2)}</p>
+                      <p className="text-xs text-slate-400">
+                        {new Date(bonus.credited_at || bonus.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Add Funds Modal */}
       {showAddFunds && (

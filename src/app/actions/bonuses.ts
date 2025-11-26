@@ -33,7 +33,7 @@ export async function getUserBonuses() {
 
     logger.info('User bonuses fetched', { userId: user.id, count: data?.length || 0 })
     return { data: data as UserBonus[] }
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Get user bonuses error', { error })
     return handleServerActionError(error)
   }
@@ -76,7 +76,7 @@ export async function getUserBonusStats() {
 
     logger.info('Bonus stats fetched', { userId: user.id, stats })
     return { data: stats }
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Get bonus stats error', { error })
     return handleServerActionError(error)
   }
@@ -118,7 +118,7 @@ export async function adminGrantBonus(input: {
       amount: input.amount 
     })
     return { data }
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Admin grant bonus error', { error })
     return handleServerActionError(error)
   }
@@ -164,7 +164,7 @@ export async function adminGetAllBonuses(filters?: {
       query = query.range(filters.offset, filters.offset + (filters.limit || 50) - 1)
     }
     
-    const { data, error, count } = await supabase
+    const { count } = await supabase
       .from('user_bonuses')
       .select('*', { count: 'exact', head: true })
     
@@ -178,7 +178,7 @@ export async function adminGetAllBonuses(filters?: {
       filters 
     })
     return { data: bonuses, count }
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Admin get all bonuses error', { error })
     return handleServerActionError(error)
   }
@@ -235,7 +235,7 @@ export async function adminGetBonusStats() {
 
     logger.info('Admin bonus stats fetched', { adminId: user.id, stats })
     return { data: stats }
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Admin get bonus stats error', { error })
     return handleServerActionError(error)
   }
