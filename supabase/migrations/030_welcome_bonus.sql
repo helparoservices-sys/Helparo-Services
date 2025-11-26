@@ -60,8 +60,8 @@ DECLARE
   v_bonus_amount NUMERIC(10,2) := 50.00;  -- ₹50 welcome bonus
   v_wallet_exists BOOLEAN;
 BEGIN
-  -- Only grant bonus if email is verified
-  IF NEW.email_verified = TRUE AND (OLD.email_verified IS NULL OR OLD.email_verified = FALSE) THEN
+  -- Only grant bonus if user is verified
+  IF NEW.is_verified = TRUE AND (OLD IS NULL OR OLD.is_verified = FALSE) THEN
     
     -- Check if welcome bonus already granted
     IF EXISTS (
@@ -100,21 +100,6 @@ BEGIN
       now()
     );
     
-    -- Create ledger entry for audit trail
-    INSERT INTO public.ledger_entries (
-      account_user_id,
-      entry_type,
-      amount,
-      description,
-      created_at
-    ) VALUES (
-      NEW.id,
-      'credit',
-      v_bonus_amount,
-      'Welcome bonus - Thank you for joining Helparo!',
-      now()
-    );
-    
   END IF;
   
   RETURN NEW;
@@ -125,7 +110,7 @@ $$;
 DROP TRIGGER IF EXISTS trigger_welcome_bonus ON public.profiles;
 
 CREATE TRIGGER trigger_welcome_bonus
-  AFTER INSERT OR UPDATE OF email_verified ON public.profiles
+  AFTER INSERT OR UPDATE OF is_verified ON public.profiles
   FOR EACH ROW
   EXECUTE FUNCTION public.grant_welcome_bonus();
 
@@ -192,21 +177,6 @@ BEGIN
   )
   RETURNING id INTO v_bonus_id;
   
-  -- Create ledger entry
-  INSERT INTO public.ledger_entries (
-    account_user_id,
-    entry_type,
-    amount,
-    description,
-    created_at
-  ) VALUES (
-    p_user_id,
-    'credit',
-    p_amount,
-    COALESCE(p_description, 'Manual bonus from admin'),
-    now()
-  );
-  
   RETURN v_bonus_id;
 END;
 $$;
@@ -263,12 +233,88 @@ GRANT EXECUTE ON FUNCTION public.get_user_bonuses TO authenticated;
 
 -- 9. Comments
 COMMENT ON TABLE public.user_bonuses IS 'Tracks all bonus credits given to users (welcome, referral, campaigns, etc.)';
-COMMENT ON FUNCTION public.grant_welcome_bonus IS 'Automatically grants ₹50 welcome bonus when user verifies email';
+COMMENT ON FUNCTION public.grant_welcome_bonus IS 'Automatically grants ₹50 welcome bonus when user becomes verified (is_verified = true)';
 COMMENT ON FUNCTION public.admin_grant_bonus IS 'Allows admins to manually grant bonuses to users';
 COMMENT ON FUNCTION public.get_user_bonuses IS 'Returns bonus history for a user';
 
--- 10. Trigger updated_at timestamp
-CREATE TRIGGER set_timestamp_user_bonuses
-  BEFORE UPDATE ON public.user_bonuses
-  FOR EACH ROW
-  EXECUTE FUNCTION public.trigger_set_timestamp();
+-- 10. Manually grant welcome bonus to existing verified users
+DO $$
+DECLARE
+  v_bonus_amount NUMERIC(10,2) := 50.00;
+  v_user_record RECORD;
+BEGIN
+  -- Grant bonus to helper user: 75051f82-fd2a-44be-9103-91a451d9ea03
+  IF EXISTS (SELECT 1 FROM public.profiles WHERE id = '75051f82-fd2a-44be-9103-91a451d9ea03') THEN
+    -- Create wallet if doesn't exist
+    INSERT INTO public.wallet_accounts (user_id, available_balance, escrow_balance, currency)
+    VALUES ('75051f82-fd2a-44be-9103-91a451d9ea03', 0, 0, 'INR')
+    ON CONFLICT (user_id) DO NOTHING;
+    
+    -- Add bonus to walletQ
+    UPDATE public.wallet_accounts
+    SET 
+      available_balance = available_balance + v_bonus_amount,
+      updated_at = now()
+    WHERE user_id = '75051f82-fd2a-44be-9103-91a451d9ea03';
+    
+    -- Record bonus
+    INSERT INTO public.user_bonuses (
+      user_id, 
+      bonus_type, 
+      amount, 
+      status, 
+      description,
+      credited_at
+    ) VALUES (
+      '75051f82-fd2a-44be-9103-91a451d9ea03',
+      'welcome',
+      v_bonus_amount,
+      'credited',
+      'Welcome bonus - Thank you for joining Helparo!',
+      now()
+    )
+    ON CONFLICT DO NOTHING;
+    
+    RAISE NOTICE 'Welcome bonus granted to helper: 75051f82-fd2a-44be-9103-91a451d9ea03';
+  END IF;
+
+  -- Grant bonus to customer user: 5240a520-6f83-4ba9-8146-7fda31ed7f3f
+  IF EXISTS (SELECT 1 FROM public.profiles WHERE id = '5240a520-6f83-4ba9-8146-7fda31ed7f3f') THEN
+    -- Create wallet if doesn't exist
+    INSERT INTO public.wallet_accounts (user_id, available_balance, escrow_balance, currency)
+    VALUES ('5240a520-6f83-4ba9-8146-7fda31ed7f3f', 0, 0, 'INR')
+    ON CONFLICT (user_id) DO NOTHING;
+    
+    -- Add bonus to wallet
+    UPDATE public.wallet_accounts
+    SET 
+      available_balance = available_balance + v_bonus_amount,
+      updated_at = now()
+    WHERE user_id = '5240a520-6f83-4ba9-8146-7fda31ed7f3f';
+    
+    -- Record bonus
+    INSERT INTO public.user_bonuses (
+      user_id, 
+      bonus_type, 
+      amount, 
+      status, 
+      description,
+      credited_at
+    ) VALUES (
+      '5240a520-6f83-4ba9-8146-7fda31ed7f3f',
+      'welcome',
+      v_bonus_amount,
+      'credited',
+      'Welcome bonus - Thank you for joining Helparo!',
+      now()
+    )
+    ON CONFLICT DO NOTHING;
+    
+    RAISE NOTICE 'Welcome bonus granted to customer: 5240a520-6f83-4ba9-8146-7fda31ed7f3f';
+  END IF;
+  
+END $$;
+
+-- 11. Final comment
+COMMENT ON TABLE public.user_bonuses IS 'Tracks all bonus credits given to users (welcome, referral, campaigns, etc.) - Automatically grants ₹50 to existing users and new signups after verification';
+

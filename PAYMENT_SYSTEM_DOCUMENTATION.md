@@ -693,7 +693,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER trigger_welcome_bonus
   AFTER INSERT ON profiles
   FOR EACH ROW
-  WHEN (NEW.email_verified = TRUE)  -- Only if email verified
+  WHEN (NEW.is_verified = TRUE)  -- Only if user is verified
   EXECUTE FUNCTION grant_welcome_bonus();
 ```
 
@@ -706,8 +706,8 @@ SCENARIO: New user "Amit" signs up
    Email: amit@example.com
    Phone: +919876543210
 
-2. Amit verifies email via link
-   → email_verified = TRUE
+2. Amit completes verification (phone or email)
+   → is_verified = TRUE
 
 3. TRIGGER FIRES AUTOMATICALLY
    ✓ Wallet created for Amit
