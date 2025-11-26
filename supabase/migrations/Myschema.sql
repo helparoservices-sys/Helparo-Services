@@ -260,6 +260,7 @@ CREATE TABLE public.helper_profiles (
   response_rate_percent numeric DEFAULT 100.0,
   completion_rate_percent numeric DEFAULT 100.0,
   average_response_minutes integer,
+  service_area_ids ARRAY DEFAULT '{}'::uuid[],
   CONSTRAINT helper_profiles_pkey PRIMARY KEY (id),
   CONSTRAINT helper_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
 );
@@ -487,6 +488,13 @@ CREATE TABLE public.messages (
   sender_id uuid NOT NULL,
   content text NOT NULL,
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  read_at timestamp with time zone,
+  is_edited boolean DEFAULT false,
+  edited_at timestamp with time zone,
+  attachment_url text,
+  attachment_type text CHECK (attachment_type = ANY (ARRAY['image'::text, 'document'::text, 'audio'::text, 'video'::text])),
+  attachment_name text,
+  attachment_size integer,
   CONSTRAINT messages_pkey PRIMARY KEY (id),
   CONSTRAINT messages_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.service_requests(id),
   CONSTRAINT messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.profiles(id)
@@ -616,6 +624,13 @@ CREATE TABLE public.profiles (
   banned_at timestamp with time zone,
   banned_by uuid,
   ban_expires_at timestamp with time zone,
+  location_lat numeric,
+  location_lng numeric,
+  address text,
+  city character varying,
+  state character varying,
+  pincode character varying,
+  location_updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT profiles_pkey PRIMARY KEY (id),
   CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id),
   CONSTRAINT profiles_banned_by_fkey FOREIGN KEY (banned_by) REFERENCES public.profiles(id)
@@ -770,6 +785,22 @@ CREATE TABLE public.seasonal_campaigns (
   updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   CONSTRAINT seasonal_campaigns_pkey PRIMARY KEY (id)
 );
+CREATE TABLE public.service_areas (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  parent_id uuid,
+  level character varying NOT NULL CHECK (level::text = ANY (ARRAY['state'::character varying, 'district'::character varying, 'city'::character varying, 'area'::character varying]::text[])),
+  name character varying NOT NULL,
+  slug character varying NOT NULL,
+  latitude numeric,
+  longitude numeric,
+  pincode character varying,
+  is_active boolean DEFAULT true,
+  display_order integer DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT service_areas_pkey PRIMARY KEY (id),
+  CONSTRAINT service_areas_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.service_areas(id)
+);
 CREATE TABLE public.service_bundles (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   name text NOT NULL,
@@ -871,6 +902,12 @@ CREATE TABLE public.service_requests (
   job_duration_minutes integer,
   arrival_time timestamp with time zone,
   requires_proof boolean DEFAULT true,
+  service_location_lat numeric,
+  service_location_lng numeric,
+  service_address text,
+  service_city character varying,
+  service_state character varying,
+  service_pincode character varying,
   CONSTRAINT service_requests_pkey PRIMARY KEY (id),
   CONSTRAINT service_requests_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.profiles(id),
   CONSTRAINT service_requests_assigned_helper_id_fkey FOREIGN KEY (assigned_helper_id) REFERENCES public.profiles(id)
@@ -1033,6 +1070,14 @@ CREATE TABLE public.ticket_messages (
   CONSTRAINT ticket_messages_ticket_id_fkey FOREIGN KEY (ticket_id) REFERENCES public.support_tickets(id),
   CONSTRAINT ticket_messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.profiles(id)
 );
+CREATE TABLE public.typing_indicators (
+  request_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  started_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT typing_indicators_pkey PRIMARY KEY (request_id, user_id),
+  CONSTRAINT typing_indicators_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.service_requests(id),
+  CONSTRAINT typing_indicators_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
+);
 CREATE TABLE public.user_achievements (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   user_id uuid NOT NULL,
@@ -1053,6 +1098,20 @@ CREATE TABLE public.user_badges (
   CONSTRAINT user_badges_pkey PRIMARY KEY (id),
   CONSTRAINT user_badges_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id),
   CONSTRAINT user_badges_badge_id_fkey FOREIGN KEY (badge_id) REFERENCES public.badge_definitions(id)
+);
+CREATE TABLE public.user_bonuses (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  bonus_type text NOT NULL CHECK (bonus_type = ANY (ARRAY['welcome'::text, 'referral'::text, 'campaign'::text, 'loyalty'::text, 'promotion'::text])),
+  amount numeric NOT NULL CHECK (amount > 0::numeric),
+  status text NOT NULL DEFAULT 'credited'::text CHECK (status = ANY (ARRAY['pending'::text, 'credited'::text, 'expired'::text, 'cancelled'::text])),
+  description text,
+  credited_at timestamp with time zone,
+  expires_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT user_bonuses_pkey PRIMARY KEY (id),
+  CONSTRAINT user_bonuses_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
 );
 CREATE TABLE public.user_notification_prefs (
   user_id uuid NOT NULL,
