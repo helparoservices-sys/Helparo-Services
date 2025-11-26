@@ -14,6 +14,15 @@ interface Document {
   created_at: string
 }
 
+interface BankAccount {
+  account_holder_name?: string
+  account_number?: string
+  ifsc_code?: string
+  bank_name?: string
+  upi_id?: string
+  status?: string
+}
+
 interface Helper {
   user_id: string
   full_name: string
@@ -21,6 +30,16 @@ interface Helper {
   avatar_url: string | null
   status: string
   documents: Document[]
+  // Onboarding details
+  service_categories?: string[]
+  skills?: string[]
+  experience_years?: number
+  hourly_rate?: number
+  address?: string
+  pincode?: string
+  service_areas?: string[]
+  working_hours?: any
+  bank_account?: BankAccount | null
 }
 
 interface VerificationPageClientProps {
@@ -236,6 +255,101 @@ export function VerificationPageClient({
                     </div>
                   </div>
                   
+                  {/* Onboarding Details */}
+                  <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {h.service_categories && h.service_categories.length > 0 && (
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Service Categories</p>
+                        <div className="flex flex-wrap gap-1">
+                          {h.service_categories.map((cat, i) => (
+                            <span key={i} className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded text-xs">
+                              {cat}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {h.skills && h.skills.length > 0 && (
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Skills</p>
+                        <div className="flex flex-wrap gap-1">
+                          {h.skills.map((skill, i) => (
+                            <span key={i} className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded text-xs">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {h.experience_years !== null && h.experience_years !== undefined && (
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Experience</p>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">{h.experience_years} years</p>
+                      </div>
+                    )}
+                    {h.hourly_rate && (
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Hourly Rate</p>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">₹{h.hourly_rate}</p>
+                      </div>
+                    )}
+                    {h.address && (
+                      <div className="md:col-span-2">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Address</p>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">{h.address}{h.pincode ? ` - ${h.pincode}` : ''}</p>
+                      </div>
+                    )}
+                    {h.service_areas && h.service_areas.length > 0 && (
+                      <div className="md:col-span-2">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Service Areas</p>
+                        <div className="flex flex-wrap gap-1">
+                          {h.service_areas.map((area, i) => (
+                            <span key={i} className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs">
+                              {area}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {h.bank_account && (
+                      <div className="md:col-span-2 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 font-semibold">Bank Account</p>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          {h.bank_account.account_holder_name && (
+                            <div>
+                              <span className="text-slate-500 dark:text-slate-400">Holder:</span>
+                              <span className="ml-1 font-medium text-slate-900 dark:text-white">{h.bank_account.account_holder_name}</span>
+                            </div>
+                          )}
+                          {h.bank_account.account_number && (
+                            <div>
+                              <span className="text-slate-500 dark:text-slate-400">Account:</span>
+                              <span className="ml-1 font-medium text-slate-900 dark:text-white">****{h.bank_account.account_number.slice(-4)}</span>
+                            </div>
+                          )}
+                          {h.bank_account.ifsc_code && (
+                            <div>
+                              <span className="text-slate-500 dark:text-slate-400">IFSC:</span>
+                              <span className="ml-1 font-medium text-slate-900 dark:text-white">{h.bank_account.ifsc_code}</span>
+                            </div>
+                          )}
+                          {h.bank_account.bank_name && (
+                            <div>
+                              <span className="text-slate-500 dark:text-slate-400">Bank:</span>
+                              <span className="ml-1 font-medium text-slate-900 dark:text-white">{h.bank_account.bank_name}</span>
+                            </div>
+                          )}
+                          {h.bank_account.upi_id && (
+                            <div className="col-span-2">
+                              <span className="text-slate-500 dark:text-slate-400">UPI:</span>
+                              <span className="ml-1 font-medium text-slate-900 dark:text-white">{h.bank_account.upi_id}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="mb-4">
                     <h4 className="text-sm font-medium text-slate-900 dark:text-white mb-3 flex items-center gap-2">
                       <FileText className="h-4 w-4" />
@@ -250,7 +364,7 @@ export function VerificationPageClient({
                             className="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-medium transition-colors"
                           >
                             <Eye className="h-4 w-4" />
-                            View {d.doc_type}
+                            View {d.doc_type.replace('_', ' ').toUpperCase()}
                           </button>
                         ))
                       ) : (

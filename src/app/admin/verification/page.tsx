@@ -23,10 +23,43 @@ export default async function AdminVerificationPage() {
     .select('id, helper_id, document_type, document_url, status, created_at')
     .in('helper_id', helperIds.length > 0 ? helperIds : ['00000000-0000-0000-0000-000000000000'])
 
+  // Fetch complete helper profiles with onboarding data
+  const { data: completeProfiles } = await supabase
+    .from('helper_profiles')
+    .select(`
+      user_id,
+      service_categories,
+      skills_specialization,
+      experience_years,
+      hourly_rate,
+      address,
+      pincode,
+      service_areas,
+      working_hours
+    `)
+    .in('user_id', helperIds.length > 0 ? helperIds : ['00000000-0000-0000-0000-000000000000'])
+
+  // Fetch bank accounts
+  const { data: bankAccounts } = await supabase
+    .from('helper_bank_accounts')
+    .select('helper_id, account_holder_name, account_number, ifsc_code, bank_name, upi_id, status')
+    .in('helper_id', helperIds.length > 0 ? helperIds : ['00000000-0000-0000-0000-000000000000'])
+    .eq('is_primary', true)
+
   // Transform data
   const helpers = (helpersData || []).map((helper) => {
     const profileData = Array.isArray(helper.profile) ? helper.profile[0] : helper.profile
     const helperDocs = (docsData || []).filter(d => d.helper_id === helper.user_id)
+    const fullProfile = (completeProfiles || []).find(p => p.user_id === helper.user_id)
+    const bankAccount = (bankAccounts || []).find(b => b.helper_id === helper.user_id)
+    
+    // Extract storage path from document_url
+    const getStoragePath = (url: string) => {
+      if (!url) return ''
+      // Extract path after /storage/v1/object/public/kyc/
+      const match = url.match(/\/kyc\/(.+)$/)
+      return match ? match[1] : url
+    }
     
     return {
       user_id: helper.user_id,
@@ -34,10 +67,27 @@ export default async function AdminVerificationPage() {
       email: profileData?.email || 'N/A',
       avatar_url: profileData?.avatar_url || null,
       status: helper.verification_status,
+      // Onboarding details
+      service_categories: fullProfile?.service_categories || [],
+      skills: fullProfile?.skills_specialization || [],
+      experience_years: fullProfile?.experience_years,
+      hourly_rate: fullProfile?.hourly_rate,
+      address: fullProfile?.address,
+      pincode: fullProfile?.pincode,
+      service_areas: fullProfile?.service_areas || [],
+      working_hours: fullProfile?.working_hours,
+      bank_account: bankAccount ? {
+        account_holder_name: bankAccount.account_holder_name,
+        account_number: bankAccount.account_number,
+        ifsc_code: bankAccount.ifsc_code,
+        bank_name: bankAccount.bank_name,
+        upi_id: bankAccount.upi_id,
+        status: bankAccount.status
+      } : null,
       documents: helperDocs.map(doc => ({
         id: doc.id,
         doc_type: doc.document_type,
-        file_path: doc.document_url,
+        file_path: getStoragePath(doc.document_url),
         status: doc.status,
         created_at: doc.created_at
       }))

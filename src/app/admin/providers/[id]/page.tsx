@@ -16,11 +16,15 @@ interface HelperDetail {
   verification_status: string | null
   is_approved: boolean
   service_categories: string[] | null
+  skills_specialization?: string[] | null
   experience_years: number | null
+  hourly_rate?: number | null
   is_available_now: boolean
   created_at: string
   address?: string | null
   pincode?: string | null
+  service_areas?: string[] | null
+  working_hours?: any
   profiles?: {
     full_name?: string | null
     email?: string | null
@@ -28,6 +32,21 @@ interface HelperDetail {
     phone_number?: string | null
     status?: string | null
   }
+  bank_account?: {
+    account_holder_name?: string
+    account_number?: string
+    ifsc_code?: string
+    bank_name?: string
+    upi_id?: string
+    status?: string
+  } | null
+  documents?: Array<{
+    id: string
+    document_type: string
+    document_url: string
+    status: string
+    created_at: string
+  }>
 }
 
 export default function ProviderDetailPage({ params }: { params: { id: string } }) {
@@ -49,11 +68,15 @@ export default function ProviderDetailPage({ params }: { params: { id: string } 
             verification_status,
             is_approved,
             service_categories,
+            skills_specialization,
             experience_years,
+            hourly_rate,
             is_available_now,
             created_at,
             address,
             pincode,
+            service_areas,
+            working_hours,
             profiles!helper_profiles_user_id_fkey (
               full_name,
               email,
@@ -72,7 +95,25 @@ export default function ProviderDetailPage({ params }: { params: { id: string } 
           return
         }
 
-        setHelper(data as HelperDetail)
+        // Fetch bank account
+        const { data: bankData } = await supabase
+          .from('helper_bank_accounts')
+          .select('account_holder_name, account_number, ifsc_code, bank_name, upi_id, status')
+          .eq('helper_id', params.id)
+          .eq('is_primary', true)
+          .single()
+
+        // Fetch documents
+        const { data: docsData } = await supabase
+          .from('verification_documents')
+          .select('id, document_type, document_url, status, created_at')
+          .eq('helper_id', params.id)
+
+        setHelper({ 
+          ...(data as HelperDetail), 
+          bank_account: bankData || null,
+          documents: docsData || []
+        })
       } catch (err: any) {
         if (!mounted) return
         setError('An unexpected error occurred')
@@ -187,19 +228,122 @@ export default function ProviderDetailPage({ params }: { params: { id: string } 
             )}
           </div>
         </div>
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg">
-          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Service Categories</h3>
-          <div className="flex flex-wrap gap-2">
-            {helper.service_categories && helper.service_categories.length > 0 ? (
-              helper.service_categories.map((c, i) => (
-                <span key={i} className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{c}</span>
-              ))
-            ) : (
-              <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400">General</span>
-            )}
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Service Categories</h3>
+            <div className="flex flex-wrap gap-2">
+              {helper.service_categories && helper.service_categories.length > 0 ? (
+                helper.service_categories.map((c, i) => (
+                  <span key={i} className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{c}</span>
+                ))
+              ) : (
+                <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400">General</span>
+              )}
+            </div>
           </div>
+          {helper.skills_specialization && helper.skills_specialization.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Skills</h3>
+              <div className="flex flex-wrap gap-2">
+                {helper.skills_specialization.map((skill, i) => (
+                  <span key={i} className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">{skill}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {helper.service_areas && helper.service_areas.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Service Areas</h3>
+              <div className="flex flex-wrap gap-2">
+                {helper.service_areas.map((area, i) => (
+                  <span key={i} className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{area}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {helper.hourly_rate && (
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+              <p className="text-xs text-slate-500 dark:text-slate-400">Hourly Rate</p>
+              <p className="text-lg font-bold text-slate-900 dark:text-white">₹{helper.hourly_rate}</p>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Bank Account */}
+      {helper.bank_account && (
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Payment Details</h3>
+          <div className="grid grid-cols-2 gap-4">
+            {helper.bank_account.account_holder_name && (
+              <div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Account Holder</p>
+                <p className="font-medium text-slate-900 dark:text-white">{helper.bank_account.account_holder_name}</p>
+              </div>
+            )}
+            {helper.bank_account.account_number && (
+              <div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Account Number</p>
+                <p className="font-medium text-slate-900 dark:text-white">****{helper.bank_account.account_number.slice(-4)}</p>
+              </div>
+            )}
+            {helper.bank_account.ifsc_code && (
+              <div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">IFSC Code</p>
+                <p className="font-medium text-slate-900 dark:text-white">{helper.bank_account.ifsc_code}</p>
+              </div>
+            )}
+            {helper.bank_account.bank_name && (
+              <div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Bank Name</p>
+                <p className="font-medium text-slate-900 dark:text-white">{helper.bank_account.bank_name}</p>
+              </div>
+            )}
+            {helper.bank_account.upi_id && (
+              <div className="col-span-2">
+                <p className="text-xs text-slate-500 dark:text-slate-400">UPI ID</p>
+                <p className="font-medium text-slate-900 dark:text-white">{helper.bank_account.upi_id}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Status</p>
+              <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                helper.bank_account.status === 'verified' 
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                  : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+              }`}>
+                {helper.bank_account.status || 'Pending'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Documents */}
+      {helper.documents && helper.documents.length > 0 && (
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Uploaded Documents</h3>
+          <div className="space-y-3">
+            {helper.documents.map((doc) => (
+              <div key={doc.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/40 rounded-lg">
+                <div>
+                  <p className="font-medium text-slate-900 dark:text-white capitalize">{doc.document_type.replace('_', ' ')}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{new Date(doc.created_at).toLocaleDateString()}</p>
+                </div>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  doc.status === 'approved' 
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                    : doc.status === 'rejected'
+                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                }`}>
+                  {doc.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
