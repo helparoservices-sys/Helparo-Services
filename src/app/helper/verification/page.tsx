@@ -49,6 +49,29 @@ interface ProfileData {
   phone?: string
 }
 
+// Helper function to convert slug to readable name
+const formatCategoryName = (slug: string): string => {
+  return slug
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
+// Helper function to format document type
+const formatDocumentType = (docType: string): string => {
+  const typeMap: Record<string, string> = {
+    'aadhar': 'Aadhaar Card',
+    'pan': 'PAN Card',
+    'address_proof': 'Address Proof',
+    'voter_id': 'Professional Certificate',
+    'driving_license': 'Driving License',
+    'passport': 'Passport',
+    'police_verification': 'Police Verification',
+    'selfie': 'Profile Photo'
+  }
+  return typeMap[docType] || docType.replace('_', ' ').toUpperCase()
+}
+
 export default function HelperVerificationPage() {
   const [loading, setLoading] = useState(true)
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null)
@@ -255,8 +278,8 @@ export default function HelperVerificationPage() {
                       <p className="text-sm text-gray-500 mb-2">Service Categories</p>
                       <div className="flex flex-wrap gap-2">
                         {helperProfile.service_categories?.map((cat, idx) => (
-                          <span key={idx} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                            {cat}
+                          <span key={idx} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium capitalize">
+                            {formatCategoryName(cat)}
                           </span>
                         ))}
                       </div>
@@ -351,14 +374,18 @@ export default function HelperVerificationPage() {
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-gray-500">Account Holder</p>
-                          <p className="font-medium text-gray-900">{bankAccount.account_holder_name || '-'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Bank Name</p>
-                          <p className="font-medium text-gray-900">{bankAccount.bank_name || '-'}</p>
-                        </div>
+                        {bankAccount.account_holder_name && (
+                          <div>
+                            <p className="text-sm text-gray-500">Account Holder</p>
+                            <p className="font-medium text-gray-900">{bankAccount.account_holder_name}</p>
+                          </div>
+                        )}
+                        {bankAccount.bank_name && (
+                          <div>
+                            <p className="text-sm text-gray-500">Bank Name</p>
+                            <p className="font-medium text-gray-900">{bankAccount.bank_name}</p>
+                          </div>
+                        )}
                         {bankAccount.account_number && (
                           <div>
                             <p className="text-sm text-gray-500">Account Number</p>
@@ -377,17 +404,40 @@ export default function HelperVerificationPage() {
                             <p className="font-medium text-gray-900">{bankAccount.upi_id}</p>
                           </div>
                         )}
+                        {bankAccount.branch_name && (
+                          <div>
+                            <p className="text-sm text-gray-500">Branch</p>
+                            <p className="font-medium text-gray-900">{bankAccount.branch_name}</p>
+                          </div>
+                        )}
                         <div>
                           <p className="text-sm text-gray-500">Verification Status</p>
                           <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
                             bankAccount.status === 'verified' 
                               ? 'bg-green-100 text-green-700' 
+                              : bankAccount.status === 'rejected'
+                              ? 'bg-red-100 text-red-700'
                               : 'bg-yellow-100 text-yellow-700'
                           }`}>
-                            {bankAccount.status || 'Pending'}
+                            {bankAccount.status === 'pending_verification' ? 'Pending' : bankAccount.status || 'Pending'}
                           </span>
                         </div>
                       </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Show message if no bank account */}
+                {!bankAccount && (
+                  <Card className="bg-white/80 backdrop-blur-sm border-white/50 shadow-lg">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <CreditCard className="h-5 w-5 text-indigo-600" />
+                        Payment Details
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-500 text-center py-4">No bank account details provided during onboarding</p>
                     </CardContent>
                   </Card>
                 )}
@@ -407,8 +457,8 @@ export default function HelperVerificationPage() {
                             <div className="flex items-center gap-3">
                               <FileText className="h-5 w-5 text-gray-600" />
                               <div>
-                                <p className="font-medium text-gray-900 capitalize">
-                                  {doc.document_type || 'Document'}
+                                <p className="font-medium text-gray-900">
+                                  {formatDocumentType(doc.document_type || 'document')}
                                 </p>
                                 <p className="text-xs text-gray-500">
                                   Uploaded {doc.created_at ? new Date(doc.created_at).toLocaleDateString() : '-'}

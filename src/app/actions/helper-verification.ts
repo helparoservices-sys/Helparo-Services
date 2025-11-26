@@ -138,7 +138,10 @@ export async function uploadOnboardingDocuments(formData: FormData) {
     const processFile = async (file: File, docType: string) => {
       const validation = validateFile(file, ALLOWED_MIME_TYPES.VERIFICATION, FILE_SIZE_LIMITS.DOCUMENT)
       if (!validation.valid) throw new Error(validation.error || 'Invalid file')
-      const path = `${user.id}/${validation.sanitizedName}`
+      
+      // Use document type in path for better organization
+      const path = `${user.id}/${docType}_${validation.sanitizedName}`
+      
       const { error: uploadError } = await supabase.storage
         .from('kyc')
         .upload(path, file, { cacheControl: '3600', upsert: false })
@@ -156,18 +159,51 @@ export async function uploadOnboardingDocuments(formData: FormData) {
     const certResult = cert ? await processFile(cert, 'certificate') : null
     const addrProofResult = addrProof ? await processFile(addrProof, 'address_proof') : null
 
-    // Insert verification document record (using first document as primary)
-    const { error: insertError } = await supabase
+    // Delete old verification documents for this helper (to prevent duplicates)
+    await supabase
       .from('verification_documents')
-      .insert({
+      .delete()
+      .eq('helper_id', user.id)
+
+    // Insert separate records for each document type
+    const documentsToInsert = []
+
+    // ID Proof document
+    documentsToInsert.push({
+      helper_id: user.id,
+      document_type: 'aadhar',
+      document_number: 'PENDING',
+      document_url: idProofResult.url,
+      selfie_url: selfieResult.url,
+      status: 'pending'
+    })
+
+    // Address Proof (if provided)
+    if (addrProofResult) {
+      documentsToInsert.push({
         helper_id: user.id,
-        document_type: idProofResult.docType === 'aadhar' ? 'aadhar' : 'pan',
-        document_number: 'PENDING', // User will update this later
-        document_url: idProofResult.url,
-        selfie_url: selfieResult.url,
-        back_side_url: addrProofResult?.url || null,
+        document_type: 'address_proof',
+        document_number: 'N/A',
+        document_url: addrProofResult.url,
         status: 'pending'
       })
+    }
+
+    // Professional Certificate (if provided)
+    if (certResult) {
+      documentsToInsert.push({
+        helper_id: user.id,
+        document_type: 'voter_id', // Using voter_id as placeholder for certificate
+        document_number: 'N/A',
+        document_url: certResult.url,
+        status: 'pending'
+      })
+    }
+
+    const { error: insertError } = await supabase
+      .from('verification_documents')
+      .insert(documentsToInsert)
+    
     if (insertError) throw insertError
 
     // Update profile verification status (pending review)

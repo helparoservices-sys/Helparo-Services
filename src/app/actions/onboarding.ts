@@ -94,24 +94,75 @@ export async function completeHelperOnboarding(data: {
     if (profileError) throw profileError
 
     // 2. Save bank account if provided
+    logger.info('Bank account data received', { 
+      hasBankAccount: !!data.bank_account,
+      hasAccountNumber: !!data.bank_account?.account_number,
+      hasUpiId: !!data.bank_account?.upi_id,
+      bankAccountData: data.bank_account ? {
+        account_holder_name: data.bank_account.account_holder_name,
+        has_account_number: !!data.bank_account.account_number,
+        has_ifsc: !!data.bank_account.ifsc_code,
+        has_bank_name: !!data.bank_account.bank_name,
+        has_upi: !!data.bank_account.upi_id
+      } : null
+    })
+
     if (data.bank_account?.account_number || data.bank_account?.upi_id) {
-      const { error: bankError } = await supabase
+      const bankData = {
+        helper_id: user.id,
+        account_holder_name: data.bank_account.account_holder_name || profile.full_name || '',
+        account_number: data.bank_account.account_number || null,
+        ifsc_code: data.bank_account.ifsc_code || null,
+        bank_name: data.bank_account.bank_name || null,
+        branch_name: data.bank_account.branch_name || null,
+        upi_id: data.bank_account.upi_id || null,
+        is_primary: true,
+        status: 'pending_verification'
+      }
+
+      logger.info('Attempting to save bank account', { bankData })
+
+      // Check if bank account already exists for this helper
+      const { data: existingBank } = await supabase
         .from('helper_bank_accounts')
-        .upsert({
-          helper_id: user.id,
-          account_holder_name: data.bank_account.account_holder_name || profile.full_name || '',
-          account_number: data.bank_account.account_number || null,
-          ifsc_code: data.bank_account.ifsc_code || null,
-          bank_name: data.bank_account.bank_name || null,
-          branch_name: data.bank_account.branch_name || null,
-          upi_id: data.bank_account.upi_id || null,
-          is_primary: true,
-          status: 'pending_verification'
-        }, { onConflict: 'helper_id,is_primary' })
+        .select('id')
+        .eq('helper_id', user.id)
+        .eq('is_primary', true)
+        .single()
+
+      let bankError, bankResult
+
+      if (existingBank) {
+        // Update existing bank account
+        const result = await supabase
+          .from('helper_bank_accounts')
+          .update(bankData)
+          .eq('id', existingBank.id)
+          .select()
+        bankError = result.error
+        bankResult = result.data
+        logger.info('Updating existing bank account', { existingBankId: existingBank.id })
+      } else {
+        // Insert new bank account
+        const result = await supabase
+          .from('helper_bank_accounts')
+          .insert(bankData)
+          .select()
+        bankError = result.error
+        bankResult = result.data
+        logger.info('Inserting new bank account')
+      }
 
       if (bankError) {
-        logger.warn('Bank account save failed', { error: bankError, userId: user.id })
+        logger.error('Bank account save failed', { error: bankError, userId: user.id })
+      } else {
+        logger.info('Bank account saved successfully', { bankResult, userId: user.id })
       }
+    } else {
+      logger.warn('Bank account not saved - no account number or UPI ID provided', { 
+        userId: user.id,
+        bankAccount: data.bank_account 
+      })
     }
 
     // 3. Create notification for admins
