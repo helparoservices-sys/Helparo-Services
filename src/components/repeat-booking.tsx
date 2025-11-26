@@ -10,6 +10,7 @@ import { useState, useEffect } from 'react'
 import { Heart, RotateCcw, Star, Clock, MapPin, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useToast } from './ui/toast-notification'
 
 interface FavoriteHelper {
   id: string
@@ -151,7 +152,7 @@ export function FavoriteHelpers({ userId }: { userId: string }) {
  * One-click rebooking with saved preferences
  */
 export function RepeatBookingCard({ booking }: { booking: PastBooking }) {
-  const { showSuccess, showError } = useToast()
+  useToast()
   const [isBooking, setIsBooking] = useState(false)
 
   const handleRepeatBooking = async () => {

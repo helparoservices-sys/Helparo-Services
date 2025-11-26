@@ -64,6 +64,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 export function useToast() {
   const context = useContext(ToastContext)
   if (!context) {
+    // Return no-op functions for SSR
+    if (typeof window === 'undefined') {
+      return {
+        showToast: () => {},
+        showSuccess: () => {},
+        showError: () => {},
+        showWarning: () => {},
+        showInfo: () => {},
+      }
+    }
     throw new Error('useToast must be used within a ToastProvider')
   }
   return context

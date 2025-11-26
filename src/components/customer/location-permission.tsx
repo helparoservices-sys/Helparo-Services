@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import { MapPin, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useToast } from '../ui/toast-notification'
 
 export function CustomerLocationPermissionPrompt() {
-  const { showSuccess, showError } = useToast()
+  const { showError } = useToast()
   const [show, setShow] = useState(false)
   const [requesting, setRequesting] = useState(false)
 

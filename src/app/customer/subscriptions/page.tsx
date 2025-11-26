@@ -9,6 +9,7 @@ import {
   Crown, Check, Zap, Star, Award, Loader2, 
   TrendingUp, Shield, MapPin 
 } from 'lucide-react'
+import { useToast } from '@/components/ui/toast-notification'
 
 interface SubscriptionPlan {
   id: string

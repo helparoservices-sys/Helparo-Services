@@ -8,6 +8,7 @@ import {
   XCircle, MessageSquare, TrendingDown, Award, Loader2 
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/toast-notification'
 
 interface Bid {
   id: string

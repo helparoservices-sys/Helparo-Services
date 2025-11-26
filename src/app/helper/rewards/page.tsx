@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner, SkeletonCard } from '@/components/ui/loading'
 import { getLoyaltyBalance, redeemLoyaltyPoints } from '@/app/actions/gamification'
+import { useToast } from '@/components/ui/toast-notification'
 
 interface Reward {
   id: string

@@ -27,7 +27,7 @@ interface PromoModalProps {
 
 export function PromoModal({ open, onClose, promo }: PromoModalProps) {
   const router = useRouter()
-  const { showSuccess, showError } = useToast()
+  const { showError } = useToast()
   const [pending, startTransition] = useTransition()
   const isEdit = !!promo
 

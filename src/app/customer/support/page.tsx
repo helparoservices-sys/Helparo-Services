@@ -14,6 +14,7 @@ import {
   Search,
   HelpCircle
 } from 'lucide-react'
+import { useToast } from '@/components/ui/toast-notification'
 
 interface Ticket {
   id: string
@@ -28,7 +29,7 @@ interface Ticket {
 
 export default function CustomerSupportPage() {
   const supabase = createClient()
-  const { showSuccess, showError } = useToast()
+  const { showError } = useToast()
   const [loading, setLoading] = useState(true)
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [filterStatus, setFilterStatus] = useState<string>('all')
