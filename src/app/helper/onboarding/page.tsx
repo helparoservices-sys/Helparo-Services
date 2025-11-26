@@ -400,9 +400,11 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
   const [states, setStates] = useState<any[]>([])
   const [districts, setDistricts] = useState<any[]>([])
   const [cities, setCities] = useState<any[]>([])
+  const [serviceAreas, setServiceAreas] = useState<any[]>([])
   const [selectedState, setSelectedState] = useState('')
   const [selectedDistrict, setSelectedDistrict] = useState('')
-  const [selectedCities, setSelectedCities] = useState<string[]>([])
+  const [selectedCity, setSelectedCity] = useState('')
+  const [selectedServiceAreas, setSelectedServiceAreas] = useState<string[]>([])
   const [loadingAreas, setLoadingAreas] = useState(false)
   const supabase = createClient()
 
@@ -426,7 +428,9 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
 
   const loadDistricts = async (stateId: string) => {
     setLoadingAreas(true)
-    const { data: districtsData } = await supabase
+    
+    // Get all districts for this state
+    const { data: allDistricts } = await supabase
       .from('service_areas')
       .select('id, name')
       .eq('parent_id', stateId)
@@ -434,13 +438,36 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
       .eq('is_active', true)
       .order('display_order')
     
-    setDistricts(districtsData || [])
+    if (!allDistricts) {
+      setDistricts([])
+      setLoadingAreas(false)
+      return
+    }
+    
+    // Filter districts that have at least 1 active city
+    const districtsWithCities = []
+    for (const district of allDistricts) {
+      const { count } = await supabase
+        .from('service_areas')
+        .select('id', { count: 'exact', head: true })
+        .eq('parent_id', district.id)
+        .eq('level', 'city')
+        .eq('is_active', true)
+      
+      if (count && count > 0) {
+        districtsWithCities.push(district)
+      }
+    }
+    
+    setDistricts(districtsWithCities)
     setLoadingAreas(false)
   }
 
   const loadCities = async (districtId: string) => {
     setLoadingAreas(true)
-    const { data: citiesData } = await supabase
+    
+    // Get all cities for this district
+    const { data: allCities } = await supabase
       .from('service_areas')
       .select('id, name')
       .eq('parent_id', districtId)
@@ -448,16 +475,53 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
       .eq('is_active', true)
       .order('display_order')
     
-    setCities(citiesData || [])
+    if (!allCities) {
+      setCities([])
+      setLoadingAreas(false)
+      return
+    }
+    
+    // Filter cities that have at least 1 active service area
+    const citiesWithAreas = []
+    for (const city of allCities) {
+      const { count } = await supabase
+        .from('service_areas')
+        .select('id', { count: 'exact', head: true })
+        .eq('parent_id', city.id)
+        .eq('level', 'area')
+        .eq('is_active', true)
+      
+      if (count && count > 0) {
+        citiesWithAreas.push(city)
+      }
+    }
+    
+    setCities(citiesWithAreas)
+    setLoadingAreas(false)
+  }
+
+  const loadServiceAreas = async (cityId: string) => {
+    setLoadingAreas(true)
+    const { data: areasData } = await supabase
+      .from('service_areas')
+      .select('id, name')
+      .eq('parent_id', cityId)
+      .eq('level', 'area')
+      .eq('is_active', true)
+      .order('display_order')
+    
+    setServiceAreas(areasData || [])
     setLoadingAreas(false)
   }
 
   const handleStateChange = (stateId: string) => {
     setSelectedState(stateId)
     setSelectedDistrict('')
-    setSelectedCities([])
+    setSelectedCity('')
+    setSelectedServiceAreas([])
     setDistricts([])
     setCities([])
+    setServiceAreas([])
     if (stateId) {
       loadDistricts(stateId)
     }
@@ -465,18 +529,29 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
 
   const handleDistrictChange = (districtId: string) => {
     setSelectedDistrict(districtId)
-    setSelectedCities([])
+    setSelectedCity('')
+    setSelectedServiceAreas([])
     setCities([])
+    setServiceAreas([])
     if (districtId) {
       loadCities(districtId)
     }
   }
 
-  const toggleCity = (cityId: string) => {
-    const updated = selectedCities.includes(cityId)
-      ? selectedCities.filter(id => id !== cityId)
-      : [...selectedCities, cityId]
-    setSelectedCities(updated)
+  const handleCityChange = (cityId: string) => {
+    setSelectedCity(cityId)
+    setSelectedServiceAreas([])
+    setServiceAreas([])
+    if (cityId) {
+      loadServiceAreas(cityId)
+    }
+  }
+
+  const toggleServiceArea = (areaId: string) => {
+    const updated = selectedServiceAreas.includes(areaId)
+      ? selectedServiceAreas.filter(id => id !== areaId)
+      : [...selectedServiceAreas, areaId]
+    setSelectedServiceAreas(updated)
     onChange({ service_area_ids: updated })
   }
 
@@ -602,9 +677,9 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
       return
     }
     
-    if (!selectedCities.length) {
-      setValidationError('Please select at least one service area (city)')
-      toast.error('Please select at least one city where you provide services')
+    if (!selectedServiceAreas.length) {
+      setValidationError('Please select at least one service area')
+      toast.error('Please select at least one service area where you provide services')
       return
     }
     
@@ -823,35 +898,58 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
             </div>
           )}
 
-          {/* City Multi-Selector (only visible when district selected) */}
+          {/* City Selector (only visible when district selected) */}
           {selectedDistrict && (
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Select Cities <span className="text-red-500">*</span> ({selectedCities.length} selected)
+                Select City <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={selectedCity}
+                onChange={(e) => handleCityChange(e.target.value)}
+                disabled={loadingAreas || !cities.length}
+                className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="">-- Select City --</option>
+                {cities.map((city) => (
+                  <option key={city.id} value={city.id}>{city.name}</option>
+                ))}
+              </select>
+              {!loadingAreas && !cities.length && (
+                <p className="text-xs text-slate-500 mt-1">No cities available for this district</p>
+              )}
+            </div>
+          )}
+
+          {/* Service Area Multi-Selector (only visible when city selected) */}
+          {selectedCity && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Select Service Areas <span className="text-red-500">*</span> ({selectedServiceAreas.length} selected)
               </label>
               <div className="max-h-60 overflow-y-auto border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                 {loadingAreas ? (
                   <div className="p-4 text-center text-slate-500">
                     <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-600 border-t-transparent mx-auto mb-2"></div>
-                    Loading cities...
+                    Loading service areas...
                   </div>
-                ) : cities.length === 0 ? (
+                ) : serviceAreas.length === 0 ? (
                   <div className="p-4 text-center text-slate-500">
-                    No cities available for this district
+                    No service areas available for this city
                   </div>
                 ) : (
-                  cities.map((city) => (
+                  serviceAreas.map((area) => (
                     <label
-                      key={city.id}
+                      key={area.id}
                       className="flex items-center gap-3 p-3 hover:bg-purple-50 dark:hover:bg-purple-900/20 cursor-pointer transition-colors"
                     >
                       <input
                         type="checkbox"
-                        checked={selectedCities.includes(city.id)}
-                        onChange={() => toggleCity(city.id)}
+                        checked={selectedServiceAreas.includes(area.id)}
+                        onChange={() => toggleServiceArea(area.id)}
                         className="h-4 w-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
                       />
-                      <span className="text-sm text-slate-900 dark:text-white">{city.name}</span>
+                      <span className="text-sm text-slate-900 dark:text-white">{area.name}</span>
                     </label>
                   ))
                 )}
@@ -860,22 +958,22 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
           )}
         </div>
 
-        {/* Selected Cities Summary */}
-        {selectedCities.length > 0 && (
+        {/* Selected Service Areas Summary */}
+        {selectedServiceAreas.length > 0 && (
           <div className="bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700 rounded-lg p-4">
             <p className="text-sm font-semibold text-purple-900 dark:text-purple-300 mb-2">
-              ✓ Service Areas Selected ({selectedCities.length} cities)
+              ✓ Service Areas Selected ({selectedServiceAreas.length} areas)
             </p>
             <div className="flex flex-wrap gap-2">
-              {selectedCities.map((cityId) => {
-                const city = cities.find(c => c.id === cityId)
-                return city ? (
+              {selectedServiceAreas.map((areaId) => {
+                const area = serviceAreas.find(a => a.id === areaId)
+                return area ? (
                   <span
-                    key={cityId}
+                    key={areaId}
                     className="inline-flex items-center gap-1 px-3 py-1 bg-white dark:bg-slate-800 border border-purple-400 dark:border-purple-600 rounded-full text-xs text-purple-700 dark:text-purple-300 font-medium"
                   >
-                    {city.name}
-                    <button onClick={() => toggleCity(cityId)} className="hover:text-red-600">
+                    {area.name}
+                    <button onClick={() => toggleServiceArea(areaId)} className="hover:text-red-600">
                       <X className="h-3 w-3" />
                     </button>
                   </span>
