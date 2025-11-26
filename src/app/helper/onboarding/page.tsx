@@ -414,63 +414,61 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
     setLoadingAreas(true)
     const { data: statesData } = await supabase
       .from('service_areas')
-      .select('state')
+      .select('id, name')
       .eq('level', 'state')
-      .not('state', 'is', null)
-      .order('state')
+      .eq('is_active', true)
+      .is('parent_id', null)
+      .order('display_order')
     
-    const uniqueStates = [...new Set(statesData?.map(s => s.state) || [])]
-    setStates(uniqueStates.map(s => ({ name: s })))
+    setStates(statesData || [])
     setLoadingAreas(false)
   }
 
-  const loadDistricts = async (state: string) => {
+  const loadDistricts = async (stateId: string) => {
     setLoadingAreas(true)
     const { data: districtsData } = await supabase
       .from('service_areas')
-      .select('district')
-      .eq('state', state)
+      .select('id, name')
+      .eq('parent_id', stateId)
       .eq('level', 'district')
-      .not('district', 'is', null)
-      .order('district')
+      .eq('is_active', true)
+      .order('display_order')
     
-    const uniqueDistricts = [...new Set(districtsData?.map(d => d.district) || [])]
-    setDistricts(uniqueDistricts.map(d => ({ name: d })))
+    setDistricts(districtsData || [])
     setLoadingAreas(false)
   }
 
-  const loadCities = async (state: string, district: string) => {
+  const loadCities = async (districtId: string) => {
     setLoadingAreas(true)
     const { data: citiesData } = await supabase
       .from('service_areas')
-      .select('id, city, state, district')
-      .eq('state', state)
-      .eq('district', district)
+      .select('id, name')
+      .eq('parent_id', districtId)
       .eq('level', 'city')
-      .not('city', 'is', null)
-      .order('city')
+      .eq('is_active', true)
+      .order('display_order')
     
     setCities(citiesData || [])
     setLoadingAreas(false)
   }
 
-  const handleStateChange = (state: string) => {
-    setSelectedState(state)
+  const handleStateChange = (stateId: string) => {
+    setSelectedState(stateId)
     setSelectedDistrict('')
     setSelectedCities([])
     setDistricts([])
     setCities([])
-    if (state) {
-      loadDistricts(state)
+    if (stateId) {
+      loadDistricts(stateId)
     }
   }
 
-  const handleDistrictChange = (district: string) => {
-    setSelectedDistrict(district)
+  const handleDistrictChange = (districtId: string) => {
+    setSelectedDistrict(districtId)
     setSelectedCities([])
     setCities([])
-    if (district && selectedState) {
-      loadCities(selectedState, district)
+    if (districtId) {
+      loadCities(districtId)
     }
   }
 
@@ -796,8 +794,8 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
               className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
               <option value="">-- Select State --</option>
-              {states.map((state, idx) => (
-                <option key={idx} value={state.name}>{state.name}</option>
+              {states.map((state) => (
+                <option key={state.id} value={state.id}>{state.name}</option>
               ))}
             </select>
           </div>
@@ -815,8 +813,8 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
                 className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               >
                 <option value="">-- Select District --</option>
-                {districts.map((district, idx) => (
-                  <option key={idx} value={district.name}>{district.name}</option>
+                {districts.map((district) => (
+                  <option key={district.id} value={district.id}>{district.name}</option>
                 ))}
               </select>
               {!loadingAreas && !districts.length && (
@@ -853,7 +851,7 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
                         onChange={() => toggleCity(city.id)}
                         className="h-4 w-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
                       />
-                      <span className="text-sm text-slate-900 dark:text-white">{city.city}</span>
+                      <span className="text-sm text-slate-900 dark:text-white">{city.name}</span>
                     </label>
                   ))
                 )}
@@ -876,7 +874,7 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
                     key={cityId}
                     className="inline-flex items-center gap-1 px-3 py-1 bg-white dark:bg-slate-800 border border-purple-400 dark:border-purple-600 rounded-full text-xs text-purple-700 dark:text-purple-300 font-medium"
                   >
-                    {city.city}
+                    {city.name}
                     <button onClick={() => toggleCity(cityId)} className="hover:text-red-600">
                       <X className="h-3 w-3" />
                     </button>
