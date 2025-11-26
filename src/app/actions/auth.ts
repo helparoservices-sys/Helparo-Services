@@ -37,14 +37,39 @@ export async function loginAction(formData: FormData) {
       // Clear rate limit on successful login
       clearRateLimit('login', sanitizedEmail)
       
-      // Get user profile
+      // Get user profile with status
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, status, is_banned, ban_reason')
         .eq('id', data.user.id)
         .single()
 
       const role = (profile as any)?.role || 'customer'
+      const status = (profile as any)?.status
+      const isBanned = (profile as any)?.is_banned
+      const banReason = (profile as any)?.ban_reason
+      
+      // Check if user is allowed to login
+      if (isBanned) {
+        // Sign out the user
+        await supabase.auth.signOut()
+        return { error: banReason ? `Account banned: ${banReason}` : 'Your account has been banned. Please contact support.' }
+      }
+      
+      if (status === 'suspended') {
+        await supabase.auth.signOut()
+        return { error: 'Your account has been suspended. Please contact support.' }
+      }
+      
+      if (status === 'inactive') {
+        await supabase.auth.signOut()
+        return { error: 'Your account is inactive. Please contact support to activate your account.' }
+      }
+      
+      if (!status || status !== 'active') {
+        await supabase.auth.signOut()
+        return { error: 'Your account is not active. Please contact support.' }
+      }
       
       // Server-side redirect
       redirect(`/${role}/dashboard`)

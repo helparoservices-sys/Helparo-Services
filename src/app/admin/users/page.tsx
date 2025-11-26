@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Users as UsersIcon, UserCheck, Shield, Ban, CheckCircle, AlertCircle, MoreVertical, UserPlus } from 'lucide-react'
+import { Users as UsersIcon, UserCheck, Shield, Ban, CheckCircle, AlertCircle, MoreVertical, UserPlus, XCircle } from 'lucide-react'
 import { DataTable } from '@/components/admin/DataTable'
 import { Modal, ConfirmDialog } from '@/components/admin/Modal'
 import { PageLoader } from '@/components/ui/loader'
+import { useToast } from '@/components/ui/toast-notification'
 import { updateUserRole, banUser, unbanUser, approveHelper } from '@/app/actions/admin'
 import { createAdminUser } from '@/app/actions/admin-auth'
 import { supabase } from '@/lib/supabase/client'
@@ -27,6 +28,7 @@ interface User {
 }
 
 export default function AdminUsersPage() {
+  const { showSuccess, showError } = useToast()
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState<User[]>([])
   const [error, setError] = useState('')
@@ -227,13 +229,45 @@ export default function AdminUsersPage() {
       if (error) {
         console.error('Activate error:', error)
         setError(error.message)
+        showError('Activation Failed', error.message)
       } else {
         console.log('Activate success:', data)
+        showSuccess('User Activated', 'User account has been activated successfully')
         await loadUsers()
       }
     } catch (err: any) {
       console.error('Activate exception:', err)
       setError(err.message || 'Failed to activate user')
+      showError('Activation Failed', err.message || 'Failed to activate user')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleDeactivate = async (userId: string) => {
+    setActionLoading(userId)
+    setError('')
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ status: 'inactive' })
+        .eq('id', userId)
+        .select()
+
+      if (error) {
+        console.error('Deactivate error:', error)
+        setError(error.message)
+        showError('Deactivation Failed', error.message)
+      } else {
+        console.log('Deactivate success:', data)
+        showSuccess('User Deactivated', 'User account has been deactivated successfully')
+        await loadUsers()
+      }
+    } catch (err: any) {
+      console.error('Deactivate exception:', err)
+      setError(err.message || 'Failed to deactivate user')
+      showError('Deactivation Failed', err.message || 'Failed to deactivate user')
     } finally {
       setActionLoading(null)
     }
@@ -282,9 +316,10 @@ export default function AdminUsersPage() {
       await loadUsers()
       
       setError('')
-      alert('Admin account created successfully!')
+      showSuccess('Admin Created', 'Admin account created successfully!')
     } catch (err: any) {
       console.error('Create admin error:', err)
+      showError('Creation Failed', err.message || 'Failed to create admin account')
       setError(err.message || 'Failed to create admin account')
     } finally {
       setActionLoading(null)
@@ -383,7 +418,7 @@ export default function AdminUsersPage() {
       )}
 
       {/* Stats Cards */}
-      <div className="grid gap-6 md:grid-cols-5">
+      <div className="grid gap-6 md:grid-cols-6">
         <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
@@ -416,6 +451,18 @@ export default function AdminUsersPage() {
             </div>
             <div className="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
               <Shield className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Inactive</p>
+              <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">{users.filter(u => u.status === 'inactive').length}</p>
+            </div>
+            <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-900/30 flex items-center justify-center">
+              <XCircle className="h-6 w-6 text-gray-600 dark:text-gray-400" />
             </div>
           </div>
         </div>
@@ -604,7 +651,7 @@ export default function AdminUsersPage() {
                 </button>
               )}
               
-              {/* Suspend/Activate Button - Only show if not banned */}
+              {/* Suspend/Activate/Deactivate Buttons - Only show if not banned */}
               {!user.is_banned && (
                 <>
                   {user.status === 'suspended' || user.status === 'inactive' ? (
@@ -616,13 +663,22 @@ export default function AdminUsersPage() {
                       Activate
                     </button>
                   ) : user.status === 'active' && (
-                    <button
-                      onClick={() => handleSuspend(user.id)}
-                      disabled={actionLoading === user.id}
-                      className="px-3 py-1.5 text-xs font-medium text-orange-700 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400 rounded-lg hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors disabled:opacity-50 whitespace-nowrap"
-                    >
-                      Suspend
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleSuspend(user.id)}
+                        disabled={actionLoading === user.id}
+                        className="px-3 py-1.5 text-xs font-medium text-orange-700 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400 rounded-lg hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors disabled:opacity-50 whitespace-nowrap"
+                      >
+                        Suspend
+                      </button>
+                      <button
+                        onClick={() => handleDeactivate(user.id)}
+                        disabled={actionLoading === user.id}
+                        className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-900/50 transition-colors disabled:opacity-50 whitespace-nowrap"
+                      >
+                        Deactivate
+                      </button>
+                    </>
                   )}
                 </>
               )}
@@ -839,13 +895,6 @@ export default function AdminUsersPage() {
               minLength={6}
             />
             <p className="text-xs text-slate-500 dark:text-slate-400">Password must be at least 6 characters long</p>
-          </div>
-
-          <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
-            <p className="text-sm text-purple-900 dark:text-purple-300">
-              <Shield className="inline h-4 w-4 mr-1" />
-              A confirmation email will be sent to the admin's email address.
-            </p>
           </div>
         </div>
       </Modal>

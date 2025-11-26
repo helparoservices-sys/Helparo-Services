@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Headset, AlertCircle, Clock, CheckCircle, MessageCircle, Eye, X, Send, User, Calendar, Tag } from 'lucide-react'
 import { assignTicketToAgent, updateTicketStatus, sendTicketMessage } from '@/app/actions/support'
+import { useToast } from '../ui/toast-notification'
 
 interface Profile {
   id: string
@@ -65,6 +66,7 @@ interface Props {
 
 export default function SupportPageClient({ tickets, agents }: Props) {
   const router = useRouter()
+  const { showSuccess, showError } = useToast()
   const [isPending, startTransition] = useTransition()
 
   // Filters

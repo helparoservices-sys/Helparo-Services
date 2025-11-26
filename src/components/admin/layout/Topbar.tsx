@@ -15,6 +15,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
+import { useToast } from '@/components/ui/toast-notification'
 
 interface TopbarProps {
   onToggleSidebar: () => void
@@ -29,6 +30,7 @@ interface Notification {
 }
 
 export default function Topbar({ onToggleSidebar }: TopbarProps) {
+  const { showError } = useToast()
   const [darkMode, setDarkMode] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
@@ -135,7 +137,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
       
       if (error) {
         console.error('Logout error:', error)
-        alert('Failed to logout. Please try again.')
+        showError('Logout Failed', 'Please try again')
         setIsLoggingOut(false)
         return
       }
@@ -158,7 +160,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
       window.location.href = '/auth/login'
     } catch (error) {
       console.error('Logout error:', error)
-      alert('Failed to logout. Please try again.')
+      showError('Logout Failed', 'Please try again')
       setIsLoggingOut(false)
     }
   }

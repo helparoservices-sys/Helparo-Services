@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { getAllSubscriptionPlans, deleteSubscriptionPlan, updateSubscriptionPlan } from '@/app/actions/subscriptions'
 import { LoadingSpinner } from '@/components/ui/loading'
+import { useToast } from '@/components/ui/toast-notification'
 
 interface SubscriptionPlan {
   id: string
@@ -24,6 +25,7 @@ interface SubscriptionPlan {
 }
 
 export default function AdminSubscriptionsPage() {
+  const { showSuccess, showError } = useToast()
   const [plans, setPlans] = useState<SubscriptionPlan[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -58,8 +60,9 @@ export default function AdminSubscriptionsPage() {
     const result = await deleteSubscriptionPlan(planId)
     
     if ('error' in result) {
-      alert(result.error)
+      showError('Delete Failed', result.error)
     } else {
+      showSuccess('Plan Deleted', 'Subscription plan deleted successfully')
       await loadPlans()
     }
     
@@ -72,8 +75,9 @@ export default function AdminSubscriptionsPage() {
     const result = await updateSubscriptionPlan(planId, { is_active: !currentStatus })
     
     if ('error' in result) {
-      alert(result.error)
+      showError('Update Failed', result.error)
     } else {
+      showSuccess('Status Updated', `Plan ${!currentStatus ? 'activated' : 'deactivated'} successfully`)
       await loadPlans()
     }
     

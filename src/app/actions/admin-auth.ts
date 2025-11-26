@@ -52,7 +52,7 @@ export async function createAdminUser(data: {
       return { error: 'Failed to create user' }
     }
 
-    // Update the profile with admin role
+    // Update the profile with admin role and verification flags
     const { error: profileError } = await supabase
       .from('profiles')
       .update({
@@ -61,6 +61,8 @@ export async function createAdminUser(data: {
         country_code: data.country_code,
         role: 'admin',
         status: 'active',
+        is_verified: true,
+        phone_verified: true,
       })
       .eq('id', authData.user.id)
 

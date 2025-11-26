@@ -3,6 +3,7 @@ import { useState, useTransition, useEffect } from 'react'
 import { createPromo, updatePromo } from '@/app/actions/promos'
 import { Loader2, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useToast } from '../ui/toast-notification'
 
 interface PromoModalProps {
   open: boolean
@@ -26,6 +27,7 @@ interface PromoModalProps {
 
 export function PromoModal({ open, onClose, promo }: PromoModalProps) {
   const router = useRouter()
+  const { showSuccess, showError } = useToast()
   const [pending, startTransition] = useTransition()
   const isEdit = !!promo
 
@@ -90,11 +92,11 @@ export function PromoModal({ open, onClose, promo }: PromoModalProps) {
   function submit() {
     const dv = Number(discountValue)
     if (!dv || dv <= 0) {
-      alert('Discount value must be > 0')
+      showError('Invalid Value', 'Discount value must be greater than 0')
       return
     }
     if (!code.trim()) {
-      alert('Code is required')
+      showError('Required Field', 'Promo code is required')
       return
     }
     startTransition(async () => {

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useLocation } from '@/lib/use-location'
 import { AlertTriangle, Phone, MapPin, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useToast } from './ui/toast-notification'
 
 interface EmergencySOSButtonProps {
   requestId?: string
@@ -12,6 +13,7 @@ interface EmergencySOSButtonProps {
 }
 
 export default function EmergencySOSButton({ requestId, className = '' }: EmergencySOSButtonProps) {
+  const { showSuccess, showError } = useToast()
   const [showModal, setShowModal] = useState(false)
   const [creating, setCreating] = useState(false)
   const [sosType, setSosType] = useState<'safety' | 'medical' | 'dispute'>('safety')
@@ -51,11 +53,11 @@ export default function EmergencySOSButton({ requestId, className = '' }: Emerge
 
       if (error) throw error
 
-      alert('🚨 Emergency alert sent! Help is on the way.')
+      showSuccess('🚨 Emergency Alert Sent', 'Help is on the way!')
       setShowModal(false)
       setDescription('')
     } catch (error) {
-      alert('Failed to send emergency alert: ' + (error as Error).message)
+      showError('Alert Failed', (error as Error).message)
     } finally {
       setCreating(false)
     }

@@ -32,6 +32,7 @@ interface SubscriptionStatus {
 }
 
 export default function CustomerSubscriptionsPage() {
+  const { showSuccess, showError } = useToast()
   const [plans, setPlans] = useState<SubscriptionPlan[]>([])
   const [currentStatus, setCurrentStatus] = useState<SubscriptionStatus | null>(null)
   const [loading, setLoading] = useState(true)
@@ -71,9 +72,9 @@ export default function CustomerSubscriptionsPage() {
     })
 
     if (error) {
-      alert('Failed to subscribe: ' + error.message)
+      showError('Subscription Failed', error.message)
     } else {
-      alert('Successfully subscribed!')
+      showSuccess('Subscribed', 'Successfully subscribed to the plan!')
       loadData()
     }
 

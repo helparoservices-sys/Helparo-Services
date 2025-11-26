@@ -28,6 +28,7 @@ interface Ticket {
 
 export default function CustomerSupportPage() {
   const supabase = createClient()
+  const { showSuccess, showError } = useToast()
   const [loading, setLoading] = useState(true)
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [filterStatus, setFilterStatus] = useState<string>('all')
@@ -66,7 +67,7 @@ export default function CustomerSupportPage() {
 
   const handleCreateTicket = async () => {
     if (!newTicket.subject.trim() || !newTicket.description.trim()) {
-      alert('Please fill in all required fields')
+      showError('Required Fields', 'Please fill in all required fields')
       return
     }
 

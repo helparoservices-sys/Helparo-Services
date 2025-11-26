@@ -128,6 +128,7 @@ const REWARDS_CATALOG: Reward[] = [
 ]
 
 export default function HelperRewardsPage() {
+  const { showSuccess, showError } = useToast()
   const [loading, setLoading] = useState(true)
   const [balance, setBalance] = useState(0)
   const [error, setError] = useState('')

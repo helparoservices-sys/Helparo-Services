@@ -151,6 +151,7 @@ export function FavoriteHelpers({ userId }: { userId: string }) {
  * One-click rebooking with saved preferences
  */
 export function RepeatBookingCard({ booking }: { booking: PastBooking }) {
+  const { showSuccess, showError } = useToast()
   const [isBooking, setIsBooking] = useState(false)
 
   const handleRepeatBooking = async () => {

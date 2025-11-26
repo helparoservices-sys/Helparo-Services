@@ -31,6 +31,7 @@ interface Bid {
 }
 
 export default function CustomerBidsPage() {
+  const { showSuccess, showError } = useToast()
   const [bids, setBids] = useState<Bid[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'pending' | 'accepted' | 'rejected'>('all')
@@ -121,8 +122,9 @@ export default function CustomerBidsPage() {
     })
     
     if (error) {
-      alert('Failed to accept bid: ' + error.message)
+      showError('Accept Failed', error.message)
     } else {
+      showSuccess('Bid Accepted', 'Helper has been assigned to your request')
       loadBids()
     }
   }
@@ -137,8 +139,9 @@ export default function CustomerBidsPage() {
       .eq('id', bidId)
     
     if (error) {
-      alert('Failed to reject bid: ' + error.message)
+      showError('Reject Failed', error.message)
     } else {
+      showSuccess('Bid Rejected', 'Bid has been rejected')
       loadBids()
     }
   }

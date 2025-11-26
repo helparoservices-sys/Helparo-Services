@@ -34,6 +34,7 @@ export function PaymentSplitCalculator({
   serviceId: string
   onSplitCreated?: (splitId: string) => void
 }) {
+  const { showSuccess, showError } = useToast()
   const [participants, setParticipants] = useState<SplitParticipant[]>([])
   const [newParticipant, setNewParticipant] = useState({ name: '', email: '', phone: '' })
   const [splitMethod, setSplitMethod] = useState<'equal' | 'custom'>('equal')
@@ -54,7 +55,7 @@ export function PaymentSplitCalculator({
 
   const addParticipant = () => {
     if (!newParticipant.name || !newParticipant.email) {
-      alert('Please enter name and email')
+      showError('Required Fields', 'Please enter name and email')
       return
     }
 

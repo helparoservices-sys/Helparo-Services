@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Package, Plus, Edit, CheckCircle, XCircle, FolderTree, Grid3x3, DollarSign, AlertCircle, Trash2, Loader2, Eye, EyeOff } from 'lucide-react'
 import { PageLoader } from '@/components/admin/PageLoader'
 import { getServiceCategoryTree, deleteServiceCategory, toggleServiceStatus } from '@/app/actions/services'
+import { useToast } from '@/components/ui/toast-notification'
 
 interface ServiceCategory {
   id: string
@@ -23,6 +24,7 @@ interface ServiceCategory {
 }
 
 export default function AdminServicesPage() {
+  const { showSuccess, showError } = useToast()
   const [categories, setCategories] = useState<ServiceCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -55,8 +57,9 @@ export default function AdminServicesPage() {
     const result = await deleteServiceCategory(id)
     
     if (result.error) {
-      alert(`Failed to delete: ${result.error}`)
+      showError('Delete Failed', result.error)
     } else {
+      showSuccess('Category Deleted', 'Service category deactivated successfully')
       // Reload categories to reflect change
       await loadCategories()
     }
@@ -79,7 +82,7 @@ export default function AdminServicesPage() {
     const result = await toggleServiceStatus(id, currentStatus)
     
     if (result.error) {
-      alert(`Failed to toggle status: ${result.error}`)
+      showError('Toggle Failed', result.error)
       // Revert on error
       setCategories(prev => prev.map(cat => 
         cat.id === id ? { ...cat, is_active: currentStatus } : {

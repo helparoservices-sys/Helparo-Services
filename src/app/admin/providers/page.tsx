@@ -14,8 +14,10 @@ import {
   Users
 } from 'lucide-react'
 import { PageLoader } from '@/components/ui/loader'
+import { useToast } from '@/components/ui/toast-notification'
 
 export default function ProvidersPage() {
+  const { showSuccess, showError } = useToast()
   const [loading, setLoading] = useState(true)
   const [helpers, setHelpers] = useState<any[]>([])
   const [error, setError] = useState('')
@@ -120,7 +122,9 @@ export default function ProvidersPage() {
     if (updErr) {
       // revert
       setHelpers(prev => prev.map(h => h.id === helper.id ? { ...h, is_available_now: !newValue } : h))
-      alert('Failed to toggle availability: ' + updErr.message)
+      showError('Toggle Failed', updErr.message)
+    } else {
+      showSuccess('Availability Updated', `Helper is now ${newValue ? 'available' : 'unavailable'}`)
     }
     setTogglingId(null)
   }

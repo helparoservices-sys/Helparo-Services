@@ -5,6 +5,7 @@ import { MapPin, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export function LocationPermissionPrompt() {
+  const { showSuccess, showError } = useToast()
   const [show, setShow] = useState(false)
   const [requesting, setRequesting] = useState(false)
 
@@ -39,7 +40,7 @@ export function LocationPermissionPrompt() {
     setRequesting(true)
 
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser')
+      showError('Not Supported', 'Geolocation is not supported by your browser')
       setRequesting(false)
       return
     }
