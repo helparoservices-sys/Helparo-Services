@@ -150,22 +150,38 @@ export default function HelperDashboard() {
 
       {/* Verification Alert */}
       {needsVerification && (
-        <div className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl p-6 text-white shadow-lg">
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl p-6 text-white shadow-lg border-2 border-amber-400">
           <div className="flex items-start gap-4">
-            <div className="p-3 bg-white/20 rounded-lg">
-              <AlertCircle className="h-6 w-6" />
+            <div className="bg-white/20 p-3 rounded-lg">
+              <AlertCircle className="h-8 w-8" />
             </div>
             <div className="flex-1">
-              <h3 className="text-xl font-bold mb-2">Complete Verification to Start Earning</h3>
-              <p className="text-white/90 mb-4">
-                Upload your documents and complete your profile to receive job assignments and start earning money.
+              <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+                Complete Verification to Start Earning
+              </h2>
+              <p className="text-amber-50 mb-4">
+                {stats.verification.status === 'pending' 
+                  ? 'Your profile is under review. Our team will verify your details within 24-48 hours.'
+                  : 'Upload your documents and complete your profile to receive job assignments and start earning money.'}
               </p>
-              <Link href="/helper/verification">
-                <button className="bg-white text-orange-600 px-6 py-2 rounded-lg font-semibold hover:bg-white/90 transition-all flex items-center gap-2">
+              {stats.verification.status === 'pending' ? (
+                <Link
+                  href="/helper/verification"
+                  className="inline-flex items-center gap-2 bg-white text-orange-600 px-6 py-3 rounded-lg font-semibold hover:bg-orange-50 transition-colors shadow-md"
+                >
+                  <FileText className="h-5 w-5" />
+                  View Verification Status
+                  <ArrowRight className="h-5 w-5" />
+                </Link>
+              ) : (
+                <Link
+                  href="/helper/onboarding"
+                  className="inline-flex items-center gap-2 bg-white text-orange-600 px-6 py-3 rounded-lg font-semibold hover:bg-orange-50 transition-colors shadow-md"
+                >
                   Complete Verification Now
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </Link>
+                  <ArrowRight className="h-5 w-5" />
+                </Link>
+              )}
             </div>
           </div>
         </div>

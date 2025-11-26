@@ -135,7 +135,7 @@ export async function uploadOnboardingDocuments(formData: FormData) {
     }
 
     // Helper to validate & upload
-    const processFile = async (file: File, mappedType: string) => {
+    const processFile = async (file: File, docType: string) => {
       const validation = validateFile(file, ALLOWED_MIME_TYPES.VERIFICATION, FILE_SIZE_LIMITS.DOCUMENT)
       if (!validation.valid) throw new Error(validation.error || 'Invalid file')
       const path = `${user.id}/${validation.sanitizedName}`
@@ -143,20 +143,32 @@ export async function uploadOnboardingDocuments(formData: FormData) {
         .from('kyc')
         .upload(path, file, { cacheControl: '3600', upsert: false })
       if (uploadError) throw uploadError
-      const { error: insertError } = await supabase
-        .from('verification_documents')
-        .insert({
-          user_id: user.id,
-          doc_type: mappedType,
-          file_path: path,
-        })
-      if (insertError) throw insertError
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage.from('kyc').getPublicUrl(path)
+      
+      return { path, url: publicUrl, docType }
     }
 
-    await processFile(idProof, 'id_front')
-    await processFile(selfie, 'selfie')
-    if (cert) await processFile(cert, 'certificate')
-    if (addrProof) await processFile(addrProof, 'other')
+    // Upload all files
+    const idProofResult = await processFile(idProof, 'aadhar')
+    const selfieResult = await processFile(selfie, 'selfie')
+    const certResult = cert ? await processFile(cert, 'certificate') : null
+    const addrProofResult = addrProof ? await processFile(addrProof, 'address_proof') : null
+
+    // Insert verification document record (using first document as primary)
+    const { error: insertError } = await supabase
+      .from('verification_documents')
+      .insert({
+        helper_id: user.id,
+        document_type: idProofResult.docType === 'aadhar' ? 'aadhar' : 'pan',
+        document_number: 'PENDING', // User will update this later
+        document_url: idProofResult.url,
+        selfie_url: selfieResult.url,
+        back_side_url: addrProofResult?.url || null,
+        status: 'pending'
+      })
+    if (insertError) throw insertError
 
     // Update profile verification status (pending review)
     await supabase

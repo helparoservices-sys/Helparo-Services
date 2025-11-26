@@ -21,6 +21,7 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { uploadOnboardingDocuments } from '@/app/actions/helper-verification'
+import { completeHelperOnboarding } from '@/app/actions/onboarding'
 
 // Step 1: Service Details
 function Step1ServiceDetails({ data, onChange, onNext }: any) {
@@ -337,9 +338,9 @@ function Step1ServiceDetails({ data, onChange, onNext }: any) {
           Specialization (Optional)
         </label>
         <textarea
-          value={(data.skills_specialization || []).join(', ')}
-          onChange={(e) => onChange({ skills_specialization: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-          placeholder="e.g., Emergency Repairs, Eco-friendly Solutions"
+          value={data.skills_specialization || ''}
+          onChange={(e) => onChange({ skills_specialization: e.target.value })}
+          placeholder="e.g., Emergency Repairs, Eco-friendly Solutions, Commercial Projects"
           className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           rows={2}
         />
@@ -552,7 +553,16 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
       ? selectedServiceAreas.filter(id => id !== areaId)
       : [...selectedServiceAreas, areaId]
     setSelectedServiceAreas(updated)
-    onChange({ service_area_ids: updated })
+    
+    // Also save area names for service_areas field
+    const areaNames = serviceAreas
+      .filter(area => updated.includes(area.id))
+      .map(area => area.name)
+    
+    onChange({ 
+      service_area_ids: updated,
+      service_areas: areaNames
+    })
   }
 
   const detectLocation = async () => {
@@ -1470,7 +1480,7 @@ export default function HelperOnboarding() {
   const [formData, setFormData] = useState<any>({
     service_categories: [],
     skills: [],
-    skills_specialization: [],
+    skills_specialization: '',
     experience_years: 0,
     hourly_rate: 0,
     address: '',
@@ -1480,7 +1490,15 @@ export default function HelperOnboarding() {
     service_area_ids: [],
     latitude: null,
     longitude: null,
-    working_hours: {},
+    working_hours: {
+      monday: { available: true, start: '09:00', end: '18:00' },
+      tuesday: { available: true, start: '09:00', end: '18:00' },
+      wednesday: { available: true, start: '09:00', end: '18:00' },
+      thursday: { available: true, start: '09:00', end: '18:00' },
+      friday: { available: true, start: '09:00', end: '18:00' },
+      saturday: { available: true, start: '09:00', end: '18:00' },
+      sunday: { available: false, start: '09:00', end: '18:00' }
+    },
     is_available_now: true,
     emergency_availability: false,
     bank_account: {},
@@ -1546,64 +1564,39 @@ export default function HelperOnboarding() {
         setSubmitting(false)
         return
       }
+      toast.success('Documents uploaded successfully!')
     }
 
-    // Then, save helper profile
-    const { error: profileError } = await supabase
-      .from('helper_profiles')
-      .upsert({
-        user_id: user.id,
-        service_categories: formData.service_categories,
-        skills: formData.skills,
-        skills_specialization: formData.skills_specialization,
-        experience_years: formData.experience_years,
-        hourly_rate: formData.hourly_rate,
-        address: formData.address,
-        pincode: formData.pincode,
-        service_radius_km: formData.service_radius_km,
-        service_areas: formData.service_areas,
-        service_area_ids: formData.service_area_ids,
-        latitude: formData.latitude,
-        longitude: formData.longitude,
-        working_hours: formData.working_hours,
-        is_available_now: formData.is_available_now,
-        emergency_availability: formData.emergency_availability,
-        verification_status: 'pending',
-        is_approved: false,
-        updated_at: new Date().toISOString()
-      })
+    // Save complete onboarding data
+    const result = await completeHelperOnboarding({
+      service_categories: formData.service_categories,
+      skills: formData.skills,
+      skills_specialization: formData.skills_specialization,
+      experience_years: formData.experience_years,
+      hourly_rate: formData.hourly_rate,
+      address: formData.address,
+      pincode: formData.pincode,
+      service_radius_km: formData.service_radius_km,
+      service_areas: formData.service_areas,
+      service_area_ids: formData.service_area_ids,
+      latitude: formData.latitude,
+      longitude: formData.longitude,
+      working_hours: formData.working_hours,
+      is_available_now: formData.is_available_now,
+      emergency_availability: formData.emergency_availability,
+      bank_account: formData.bank_account
+    })
 
-    if (profileError) {
-      toast.error('Failed to save profile: ' + profileError.message)
+    if ('error' in result && result.error) {
+      toast.error(result.error)
       setSubmitting(false)
       return
     }
 
-    // Save bank account details
-    if (formData.bank_account?.account_number || formData.bank_account?.upi_id) {
-      const { error: bankError } = await supabase
-        .from('helper_bank_accounts')
-        .insert({
-          helper_id: user.id,
-          account_holder_name: formData.bank_account.account_holder_name || '',
-          account_number: formData.bank_account.account_number || null,
-          ifsc_code: formData.bank_account.ifsc_code || null,
-          bank_name: formData.bank_account.bank_name || null,
-          branch_name: formData.bank_account.branch_name || null,
-          upi_id: formData.bank_account.upi_id || null,
-          is_primary: true,
-          status: 'pending_verification'
-        })
-
-      if (bankError) {
-        toast.error('Failed to save bank details: ' + bankError.message)
-        setSubmitting(false)
-        return
-      }
-    }
-
-    toast.success('Onboarding complete! Documents submitted for verification review.')
-    router.push('/helper/dashboard')
+    toast.success(result.message || 'Onboarding complete! Our team will verify your details.')
+    setTimeout(() => {
+      router.push('/helper/dashboard')
+    }, 2000)
   }
 
   if (checking) {
