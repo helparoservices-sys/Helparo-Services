@@ -8,7 +8,7 @@ import {
   XCircle,
   AlertCircle
 } from 'lucide-react'
-import { PageLoader } from '@/components/ui/loader'
+import { PageLoader } from '@/components/ui/loading'
 
 interface HelperDetail {
   id: string

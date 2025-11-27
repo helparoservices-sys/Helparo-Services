@@ -8,7 +8,7 @@ import {
   TrendingUp, Package, CheckCircle, Clock, Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { PageLoader } from '@/components/ui/loader'
+import { PageLoader } from '@/components/ui/loading'
 import { supabase } from '@/lib/supabase/client'
 
 interface UserDetails {

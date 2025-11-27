@@ -70,6 +70,12 @@ export default function HelperSidebar({ collapsed }: HelperSidebarProps) {
       requiresVerification: true
     },
     {
+      label: 'My Bookings',
+      icon: FileText,
+      href: '/helper/bookings',
+      requiresVerification: true
+    },
+    {
       label: 'Wallet',
       icon: Wallet,
       href: '/helper/wallet',

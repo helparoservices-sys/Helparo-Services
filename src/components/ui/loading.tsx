@@ -45,3 +45,15 @@ export function PageLoader() {
     </div>
   )
 }
+
+export function ButtonLoader({ className = '' }: { className?: string }) {
+  return (
+    <div className={`inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent ${className}`} />
+  )
+}
+
+export function Skeleton({ className = '' }: { className?: string }) {
+  return (
+    <div className={`animate-pulse rounded bg-gray-200 ${className}`} />
+  )
+}

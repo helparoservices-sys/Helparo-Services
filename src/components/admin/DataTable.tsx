@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ChevronDown, ChevronUp, Search, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-react'
-import { ButtonLoader } from '@/components/ui/loader'
+import { ButtonLoader } from '@/components/ui/loading'
 
 interface Column<T> {
   key: string

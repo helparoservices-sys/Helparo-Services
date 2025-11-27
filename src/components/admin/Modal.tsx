@@ -1,42 +1,18 @@
 'use client'
 
-import { useEffect } from 'react'
+import { ReactNode } from 'react'
 import { X } from 'lucide-react'
-import { ButtonLoader } from '@/components/ui/loader'
+import { Button } from '@/components/ui/button'
 
 interface ModalProps {
   isOpen: boolean
   onClose: () => void
   title: string
-  children: React.ReactNode
-  footer?: React.ReactNode
+  children: ReactNode
   size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
-export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalProps) {
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-    
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [isOpen])
-
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose()
-      }
-    }
-    
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
-  }, [isOpen, onClose])
-
+export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
   if (!isOpen) return null
 
   const sizeClasses = {
@@ -47,38 +23,30 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }:
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
         onClick={onClose}
       />
       
       {/* Modal */}
-      <div className={`relative bg-white dark:bg-slate-800 rounded-lg shadow-2xl w-full ${sizeClasses[size]} animate-fade-in border border-slate-200 dark:border-slate-700`}>
+      <div className={`relative bg-white dark:bg-slate-900 rounded-lg shadow-xl ${sizeClasses[size]} w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col`}>
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white">{title}</h2>
+          <h2 className="text-xl font-semibold">{title}</h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-            aria-label="Close modal"
+            className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
-            <X className="h-5 w-5 text-slate-500 dark:text-slate-400" />
+            <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         {/* Content */}
-        <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+        <div className="p-6 overflow-y-auto flex-1">
           {children}
         </div>
-        
-        {/* Footer */}
-        {footer && (
-          <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 dark:border-slate-700">
-            {footer}
-          </div>
-        )}
       </div>
     </div>
   )
@@ -87,12 +55,12 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }:
 interface ConfirmDialogProps {
   isOpen: boolean
   onClose: () => void
-  onConfirm: () => void | Promise<void>
+  onConfirm: () => void
   title: string
   message: string
   confirmText?: string
   cancelText?: string
-  type?: 'danger' | 'warning' | 'info'
+  variant?: 'danger' | 'warning' | 'info'
   loading?: boolean
 }
 
@@ -104,45 +72,49 @@ export function ConfirmDialog({
   message,
   confirmText = 'Confirm',
   cancelText = 'Cancel',
-  type = 'info',
+  variant = 'info',
   loading = false
 }: ConfirmDialogProps) {
-  const typeStyles = {
-    danger: 'bg-red-600 hover:bg-red-700 focus:ring-red-500',
-    warning: 'bg-orange-600 hover:bg-orange-700 focus:ring-orange-500',
-    info: 'bg-primary-600 hover:bg-primary-700 focus:ring-primary-500'
-  }
+  if (!isOpen) return null
 
-  const handleConfirm = async () => {
-    await onConfirm()
-    if (!loading) {
-      onClose()
-    }
+  const variantStyles = {
+    danger: 'bg-red-600 hover:bg-red-700',
+    warning: 'bg-yellow-600 hover:bg-yellow-700',
+    info: 'bg-blue-600 hover:bg-blue-700'
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
-      <div className="space-y-4">
-        <p className="text-slate-700 dark:text-slate-300">{message}</p>
-        
-        <div className="flex items-center justify-end gap-3 pt-4">
-          <button
-            onClick={onClose}
-            disabled={loading}
-            className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {cancelText}
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={loading}
-            className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${typeStyles[type]}`}
-          >
-            {loading && <ButtonLoader size="sm" />}
-            {confirmText}
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+        onClick={loading ? undefined : onClose}
+      />
+      
+      {/* Dialog */}
+      <div className="relative bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div className="p-6">
+          <h3 className="text-lg font-semibold mb-2">{title}</h3>
+          <p className="text-slate-600 dark:text-slate-400 mb-6">{message}</p>
+          
+          <div className="flex gap-3 justify-end">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              {cancelText}
+            </Button>
+            <Button
+              className={variantStyles[variant]}
+              onClick={onConfirm}
+              disabled={loading}
+            >
+              {loading ? 'Processing...' : confirmText}
+            </Button>
+          </div>
         </div>
       </div>
-    </Modal>
+    </div>
   )
 }

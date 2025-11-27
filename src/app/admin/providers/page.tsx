@@ -13,7 +13,7 @@ import {
   UserCheck,
   Users
 } from 'lucide-react'
-import { PageLoader } from '@/components/ui/loader'
+import { PageLoader } from '@/components/ui/loading'
 import { useToast } from '@/components/ui/toast-notification'
 
 export default function ProvidersPage() {
