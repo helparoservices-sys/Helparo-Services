@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { logger } from './lib/logger'
+import { timingSafeEqual } from 'crypto'
 
 // Generate CSRF token using Web Crypto API (Edge Runtime compatible)
 function generateCSRFToken(): string {
@@ -10,9 +11,19 @@ function generateCSRFToken(): string {
   return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
 }
 
-// Verify CSRF token
+// Verify CSRF token using timing-safe comparison
 function verifyCSRFToken(token: string, headerToken: string | null): boolean {
-  return token === headerToken
+  if (!token || !headerToken || token.length !== headerToken.length) {
+    return false
+  }
+  
+  try {
+    const tokenBuffer = Buffer.from(token)
+    const headerBuffer = Buffer.from(headerToken)
+    return timingSafeEqual(tokenBuffer, headerBuffer)
+  } catch {
+    return false
+  }
 }
 
 export async function middleware(request: NextRequest) {
@@ -27,9 +38,13 @@ export async function middleware(request: NextRequest) {
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.headers.set('X-XSS-Protection', '1; mode=block')
+  response.headers.set('X-Permitted-Cross-Domain-Policies', 'none')
+  response.headers.set('Cross-Origin-Embedder-Policy', 'require-corp')
+  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin')
+  response.headers.set('Cross-Origin-Resource-Policy', 'same-origin')
   response.headers.set(
     'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=(self)'
+    'camera=(), microphone=(), geolocation=(self), payment=(self)'
   )
   
   // Content Security Policy

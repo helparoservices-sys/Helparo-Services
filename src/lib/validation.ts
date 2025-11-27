@@ -12,11 +12,28 @@ export const emailSchema = z
   .toLowerCase()
   .trim()
 
-// Password validation
+// Password validation with strong security requirements
 export const passwordSchema = z
   .string()
-  .min(8, 'Password must be at least 8 characters')
+  .min(12, 'Password must be at least 12 characters')
   .max(128, 'Password is too long')
+  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  .regex(/[0-9]/, 'Password must contain at least one number')
+  .regex(/[^a-zA-Z0-9]/, 'Password must contain at least one special character (!@#$%^&*)')
+  .refine(
+    (password) => {
+      const commonPasswords = [
+        'password', '12345678', 'qwerty', 'abc123', 'letmein', 
+        'welcome', 'monkey', 'dragon', 'master', 'admin',
+        'password123', 'qwerty123', 'welcome123'
+      ]
+      return !commonPasswords.some(common => 
+        password.toLowerCase().includes(common)
+      )
+    },
+    'Password is too common or weak. Please choose a stronger password.'
+  )
 
 // UUID validation
 export const uuidSchema = z.string().uuid('Invalid ID format')

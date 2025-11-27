@@ -6,6 +6,8 @@ import { rateLimit, RATE_LIMITS, clearRateLimit } from '@/lib/rate-limit'
 import { validateFormData, loginSchema, magicLinkSchema, emailSchema, passwordSchema } from '@/lib/validation'
 import { handleServerActionError } from '@/lib/errors'
 import { sanitizeEmail } from '@/lib/sanitize'
+import { createSessionRecord, logLoginAttempt } from './sessions'
+import { checkAccountLockout, getLockoutMessage, clearFailedAttempts } from '@/lib/account-security'
 
 
 export async function loginAction(formData: FormData) {
@@ -19,6 +21,12 @@ export async function loginAction(formData: FormData) {
     const { email, password } = validation.data
     const sanitizedEmail = sanitizeEmail(email)
     
+    // Check for account lockout BEFORE rate limiting
+    const lockout = await checkAccountLockout(sanitizedEmail)
+    if (lockout) {
+      return { error: getLockoutMessage(lockout) }
+    }
+    
     // Rate limit login attempts by email
     await rateLimit('login', sanitizedEmail, RATE_LIMITS.LOGIN)
     
@@ -30,6 +38,12 @@ export async function loginAction(formData: FormData) {
     })
 
     if (error) {
+      // Log failed login attempt
+      await logLoginAttempt({
+        email: sanitizedEmail,
+        success: false,
+        failureReason: 'Invalid credentials'
+      })
       return { error: 'Invalid email or password' }
     }
 
@@ -53,22 +67,61 @@ export async function loginAction(formData: FormData) {
       if (isBanned) {
         // Sign out the user
         await supabase.auth.signOut()
+        await logLoginAttempt({
+          userId: data.user.id,
+          email: sanitizedEmail,
+          success: false,
+          failureReason: 'Account banned'
+        })
         return { error: banReason ? `Account banned: ${banReason}` : 'Your account has been banned. Please contact support.' }
       }
       
       if (status === 'suspended') {
         await supabase.auth.signOut()
+        await logLoginAttempt({
+          userId: data.user.id,
+          email: sanitizedEmail,
+          success: false,
+          failureReason: 'Account suspended'
+        })
         return { error: 'Your account has been suspended. Please contact support.' }
       }
       
       if (status === 'inactive') {
         await supabase.auth.signOut()
+        await logLoginAttempt({
+          userId: data.user.id,
+          email: sanitizedEmail,
+          success: false,
+          failureReason: 'Account inactive'
+        })
         return { error: 'Your account is inactive. Please contact support to activate your account.' }
       }
       
       if (!status || status !== 'active') {
         await supabase.auth.signOut()
+        await logLoginAttempt({
+          userId: data.user.id,
+          email: sanitizedEmail,
+          success: false,
+          failureReason: 'Account not active'
+        })
         return { error: 'Your account is not active. Please contact support.' }
+      }
+
+      // Log successful login attempt
+      await logLoginAttempt({
+        userId: data.user.id,
+        email: sanitizedEmail,
+        success: true
+      })
+      
+      // Clear failed attempts counter
+      await clearFailedAttempts(sanitizedEmail)
+
+      // Create session record for tracking
+      if (data.session?.access_token) {
+        await createSessionRecord(data.session.access_token)
       }
       
       // Server-side redirect
