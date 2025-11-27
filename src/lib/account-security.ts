@@ -155,23 +155,3 @@ export async function temporaryLockAccount(
     return handleServerActionError(error)
   }
 }
-
-/**
- * Get lockout message for user
- */
-export function getLockoutMessage(lockout: LockoutConfig): string {
-  if (lockout.isPermanent) {
-    return 'Your account has been permanently locked. Please contact support.'
-  }
-  
-  const minutesRemaining = Math.ceil(
-    (lockout.lockoutUntil.getTime() - Date.now()) / (60 * 1000)
-  )
-  
-  if (minutesRemaining > 60) {
-    const hours = Math.ceil(minutesRemaining / 60)
-    return `Too many failed login attempts. Account locked for ${hours} hours. Please try again later or reset your password.`
-  }
-  
-  return `Too many failed login attempts. Please try again in ${minutesRemaining} minutes or reset your password.`
-}

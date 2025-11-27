@@ -7,7 +7,7 @@ import { validateFormData, loginSchema, magicLinkSchema, emailSchema, passwordSc
 import { handleServerActionError } from '@/lib/errors'
 import { sanitizeEmail } from '@/lib/sanitize'
 import { createSessionRecord, logLoginAttempt } from './sessions'
-import { checkAccountLockout, getLockoutMessage, clearFailedAttempts } from '@/lib/account-security'
+import { checkAccountLockout, clearFailedAttempts } from '@/lib/account-security'
 
 
 export async function loginAction(formData: FormData) {
@@ -24,7 +24,24 @@ export async function loginAction(formData: FormData) {
     // Check for account lockout BEFORE rate limiting
     const lockout = await checkAccountLockout(sanitizedEmail)
     if (lockout) {
-      return { error: getLockoutMessage(lockout) }
+      // Generate lockout message
+      let lockoutMessage: string
+      if (lockout.isPermanent) {
+        lockoutMessage = 'Your account has been permanently locked. Please contact support.'
+      } else {
+        const minutesRemaining = Math.ceil(
+          (lockout.lockoutUntil.getTime() - Date.now()) / (60 * 1000)
+        )
+        
+        if (minutesRemaining > 60) {
+          const hours = Math.ceil(minutesRemaining / 60)
+          lockoutMessage = `Too many failed login attempts. Account locked for ${hours} hours. Please try again later or reset your password.`
+        } else {
+          lockoutMessage = `Too many failed login attempts. Please try again in ${minutesRemaining} minutes or reset your password.`
+        }
+      }
+      
+      return { error: lockoutMessage }
     }
     
     // Rate limit login attempts by email

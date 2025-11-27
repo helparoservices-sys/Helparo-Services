@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Suspense } from 'react'
 import './globals.css'
-import { PerformanceMonitor, WebVitalsReporter, NetworkSpeedIndicator } from '@/components/performance-monitor'
 
 export const metadata: Metadata = {
   title: 'Helparo - Your Trusted Service Marketplace',
@@ -34,15 +33,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://opnjibjsddwyojrerbll.supabase.co" crossOrigin="anonymous" />
       </head>
       <body className="antialiased">
-        <Suspense fallback={null}>
-          <PerformanceMonitor />
-          {process.env.NODE_ENV === 'development' && (
-            <>
-              <WebVitalsReporter />
-              <NetworkSpeedIndicator />
-            </>
-          )}
-        </Suspense>
         {children}
       </body>
     </html>
