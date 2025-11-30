@@ -114,6 +114,12 @@ export async function approveHelper(helperId: string, comment: string = '') {
       .update({ status: 'verified' as unknown })
       .eq('helper_id', helperId)
     
+    // Auto-approve all verification documents
+    await supabase
+      .from('verification_documents')
+      .update({ status: 'approved' })
+      .eq('helper_id', helperId)
+    
     // Insert verification review
     await supabase
       .from('verification_reviews')
