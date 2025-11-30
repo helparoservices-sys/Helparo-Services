@@ -323,11 +323,6 @@ export default function HelperServicesPage() {
   }
 
   const toggleServiceArea = (areaId: string) => {
-    // Don't allow selecting already-added areas
-    if (editedServiceAreaIds.includes(areaId)) {
-      return
-    }
-    
     setSelectedServiceAreaIds(prev =>
       prev.includes(areaId)
         ? prev.filter(id => id !== areaId)
@@ -746,7 +741,7 @@ export default function HelperServicesPage() {
                       </p>
                     )}
 
-                    {/* Service Area Checkboxes - Like Onboarding */}
+                    {/* Service Area Checkboxes - Only show NOT already added areas */}
                     {selectedCity && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -758,44 +753,33 @@ export default function HelperServicesPage() {
                               <div className="animate-spin rounded-full h-6 w-6 border-2 border-red-600 border-t-transparent mx-auto mb-2"></div>
                               Loading service areas...
                             </div>
-                          ) : serviceAreas.length === 0 ? (
+                          ) : serviceAreas.filter(area => !editedServiceAreaIds.includes(area.id)).length === 0 ? (
                             <div className="p-4 text-center text-gray-500">
-                              No service areas available for this city
+                              All areas from this city are already added
                             </div>
                           ) : (
-                            serviceAreas.map((area) => {
-                              const isAlreadyAdded = editedServiceAreaIds.includes(area.id)
-                              const isSelected = selectedServiceAreaIds.includes(area.id)
-                              
-                              return (
-                                <label
-                                  key={area.id}
-                                  className={`flex items-center gap-3 p-3 transition-colors ${
-                                    isAlreadyAdded 
-                                      ? 'bg-red-50 cursor-default' 
-                                      : 'hover:bg-gray-50 cursor-pointer'
-                                  }`}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={isAlreadyAdded || isSelected}
-                                    onChange={() => toggleServiceArea(area.id)}
-                                    disabled={isAlreadyAdded}
-                                    className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 disabled:opacity-100"
-                                  />
-                                  <span className={`text-sm flex-1 ${
-                                    isAlreadyAdded 
-                                      ? 'text-red-700 font-medium' 
-                                      : 'text-gray-900'
-                                  }`}>
-                                    {area.name}
-                                    {isAlreadyAdded && (
-                                      <span className="ml-2 text-xs text-red-600 font-semibold">(✓ Selected in onboarding)</span>
-                                    )}
-                                  </span>
-                                </label>
-                              )
-                            })
+                            serviceAreas
+                              .filter(area => !editedServiceAreaIds.includes(area.id))
+                              .map((area) => {
+                                const isSelected = selectedServiceAreaIds.includes(area.id)
+                                
+                                return (
+                                  <label
+                                    key={area.id}
+                                    className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={() => toggleServiceArea(area.id)}
+                                      className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                                    />
+                                    <span className="text-sm flex-1 text-gray-900">
+                                      {area.name}
+                                    </span>
+                                  </label>
+                                )
+                              })
                           )}
                         </div>
                       </div>
