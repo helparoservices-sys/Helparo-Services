@@ -9,10 +9,11 @@ interface ModalProps {
   onClose: () => void
   title: string
   children: ReactNode
+  footer?: ReactNode
   size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
-export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalProps) {
   if (!isOpen) return null
 
   const sizeClasses = {
@@ -47,6 +48,13 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
         <div className="p-6 overflow-y-auto flex-1">
           {children}
         </div>
+
+        {/* Footer */}
+        {footer && (
+          <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   )

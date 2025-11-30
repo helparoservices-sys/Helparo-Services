@@ -349,8 +349,9 @@ export async function getHelperOnboardingStatus() {
 
     const { data: documents } = await supabase
       .from('verification_documents')
-      .select('*')
+      .select('id, document_type, document_url, selfie_url, status, created_at')
       .eq('helper_id', user.id)
+      .order('created_at', { ascending: true })
 
     const { data: bankAccount } = await supabase
       .from('helper_bank_accounts')

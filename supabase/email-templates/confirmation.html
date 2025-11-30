@@ -175,7 +175,7 @@
 
       <!-- CTA Button -->
       <div class="cta-container">
-        <a href="{{ .ConfirmationURL }}" class="cta-button">
+        <a href="https://helparo.in/auth/confirm?token_hash={{ .TokenHash }}&type=signup" class="cta-button">
           ✓ Confirm Your Email
         </a>
       </div>
@@ -196,7 +196,7 @@
       <div class="message">
         <p style="font-size: 14px; color: #6b7280;">
           If the button doesn't work, copy and paste this link into your browser:<br>
-          <a href="{{ .ConfirmationURL }}" style="color: #3b82f6; word-break: break-all;">{{ .ConfirmationURL }}</a>
+          <a href="https://helparo.in/auth/confirm?token_hash={{ .TokenHash }}&type=signup" style="color: #3b82f6; word-break: break-all;">https://helparo.in/auth/confirm?token_hash={{ .TokenHash }}&type=signup</a>
         </p>
       </div>
     </div>

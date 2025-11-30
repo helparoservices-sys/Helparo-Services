@@ -91,6 +91,13 @@ export async function approveHelper(helperId: string, comment: string = '') {
     
     const sanitizedComment = comment ? sanitizeText(comment) : null
     
+    // Get helper details for email
+    const { data: helperProfile } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', helperId)
+      .single()
+    
     const { error } = await supabase
       .from('helper_profiles')
       .update({ 
@@ -111,6 +118,15 @@ export async function approveHelper(helperId: string, comment: string = '') {
         comment: sanitizedComment
       })
     
+    // Send approval email
+    if (helperProfile?.email) {
+      await sendHelperApprovalEmail(
+        helperProfile.email,
+        helperProfile.full_name || 'Helper',
+        sanitizedComment
+      )
+    }
+    
     revalidateTag('verification-queue')
     return { success: true }
   } catch (error: unknown) {
@@ -123,17 +139,31 @@ export async function rejectHelper(helperId: string, comment: string = '') {
     const { user, supabase } = await requireAdmin()
     await rateLimit('admin-reject-helper', user.id, RATE_LIMITS.ADMIN_APPROVE)
     
-    const sanitizedComment = comment ? sanitizeText(comment) : null
+    const sanitizedComment = comment ? sanitizeText(comment) : 'Your application did not meet our requirements. Please review and resubmit.'
     
-    const { error } = await supabase
+    // Get helper details for email
+    const { data: helperProfile } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', helperId)
+      .single()
+    
+    // Reset helper profile to allow re-onboarding
+    const { error: updateError } = await supabase
       .from('helper_profiles')
       .update({ 
-        verification_status: 'rejected' as unknown, 
-        is_approved: false 
+        verification_status: 'pending' as unknown,
+        is_approved: false
       })
       .eq('user_id', helperId)
     
-    if (error) throw error
+    if (updateError) throw updateError
+    
+    // Delete all verification documents to restart onboarding from scratch
+    await supabase
+      .from('verification_documents')
+      .delete()
+      .eq('user_id', helperId)
     
     // Insert verification review
     await supabase
@@ -144,6 +174,15 @@ export async function rejectHelper(helperId: string, comment: string = '') {
         decision: 'rejected',
         comment: sanitizedComment
       })
+    
+    // Send rejection email with reason
+    if (helperProfile?.email) {
+      await sendHelperRejectionEmail(
+        helperProfile.email,
+        helperProfile.full_name || 'Helper',
+        sanitizedComment
+      )
+    }
     
     revalidateTag('verification-queue')
     return { success: true }
@@ -827,5 +866,64 @@ export async function sendTestNotification(templateId: string) {
     return { success: true, message: 'Test notification sent successfully' }
   } catch (error: unknown) {
     return handleServerActionError(error)
+  }
+}
+
+// Helper email notification functions
+async function sendHelperApprovalEmail(
+  email: string, 
+  helperName: string, 
+  adminComment: string | null
+) {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: email,
+        subject: '🎉 Your Helparo Helper Account is Approved!',
+        template: 'helper-approved',
+        variables: {
+          HELPER_NAME: helperName,
+          ADMIN_COMMENT: adminComment 
+            ? `<tr><td style="padding: 20px 0;"><table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #eff6ff; border-left: 4px solid #3b82f6;"><tr><td style="padding: 20px;"><p style="margin: 0 0 10px 0; padding: 0; font-size: 14px; font-weight: bold; color: #1e40af; font-family: Arial, sans-serif;">Note from Admin:</p><p style="margin: 0; padding: 0; font-size: 13px; color: #1e3a8a; line-height: 1.8; font-family: Arial, sans-serif;">${adminComment}</p></td></tr></table></td></tr>`
+            : ''
+        }
+      })
+    })
+
+    if (!response.ok) {
+      console.error('Failed to send approval email:', await response.text())
+    }
+  } catch (error) {
+    console.error('Error sending approval email:', error)
+  }
+}
+
+async function sendHelperRejectionEmail(
+  email: string,
+  helperName: string,
+  reason: string
+) {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: email,
+        subject: 'Helparo Application Update - Action Required',
+        template: 'helper-rejected',
+        variables: {
+          HELPER_NAME: helperName,
+          REJECTION_REASON: reason
+        }
+      })
+    })
+
+    if (!response.ok) {
+      console.error('Failed to send rejection email:', await response.text())
+    }
+  } catch (error) {
+    console.error('Error sending rejection email:', error)
   }
 }

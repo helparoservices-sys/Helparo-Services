@@ -106,13 +106,30 @@ export default function ProviderDetailPage({ params }: { params: { id: string } 
         // Fetch documents
         const { data: docsData } = await supabase
           .from('verification_documents')
-          .select('id, document_type, document_url, status, created_at')
+          .select('id, document_type, document_url, selfie_url, status, created_at')
           .eq('helper_id', params.id)
+          .order('created_at', { ascending: true })
+
+        // Flatten documents to show selfie separately
+        const flattenedDocs: any[] = []
+        docsData?.forEach(d => {
+          flattenedDocs.push(d)
+          // If document has selfie_url, add it as a separate entry for display
+          if (d.selfie_url) {
+            flattenedDocs.push({
+              id: `${d.id}_selfie`,
+              document_type: 'selfie',
+              document_url: d.selfie_url,
+              status: d.status,
+              created_at: d.created_at,
+            })
+          }
+        })
 
         setHelper({ 
           ...(data as HelperDetail), 
           bank_account: bankData || null,
-          documents: docsData || []
+          documents: flattenedDocs || []
         })
       } catch (err: any) {
         if (!mounted) return
@@ -322,12 +339,18 @@ export default function ProviderDetailPage({ params }: { params: { id: string } 
       {/* Documents */}
       {helper.documents && helper.documents.length > 0 && (
         <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Uploaded Documents</h3>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Uploaded Documents ({helper.documents.length})</h3>
           <div className="space-y-3">
             {helper.documents.map((doc) => (
               <div key={doc.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/40 rounded-lg">
                 <div>
-                  <p className="font-medium text-slate-900 dark:text-white capitalize">{doc.document_type.replace('_', ' ')}</p>
+                  <p className="font-medium text-slate-900 dark:text-white capitalize">
+                    {doc.document_type === 'aadhar' ? 'Aadhaar Card' : 
+                     doc.document_type === 'voter_id' ? 'Professional Certificate' :
+                     doc.document_type === 'address_proof' ? 'Address Proof' :
+                     doc.document_type === 'selfie' ? 'Profile Photo' :
+                     doc.document_type.replace('_', ' ')}
+                  </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">{new Date(doc.created_at).toLocaleDateString()}</p>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${

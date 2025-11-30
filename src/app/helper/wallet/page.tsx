@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { 
   DollarSign, 
   TrendingUp, 
@@ -80,7 +81,12 @@ export default function HelperWalletPage() {
     const result = await getHelperWallet()
     
     if ('error' in result) {
-      toast.error(result.error || 'Failed to load wallet')
+      // Check if error is due to verification
+      if (result.error?.includes('profile not found') || result.error?.includes('not verified')) {
+        toast.error('Please complete your profile verification to access wallet features')
+      } else {
+        toast.error(result.error || 'Failed to load wallet details')
+      }
     } else if ('data' in result) {
       setWalletData(result.data)
     }
@@ -166,11 +172,25 @@ export default function HelperWalletPage() {
   if (!walletData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-blue-950 dark:to-indigo-950 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
-            <p className="text-red-600 dark:text-red-400">Failed to load wallet data</p>
-            <Button onClick={loadWallet} className="mt-4">Retry</Button>
-          </div>
+        <div className="max-w-2xl mx-auto mt-20">
+          <Card className="text-center p-12">
+            <AlertCircle className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
+              Verification Required
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
+              You need to complete your profile verification to access wallet features.
+              Please submit your verification documents and wait for admin approval.
+            </p>
+            <div className="flex gap-4 justify-center">
+              <Button asChild>
+                <Link href="/helper/verification">Go to Verification</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/helper/dashboard">Back to Dashboard</Link>
+              </Button>
+            </div>
+          </Card>
         </div>
       </div>
     )

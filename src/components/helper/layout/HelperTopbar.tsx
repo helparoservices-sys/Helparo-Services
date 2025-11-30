@@ -27,6 +27,7 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
   const [userName, setUserName] = useState('')
   const [isVerified, setIsVerified] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
+  const [balance, setBalance] = useState(0)
 
   useEffect(() => {
     loadUserData()
@@ -49,8 +50,16 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
         .eq('user_id', user.id)
         .single()
 
+      // Fetch wallet balance
+      const { data: wallet } = await supabase
+        .from('wallet_accounts')
+        .select('available_balance')
+        .eq('user_id', user.id)
+        .single()
+
       setUserName(profile?.full_name || user.email || 'Helper')
       setIsVerified(helperProfile?.is_approved || false)
+      if (wallet) setBalance(Number(wallet.available_balance))
     }
   }
 
@@ -102,21 +111,13 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
           </Link>
 
           {/* Wallet */}
-          {isVerified ? (
-            <Link
-              href="/helper/wallet"
-              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-            >
-              <Wallet className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-            </Link>
-          ) : (
-            <div
-              className="p-2 rounded-lg opacity-50 cursor-not-allowed"
-              title="Verification required"
-            >
-              <Wallet className="h-5 w-5 text-slate-400" />
-            </div>
-          )}
+          <Link
+            href="/helper/wallet"
+            className="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+          >
+            <Wallet className="h-4 w-4" />
+            <span className="text-sm font-semibold">₹{balance.toFixed(2)}</span>
+          </Link>
 
           {/* User Menu */}
           <div className="relative">

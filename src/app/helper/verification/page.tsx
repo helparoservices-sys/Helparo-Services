@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { LoadingSpinner, SkeletonCard } from '@/components/ui/loading'
+import { SkeletonCard } from '@/components/ui/loading'
 import { getVerificationStatus } from '@/app/actions/helper-verification'
 import { getHelperOnboardingStatus } from '@/app/actions/onboarding'
 import { AlertCircle, CheckCircle2, FileText, Shield, Clock, XCircle, User, MapPin, Briefcase, CreditCard, Calendar } from 'lucide-react'
@@ -60,14 +59,11 @@ const formatCategoryName = (slug: string): string => {
 // Helper function to format document type
 const formatDocumentType = (docType: string): string => {
   const typeMap: Record<string, string> = {
-    'aadhar': 'Aadhaar Card',
-    'pan': 'PAN Card',
-    'address_proof': 'Address Proof',
-    'voter_id': 'Professional Certificate',
-    'driving_license': 'Driving License',
-    'passport': 'Passport',
-    'police_verification': 'Police Verification',
-    'selfie': 'Profile Photo'
+    'id_front': 'ID Proof (Front)',
+    'id_back': 'ID Proof (Back)',
+    'selfie': 'Profile Photo',
+    'certificate': 'Professional Certificate',
+    'other': 'Address Proof'
   }
   return typeMap[docType] || docType.replace('_', ' ').toUpperCase()
 }
@@ -199,14 +195,18 @@ export default function HelperVerificationPage() {
                   {/* Document Status */}
                   {verificationStatus.documents.length > 0 && (
                     <div className="mt-6 pt-6 border-t space-y-3">
-                      <h4 className="font-semibold text-gray-900">Uploaded Documents</h4>
+                      <h4 className="font-semibold text-gray-900">Uploaded Documents ({verificationStatus.documents.length})</h4>
                       {verificationStatus.documents.map((doc, idx) => (
                         <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div className="flex items-center gap-3">
                             <FileText className="h-5 w-5 text-gray-600" />
                             <div>
                               <p className="font-medium text-gray-900">
-                                {doc.doc_type.replace('_', ' ').toUpperCase()}
+                                {doc.doc_type === 'aadhar' ? 'Aadhaar Card' :
+                                 doc.doc_type === 'voter_id' ? 'Professional Certificate' :
+                                 doc.doc_type === 'address_proof' ? 'Address Proof' :
+                                 doc.doc_type === 'selfie' ? 'Profile Photo' :
+                                 doc.doc_type.replace('_', ' ').toUpperCase()}
                               </p>
                               <p className="text-xs text-gray-500">
                                 Uploaded {new Date(doc.uploaded_at).toLocaleDateString()}
@@ -350,14 +350,19 @@ export default function HelperVerificationPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
-                        {Object.entries(helperProfile.working_hours).map(([day, hours]: [string, any]) => (
-                          <div key={day} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                            <span className="font-medium text-gray-900 capitalize">{day}</span>
-                            <span className={`text-sm ${hours.available ? 'text-green-700' : 'text-gray-500'}`}>
-                              {hours.available ? `${hours.start} - ${hours.end}` : 'Not Available'}
-                            </span>
-                          </div>
-                        ))}
+                        {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+                          .filter(day => helperProfile.working_hours[day])
+                          .map(day => {
+                            const hours = helperProfile.working_hours[day]
+                            return (
+                              <div key={day} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                <span className="font-medium text-gray-900 capitalize">{day}</span>
+                                <span className={`text-sm ${ hours.available ? 'text-green-700' : 'text-gray-500'}`}>
+                                  {hours.available ? `${hours.start} - ${hours.end}` : 'Not Available'}
+                                </span>
+                              </div>
+                            )
+                          })}
                       </div>
                     </CardContent>
                   </Card>
@@ -441,46 +446,6 @@ export default function HelperVerificationPage() {
                     </CardContent>
                   </Card>
                 )}
-                {/* Documents */}
-                <Card className="bg-white/80 backdrop-blur-sm border-white/50 shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-red-600" />
-                      Uploaded Documents
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {documents && documents.length > 0 ? (
-                      <div className="space-y-3">
-                        {documents.map((doc: any, idx: number) => (
-                          <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                            <div className="flex items-center gap-3">
-                              <FileText className="h-5 w-5 text-gray-600" />
-                              <div>
-                                <p className="font-medium text-gray-900">
-                                  {formatDocumentType(doc.document_type || 'document')}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  Uploaded {doc.created_at ? new Date(doc.created_at).toLocaleDateString() : '-'}
-                                </p>
-                              </div>
-                            </div>
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              doc.status === 'approved' 
-                                ? 'bg-green-100 text-green-700' 
-                                : doc.status === 'rejected'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-yellow-100 text-yellow-700'
-                            }`}>
-                              {doc.status || 'Pending'}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500 text-center py-4">No documents uploaded</p>
-                    )}</CardContent>
-                </Card>
               </>
             )}
 

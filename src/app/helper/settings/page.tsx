@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { User, Bell, Lock, CreditCard, Shield, Save, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react'
+import { ChangePasswordForm } from '@/components/change-password-form'
 
 export default function HelperSettingsPage() {
   const router = useRouter()
@@ -441,49 +442,7 @@ export default function HelperSettingsPage() {
             )}
 
             {activeTab === 'security' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Change Password</CardTitle>
-                  <CardDescription>Update your account password</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="new_password">New Password</Label>
-                    <div className="relative">
-                      <Input
-                        id="new_password"
-                        type={showPassword ? 'text' : 'password'}
-                        value={password.new}
-                        onChange={(e) => setPassword({ ...password, new: e.target.value })}
-                        placeholder="Enter new password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                      >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm_password">Confirm New Password</Label>
-                    <Input
-                      id="confirm_password"
-                      type="password"
-                      value={password.confirm}
-                      onChange={(e) => setPassword({ ...password, confirm: e.target.value })}
-                      placeholder="Confirm new password"
-                    />
-                  </div>
-
-                  <Button onClick={changePassword} disabled={saving || !password.new || !password.confirm} className="w-full">
-                    <Lock className="h-4 w-4 mr-2" />
-                    {saving ? 'Changing...' : 'Change Password'}
-                  </Button>
-                </CardContent>
-              </Card>
+              <ChangePasswordForm />
             )}
 
             {activeTab === 'payments' && (

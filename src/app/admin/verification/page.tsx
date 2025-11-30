@@ -20,7 +20,7 @@ export default async function AdminVerificationPage() {
   const helperIds = (helpersData || []).map(h => h.user_id)
   const { data: docsData, error: docsError } = await supabase
     .from('verification_documents')
-    .select('id, helper_id, document_type, document_url, status, created_at')
+    .select('id, helper_id, document_type, document_url, selfie_url, status, created_at')
     .in('helper_id', helperIds.length > 0 ? helperIds : ['00000000-0000-0000-0000-000000000000'])
 
   // Fetch complete helper profiles with onboarding data
@@ -49,7 +49,28 @@ export default async function AdminVerificationPage() {
   // Transform data
   const helpers = (helpersData || []).map((helper) => {
     const profileData = Array.isArray(helper.profile) ? helper.profile[0] : helper.profile
-    const helperDocs = (docsData || []).filter(d => d.helper_id === helper.user_id)
+    let helperDocs = (docsData || []).filter(d => d.helper_id === helper.user_id)
+    
+    // Flatten documents - extract selfie from selfie_url field if present
+    const flattenedDocs: typeof helperDocs = []
+    helperDocs.forEach(doc => {
+      // Add main document
+      flattenedDocs.push(doc)
+      // If this doc has selfie_url, add it as separate selfie document
+      if (doc.selfie_url) {
+        flattenedDocs.push({
+          id: `${doc.id}_selfie`,
+          helper_id: doc.helper_id,
+          document_type: 'selfie',
+          document_url: doc.selfie_url,
+          selfie_url: null,
+          status: doc.status,
+          created_at: doc.created_at
+        })
+      }
+    })
+    helperDocs = flattenedDocs
+    
     const fullProfile = (completeProfiles || []).find(p => p.user_id === helper.user_id)
     const bankAccount = (bankAccounts || []).find(b => b.helper_id === helper.user_id)
     

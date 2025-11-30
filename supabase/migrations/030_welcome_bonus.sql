@@ -60,8 +60,8 @@ DECLARE
   v_bonus_amount NUMERIC(10,2) := 50.00;  -- ₹50 welcome bonus
   v_wallet_exists BOOLEAN;
 BEGIN
-  -- Only grant bonus if user is verified
-  IF NEW.is_verified = TRUE AND (OLD IS NULL OR OLD.is_verified = FALSE) THEN
+  -- Grant bonus for new users on signup (INSERT only)
+  IF TG_OP = 'INSERT' THEN
     
     -- Check if welcome bonus already granted
     IF EXISTS (
@@ -110,7 +110,7 @@ $$;
 DROP TRIGGER IF EXISTS trigger_welcome_bonus ON public.profiles;
 
 CREATE TRIGGER trigger_welcome_bonus
-  AFTER INSERT OR UPDATE OF is_verified ON public.profiles
+  AFTER INSERT ON public.profiles
   FOR EACH ROW
   EXECUTE FUNCTION public.grant_welcome_bonus();
 

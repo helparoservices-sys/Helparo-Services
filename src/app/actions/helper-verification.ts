@@ -21,19 +21,33 @@ export async function getVerificationStatus() {
 
     const { data: documents } = await supabase
       .from('verification_documents')
-      .select('doc_type, status, created_at')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+      .select('document_type, status, created_at, document_url, selfie_url')
+      .eq('helper_id', user.id)
+      .order('created_at', { ascending: true })
+
+    // Flatten documents to show selfie separately
+    const flattenedDocs: any[] = []
+    documents?.forEach(d => {
+      flattenedDocs.push({
+        doc_type: d.document_type,
+        status: d.status,
+        uploaded_at: d.created_at,
+      })
+      // If document has selfie_url, add it as a separate entry
+      if (d.selfie_url) {
+        flattenedDocs.push({
+          doc_type: 'selfie',
+          status: d.status,
+          uploaded_at: d.created_at,
+        })
+      }
+    })
 
     return {
       data: {
         status: helperProfile?.verification_status || 'not_started',
         is_approved: helperProfile?.is_approved || false,
-        documents: (documents || []).map(d => ({
-          doc_type: d.doc_type,
-          status: d.status,
-          uploaded_at: d.created_at,
-        })),
+        documents: flattenedDocs,
       },
     }
   } catch (error) {
@@ -154,7 +168,7 @@ export async function uploadOnboardingDocuments(formData: FormData) {
     }
 
     // Upload all files
-    const idProofResult = await processFile(idProof, 'aadhar')
+    const idProofResult = await processFile(idProof, 'id_proof')
     const selfieResult = await processFile(selfie, 'selfie')
     const certResult = cert ? await processFile(cert, 'certificate') : null
     const addrProofResult = addrProof ? await processFile(addrProof, 'address_proof') : null
@@ -165,10 +179,10 @@ export async function uploadOnboardingDocuments(formData: FormData) {
       .delete()
       .eq('helper_id', user.id)
 
-    // Insert separate records for each document type
+    // Insert documents - aadhar includes selfie_url
     const documentsToInsert = []
 
-    // ID Proof document
+    // ID Proof with selfie
     documentsToInsert.push({
       helper_id: user.id,
       document_type: 'aadhar',
@@ -193,7 +207,7 @@ export async function uploadOnboardingDocuments(formData: FormData) {
     if (certResult) {
       documentsToInsert.push({
         helper_id: user.id,
-        document_type: 'voter_id', // Using voter_id as placeholder for certificate
+        document_type: 'voter_id',
         document_number: 'N/A',
         document_url: certResult.url,
         status: 'pending'

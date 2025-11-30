@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 import { DollarSign, MapPin, CreditCard, Star, Trophy, Save, X } from 'lucide-react'
 import { updateCommissionSettings } from '@/app/actions/admin'
 import { useToast } from '@/components/ui/toast-notification'
+import { ChangePasswordForm } from '@/components/change-password-form'
 
 interface SettingsData {
   commission: {
@@ -378,6 +379,9 @@ export function SettingsPageClient({ settings }: SettingsPageClientProps) {
             </label>
           </CardContent>
         </Card>
+
+        {/* Security Settings */}
+        <ChangePasswordForm />
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-3">

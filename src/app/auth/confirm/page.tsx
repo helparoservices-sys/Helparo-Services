@@ -1,45 +1,117 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { CheckCircle, XCircle, Loader2, Mail, ArrowRight } from 'lucide-react'
 
-export default function ConfirmEmailPage() {
+function ConfirmEmailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
+  const [resending, setResending] = useState(false)
+
+  const handleResendEmail = async () => {
+    setResending(true)
+    try {
+      const email = searchParams.get('email') || prompt('Please enter your email address:')
+      if (!email) {
+        setResending(false)
+        return
+      }
+
+      const supabase = createClient()
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+      })
+
+      if (error) {
+        alert('Failed to resend confirmation email. Please try again or contact support.')
+      } else {
+        alert('Confirmation email sent! Please check your inbox.')
+      }
+    } catch (err) {
+      alert('An error occurred. Please try again.')
+    } finally {
+      setResending(false)
+    }
+  }
 
   useEffect(() => {
     const confirmEmail = async () => {
       try {
-        const token_hash = searchParams.get('token_hash')
+        // Supabase can send either token_hash or code parameter
+        let token_hash = searchParams.get('token_hash')
+        const code = searchParams.get('code')
         const type = searchParams.get('type')
 
-        if (!token_hash || type !== 'email') {
+        // If we have a code but no token_hash, use the code
+        if (!token_hash && code) {
+          token_hash = code
+        }
+
+        console.log('Confirmation params:', { token_hash, code, type })
+
+        if (!token_hash) {
           setStatus('error')
           setMessage('Invalid confirmation link. Please check your email and try again.')
           return
         }
 
+        // If this is a password recovery link, redirect to reset password page
+        if (type === 'recovery') {
+          // Redirect to reset-password page with the hash parameters
+          const hash = `#token_hash=${token_hash}&type=recovery`
+          window.location.href = `/auth/reset-password${hash}`
+          return
+        }
+
         const supabase = createClient()
-        const { error } = await supabase.auth.verifyOtp({
-          token_hash,
-          type: 'email',
-        })
+        
+        // Handle email verification - try exchanging code for session first
+        // This is the most reliable method for PKCE flow
+        let error = null
+        
+        try {
+          // Try exchanging the code for a session (PKCE flow)
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(token_hash)
+          
+          if (exchangeError) {
+            console.error('Exchange code error:', exchangeError)
+            error = exchangeError
+            
+            // If exchange failed and we have a type, try verifyOtp
+            if (type) {
+              const { error: verifyError } = await supabase.auth.verifyOtp({
+                token_hash,
+                type: type as any,
+              })
+              error = verifyError
+            }
+          } else {
+            console.log('Code exchange successful:', data)
+            error = null
+          }
+        } catch (err) {
+          console.error('Verification error:', err)
+          error = err as any
+        }
 
         if (error) {
           console.error('Email confirmation error:', error)
           setStatus('error')
           
           // Provide specific error messages
-          if (error.message.includes('expired')) {
+          if (error.message?.includes('expired')) {
             setMessage('This confirmation link has expired. Please request a new confirmation email.')
-          } else if (error.message.includes('already')) {
+          } else if (error.message?.includes('already') || error.message?.includes('verified')) {
             setMessage('This email has already been verified. Please log in to continue.')
+          } else if (error.message?.includes('invalid')) {
+            setMessage('Invalid confirmation link. Please check your email and try again.')
           } else {
             setMessage('Unable to verify your email. The link may be invalid or expired.')
           }
@@ -138,11 +210,24 @@ export default function ConfirmEmailPage() {
                 {message}
               </p>
               <div className="space-y-3">
-                <Button asChild className="w-full" size="lg" variant="outline">
-                  <Link href="/auth/signup">
-                    <Mail className="mr-2 h-4 w-4" />
-                    Request New Confirmation Email
-                  </Link>
+                <Button 
+                  onClick={handleResendEmail}
+                  disabled={resending}
+                  className="w-full" 
+                  size="lg" 
+                  variant="outline"
+                >
+                  {resending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="mr-2 h-4 w-4" />
+                      Request New Confirmation Email
+                    </>
+                  )}
                 </Button>
                 <Button asChild className="w-full" size="lg">
                   <Link href="/auth/login">
@@ -170,5 +255,17 @@ export default function ConfirmEmailPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ConfirmEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
+      </div>
+    }>
+      <ConfirmEmailContent />
+    </Suspense>
   )
 }

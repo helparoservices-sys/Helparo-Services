@@ -29,6 +29,16 @@ export async function getHelperWallet() {
 
     const helperId = helperProfile.id
 
+    // Get actual wallet balance from wallet_accounts table
+    const { data: walletAccount } = await supabase
+      .from('wallet_accounts')
+      .select('available_balance, escrow_balance')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    const availableBalance = walletAccount?.available_balance || 0
+    const escrowBalance = walletAccount?.escrow_balance || 0
+
     // Calculate date ranges
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -39,71 +49,47 @@ export async function getHelperWallet() {
     const monthAgo = new Date()
     monthAgo.setMonth(monthAgo.getMonth() - 1)
 
-    // Get all transactions for the helper
-    const { data: transactions } = await supabase
-      .from('transactions')
-      .select(`
-        id,
-        transaction_type,
-        amount,
-        status,
-        description,
-        created_at,
-        service_requests(title)
-      `)
-      .eq('helper_id', helperId)
+    // Get wallet ledger entries (more reliable than transactions table)
+    const { data: ledgerEntries } = await supabase
+      .from('wallet_ledger')
+      .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(50)
 
-    type TransactionWithRequest = {
-      id: string
-      transaction_type: string
-      amount: number
-      status: string
-      description: string | null
-      created_at: string
-      service_requests: Array<{ title: string | null }>
-    }
+    // Calculate totals from ledger
+    const totalEarned = ledgerEntries
+      ?.filter(e => e.entry_type === 'credit' && (e.transaction_type === 'earning' || e.transaction_type === 'bonus'))
+      ?.reduce((sum, e) => sum + e.amount, 0) || 0
 
-    // Calculate balances
-    const completedEarnings = (transactions as unknown as TransactionWithRequest[])
-      ?.filter(t => t.transaction_type === 'earning' && t.status === 'completed')
-      ?.reduce((sum, t) => sum + t.amount, 0) || 0
-
-    const pendingEarnings = (transactions as unknown as TransactionWithRequest[])
-      ?.filter(t => t.transaction_type === 'earning' && t.status === 'pending')
-      ?.reduce((sum, t) => sum + t.amount, 0) || 0
-
-    const totalWithdrawn = (transactions as unknown as TransactionWithRequest[])
-      ?.filter(t => t.transaction_type === 'withdrawal' && t.status === 'completed')
-      ?.reduce((sum, t) => sum + t.amount, 0) || 0
-
-    const availableBalance = completedEarnings - totalWithdrawn
+    const totalWithdrawn = ledgerEntries
+      ?.filter(e => e.entry_type === 'debit' && e.transaction_type === 'withdrawal')
+      ?.reduce((sum, e) => sum + e.amount, 0) || 0
 
     // Calculate recent earnings
-    const todayEarnings = (transactions as unknown as TransactionWithRequest[])
-      ?.filter(t => 
-        t.transaction_type === 'earning' && 
-        t.status === 'completed' &&
-        new Date(t.created_at) >= today
+    const todayEarnings = ledgerEntries
+      ?.filter(e => 
+        e.entry_type === 'credit' && 
+        e.transaction_type === 'earning' &&
+        new Date(e.created_at) >= today
       )
-      ?.reduce((sum, t) => sum + t.amount, 0) || 0
+      ?.reduce((sum, e) => sum + e.amount, 0) || 0
 
-    const weekEarnings = (transactions as unknown as TransactionWithRequest[])
-      ?.filter(t => 
-        t.transaction_type === 'earning' && 
-        t.status === 'completed' &&
-        new Date(t.created_at) >= weekAgo
+    const weekEarnings = ledgerEntries
+      ?.filter(e => 
+        e.entry_type === 'credit' && 
+        e.transaction_type === 'earning' &&
+        new Date(e.created_at) >= weekAgo
       )
-      ?.reduce((sum, t) => sum + t.amount, 0) || 0
+      ?.reduce((sum, e) => sum + e.amount, 0) || 0
 
-    const monthEarnings = (transactions as unknown as TransactionWithRequest[])
-      ?.filter(t => 
-        t.transaction_type === 'earning' && 
-        t.status === 'completed' &&
-        new Date(t.created_at) >= monthAgo
+    const monthEarnings = ledgerEntries
+      ?.filter(e => 
+        e.entry_type === 'credit' && 
+        e.transaction_type === 'earning' &&
+        new Date(e.created_at) >= monthAgo
       )
-      ?.reduce((sum, t) => sum + t.amount, 0) || 0
+      ?.reduce((sum, e) => sum + e.amount, 0) || 0
 
     // Get withdrawal requests
     const { data: withdrawals } = await supabase
@@ -117,8 +103,8 @@ export async function getHelperWallet() {
       data: {
         balance: {
           available: availableBalance,
-          pending: pendingEarnings,
-          total_earned: completedEarnings,
+          pending: escrowBalance,
+          total_earned: totalEarned,
           total_withdrawn: totalWithdrawn,
         },
         earnings: {
@@ -126,14 +112,14 @@ export async function getHelperWallet() {
           this_week: weekEarnings,
           this_month: monthEarnings,
         },
-        transactions: (transactions as unknown as TransactionWithRequest[])?.map(t => ({
-          id: t.id,
-          type: t.transaction_type,
-          amount: t.amount,
-          status: t.status,
-          description: t.description || 'No description',
-          created_at: t.created_at,
-          job_title: t.service_requests?.[0]?.title || null,
+        transactions: ledgerEntries?.map(e => ({
+          id: e.id,
+          type: e.transaction_type,
+          amount: e.amount,
+          status: 'completed',
+          description: e.description || `${e.entry_type === 'credit' ? 'Credit' : 'Debit'} - ${e.transaction_type}`,
+          created_at: e.created_at,
+          job_title: null,
         })) || [],
         withdrawals: withdrawals?.map(w => ({
           id: w.id,

@@ -35,7 +35,7 @@ function SignUpForm() {
 
   // Password strength validation
   const passwordStrength = {
-    hasLength: formData.password.length >= 8,
+    hasLength: formData.password.length >= 12,
     hasUpper: /[A-Z]/.test(formData.password),
     hasLower: /[a-z]/.test(formData.password),
     hasNumber: /[0-9]/.test(formData.password),
@@ -70,7 +70,7 @@ function SignUpForm() {
             country_code: formData.countryCode,
             role: formData.role,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/auth/confirm`,
         },
       })
 
@@ -281,7 +281,7 @@ function SignUpForm() {
               {/* Password Strength Indicators */}
               {formData.password && (
                 <div className="space-y-1 text-xs">
-                  <PasswordRequirement met={passwordStrength.hasLength} text="At least 8 characters" />
+                  <PasswordRequirement met={passwordStrength.hasLength} text="At least 12 characters" />
                   <PasswordRequirement met={passwordStrength.hasUpper} text="One uppercase letter" />
                   <PasswordRequirement met={passwordStrength.hasLower} text="One lowercase letter" />
                   <PasswordRequirement met={passwordStrength.hasNumber} text="One number" />

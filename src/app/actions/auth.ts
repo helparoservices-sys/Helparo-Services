@@ -170,7 +170,7 @@ export async function sendMagicLinkAction(formData: FormData) {
     const { error } = await supabase.auth.signInWithOtp({
       email: sanitizedEmail,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`,
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/confirm`,
       },
     })
 
@@ -214,7 +214,7 @@ export async function updatePasswordAction(formData: FormData) {
     const password = String(formData.get('password') || '')
     const parsed = passwordSchema.safeParse(password)
     if (!parsed.success) {
-      return { error: 'Password must be at least 8 characters' }
+      return { error: 'Password must be at least 12 characters' }
     }
 
     const supabase = await createClient()
@@ -230,6 +230,53 @@ export async function updatePasswordAction(formData: FormData) {
     if (error) {
       return { error: 'Failed to update password. Try again.' }
     }
+    return { success: true }
+  } catch (error: any) {
+    return handleServerActionError(error)
+  }
+}
+
+export async function changePasswordWithReauthAction(formData: FormData) {
+  try {
+    const currentPassword = String(formData.get('currentPassword') || '')
+    const newPassword = String(formData.get('newPassword') || '')
+    
+    const parsedNew = passwordSchema.safeParse(newPassword)
+    if (!parsedNew.success) {
+      return { error: 'New password must be at least 12 characters' }
+    }
+
+    if (currentPassword === newPassword) {
+      return { error: 'New password must be different from current password' }
+    }
+
+    const supabase = await createClient()
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user?.email) {
+      return { error: 'User not authenticated' }
+    }
+
+    // Re-authenticate with current password to verify identity
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword,
+    })
+
+    if (signInError) {
+      return { error: 'Current password is incorrect' }
+    }
+
+    // Update to new password
+    const { error: updateError } = await supabase.auth.updateUser({ 
+      password: parsedNew.data 
+    })
+
+    if (updateError) {
+      return { error: 'Failed to update password. Please try again.' }
+    }
+
     return { success: true }
   } catch (error: any) {
     return handleServerActionError(error)

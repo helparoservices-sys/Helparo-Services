@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, ShieldCheck, Sparkles } from 'lucide-react'
+import { Loader2, ShieldCheck, Sparkles, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react'
 import Image from 'next/image'
 import { updatePasswordAction } from '@/app/actions/auth'
 
@@ -15,23 +15,80 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [tokenProcessed, setTokenProcessed] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+
+  // Password strength validation
+  const passwordStrength = {
+    hasLength: password.length >= 12,
+    hasUpper: /[A-Z]/.test(password),
+    hasLower: /[a-z]/.test(password),
+    hasNumber: /[0-9]/.test(password),
+    hasSpecial: /[!@#$%^&*]/.test(password),
+  }
+
+  const passwordMatch = password === confirm && confirm !== ''
 
   useEffect(() => {
-    // Ensure Supabase processes the recovery token from URL hash
-    // supabase client is configured with detectSessionInUrl, so nothing needed here.
+    // Process the recovery token from URL hash
+    const processToken = async () => {
+      const hash = window.location.hash
+      if (!hash) {
+        setError('No recovery token found. Please use the link from your email.')
+        return
+      }
+
+      // Parse hash parameters
+      const params = new URLSearchParams(hash.substring(1))
+      const token_hash = params.get('token_hash')
+      const type = params.get('type')
+
+      if (!token_hash || type !== 'recovery') {
+        setError('Invalid recovery link. Please request a new password reset.')
+        return
+      }
+
+      try {
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
+        
+        // Verify the recovery token and establish session
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash,
+          type: 'recovery',
+        })
+
+        if (verifyError) {
+          setError('Invalid or expired recovery link. Please request a new password reset.')
+          console.error('Token verification error:', verifyError)
+        } else {
+          setTokenProcessed(true)
+        }
+      } catch (err) {
+        setError('Failed to process recovery token. Please try again.')
+        console.error('Token processing error:', err)
+      }
+    }
+
+    processToken()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters')
+    
+    // Validate password strength
+    if (!Object.values(passwordStrength).every(Boolean)) {
+      setError('Password does not meet all requirements')
       return
     }
-    if (password !== confirm) {
+    
+    if (!passwordMatch) {
       setError('Passwords do not match')
       return
     }
+    
     setLoading(true)
     try {
       const fd = new FormData()
@@ -96,21 +153,90 @@ export default function ResetPasswordPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="password" className="text-slate-700 dark:text-slate-300">New Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <div className="relative">
+                <Input 
+                  id="password" 
+                  type={showPassword ? 'text' : 'password'}
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  required 
+                  disabled={!tokenProcessed}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                  disabled={!tokenProcessed}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              
+              {/* Password Requirements */}
+              {password && (
+                <div className="space-y-1 text-xs mt-2">
+                  <PasswordRequirement met={passwordStrength.hasLength} text="At least 12 characters" />
+                  <PasswordRequirement met={passwordStrength.hasUpper} text="One uppercase letter" />
+                  <PasswordRequirement met={passwordStrength.hasLower} text="One lowercase letter" />
+                  <PasswordRequirement met={passwordStrength.hasNumber} text="One number" />
+                  <PasswordRequirement met={passwordStrength.hasSpecial} text="One special character (!@#$%^&*)" />
+                </div>
+              )}
             </div>
+            
             <div className="space-y-2">
               <Label htmlFor="confirm" className="text-slate-700 dark:text-slate-300">Confirm Password</Label>
-              <Input id="confirm" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
+              <div className="relative">
+                <Input 
+                  id="confirm" 
+                  type={showConfirm ? 'text' : 'password'}
+                  value={confirm} 
+                  onChange={(e) => setConfirm(e.target.value)} 
+                  required 
+                  disabled={!tokenProcessed}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                  disabled={!tokenProcessed}
+                >
+                  {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              
+              {/* Password Match Indicator */}
+              {confirm && (
+                <div className="text-xs mt-1">
+                  <PasswordRequirement met={passwordMatch} text="Passwords match" />
+                </div>
+              )}
             </div>
+            
             {error && (
               <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">{error}</div>
             )}
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading || !tokenProcessed}>
               {loading ? (<><Loader2 className="mr-2 h-5 w-5 animate-spin" />Updating...</>) : 'Update Password'}
             </Button>
           </form>
         </div>
       </div>
+    </div>
+  )
+}
+
+function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      {met ? (
+        <CheckCircle className="h-3 w-3 text-green-500 dark:text-green-400" />
+      ) : (
+        <XCircle className="h-3 w-3 text-slate-400 dark:text-slate-500" />
+      )}
+      <span className={met ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}>{text}</span>
     </div>
   )
 }
