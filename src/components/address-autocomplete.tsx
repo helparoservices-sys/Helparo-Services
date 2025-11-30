@@ -87,18 +87,10 @@ export function AddressAutocomplete({
 
     setIsSearching(true)
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}, India&limit=5&addressdetails=1`,
-        {
-          headers: {
-            'Accept-Language': 'en'
-          }
-        }
-      )
-
+      const response = await fetch(`/api/address/search?q=${encodeURIComponent(query)}`, { cache: 'no-store' })
       if (response.ok) {
         const data = await response.json()
-        setSuggestions(data)
+        setSuggestions(data?.results || [])
         setShowSuggestions(true)
       }
     } catch (error) {

@@ -52,10 +52,11 @@ export const useLocation = () => {
         locality: ''
       }
 
+      const { LOCATION_FALLBACK_WARNING } = await import('@/lib/constants')
       setLocation(prev => ({
         ...prev,
         address,
-        error: geo.source === 'nominatim' ? 'Auto-detect used fallback. Please verify address/pincode.' : null
+        error: geo.source === 'nominatim' ? LOCATION_FALLBACK_WARNING : null
       }))
 
       return address
@@ -129,29 +130,19 @@ export const useLocation = () => {
   // Forward geocode address string to coordinates
   const geocodeAddress = useCallback(async (addressString: string): Promise<LocationCoordinates | null> => {
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressString)}&limit=1`,
-        {
-          headers: {
-            'Accept-Language': 'en'
-          }
-        }
-      )
-
-      if (!response.ok) throw new Error('Geocoding failed')
-
+      const response = await fetch(`/api/address/search?q=${encodeURIComponent(addressString)}`, { cache: 'no-store' })
+      if (!response.ok) return null
       const data = await response.json()
-      if (data && data.length > 0) {
+      const first = Array.isArray(data?.results) ? data.results[0] : null
+      if (first) {
         const coords: LocationCoordinates = {
-          latitude: parseFloat(data[0].lat),
-          longitude: parseFloat(data[0].lon)
+          latitude: parseFloat(first.lat),
+          longitude: parseFloat(first.lon)
         }
         return coords
       }
-
       return null
-    } catch (error) {
-      console.error('Forward geocoding error:', error)
+    } catch {
       return null
     }
   }, [])

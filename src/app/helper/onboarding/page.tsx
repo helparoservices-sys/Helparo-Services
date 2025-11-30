@@ -569,7 +569,8 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
             const formattedAddress = geo.formatted_address || ''
             const detectedPincode = geo.pincode || ''
             if (geo.source === 'nominatim') {
-              setLocationError('Auto-detect used fallback. Please verify address/pincode.')
+              const { LOCATION_FALLBACK_WARNING } = await import('@/lib/constants')
+              setLocationError(LOCATION_FALLBACK_WARNING)
             }
 
             onChange({

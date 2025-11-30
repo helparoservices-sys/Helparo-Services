@@ -159,3 +159,6 @@ export const PAGINATION = {
   DEFAULT_PAGE_SIZE: 20,
   MAX_PAGE_SIZE: 100
 } as const
+
+// Location / Geocoding
+export const LOCATION_FALLBACK_WARNING = 'Location detected successfully. Please verify your address and PIN code for accuracy.'

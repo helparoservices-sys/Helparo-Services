@@ -160,7 +160,8 @@ function SignUpForm() {
             }))
 
             if (geo.source === 'nominatim') {
-              toast.warning('Auto-detect used fallback. Please verify address/pincode.')
+              const { LOCATION_FALLBACK_WARNING } = await import('@/lib/constants')
+              toast.warning(LOCATION_FALLBACK_WARNING)
             } else {
               toast.success('✓ Location detected successfully!')
             }

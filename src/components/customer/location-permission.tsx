@@ -66,7 +66,8 @@ export function CustomerLocationPermissionPrompt() {
               state = geo.state || ''
               pincode = geo.pincode || ''
               if (geo.source === 'nominatim') {
-                showError('Please verify address', 'Auto-detect used fallback. Verify address/pincode.')
+                const { LOCATION_FALLBACK_WARNING } = await import('@/lib/constants')
+                showError('Please verify address', LOCATION_FALLBACK_WARNING)
               }
             }
           } catch {
