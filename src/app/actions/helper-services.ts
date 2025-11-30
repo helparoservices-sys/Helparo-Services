@@ -21,7 +21,7 @@ export async function getHelperServices() {
     // Get helper profile with onboarding data
     const { data: helperProfile, error: profileError } = await supabase
       .from('helper_profiles')
-      .select('id, service_categories, skills, hourly_rate, experience_years, working_hours, service_areas, address, pincode, verification_status, is_approved')
+      .select('id, service_categories, skills_specialization, hourly_rate, experience_years, working_hours, service_areas, address, pincode, verification_status, is_approved')
       .eq('user_id', user.id)
       .maybeSingle()
 
@@ -64,7 +64,7 @@ export async function getHelperServices() {
         helperServices: helperServices || [],
         helperProfile: {
           service_categories: helperProfile.service_categories || [],
-          skills: helperProfile.skills || [],
+          skills: helperProfile.skills_specialization || [],
           hourly_rate: helperProfile.hourly_rate || 500,
           experience_years: helperProfile.experience_years || 0,
           working_hours: helperProfile.working_hours || {},
@@ -228,7 +228,7 @@ export async function updateHelperProfileServices(data: {
       .from('helper_profiles')
       .update({
         service_categories: data.service_categories,
-        skills: data.skills,
+        skills_specialization: data.skills,
         hourly_rate: data.hourly_rate,
         experience_years: data.experience_years,
         working_hours: data.working_hours,
