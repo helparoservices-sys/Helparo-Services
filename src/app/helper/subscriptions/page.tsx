@@ -10,18 +10,22 @@ import { toast } from 'sonner'
 
 interface Plan {
   id: string
+  code: string
   name: string
   description: string
-  price_cents: number
-  billing_interval: string
-  features: string[]
+  price_rupees: number
+  interval: string
+  included_features: string[] | null
+  commission_discount_percent: number | null
+  extra_radius_km: number | null
+  trial_days: number | null
 }
 
 interface Subscription {
   plan_name: string
   status: string
   current_period_end: string | null
-  price_cents: number
+  price_rupees: number
 }
 
 export default function HelperSubscriptionsPage() {
@@ -117,7 +121,7 @@ export default function HelperSubscriptionsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {plans.map(plan => {
                 const isCurrentPlan = subscription?.plan_name === plan.name
-                const pricePerMonth = plan.price_cents / 100
+                const pricePerMonth = plan.price_rupees
 
                 return (
                   <Card
@@ -136,9 +140,9 @@ export default function HelperSubscriptionsPage() {
 
                     <CardHeader className="text-center pb-4">
                       <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-4">
-                        {plan.name === 'Basic' ? (
+                        {plan.code.includes('FREE') ? (
                           <Zap className="h-8 w-8 text-white" />
-                        ) : plan.name === 'Pro' ? (
+                        ) : plan.code.includes('PREMIUM') ? (
                           <Crown className="h-8 w-8 text-white" />
                         ) : (
                           <TrendingUp className="h-8 w-8 text-white" />
@@ -154,12 +158,12 @@ export default function HelperSubscriptionsPage() {
                           <span className="text-4xl font-bold text-gray-900">
                             ₹{pricePerMonth.toFixed(0)}
                           </span>
-                          <span className="text-gray-600">/{plan.billing_interval}</span>
+                          <span className="text-gray-600">/{plan.interval}</span>
                         </div>
                       </div>
 
                       <ul className="space-y-3">
-                        {(plan.features || ['Standard features', 'Email support', '24/7 availability']).map((feature, idx) => (
+                        {(plan.included_features || ['Standard features', 'Email support', '24/7 availability']).map((feature, idx) => (
                           <li key={idx} className="flex items-start gap-2">
                             <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                             <span className="text-sm text-gray-700">{feature}</span>

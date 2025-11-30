@@ -103,12 +103,16 @@ export async function createSubscriptionPlan(input: {
 }
 
 export async function updateSubscriptionPlan(planId: string, input: {
+  code?: string
   name?: string
   description?: string
+  interval?: 'monthly' | 'quarterly' | 'yearly'
   price_rupees?: number
   commission_discount_percent?: number
   extra_radius_km?: number
   priority_level?: number
+  trial_days?: number
+  included_features?: string[]
   is_active?: boolean
 }) {
   try {
@@ -118,12 +122,16 @@ export async function updateSubscriptionPlan(planId: string, input: {
     const supabase = await createClient()
     
     const updates: any = {}
+    if (input.code !== undefined) updates.code = input.code
     if (input.name !== undefined) updates.name = input.name
     if (input.description !== undefined) updates.description = input.description
+    if (input.interval !== undefined) updates.interval = input.interval
     if (input.price_rupees !== undefined) updates.price_rupees = input.price_rupees
     if (input.commission_discount_percent !== undefined) updates.commission_discount_percent = input.commission_discount_percent
     if (input.extra_radius_km !== undefined) updates.extra_radius_km = input.extra_radius_km
     if (input.priority_level !== undefined) updates.priority_level = input.priority_level
+    if (input.trial_days !== undefined) updates.trial_days = input.trial_days
+    if (input.included_features !== undefined) updates.included_features = input.included_features
     if (input.is_active !== undefined) updates.is_active = input.is_active
 
     const { error } = await supabase

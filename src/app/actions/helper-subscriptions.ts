@@ -14,10 +14,10 @@ export async function getHelperSubscription() {
 
     const { data: plans, error: plansError } = await supabase
       .from('subscription_plans')
-      .select('id, name, description, price_cents, billing_interval')
-      .eq('target_role', 'helper')
+      .select('id, code, name, description, price_rupees, interval, included_features, commission_discount_percent, extra_radius_km, trial_days')
+      .like('code', 'HELPER_%')
       .eq('is_active', true)
-      .order('price_cents')
+      .order('price_rupees')
 
     if (plansError) {
       logger.error('Failed to fetch subscription plans', { error: plansError })
@@ -29,14 +29,7 @@ export async function getHelperSubscription() {
 
     return {
       data: {
-        plans: (plans || []).map(p => ({
-          ...p,
-          features: p.name === 'Basic' 
-            ? ['10 jobs per month', 'Email support', 'Basic analytics']
-            : p.name === 'Pro'
-            ? ['Unlimited jobs', 'Priority support', 'Advanced analytics', 'Featured profile']
-            : ['All Pro features', 'Dedicated account manager', 'Custom branding']
-        })),
+        plans: plans || [],
         subscription: subscriptionData || null,
       },
     }

@@ -46,8 +46,8 @@ export default function CustomerSubscriptionsPage() {
   async function loadData() {
     const supabase = createClient()
     
-    // Load subscription status
-    const { data: status } = await supabase.rpc('get_customer_subscription_status')
+    // Load subscription status (using helper function temporarily)
+    const { data: status } = await supabase.rpc('get_helper_subscription_status')
     setCurrentStatus(status as any)
 
     // Load available plans for customers only
@@ -55,7 +55,7 @@ export default function CustomerSubscriptionsPage() {
       .from('subscription_plans')
       .select('*')
       .eq('is_active', true)
-      .eq('target_role', 'customer')
+      .like('code', 'CUSTOMER_%')
       .order('price_rupees')
 
     if (plansData) {
@@ -69,7 +69,7 @@ export default function CustomerSubscriptionsPage() {
     const supabase = createClient()
     setSubscribing(planCode)
 
-    const { error } = await supabase.rpc('subscribe_customer', { 
+    const { error } = await supabase.rpc('subscribe_helper', { 
       p_plan_code: planCode 
     })
 
