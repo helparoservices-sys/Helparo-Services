@@ -42,6 +42,7 @@ export default function HelperServicesPage() {
   const [selectedState, setSelectedState] = useState('')
   const [selectedDistrict, setSelectedDistrict] = useState('')
   const [selectedCity, setSelectedCity] = useState('')
+  const [loadingAreas, setLoadingAreas] = useState(false)
 
   // Edit state
   const [editedServiceRadius, setEditedServiceRadius] = useState(10)
@@ -121,6 +122,7 @@ export default function HelperServicesPage() {
   }
 
   const loadDistricts = async (stateId: string) => {
+    setLoadingAreas(true)
     const supabase = createClient()
     
     const { data: allDistricts } = await supabase
@@ -133,6 +135,7 @@ export default function HelperServicesPage() {
     
     if (!allDistricts) {
       setDistricts([])
+      setLoadingAreas(false)
       return
     }
     
@@ -152,9 +155,11 @@ export default function HelperServicesPage() {
     }
     
     setDistricts(districtsWithCities)
+    setLoadingAreas(false)
   }
 
   const loadCities = async (districtId: string) => {
+    setLoadingAreas(true)
     const supabase = createClient()
     
     const { data: citiesData } = await supabase
@@ -166,6 +171,23 @@ export default function HelperServicesPage() {
       .order('display_order')
     
     setCities(citiesData || [])
+    setLoadingAreas(false)
+  }
+
+  const loadServiceAreas = async (cityId: string) => {
+    setLoadingAreas(true)
+    const supabase = createClient()
+    
+    const { data: areasData } = await supabase
+      .from('service_areas')
+      .select('id, name')
+      .eq('parent_id', cityId)
+      .eq('level', 'area')
+      .eq('is_active', true)
+      .order('display_order')
+    
+    setServiceAreas(areasData || [])
+    setLoadingAreas(false)
   }
 
   const handleSave = async () => {
@@ -271,6 +293,7 @@ export default function HelperServicesPage() {
     setSelectedCity('')
     setDistricts([])
     setCities([])
+    setServiceAreas([])
     
     if (stateId) {
       loadDistricts(stateId)
@@ -281,29 +304,56 @@ export default function HelperServicesPage() {
     setSelectedDistrict(districtId)
     setSelectedCity('')
     setCities([])
+    setServiceAreas([])
     
     if (districtId) {
       loadCities(districtId)
     }
   }
 
+  const handleCityChange = (cityId: string) => {
+    setSelectedCity(cityId)
+    setServiceAreas([])
+    
+    if (cityId) {
+      loadServiceAreas(cityId)
+    }
+  }
+
   const addServiceArea = () => {
     if (!selectedCity) {
-      toast.error('Please select a city')
+      toast.error('Please select a city first')
       return
     }
 
-    const city = cities.find(c => c.id === selectedCity)
-    if (!city) return
-
-    if (editedServiceAreaIds.includes(city.id)) {
-      toast.error('Area already added')
+    if (!serviceAreas.length) {
+      toast.error('No service areas available for this city')
       return
     }
 
-    setEditedServiceAreas([...editedServiceAreas, city.name])
-    setEditedServiceAreaIds([...editedServiceAreaIds, city.id])
-    toast.success(`${city.name} added to service areas`)
+    // Add all areas from the selected city
+    const newAreas = serviceAreas.filter(area => !editedServiceAreaIds.includes(area.id))
+    if (newAreas.length === 0) {
+      toast.error('All areas from this city are already added')
+      return
+    }
+
+    const newAreaNames = newAreas.map(a => a.name)
+    const newAreaIds = newAreas.map(a => a.id)
+    
+    setEditedServiceAreas([...editedServiceAreas, ...newAreaNames])
+    setEditedServiceAreaIds([...editedServiceAreaIds, ...newAreaIds])
+    
+    const cityName = cities.find(c => c.id === selectedCity)?.name || 'city'
+    toast.success(`${newAreas.length} areas added from ${cityName}`)
+    
+    // Reset selections
+    setSelectedState('')
+    setSelectedDistrict('')
+    setSelectedCity('')
+    setDistricts([])
+    setCities([])
+    setServiceAreas([])
   }
 
   const removeServiceArea = (index: number) => {
@@ -622,42 +672,91 @@ export default function HelperServicesPage() {
                 {editing && (
                   <div className="space-y-3">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <select
-                        value={selectedState}
-                        onChange={e => handleStateChange(e.target.value)}
-                        className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500"
-                      >
-                        <option value="">Select State</option>
-                        {states.map(state => (
-                          <option key={state.id} value={state.id}>{state.name}</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={selectedState}
+                          onChange={e => handleStateChange(e.target.value)}
+                          disabled={loadingAreas}
+                          className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+                        >
+                          <option value="">Select State</option>
+                          {states.map(state => (
+                            <option key={state.id} value={state.id}>{state.name}</option>
+                          ))}
+                        </select>
+                        {loadingAreas && selectedState && !selectedDistrict && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-600 border-t-transparent"></div>
+                          </div>
+                        )}
+                      </div>
 
-                      <select
-                        value={selectedDistrict}
-                        onChange={e => handleDistrictChange(e.target.value)}
-                        disabled={!selectedState}
-                        className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
-                      >
-                        <option value="">Select District</option>
-                        {districts.map(district => (
-                          <option key={district.id} value={district.id}>{district.name}</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={selectedDistrict}
+                          onChange={e => handleDistrictChange(e.target.value)}
+                          disabled={!selectedState || loadingAreas}
+                          className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+                        >
+                          <option value="">Select District</option>
+                          {districts.map(district => (
+                            <option key={district.id} value={district.id}>{district.name}</option>
+                          ))}
+                        </select>
+                        {loadingAreas && selectedDistrict && !selectedCity && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-600 border-t-transparent"></div>
+                          </div>
+                        )}
+                      </div>
 
-                      <select
-                        value={selectedCity}
-                        onChange={e => setSelectedCity(e.target.value)}
-                        disabled={!selectedDistrict}
-                        className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
-                      >
-                        <option value="">Select City</option>
-                        {cities.map(city => (
-                          <option key={city.id} value={city.id}>{city.name}</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={selectedCity}
+                          onChange={e => handleCityChange(e.target.value)}
+                          disabled={!selectedDistrict || loadingAreas}
+                          className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+                        >
+                          <option value="">Select City</option>
+                          {cities.map(city => (
+                            <option key={city.id} value={city.id}>{city.name}</option>
+                          ))}
+                        </select>
+                        {loadingAreas && selectedCity && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-600 border-t-transparent"></div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <Button onClick={addServiceArea} size="sm" disabled={!selectedCity}>
+                    
+                    {loadingAreas && selectedState && (
+                      <p className="text-xs text-red-600 flex items-center gap-1">
+                        <div className="animate-pulse">Loading {selectedCity ? 'areas' : selectedDistrict ? 'cities' : 'districts'}...</div>
+                      </p>
+                    )}
+
+                    {selectedCity && !loadingAreas && serviceAreas.length > 0 && (
+                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-xs font-medium text-gray-600 mb-2">
+                          Available areas in {cities.find(c => c.id === selectedCity)?.name} ({serviceAreas.length}):
+                        </p>
+                        <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                          {serviceAreas.map(area => (
+                            <span key={area.id} className="px-2 py-1 bg-white border border-gray-300 text-gray-700 rounded text-xs">
+                              {area.name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <Button 
+                      onClick={addServiceArea} 
+                      size="sm" 
+                      disabled={!selectedCity || loadingAreas || !serviceAreas.length}
+                      className="w-full md:w-auto"
+                    >
                       Add Service Area
                     </Button>
                   </div>
