@@ -112,11 +112,60 @@ export default function HelperServicesPage() {
     
     const { data: statesData } = await supabase
       .from('service_areas')
-      .select('*')
-      .eq('area_type', 'state')
-      .order('name')
+      .select('id, name')
+      .eq('level', 'state')
+      .eq('is_active', true)
+      .order('display_order')
     
     setStates(statesData || [])
+  }
+
+  const loadDistricts = async (stateId: string) => {
+    const supabase = createClient()
+    
+    const { data: allDistricts } = await supabase
+      .from('service_areas')
+      .select('id, name')
+      .eq('parent_id', stateId)
+      .eq('level', 'district')
+      .eq('is_active', true)
+      .order('display_order')
+    
+    if (!allDistricts) {
+      setDistricts([])
+      return
+    }
+    
+    // Filter districts that have at least 1 active city
+    const districtsWithCities = []
+    for (const district of allDistricts) {
+      const { count } = await supabase
+        .from('service_areas')
+        .select('id', { count: 'exact', head: true })
+        .eq('parent_id', district.id)
+        .eq('level', 'city')
+        .eq('is_active', true)
+      
+      if (count && count > 0) {
+        districtsWithCities.push(district)
+      }
+    }
+    
+    setDistricts(districtsWithCities)
+  }
+
+  const loadCities = async (districtId: string) => {
+    const supabase = createClient()
+    
+    const { data: citiesData } = await supabase
+      .from('service_areas')
+      .select('id, name')
+      .eq('parent_id', districtId)
+      .eq('level', 'city')
+      .eq('is_active', true)
+      .order('display_order')
+    
+    setCities(citiesData || [])
   }
 
   const handleSave = async () => {
@@ -216,42 +265,26 @@ export default function HelperServicesPage() {
     )
   }
 
-  const handleStateChange = async (stateId: string) => {
+  const handleStateChange = (stateId: string) => {
     setSelectedState(stateId)
     setSelectedDistrict('')
     setSelectedCity('')
     setDistricts([])
     setCities([])
-
-    if (!stateId) return
-
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('service_areas')
-      .select('*')
-      .eq('area_type', 'district')
-      .eq('parent_id', stateId)
-      .order('name')
     
-    setDistricts(data || [])
+    if (stateId) {
+      loadDistricts(stateId)
+    }
   }
 
-  const handleDistrictChange = async (districtId: string) => {
+  const handleDistrictChange = (districtId: string) => {
     setSelectedDistrict(districtId)
     setSelectedCity('')
     setCities([])
-
-    if (!districtId) return
-
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('service_areas')
-      .select('*')
-      .eq('area_type', 'city')
-      .eq('parent_id', districtId)
-      .order('name')
     
-    setCities(data || [])
+    if (districtId) {
+      loadCities(districtId)
+    }
   }
 
   const addServiceArea = () => {
