@@ -7,11 +7,8 @@ import {
   LayoutDashboard,
   Search,
   Briefcase,
-  Wallet,
   Clock,
   Star,
-  Bell,
-  Shield,
   Award,
   Users,
   Video,
@@ -76,12 +73,6 @@ export default function HelperSidebar({ collapsed }: HelperSidebarProps) {
       requiresVerification: true
     },
     {
-      label: 'Wallet',
-      icon: Wallet,
-      href: '/helper/wallet',
-      requiresVerification: true
-    },
-    {
       label: 'Time Tracking',
       icon: Clock,
       href: '/helper/time-tracking',
@@ -106,12 +97,6 @@ export default function HelperSidebar({ collapsed }: HelperSidebarProps) {
       requiresVerification: true
     },
     {
-      label: 'Verification',
-      icon: Shield,
-      href: '/helper/verification',
-      requiresVerification: false
-    },
-    {
       label: 'Emergency SOS',
       icon: Phone,
       href: '/helper/sos',
@@ -128,12 +113,6 @@ export default function HelperSidebar({ collapsed }: HelperSidebarProps) {
       icon: Video,
       href: '/helper/video-calls',
       requiresVerification: true
-    },
-    {
-      label: 'Notifications',
-      icon: Bell,
-      href: '/helper/notifications',
-      requiresVerification: false
     },
     {
       label: 'Trust Score',
