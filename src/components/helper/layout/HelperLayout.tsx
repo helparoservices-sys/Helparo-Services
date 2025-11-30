@@ -2,6 +2,7 @@
 
 import { useState, ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
+import { RoleGuard } from '@/components/auth/RoleGuard'
 import HelperSidebar from './HelperSidebar'
 import HelperTopbar from './HelperTopbar'
 import Breadcrumb from '@/components/admin/layout/Breadcrumb'
@@ -17,10 +18,11 @@ export default function HelperLayout({ children }: HelperLayoutProps) {
   const pathname = usePathname()
 
   return (
-    <ToastProvider>
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 dark:from-slate-900 dark:via-indigo-950 dark:to-purple-950 relative overflow-hidden">
-        {/* Location Permission Prompt */}
-        <LocationPermissionPrompt />
+    <RoleGuard allowedRole="helper">
+      <ToastProvider>
+        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 dark:from-slate-900 dark:via-indigo-950 dark:to-purple-950 relative overflow-hidden">
+          {/* Location Permission Prompt */}
+          <LocationPermissionPrompt />
         
         {/* Main Layout */}
         <div className="relative z-10">
@@ -97,5 +99,6 @@ export default function HelperLayout({ children }: HelperLayoutProps) {
         `}</style>
       </div>
     </ToastProvider>
+    </RoleGuard>
   )
 }

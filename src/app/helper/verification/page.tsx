@@ -75,6 +75,8 @@ export default function HelperVerificationPage() {
   const [bankAccount, setBankAccount] = useState<BankAccount | null>(null)
   const [profileData, setProfileData] = useState<ProfileData | null>(null)
   const [documents, setDocuments] = useState<any[]>([])
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null)
+  const [rejectionDate, setRejectionDate] = useState<string | null>(null)
 
   useEffect(() => {
     loadData()
@@ -99,7 +101,7 @@ export default function HelperVerificationPage() {
       setDocuments(onboardingResult.data.documents || [])
     }
 
-    // Get user profile data
+    // Get user profile data and rejection reason if rejected
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
@@ -110,6 +112,21 @@ export default function HelperVerificationPage() {
         .single()
       
       if (profile) setProfileData(profile)
+
+      // Fetch rejection reason if status is rejected
+      const { data: rejectionReview } = await supabase
+        .from('verification_reviews')
+        .select('comment, created_at')
+        .eq('helper_user_id', user.id)
+        .eq('decision', 'rejected')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (rejectionReview) {
+        setRejectionReason(rejectionReview.comment)
+        setRejectionDate(rejectionReview.created_at)
+      }
     }
 
     setLoading(false)
@@ -230,8 +247,47 @@ export default function HelperVerificationPage() {
               </Card>
             )}
 
-            {/* Profile Details - Show when verification is pending */}
-            {verificationStatus?.status === 'pending' && helperProfile && (
+            {/* Rejection Reason - Show when rejected */}
+            {verificationStatus?.status === 'rejected' && rejectionReason && (
+              <Card className="bg-red-50/80 backdrop-blur-sm border-red-200 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-red-700">
+                    <AlertCircle className="h-5 w-5" />
+                    Verification Rejected
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-2">Rejection Reason:</p>
+                    <div className="p-4 bg-white rounded-lg border border-red-200">
+                      <p className="text-gray-900">{rejectionReason}</p>
+                    </div>
+                    {rejectionDate && (
+                      <p className="text-xs text-gray-500 mt-2">
+                        Reviewed on {new Date(rejectionDate).toLocaleDateString()} at {new Date(rejectionDate).toLocaleTimeString()}
+                      </p>
+                    )}
+                  </div>
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800 font-medium mb-2">What to do next:</p>
+                    <ul className="text-sm text-yellow-700 space-y-1 list-disc list-inside">
+                      <li>Review the rejection reason above</li>
+                      <li>Prepare the correct documents as per requirements</li>
+                      <li>Click "Restart Onboarding" below to submit again</li>
+                    </ul>
+                  </div>
+                  <a 
+                    href="/helper/onboarding" 
+                    className="block w-full text-center px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition-all"
+                  >
+                    Restart Onboarding
+                  </a>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Profile Details - Show when verification is pending or approved */}
+            {(verificationStatus?.status === 'pending' || verificationStatus?.status === 'approved') && helperProfile && (
               <>
                 {/* Personal Information */}
                 <Card className="bg-white/80 backdrop-blur-sm border-white/50 shadow-lg">
@@ -424,7 +480,9 @@ export default function HelperVerificationPage() {
                               ? 'bg-red-100 text-red-700'
                               : 'bg-yellow-100 text-yellow-700'
                           }`}>
-                            {bankAccount.status === 'pending_verification' ? 'Pending' : bankAccount.status || 'Pending'}
+                            {bankAccount.status === 'pending_verification' ? 'Pending' : 
+                             bankAccount.status === 'verified' ? 'Verified' :
+                             bankAccount.status === 'rejected' ? 'Rejected' : 'Pending'}
                           </span>
                         </div>
                       </div>

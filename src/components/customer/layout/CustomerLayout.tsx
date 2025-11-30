@@ -2,6 +2,7 @@
 
 import { useState, ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
+import { RoleGuard } from '@/components/auth/RoleGuard'
 import CustomerSidebar from './CustomerSidebar'
 import CustomerTopbar from './CustomerTopbar'
 import Breadcrumb from '@/components/admin/layout/Breadcrumb'
@@ -17,10 +18,11 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
   const pathname = usePathname()
 
   return (
-    <ToastProvider>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-indigo-950 dark:to-purple-950 relative overflow-hidden">
-        {/* Location Permission Modal */}
-        <LocationPermissionModal />
+    <RoleGuard allowedRole="customer">
+      <ToastProvider>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-indigo-950 dark:to-purple-950 relative overflow-hidden">
+          {/* Location Permission Modal */}
+          <LocationPermissionModal />
 
         {/* Main Layout */}
         <div className="relative z-10">
@@ -80,5 +82,6 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
         `}</style>
       </div>
     </ToastProvider>
+    </RoleGuard>
   )
 }

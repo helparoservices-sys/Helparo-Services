@@ -2,6 +2,7 @@
 
 import { useState, ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
+import { RoleGuard } from '@/components/auth/RoleGuard'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 import Breadcrumb from './Breadcrumb'
@@ -16,8 +17,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname()
 
   return (
-    <ToastProvider>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-blue-950 dark:to-indigo-950 relative overflow-hidden">
+    <RoleGuard allowedRole="admin">
+      <ToastProvider>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-blue-950 dark:to-indigo-950 relative overflow-hidden">
         {/* Main Layout */}
         <div className="relative z-10">
           <Topbar 
@@ -76,5 +78,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         `}</style>
       </div>
     </ToastProvider>
+    </RoleGuard>
   )
 }

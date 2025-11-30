@@ -872,17 +872,29 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Select State <span className="text-red-500">*</span>
             </label>
-            <select
-              value={selectedState}
-              onChange={(e) => handleStateChange(e.target.value)}
-              disabled={loadingAreas}
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="">-- Select State --</option>
-              {states.map((state) => (
-                <option key={state.id} value={state.id}>{state.name}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={selectedState}
+                onChange={(e) => handleStateChange(e.target.value)}
+                disabled={loadingAreas}
+                className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="">-- Select State --</option>
+                {states.map((state) => (
+                  <option key={state.id} value={state.id}>{state.name}</option>
+                ))}
+              </select>
+              {loadingAreas && selectedState && !selectedDistrict && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-purple-600 border-t-transparent"></div>
+                </div>
+              )}
+            </div>
+            {loadingAreas && selectedState && !selectedDistrict && (
+              <p className="text-xs text-purple-600 mt-1 flex items-center gap-1">
+                <div className="animate-pulse">Loading districts...</div>
+              </p>
+            )}
           </div>
 
           {/* District Selector (only visible when state selected) */}
@@ -891,20 +903,31 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Select District <span className="text-red-500">*</span>
               </label>
-              <select
-                value={selectedDistrict}
-                onChange={(e) => handleDistrictChange(e.target.value)}
-                disabled={loadingAreas || !districts.length}
-                className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">-- Select District --</option>
-                {districts.map((district) => (
-                  <option key={district.id} value={district.id}>{district.name}</option>
-                ))}
-              </select>
-              {!loadingAreas && !districts.length && (
+              <div className="relative">
+                <select
+                  value={selectedDistrict}
+                  onChange={(e) => handleDistrictChange(e.target.value)}
+                  disabled={loadingAreas || !districts.length}
+                  className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="">-- Select District --</option>
+                  {districts.map((district) => (
+                    <option key={district.id} value={district.id}>{district.name}</option>
+                  ))}
+                </select>
+                {loadingAreas && selectedDistrict && !selectedCity && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-purple-600 border-t-transparent"></div>
+                  </div>
+                )}
+              </div>
+              {loadingAreas && selectedDistrict && !selectedCity ? (
+                <p className="text-xs text-purple-600 mt-1 flex items-center gap-1">
+                  <div className="animate-pulse">Loading cities...</div>
+                </p>
+              ) : !loadingAreas && !districts.length ? (
                 <p className="text-xs text-slate-500 mt-1">No districts available for this state</p>
-              )}
+              ) : null}
             </div>
           )}
 
@@ -914,20 +937,31 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Select City <span className="text-red-500">*</span>
               </label>
-              <select
-                value={selectedCity}
-                onChange={(e) => handleCityChange(e.target.value)}
-                disabled={loadingAreas || !cities.length}
-                className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">-- Select City --</option>
-                {cities.map((city) => (
-                  <option key={city.id} value={city.id}>{city.name}</option>
-                ))}
-              </select>
-              {!loadingAreas && !cities.length && (
+              <div className="relative">
+                <select
+                  value={selectedCity}
+                  onChange={(e) => handleCityChange(e.target.value)}
+                  disabled={loadingAreas || !cities.length}
+                  className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="">-- Select City --</option>
+                  {cities.map((city) => (
+                    <option key={city.id} value={city.id}>{city.name}</option>
+                  ))}
+                </select>
+                {loadingAreas && selectedCity && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-purple-600 border-t-transparent"></div>
+                  </div>
+                )}
+              </div>
+              {loadingAreas && selectedCity ? (
+                <p className="text-xs text-purple-600 mt-1 flex items-center gap-1">
+                  <div className="animate-pulse">Loading service areas...</div>
+                </p>
+              ) : !loadingAreas && !cities.length ? (
                 <p className="text-xs text-slate-500 mt-1">No cities available for this district</p>
-              )}
+              ) : null}
             </div>
           )}
 
@@ -1526,8 +1560,9 @@ export default function HelperOnboarding() {
       .eq('user_id', user.id)
       .single()
 
-    // If already onboarded, redirect to dashboard
-    if (profile?.address && profile?.service_categories?.length > 0) {
+    // If already onboarded AND not rejected, redirect to dashboard
+    // Rejected helpers should be able to re-onboard
+    if (profile?.address && profile?.service_categories?.length > 0 && profile?.verification_status !== 'rejected') {
       router.push('/helper/dashboard')
       return
     }

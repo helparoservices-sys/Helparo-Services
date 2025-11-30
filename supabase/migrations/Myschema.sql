@@ -164,6 +164,30 @@ CREATE TABLE public.commission_settings (
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT commission_settings_pkey PRIMARY KEY (id)
 );
+CREATE TABLE public.customer_subscriptions (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  customer_id uuid NOT NULL,
+  plan_id uuid NOT NULL,
+  status USER-DEFINED NOT NULL DEFAULT 'pending'::subscription_status,
+  started_at timestamp with time zone,
+  expires_at timestamp with time zone,
+  cancelled_at timestamp with time zone,
+  next_billing_at timestamp with time zone,
+  last_billing_at timestamp with time zone,
+  cashfree_subscription_id text,
+  renewal_order_id text,
+  interval USER-DEFINED NOT NULL,
+  price_rupees numeric NOT NULL,
+  applied_priority_level integer,
+  included_features ARRAY DEFAULT ARRAY[]::feature_key[],
+  trial_ends_at timestamp with time zone,
+  discount_percent numeric,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT customer_subscriptions_pkey PRIMARY KEY (id),
+  CONSTRAINT customer_subscriptions_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.profiles(id),
+  CONSTRAINT customer_subscriptions_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.subscription_plans(id)
+);
 CREATE TABLE public.device_tokens (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   user_id uuid NOT NULL,
@@ -454,6 +478,19 @@ CREATE TABLE public.legal_documents (
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   CONSTRAINT legal_documents_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.login_attempts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid,
+  email text NOT NULL,
+  success boolean NOT NULL,
+  ip_address text,
+  location text,
+  user_agent text,
+  failure_reason text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT login_attempts_pkey PRIMARY KEY (id),
+  CONSTRAINT login_attempts_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
 CREATE TABLE public.loyalty_points (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -966,6 +1003,18 @@ CREATE TABLE public.spatial_ref_sys (
   proj4text character varying,
   CONSTRAINT spatial_ref_sys_pkey PRIMARY KEY (srid)
 );
+CREATE TABLE public.subscription_benefits (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  plan_id uuid NOT NULL,
+  benefit_type text NOT NULL CHECK (benefit_type = ANY (ARRAY['service_discount'::text, 'bundle_discount'::text, 'free_booking'::text, 'cashback'::text, 'priority_support'::text, 'extended_warranty'::text])),
+  benefit_value jsonb NOT NULL,
+  description text,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT subscription_benefits_pkey PRIMARY KEY (id),
+  CONSTRAINT subscription_benefits_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.subscription_plans(id)
+);
 CREATE TABLE public.subscription_feature_overrides (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   helper_id uuid NOT NULL,
@@ -994,6 +1043,16 @@ CREATE TABLE public.subscription_plans (
   updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   CONSTRAINT subscription_plans_pkey PRIMARY KEY (id),
   CONSTRAINT subscription_plans_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.subscription_usage (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  subscription_id uuid NOT NULL,
+  subscription_type text NOT NULL CHECK (subscription_type = ANY (ARRAY['helper'::text, 'customer'::text])),
+  feature_used USER-DEFINED NOT NULL,
+  usage_count integer DEFAULT 1,
+  metadata jsonb,
+  used_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT subscription_usage_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.support_tickets (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -1124,6 +1183,28 @@ CREATE TABLE public.user_notification_prefs (
   updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   CONSTRAINT user_notification_prefs_pkey PRIMARY KEY (user_id),
   CONSTRAINT user_notification_prefs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.user_sessions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  session_token text NOT NULL,
+  device_name text NOT NULL,
+  browser text,
+  os text,
+  ip_address text,
+  location text,
+  user_agent text,
+  is_current boolean DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  last_active_at timestamp with time zone NOT NULL DEFAULT now(),
+  expires_at timestamp with time zone,
+  revoked boolean DEFAULT false,
+  revoked_at timestamp with time zone,
+  revoked_by uuid,
+  revoked_reason text,
+  CONSTRAINT user_sessions_pkey PRIMARY KEY (id),
+  CONSTRAINT user_sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT user_sessions_revoked_by_fkey FOREIGN KEY (revoked_by) REFERENCES auth.users(id)
 );
 CREATE TABLE public.verification_documents (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),

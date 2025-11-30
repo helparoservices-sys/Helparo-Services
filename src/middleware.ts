@@ -176,6 +176,50 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
+  // Role-based access control - CRITICAL SECURITY
+  if (isProtectedRoute && user) {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            request.cookies.set({ name, value, ...options })
+          },
+          remove(name: string, options: CookieOptions) {
+            request.cookies.set({ name, value: '', ...options })
+          },
+        },
+      }
+    )
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    const userRole = (profile as any)?.role || 'customer'
+    const requestedPath = request.nextUrl.pathname
+
+    // Check if user is trying to access a route that doesn't match their role
+    if (requestedPath.startsWith('/admin') && userRole !== 'admin') {
+      logger.warn('Unauthorized admin access attempt', { user_id: user.id, role: userRole, path: requestedPath })
+      return NextResponse.redirect(new URL(`/${userRole}/dashboard`, request.url))
+    }
+    if (requestedPath.startsWith('/helper') && userRole !== 'helper') {
+      logger.warn('Unauthorized helper access attempt', { user_id: user.id, role: userRole, path: requestedPath })
+      return NextResponse.redirect(new URL(`/${userRole}/dashboard`, request.url))
+    }
+    if (requestedPath.startsWith('/customer') && userRole !== 'customer') {
+      logger.warn('Unauthorized customer access attempt', { user_id: user.id, role: userRole, path: requestedPath })
+      return NextResponse.redirect(new URL(`/${userRole}/dashboard`, request.url))
+    }
+  }
+
   // Redirect to dashboard if already logged in and trying to access auth pages
   if (user && request.nextUrl.pathname.startsWith('/auth/login')) {
     // Fetch profile role only when redirecting from login

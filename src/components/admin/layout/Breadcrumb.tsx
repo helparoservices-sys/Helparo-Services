@@ -14,17 +14,18 @@ interface BreadcrumbItem {
 export default function Breadcrumb() {
   const pathname = usePathname()
   
-  // Generate breadcrumb items from pathname
+  // Detect role from pathname
   const pathSegments = pathname.split('/').filter(segment => segment)
+  const role = pathSegments[0] || 'admin' // admin, helper, or customer
   
   // Create breadcrumb items with proper labels
   const breadcrumbItems: BreadcrumbItem[] = [
-    { label: 'Home', href: '/admin/dashboard', icon: Home }
+    { label: 'Home', href: `/${role}/dashboard`, icon: Home }
   ]
 
   let currentPath = ''
   pathSegments.forEach((segment, index) => {
-    if (segment === 'admin') return // Skip 'admin' segment
+    if (segment === 'admin' || segment === 'helper' || segment === 'customer') return // Skip role segment
     
     currentPath += `/${segment}`
     const label = segment
@@ -34,7 +35,7 @@ export default function Breadcrumb() {
     
     breadcrumbItems.push({
       label,
-      href: `/admin${currentPath}`
+      href: `/${role}${currentPath}`
     })
   })
 

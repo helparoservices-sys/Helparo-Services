@@ -108,6 +108,12 @@ export async function approveHelper(helperId: string, comment: string = '') {
     
     if (error) throw error
     
+    // Auto-approve bank account when approving helper
+    await supabase
+      .from('helper_bank_accounts')
+      .update({ status: 'verified' as unknown })
+      .eq('helper_id', helperId)
+    
     // Insert verification review
     await supabase
       .from('verification_reviews')
@@ -148,24 +154,36 @@ export async function rejectHelper(helperId: string, comment: string = '') {
       .eq('id', helperId)
       .single()
     
-    // Reset helper profile to allow re-onboarding
+    // Set status to REJECTED (not pending) - allows helper to see rejection reason
     const { error: updateError } = await supabase
       .from('helper_profiles')
       .update({ 
-        verification_status: 'pending' as unknown,
+        verification_status: 'rejected' as unknown,
         is_approved: false
       })
       .eq('user_id', helperId)
     
     if (updateError) throw updateError
     
-    // Delete all verification documents to restart onboarding from scratch
+    // Mark bank account as rejected
+    await supabase
+      .from('helper_bank_accounts')
+      .update({ 
+        status: 'rejected' as unknown,
+        rejected_reason: sanitizedComment
+      })
+      .eq('helper_id', helperId)
+    
+    // Mark all verification documents as rejected (don't delete)
     await supabase
       .from('verification_documents')
-      .delete()
-      .eq('user_id', helperId)
+      .update({ 
+        status: 'rejected',
+        rejection_reason: sanitizedComment
+      })
+      .eq('helper_id', helperId)
     
-    // Insert verification review
+    // Insert verification review (keep rejection history)
     await supabase
       .from('verification_reviews')
       .insert({

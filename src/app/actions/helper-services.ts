@@ -18,15 +18,21 @@ export async function getHelperServices() {
 
     const supabase = await createClient()
 
-    // Get helper profile
-    const { data: helperProfile } = await supabase
+    // Get helper profile with onboarding data
+    const { data: helperProfile, error: profileError } = await supabase
       .from('helper_profiles')
-      .select('id')
+      .select('id, service_categories, skills, hourly_rate, experience_years, working_hours, service_areas, address, pincode, verification_status, is_approved')
       .eq('user_id', user.id)
       .maybeSingle()
 
-    if (!helperProfile) {
+    if (profileError || !helperProfile) {
+      logger.error('Failed to fetch helper profile', { error: profileError })
       return { error: 'Helper profile not found' }
+    }
+
+    // Check if helper is approved - only approved helpers can access My Services
+    if (helperProfile.verification_status !== 'approved' || !helperProfile.is_approved) {
+      return { error: 'Only approved helpers can access My Services. Please complete verification first.' }
     }
 
     // Get all service categories
@@ -41,7 +47,7 @@ export async function getHelperServices() {
       return { error: 'Failed to load service categories' }
     }
 
-    // Get helper's services
+    // Get helper's services from helper_services table
     const { data: helperServices, error: servicesError } = await supabase
       .from('helper_services')
       .select('id, category_id, hourly_rate, is_available, experience_years')
@@ -56,6 +62,16 @@ export async function getHelperServices() {
       data: {
         categories: categories || [],
         helperServices: helperServices || [],
+        helperProfile: {
+          service_categories: helperProfile.service_categories || [],
+          skills: helperProfile.skills || [],
+          hourly_rate: helperProfile.hourly_rate || 500,
+          experience_years: helperProfile.experience_years || 0,
+          working_hours: helperProfile.working_hours || {},
+          service_areas: helperProfile.service_areas || [],
+          address: helperProfile.address || '',
+          pincode: helperProfile.pincode || '',
+        },
       },
     }
   } catch (error) {
@@ -174,6 +190,64 @@ export async function updateHelperServices(
     return { success: true }
   } catch (error) {
     logger.error('Update helper services error', { error })
+    return { error: 'An unexpected error occurred' }
+  }
+}
+
+/**
+ * UPDATE HELPER PROFILE SERVICES
+ * Update helper's profile data: service categories, skills, hourly rate, working hours, service areas
+ */
+export async function updateHelperProfileServices(data: {
+  service_categories?: string[]
+  skills?: string[]
+  hourly_rate?: number
+  experience_years?: number
+  working_hours?: any
+  service_areas?: string[]
+}) {
+  try {
+    const { user } = await requireAuth(UserRole.HELPER)
+
+    // Rate limit updates
+    await rateLimit('update-helper-profile', user.id, RATE_LIMITS.API_RELAXED)
+
+    const supabase = await createClient()
+
+    // Validate input
+    if (data.hourly_rate !== undefined && (data.hourly_rate < 100 || data.hourly_rate > 10000)) {
+      return { error: 'Hourly rate must be between ₹100 and ₹10,000' }
+    }
+
+    if (data.experience_years !== undefined && (data.experience_years < 0 || data.experience_years > 50)) {
+      return { error: 'Experience years must be between 0 and 50' }
+    }
+
+    // Update helper profile
+    const { error: updateError } = await supabase
+      .from('helper_profiles')
+      .update({
+        service_categories: data.service_categories,
+        skills: data.skills,
+        hourly_rate: data.hourly_rate,
+        experience_years: data.experience_years,
+        working_hours: data.working_hours,
+        service_areas: data.service_areas,
+      })
+      .eq('user_id', user.id)
+
+    if (updateError) {
+      logger.error('Failed to update helper profile', { error: updateError })
+      return { error: 'Failed to update profile' }
+    }
+
+    logger.info('Helper profile services updated', { user_id: user.id })
+
+    revalidatePath('/helper/services')
+
+    return { success: true }
+  } catch (error) {
+    logger.error('Update helper profile services error', { error })
     return { error: 'An unexpected error occurred' }
   }
 }
