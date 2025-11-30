@@ -47,14 +47,15 @@ export default function CustomerSubscriptionsPage() {
     const supabase = createClient()
     
     // Load subscription status
-    const { data: status } = await supabase.rpc('get_helper_subscription_status')
+    const { data: status } = await supabase.rpc('get_customer_subscription_status')
     setCurrentStatus(status as any)
 
-    // Load available plans
+    // Load available plans for customers only
     const { data: plansData } = await supabase
       .from('subscription_plans')
       .select('*')
       .eq('is_active', true)
+      .eq('target_role', 'customer')
       .order('price_rupees')
 
     if (plansData) {
@@ -68,7 +69,7 @@ export default function CustomerSubscriptionsPage() {
     const supabase = createClient()
     setSubscribing(planCode)
 
-    const { error } = await supabase.rpc('subscribe_helper', { 
+    const { error } = await supabase.rpc('subscribe_customer', { 
       p_plan_code: planCode 
     })
 
@@ -96,10 +97,10 @@ export default function CustomerSubscriptionsPage() {
         {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
-            Helper Subscription Plans
+            Helparo Subscription Plans
           </h1>
           <p className="text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Upgrade your helper account with premium features to get more service requests and earn more
+            Upgrade your account with premium features for exclusive benefits and priority service
           </p>
         </div>
 
@@ -134,17 +135,6 @@ export default function CustomerSubscriptionsPage() {
             </CardContent>
           </Card>
         )}
-
-        {/* Commission Info */}
-        <div className="mb-8 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
-          <div className="flex items-start gap-3">
-            <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-            <div className="text-sm text-blue-900 dark:text-blue-300">
-              <strong>Platform Commission:</strong> Base rate is {COMMISSION.PLATFORM_PERCENTAGE}% of earnings. 
-              Premium plans offer commission discounts. For example, a {COMMISSION.PLATFORM_PERCENTAGE}% base with a 5% discount means you pay only {(COMMISSION.PLATFORM_PERCENTAGE - 5)}% commission.
-            </div>
-          </div>
-        </div>
 
         {/* Plans Grid */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

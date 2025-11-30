@@ -108,9 +108,7 @@ export default function NewRequestPage() {
               <MapPin className="h-5 w-5 text-blue-600" />
               Request Details
             </CardTitle>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              ✅ All inputs are validated and sanitized for your security
-            </p>
+          
           </CardHeader>
           <CardContent>
             {error && (
@@ -127,7 +125,7 @@ export default function NewRequestPage() {
                 </div>
                 <div className="ml-7 space-y-1 text-xs text-green-700 dark:text-green-400">
                   <p>✓ Smart matching algorithm finding best helpers</p>
-                  <p>✓ You'll receive notifications when helpers apply</p>
+                  <p>✓ You&apos;ll receive notifications when helpers apply</p>
                   <p>✓ Your payment is protected until service completion</p>
                 </div>
               </div>

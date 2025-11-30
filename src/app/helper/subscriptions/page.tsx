@@ -70,9 +70,9 @@ export default function HelperSubscriptionsPage() {
         {/* Header */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-6">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Subscription Plans
+            Helparo Subscription Plans
           </h1>
-          <p className="text-gray-600 mt-1">Choose the perfect plan for your needs</p>
+          <p className="text-gray-600 mt-1">Choose the perfect plan to grow your helper business</p>
         </div>
 
         {loading ? (

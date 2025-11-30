@@ -15,7 +15,8 @@ export async function getHelperSubscription() {
     const { data: plans, error: plansError } = await supabase
       .from('subscription_plans')
       .select('id, name, description, price_cents, billing_interval')
-      .eq('role', 'helper')
+      .eq('target_role', 'helper')
+      .eq('is_active', true)
       .order('price_cents')
 
     if (plansError) {
