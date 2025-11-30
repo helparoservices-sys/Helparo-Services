@@ -347,41 +347,24 @@ function Step1ServiceDetails({ data, onChange, onNext }: any) {
       </div>
 
       {/* Experience & Rate */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Years of Experience <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="number"
-            value={data.experience_years || ''}
-            onChange={(e) => onChange({ experience_years: parseInt(e.target.value) || 0 })}
-            min="0"
-            max="50"
-            className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            placeholder="5"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Hourly Rate (₹) <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="number"
-            value={data.hourly_rate || ''}
-            onChange={(e) => onChange({ hourly_rate: parseFloat(e.target.value) || 0 })}
-            min="0"
-            step="50"
-            className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            placeholder="500"
-          />
-        </div>
+      <div>
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+          Years of Experience <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="number"
+          value={data.experience_years || ''}
+          onChange={(e) => onChange({ experience_years: parseInt(e.target.value) || 0 })}
+          min="0"
+          max="50"
+          className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          placeholder="5"
+        />
       </div>
 
       <button
         onClick={onNext}
-        disabled={!data.service_categories?.length || !data.skills?.length || !data.experience_years || !data.hourly_rate}
+        disabled={!data.service_categories?.length || !data.skills?.length || !data.experience_years}
         className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-6 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         Continue to Location
@@ -1608,7 +1591,7 @@ export default function HelperOnboarding() {
       skills: formData.skills,
       skills_specialization: formData.skills_specialization,
       experience_years: formData.experience_years,
-      hourly_rate: formData.hourly_rate,
+      hourly_rate: formData.hourly_rate || 500,
       address: formData.address,
       pincode: formData.pincode,
       service_radius_km: formData.service_radius_km,

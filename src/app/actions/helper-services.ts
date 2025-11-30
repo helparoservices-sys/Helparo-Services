@@ -52,7 +52,7 @@ export async function getHelperServices() {
         helperProfile: {
           service_categories: helperProfile.service_categories || [],
           skills: helperProfile.skills_specialization || [],
-          hourly_rate: helperProfile.hourly_rate || 500,
+          service_radius_km: helperProfile.service_radius_km || 10,
           experience_years: helperProfile.experience_years || 0,
           working_hours: helperProfile.working_hours || {},
           service_areas: helperProfile.service_areas || [],
@@ -183,15 +183,16 @@ export async function updateHelperServices(
 
 /**
  * UPDATE HELPER PROFILE SERVICES
- * Update helper's profile data: service categories, skills, hourly rate, working hours, service areas
+ * Update helper's profile data: service categories, skills, service radius, working hours, service areas
  */
 export async function updateHelperProfileServices(data: {
   service_categories?: string[]
   skills?: string[]
-  hourly_rate?: number
+  service_radius_km?: number
   experience_years?: number
   working_hours?: any
   service_areas?: string[]
+  service_area_ids?: string[]
 }) {
   try {
     const { user } = await requireAuth(UserRole.HELPER)
@@ -202,8 +203,8 @@ export async function updateHelperProfileServices(data: {
     const supabase = await createClient()
 
     // Validate input
-    if (data.hourly_rate !== undefined && (data.hourly_rate < 100 || data.hourly_rate > 10000)) {
-      return { error: 'Hourly rate must be between ₹100 and ₹10,000' }
+    if (data.service_radius_km !== undefined && (data.service_radius_km < 1 || data.service_radius_km > 100)) {
+      return { error: 'Service radius must be between 1 and 100 km' }
     }
 
     if (data.experience_years !== undefined && (data.experience_years < 0 || data.experience_years > 50)) {
@@ -216,7 +217,7 @@ export async function updateHelperProfileServices(data: {
       .update({
         service_categories: data.service_categories,
         skills_specialization: data.skills,
-        hourly_rate: data.hourly_rate,
+        service_radius_km: data.service_radius_km,
         experience_years: data.experience_years,
         working_hours: data.working_hours,
         service_areas: data.service_areas,
