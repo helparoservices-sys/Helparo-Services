@@ -43,6 +43,7 @@ export default function HelperServicesPage() {
   const [selectedDistrict, setSelectedDistrict] = useState('')
   const [selectedCity, setSelectedCity] = useState('')
   const [loadingAreas, setLoadingAreas] = useState(false)
+  const [selectedServiceAreaIds, setSelectedServiceAreaIds] = useState<string[]>([])
 
   // Edit state
   const [editedServiceRadius, setEditedServiceRadius] = useState(10)
@@ -314,38 +315,41 @@ export default function HelperServicesPage() {
   const handleCityChange = (cityId: string) => {
     setSelectedCity(cityId)
     setServiceAreas([])
+    setSelectedServiceAreaIds([])
     
     if (cityId) {
       loadServiceAreas(cityId)
     }
   }
 
+  const toggleServiceArea = (areaId: string) => {
+    setSelectedServiceAreaIds(prev =>
+      prev.includes(areaId)
+        ? prev.filter(id => id !== areaId)
+        : [...prev, areaId]
+    )
+  }
+
   const addServiceArea = () => {
-    if (!selectedCity) {
-      toast.error('Please select a city first')
+    if (!selectedServiceAreaIds.length) {
+      toast.error('Please select at least one area')
       return
     }
 
-    if (!serviceAreas.length) {
-      toast.error('No service areas available for this city')
+    // Filter out already added areas
+    const newAreaIds = selectedServiceAreaIds.filter(id => !editedServiceAreaIds.includes(id))
+    if (newAreaIds.length === 0) {
+      toast.error('Selected areas are already added')
       return
     }
 
-    // Add all areas from the selected city
-    const newAreas = serviceAreas.filter(area => !editedServiceAreaIds.includes(area.id))
-    if (newAreas.length === 0) {
-      toast.error('All areas from this city are already added')
-      return
-    }
-
+    const newAreas = serviceAreas.filter(area => newAreaIds.includes(area.id))
     const newAreaNames = newAreas.map(a => a.name)
-    const newAreaIds = newAreas.map(a => a.id)
     
     setEditedServiceAreas([...editedServiceAreas, ...newAreaNames])
     setEditedServiceAreaIds([...editedServiceAreaIds, ...newAreaIds])
     
-    const cityName = cities.find(c => c.id === selectedCity)?.name || 'city'
-    toast.success(`${newAreas.length} areas added from ${cityName}`)
+    toast.success(`${newAreas.length} area(s) added successfully`)
     
     // Reset selections
     setSelectedState('')
@@ -354,6 +358,7 @@ export default function HelperServicesPage() {
     setDistricts([])
     setCities([])
     setServiceAreas([])
+    setSelectedServiceAreaIds([])
   }
 
   const removeServiceArea = (index: number) => {
@@ -736,17 +741,82 @@ export default function HelperServicesPage() {
                       </p>
                     )}
 
-                    {selectedCity && !loadingAreas && serviceAreas.length > 0 && (
-                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <p className="text-xs font-medium text-gray-600 mb-2">
-                          Available areas in {cities.find(c => c.id === selectedCity)?.name} ({serviceAreas.length}):
+                    {/* Service Area Checkboxes - Like Onboarding */}
+                    {selectedCity && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Select Service Areas ({selectedServiceAreaIds.length} selected)
+                        </label>
+                        <div className="max-h-60 overflow-y-auto border border-gray-300 rounded-lg bg-white divide-y divide-gray-200">
+                          {loadingAreas ? (
+                            <div className="p-4 text-center text-gray-500">
+                              <div className="animate-spin rounded-full h-6 w-6 border-2 border-red-600 border-t-transparent mx-auto mb-2"></div>
+                              Loading service areas...
+                            </div>
+                          ) : serviceAreas.length === 0 ? (
+                            <div className="p-4 text-center text-gray-500">
+                              No service areas available for this city
+                            </div>
+                          ) : (
+                            serviceAreas.map((area) => {
+                              const isAlreadyAdded = editedServiceAreaIds.includes(area.id)
+                              const isSelected = selectedServiceAreaIds.includes(area.id)
+                              
+                              return (
+                                <label
+                                  key={area.id}
+                                  className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${
+                                    isAlreadyAdded 
+                                      ? 'bg-red-50 hover:bg-red-100' 
+                                      : 'hover:bg-gray-50'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => toggleServiceArea(area.id)}
+                                    disabled={isAlreadyAdded}
+                                    className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 disabled:opacity-50"
+                                  />
+                                  <span className={`text-sm flex-1 ${
+                                    isAlreadyAdded 
+                                      ? 'text-red-700 font-medium' 
+                                      : 'text-gray-900'
+                                  }`}>
+                                    {area.name}
+                                    {isAlreadyAdded && (
+                                      <span className="ml-2 text-xs text-red-600">(Already added)</span>
+                                    )}
+                                  </span>
+                                </label>
+                              )
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Selected Areas Summary */}
+                    {selectedServiceAreaIds.length > 0 && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <p className="text-sm font-semibold text-red-900 mb-2">
+                          ✓ Areas to Add ({selectedServiceAreaIds.length})
                         </p>
-                        <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
-                          {serviceAreas.map(area => (
-                            <span key={area.id} className="px-2 py-1 bg-white border border-gray-300 text-gray-700 rounded text-xs">
-                              {area.name}
-                            </span>
-                          ))}
+                        <div className="flex flex-wrap gap-2">
+                          {selectedServiceAreaIds.map((areaId) => {
+                            const area = serviceAreas.find(a => a.id === areaId)
+                            return area ? (
+                              <span
+                                key={areaId}
+                                className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-red-300 rounded-full text-xs text-red-700 font-medium"
+                              >
+                                {area.name}
+                                <button onClick={() => toggleServiceArea(areaId)} className="hover:text-red-900">
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </span>
+                            ) : null
+                          })}
                         </div>
                       </div>
                     )}
@@ -754,10 +824,10 @@ export default function HelperServicesPage() {
                     <Button 
                       onClick={addServiceArea} 
                       size="sm" 
-                      disabled={!selectedCity || loadingAreas || !serviceAreas.length}
+                      disabled={!selectedServiceAreaIds.length || loadingAreas}
                       className="w-full md:w-auto"
                     >
-                      Add Service Area
+                      Add Selected Areas ({selectedServiceAreaIds.length})
                     </Button>
                   </div>
                 )}
