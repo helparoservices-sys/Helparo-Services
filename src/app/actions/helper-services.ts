@@ -32,19 +32,7 @@ export async function getHelperServices() {
 
     // Check if helper is approved - only approved helpers can access My Services
     if (helperProfile.verification_status !== 'approved' || !helperProfile.is_approved) {
-      return { error: 'Only approved helpers can access My Services. Please complete verification first.' }
-    }
-
-    // Get all service categories
-    const { data: categories, error: categoriesError } = await supabase
-      .from('service_categories')
-      .select('id, name, slug, description, icon_emoji')
-      .eq('is_active', true)
-      .order('name')
-
-    if (categoriesError) {
-      logger.error('Failed to fetch service categories', { error: categoriesError })
-      return { error: 'Failed to load service categories' }
+      return { error: 'Your account is pending verification. Please wait for admin approval.' }
     }
 
     // Get helper's services from helper_services table
@@ -60,7 +48,6 @@ export async function getHelperServices() {
 
     return {
       data: {
-        categories: categories || [],
         helperServices: helperServices || [],
         helperProfile: {
           service_categories: helperProfile.service_categories || [],

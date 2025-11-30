@@ -25,6 +25,7 @@ export default function HelperServicesPage() {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isApproved, setIsApproved] = useState(false)
 
   // Edit state
   const [editedHourlyRate, setEditedHourlyRate] = useState(500)
@@ -48,9 +49,11 @@ export default function HelperServicesPage() {
     if ('error' in result && result.error) {
       setErrorMessage(result.error)
       toast.error(result.error)
+      setIsApproved(false)
     } else if ('data' in result && result.data?.helperProfile) {
       const profileData = result.data.helperProfile
       setProfile(profileData)
+      setIsApproved(true)
       
       // Initialize edit state
       setEditedHourlyRate(profileData.hourly_rate)
