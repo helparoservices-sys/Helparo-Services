@@ -38,58 +38,28 @@ export const useLocation = () => {
   // Reverse geocode coordinates to address
   const reverseGeocode = useCallback(async (coords: LocationCoordinates) => {
     try {
-      let geoData = null
-
-      // Try geocode.maps.co first (CORS-friendly)
-      try {
-        const response1 = await fetch(
-          `https://geocode.maps.co/reverse?lat=${coords.latitude}&lon=${coords.longitude}`
-        )
-        if (response1.ok) {
-          geoData = await response1.json()
-        }
-      } catch (err) {
-        console.log('geocode.maps.co failed, trying nominatim')
-      }
-
-      // Fallback to nominatim
-      if (!geoData || !geoData.address) {
-        const response2 = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.latitude}&lon=${coords.longitude}&zoom=18&addressdetails=1`,
-          {
-            headers: {
-              'User-Agent': 'HelparoServices/1.0',
-              'Accept-Language': 'en'
-            }
-          }
-        )
-        if (response2.ok) {
-          geoData = await response2.json()
-        }
-      }
-
-      if (!geoData) throw new Error('Geocoding failed')
-
-      const addr = geoData.address || {}
+      const response = await fetch(`/api/geocode?lat=${coords.latitude}&lng=${coords.longitude}`, { cache: 'no-store' })
+      if (!response.ok) throw new Error('Geocoding failed')
+      const geo = await response.json()
 
       const address: LocationAddress = {
-        formatted_address: geoData.display_name || '',
-        city: addr.city || addr.town || addr.village || addr.suburb || addr.municipality || '',
-        state: addr.state || addr.region || '',
-        country: addr.country || 'India',
-        pincode: addr.postcode || addr.postal_code || '',
-        street: addr.road || addr.street || '',
-        locality: addr.suburb || addr.neighbourhood || addr.locality || ''
+        formatted_address: geo.formatted_address || '',
+        city: geo.city || '',
+        state: geo.state || '',
+        country: 'India',
+        pincode: geo.pincode || '',
+        street: '',
+        locality: ''
       }
 
       setLocation(prev => ({
         ...prev,
-        address
+        address,
+        error: geo.source === 'nominatim' ? 'Auto-detect used fallback. Please verify address/pincode.' : null
       }))
 
       return address
-    } catch (error) {
-      console.error('Reverse geocoding error:', error)
+    } catch {
       return null
     }
   }, [])

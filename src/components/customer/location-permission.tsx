@@ -58,21 +58,19 @@ export function CustomerLocationPermissionPrompt() {
           let pincode = ''
 
           try {
-            const response = await fetch(
-              `https://geocode.maps.co/reverse?lat=${latitude}&lon=${longitude}`
-            )
+            const response = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`, { cache: 'no-store' })
             if (response.ok) {
-              const geoData = await response.json()
-              if (geoData && geoData.address) {
-                const addr = geoData.address
-                address = geoData.display_name || ''
-                city = addr.city || addr.town || addr.village || ''
-                state = addr.state || addr.region || ''
-                pincode = addr.postcode || addr.postal_code || ''
+              const geo = await response.json()
+              address = geo.formatted_address || ''
+              city = geo.city || ''
+              state = geo.state || ''
+              pincode = geo.pincode || ''
+              if (geo.source === 'nominatim') {
+                showError('Please verify address', 'Auto-detect used fallback. Verify address/pincode.')
               }
             }
-          } catch (err) {
-            console.log('Address fetch failed, saving coordinates only')
+          } catch {
+            // continue with coordinates only
           }
 
           // Save to profile

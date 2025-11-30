@@ -50,7 +50,25 @@ export function LocationPermissionPrompt() {
       async (position) => {
         const { latitude, longitude } = position.coords
         
-        // Save to profile (no address fetching needed here)
+        // Try to fetch address for helper as well
+        let address = ''
+        let city = ''
+        let state = ''
+        let pincode = ''
+        try {
+          const response = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`, { cache: 'no-store' })
+          if (response.ok) {
+            const geo = await response.json()
+            address = geo.formatted_address || ''
+            city = geo.city || ''
+            state = geo.state || ''
+            pincode = geo.pincode || ''
+            if (geo.source === 'nominatim') {
+              showError('Please verify address', 'Auto-detect used fallback. Verify address/pincode.')
+            }
+          }
+        } catch {}
+
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
         
@@ -59,7 +77,9 @@ export function LocationPermissionPrompt() {
             .from('helper_profiles')
             .update({
               latitude: latitude.toString(),
-              longitude: longitude.toString()
+              longitude: longitude.toString(),
+              address: address || null,
+              pincode: pincode || null
             })
             .eq('user_id', user.id)
 

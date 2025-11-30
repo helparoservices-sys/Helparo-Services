@@ -563,48 +563,18 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
         const { latitude, longitude } = position.coords
         
         try {
-          let geoData = null
-          
-          try {
-            const response1 = await fetch(
-              `https://geocode.maps.co/reverse?lat=${latitude}&lon=${longitude}`
-            )
-            if (response1.ok) {
-              geoData = await response1.json()
+          const response = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`, { cache: 'no-store' })
+          if (response.ok) {
+            const geo = await response.json()
+            const formattedAddress = geo.formatted_address || ''
+            const detectedPincode = geo.pincode || ''
+            if (geo.source === 'nominatim') {
+              setLocationError('Auto-detect used fallback. Please verify address/pincode.')
             }
-          } catch (err) {
-            console.log('geocode.maps.co failed, trying nominatim')
-          }
-
-          if (!geoData || !geoData.address) {
-            const response2 = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
-              {
-                headers: {
-                  'User-Agent': 'HelparoServices/1.0',
-                  'Accept-Language': 'en'
-                }
-              }
-            )
-            if (response2.ok) {
-              geoData = await response2.json()
-            }
-          }
-          
-          if (geoData && geoData.address) {
-            const addr = geoData.address
-            const formattedAddress = geoData.display_name || [
-              addr.house_number,
-              addr.road || addr.street,
-              addr.suburb || addr.neighbourhood || addr.locality,
-              addr.city || addr.town || addr.village || addr.municipality,
-              addr.state || addr.region,
-              addr.postcode || addr.postal_code
-            ].filter(Boolean).join(', ')
 
             onChange({
               address: formattedAddress,
-              pincode: (addr.postcode || addr.postal_code || ''),
+              pincode: detectedPincode,
               latitude: latitude.toFixed(6),
               longitude: longitude.toFixed(6)
             })

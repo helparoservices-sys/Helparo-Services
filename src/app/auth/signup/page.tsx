@@ -43,12 +43,15 @@ function SignUpForm() {
   // Location state
   const [states, setStates] = useState<any[]>([])
   const [cities, setCities] = useState<any[]>([])
+  const [loadingStates, setLoadingStates] = useState(false)
+  const [loadingCities, setLoadingCities] = useState(false)
 
   useEffect(() => {
     loadStates()
   }, [])
 
   const loadStates = async () => {
+    setLoadingStates(true)
     const supabase = createClient()
     const { data } = await supabase
       .from('service_areas')
@@ -58,24 +61,47 @@ function SignUpForm() {
       .order('display_order')
     
     setStates(data || [])
+    setLoadingStates(false)
   }
 
   const loadCities = async (stateName: string) => {
+    setLoadingCities(true)
     const supabase = createClient()
     
     // Find state by name
     const state = states.find(s => s.name === stateName)
-    if (!state) return
+    if (!state) {
+      setLoadingCities(false)
+      return [] as any[]
+    }
 
+    // First get all districts for this state
+    const { data: districts } = await supabase
+      .from('service_areas')
+      .select('id')
+      .eq('parent_id', state.id)
+      .eq('level', 'district')
+      .eq('is_active', true)
+
+    if (!districts || districts.length === 0) {
+      setCities([])
+      setLoadingCities(false)
+      return [] as any[]
+    }
+
+    // Get all cities from all districts
+    const districtIds = districts.map(d => d.id)
     const { data } = await supabase
       .from('service_areas')
       .select('id, name')
-      .eq('parent_id', state.id)
+      .in('parent_id', districtIds)
       .eq('level', 'city')
       .eq('is_active', true)
-      .order('display_order')
+      .order('name')
     
     setCities(data || [])
+    setLoadingCities(false)
+    return data || []
   }
 
   const handleStateChange = (stateName: string) => {
@@ -100,37 +126,46 @@ function SignUpForm() {
         const { latitude, longitude } = position.coords
         
         try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
-            {
-              headers: {
-                'User-Agent': 'HelparoServices/1.0',
-                'Accept-Language': 'en'
+          const response = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`, { cache: 'no-store' })
+          if (response.ok) {
+            const geo = await response.json()
+
+            const formattedAddress = geo.formatted_address || ''
+            const detectedPincode = geo.pincode || ''
+            const detectedState = (geo.state || '').toString()
+            const detectedCity = (geo.city || '').toString()
+
+            // Try to auto-select state from service_areas list (case-insensitive)
+            let selectedState = formData.state
+            if (detectedState) {
+              const match = states.find(s => s.name.toLowerCase() === detectedState.toLowerCase())
+              if (match) {
+                selectedState = match.name
+                setFormData(prev => ({ ...prev, state: match.name, city: '' }))
+                // Ensure cities are loaded for this state, then set city if matched
+                const loaded = await loadCities(match.name)
+                if (detectedCity) {
+                  const cityMatch = loaded.find((c: any) => c.name.toLowerCase() === detectedCity.toLowerCase())
+                  if (cityMatch) {
+                    setFormData(prev => ({ ...prev, city: cityMatch.name }))
+                  }
+                }
               }
             }
-          )
-          
-          if (response.ok) {
-            const geoData = await response.json()
-            if (geoData && geoData.address) {
-              const addr = geoData.address
-              const formattedAddress = geoData.display_name || [
-                addr.house_number,
-                addr.road || addr.street,
-                addr.suburb || addr.neighbourhood || addr.locality,
-                addr.city || addr.town || addr.village,
-                addr.state,
-                addr.postcode
-              ].filter(Boolean).join(', ')
 
-              setFormData({
-                ...formData,
-                address: formattedAddress,
-                pincode: addr.postcode || addr.postal_code || '',
-              })
+            setFormData(prev => ({
+              ...prev,
+              address: formattedAddress,
+              pincode: detectedPincode,
+            }))
 
+            if (geo.source === 'nominatim') {
+              toast.warning('Auto-detect used fallback. Please verify address/pincode.')
+            } else {
               toast.success('✓ Location detected successfully!')
             }
+          } else {
+            toast.error('Failed to detect location. Please enter manually.')
           }
         } catch (error) {
           console.error('Geocoding error:', error)
@@ -139,7 +174,7 @@ function SignUpForm() {
         
         setDetecting(false)
       },
-      (error) => {
+      () => {
         toast.error('Location permission denied. Please enter manually.')
         setDetecting(false)
       }
@@ -361,10 +396,10 @@ function SignUpForm() {
                   onChange={(e) => setFormData({ ...formData, countryCode: e.target.value })}
                 >
                   <option value="+91">+91 (IN)</option>
-                  <option value="+1">+1 (US)</option>
+                  {/* <option value="+1">+1 (US)</option>
                   <option value="+44">+44 (UK)</option>
                   <option value="+61">+61 (AU)</option>
-                  <option value="+86">+86 (CN)</option>
+                  <option value="+86">+86 (CN)</option> */}
                 </select>
                 <Input
                   id="phone"
@@ -412,10 +447,11 @@ function SignUpForm() {
                     id="state"
                     value={formData.state}
                     onChange={(e) => handleStateChange(e.target.value)}
+                    disabled={loadingStates}
                     required
-                    className="flex h-10 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
+                    className="flex h-10 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 disabled:opacity-50"
                   >
-                    <option value="">Select State</option>
+                    <option value="">{loadingStates ? 'Loading states...' : 'Select State'}</option>
                     {states.map(state => (
                       <option key={state.id} value={state.name}>{state.name}</option>
                     ))}
@@ -428,11 +464,11 @@ function SignUpForm() {
                     id="city"
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    disabled={!formData.state}
+                    disabled={!formData.state || loadingCities}
                     required
                     className="flex h-10 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 disabled:opacity-50"
                   >
-                    <option value="">Select City</option>
+                    <option value="">{loadingCities ? 'Loading cities...' : 'Select City'}</option>
                     {cities.map(city => (
                       <option key={city.id} value={city.name}>{city.name}</option>
                     ))}
