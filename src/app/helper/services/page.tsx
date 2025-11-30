@@ -772,25 +772,25 @@ export default function HelperServicesPage() {
                                   key={area.id}
                                   className={`flex items-center gap-3 p-3 transition-colors ${
                                     isAlreadyAdded 
-                                      ? 'bg-red-50 cursor-not-allowed' 
+                                      ? 'bg-red-50 cursor-default' 
                                       : 'hover:bg-gray-50 cursor-pointer'
                                   }`}
                                 >
                                   <input
                                     type="checkbox"
-                                    checked={isAlreadyAdded ? false : isSelected}
+                                    checked={isAlreadyAdded || isSelected}
                                     onChange={() => toggleServiceArea(area.id)}
                                     disabled={isAlreadyAdded}
-                                    className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 disabled:opacity-30 disabled:cursor-not-allowed"
+                                    className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 disabled:opacity-100"
                                   />
                                   <span className={`text-sm flex-1 ${
                                     isAlreadyAdded 
-                                      ? 'text-red-700 font-medium line-through' 
+                                      ? 'text-red-700 font-medium' 
                                       : 'text-gray-900'
                                   }`}>
                                     {area.name}
                                     {isAlreadyAdded && (
-                                      <span className="ml-2 text-xs text-red-600 font-bold no-underline">(✓ Already in your list)</span>
+                                      <span className="ml-2 text-xs text-red-600 font-semibold">(✓ Selected in onboarding)</span>
                                     )}
                                   </span>
                                 </label>
