@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, Suspense, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Sparkles, Eye, EyeOff, CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import { Sparkles, Eye, EyeOff, CheckCircle, XCircle, Loader2, MapPin } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import { LegalModal } from '@/components/legal/legal-modal'
+import { toast } from 'sonner'
 
 function SignUpForm() {
   const router = useRouter()
@@ -21,17 +23,128 @@ function SignUpForm() {
     confirmPassword: '',
     fullName: '',
     phone: '',
-    countryCode: '+1',
+    countryCode: '+91',
     role: defaultRole as 'customer' | 'helper' | 'admin',
+    state: '',
+    city: '',
+    address: '',
+    pincode: '',
   })
 
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [detecting, setDetecting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [showTerms, setShowTerms] = useState(false)
   const [showPrivacy, setShowPrivacy] = useState(false)
+
+  // Location state
+  const [states, setStates] = useState<any[]>([])
+  const [cities, setCities] = useState<any[]>([])
+
+  useEffect(() => {
+    loadStates()
+  }, [])
+
+  const loadStates = async () => {
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('service_areas')
+      .select('id, name')
+      .eq('level', 'state')
+      .eq('is_active', true)
+      .order('display_order')
+    
+    setStates(data || [])
+  }
+
+  const loadCities = async (stateName: string) => {
+    const supabase = createClient()
+    
+    // Find state by name
+    const state = states.find(s => s.name === stateName)
+    if (!state) return
+
+    const { data } = await supabase
+      .from('service_areas')
+      .select('id, name')
+      .eq('parent_id', state.id)
+      .eq('level', 'city')
+      .eq('is_active', true)
+      .order('display_order')
+    
+    setCities(data || [])
+  }
+
+  const handleStateChange = (stateName: string) => {
+    setFormData({ ...formData, state: stateName, city: '' })
+    setCities([])
+    if (stateName) {
+      loadCities(stateName)
+    }
+  }
+
+  const detectLocation = async () => {
+    setDetecting(true)
+
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser')
+      setDetecting(false)
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords
+        
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+            {
+              headers: {
+                'User-Agent': 'HelparoServices/1.0',
+                'Accept-Language': 'en'
+              }
+            }
+          )
+          
+          if (response.ok) {
+            const geoData = await response.json()
+            if (geoData && geoData.address) {
+              const addr = geoData.address
+              const formattedAddress = geoData.display_name || [
+                addr.house_number,
+                addr.road || addr.street,
+                addr.suburb || addr.neighbourhood || addr.locality,
+                addr.city || addr.town || addr.village,
+                addr.state,
+                addr.postcode
+              ].filter(Boolean).join(', ')
+
+              setFormData({
+                ...formData,
+                address: formattedAddress,
+                pincode: addr.postcode || addr.postal_code || '',
+              })
+
+              toast.success('✓ Location detected successfully!')
+            }
+          }
+        } catch (error) {
+          console.error('Geocoding error:', error)
+          toast.error('Failed to detect location. Please enter manually.')
+        }
+        
+        setDetecting(false)
+      },
+      (error) => {
+        toast.error('Location permission denied. Please enter manually.')
+        setDetecting(false)
+      }
+    )
+  }
 
   // Password strength validation
   const passwordStrength = {
@@ -59,6 +172,11 @@ function SignUpForm() {
         throw new Error('Passwords do not match')
       }
 
+      // Validate location fields
+      if (!formData.state || !formData.city || !formData.address || !formData.pincode) {
+        throw new Error('Please fill in all location fields')
+      }
+
       // Sign up with Supabase
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
@@ -69,6 +187,10 @@ function SignUpForm() {
             phone: formData.phone,
             country_code: formData.countryCode,
             role: formData.role,
+            state: formData.state,
+            city: formData.city,
+            address: formData.address,
+            pincode: formData.pincode,
           },
           emailRedirectTo: `${window.location.origin}/auth/confirm`,
         },
@@ -238,9 +360,9 @@ function SignUpForm() {
                   value={formData.countryCode}
                   onChange={(e) => setFormData({ ...formData, countryCode: e.target.value })}
                 >
+                  <option value="+91">+91 (IN)</option>
                   <option value="+1">+1 (US)</option>
                   <option value="+44">+44 (UK)</option>
-                  <option value="+91">+91 (IN)</option>
                   <option value="+61">+61 (AU)</option>
                   <option value="+86">+86 (CN)</option>
                 </select>
@@ -251,6 +373,96 @@ function SignUpForm() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   required
+                  className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
+                />
+              </div>
+            </div>
+
+            {/* Location Section */}
+            <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-slate-700 dark:text-slate-300">Location Details</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={detectLocation}
+                  disabled={detecting}
+                  className="text-xs"
+                >
+                  {detecting ? (
+                    <>
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      Detecting...
+                    </>
+                  ) : (
+                    <>
+                      <MapPin className="mr-1 h-3 w-3" />
+                      Auto Detect
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* State & City Row */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
+                  <Label htmlFor="state" className="text-xs text-slate-600 dark:text-slate-400">State *</Label>
+                  <select
+                    id="state"
+                    value={formData.state}
+                    onChange={(e) => handleStateChange(e.target.value)}
+                    required
+                    className="flex h-10 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
+                  >
+                    <option value="">Select State</option>
+                    {states.map(state => (
+                      <option key={state.id} value={state.name}>{state.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="city" className="text-xs text-slate-600 dark:text-slate-400">City *</Label>
+                  <select
+                    id="city"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    disabled={!formData.state}
+                    required
+                    className="flex h-10 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 disabled:opacity-50"
+                  >
+                    <option value="">Select City</option>
+                    {cities.map(city => (
+                      <option key={city.id} value={city.name}>{city.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Address */}
+              <div className="space-y-2">
+                <Label htmlFor="address" className="text-xs text-slate-600 dark:text-slate-400">Address *</Label>
+                <Input
+                  id="address"
+                  placeholder="House no, Street, Area"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  required
+                  className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
+                />
+              </div>
+
+              {/* Pincode */}
+              <div className="space-y-2">
+                <Label htmlFor="pincode" className="text-xs text-slate-600 dark:text-slate-400">PIN Code *</Label>
+                <Input
+                  id="pincode"
+                  placeholder="500034"
+                  value={formData.pincode}
+                  onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                  required
+                  maxLength={6}
                   className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
                 />
               </div>
