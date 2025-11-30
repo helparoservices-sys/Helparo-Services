@@ -323,6 +323,11 @@ export default function HelperServicesPage() {
   }
 
   const toggleServiceArea = (areaId: string) => {
+    // Don't allow selecting already-added areas
+    if (editedServiceAreaIds.includes(areaId)) {
+      return
+    }
+    
     setSelectedServiceAreaIds(prev =>
       prev.includes(areaId)
         ? prev.filter(id => id !== areaId)
@@ -765,27 +770,27 @@ export default function HelperServicesPage() {
                               return (
                                 <label
                                   key={area.id}
-                                  className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${
+                                  className={`flex items-center gap-3 p-3 transition-colors ${
                                     isAlreadyAdded 
-                                      ? 'bg-red-50 hover:bg-red-100' 
-                                      : 'hover:bg-gray-50'
+                                      ? 'bg-red-50 cursor-not-allowed' 
+                                      : 'hover:bg-gray-50 cursor-pointer'
                                   }`}
                                 >
                                   <input
                                     type="checkbox"
-                                    checked={isSelected}
+                                    checked={isAlreadyAdded ? false : isSelected}
                                     onChange={() => toggleServiceArea(area.id)}
                                     disabled={isAlreadyAdded}
-                                    className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 disabled:opacity-50"
+                                    className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 disabled:opacity-30 disabled:cursor-not-allowed"
                                   />
                                   <span className={`text-sm flex-1 ${
                                     isAlreadyAdded 
-                                      ? 'text-red-700 font-medium' 
+                                      ? 'text-red-700 font-medium line-through' 
                                       : 'text-gray-900'
                                   }`}>
                                     {area.name}
                                     {isAlreadyAdded && (
-                                      <span className="ml-2 text-xs text-red-600">(Already added)</span>
+                                      <span className="ml-2 text-xs text-red-600 font-bold no-underline">(✓ Already in your list)</span>
                                     )}
                                   </span>
                                 </label>
