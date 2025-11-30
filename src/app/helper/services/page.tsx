@@ -83,6 +83,19 @@ export default function HelperServicesPage() {
       setEditedWorkingHours(profileData.working_hours || {})
       setEditedServiceCategories(profileData.service_categories || [])
       setEditedServiceAreas(profileData.service_areas || [])
+      
+      // Load service area IDs from area names
+      if (profileData.service_areas && profileData.service_areas.length > 0) {
+        const supabase = createClient()
+        const { data: areaData } = await supabase
+          .from('service_areas')
+          .select('id')
+          .in('name', profileData.service_areas)
+        
+        if (areaData) {
+          setEditedServiceAreaIds(areaData.map(a => a.id))
+        }
+      }
     }
 
     setLoading(false)
@@ -215,7 +228,7 @@ export default function HelperServicesPage() {
     setSaving(false)
   }
 
-  const cancelEdit = () => {
+  const cancelEdit = async () => {
     if (profile) {
       setEditedServiceRadius(profile.service_radius_km || 10)
       setEditedExperience(profile.experience_years)
@@ -223,6 +236,21 @@ export default function HelperServicesPage() {
       setEditedWorkingHours(profile.working_hours || {})
       setEditedServiceCategories(profile.service_categories || [])
       setEditedServiceAreas(profile.service_areas || [])
+      
+      // Reload service area IDs
+      if (profile.service_areas && profile.service_areas.length > 0) {
+        const supabase = createClient()
+        const { data: areaData } = await supabase
+          .from('service_areas')
+          .select('id')
+          .in('name', profile.service_areas)
+        
+        if (areaData) {
+          setEditedServiceAreaIds(areaData.map(a => a.id))
+        }
+      } else {
+        setEditedServiceAreaIds([])
+      }
     }
     setEditing(false)
   }
