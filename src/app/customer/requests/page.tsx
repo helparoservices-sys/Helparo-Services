@@ -127,7 +127,7 @@ export default function CustomerRequestsList() {
               My Service Requests
             </h1>
             <p className="mt-2 text-slate-600 dark:text-slate-400">
-              Manage your service requests and track their progress
+              Post requests, receive bids from helpers, track active jobs, and review completed work
             </p>
           </div>
           <Link

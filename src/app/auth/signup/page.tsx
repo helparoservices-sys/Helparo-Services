@@ -6,9 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Sparkles, Eye, EyeOff, CheckCircle, XCircle, Loader2, MapPin } from 'lucide-react'
+import { Sparkles, Eye, EyeOff, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
-import { createClient } from '@/lib/supabase/client'
 import { LegalModal } from '@/components/legal/legal-modal'
 import { toast } from 'sonner'
 
@@ -25,162 +24,15 @@ function SignUpForm() {
     phone: '',
     countryCode: '+91',
     role: defaultRole as 'customer' | 'helper' | 'admin',
-    state: '',
-    city: '',
-    address: '',
-    pincode: '',
   })
 
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [detecting, setDetecting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [showTerms, setShowTerms] = useState(false)
   const [showPrivacy, setShowPrivacy] = useState(false)
-
-  // Location state
-  const [states, setStates] = useState<any[]>([])
-  const [cities, setCities] = useState<any[]>([])
-  const [loadingStates, setLoadingStates] = useState(false)
-  const [loadingCities, setLoadingCities] = useState(false)
-
-  useEffect(() => {
-    loadStates()
-  }, [])
-
-  const loadStates = async () => {
-    setLoadingStates(true)
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('service_areas')
-      .select('id, name')
-      .eq('level', 'state')
-      .eq('is_active', true)
-      .order('display_order')
-    
-    setStates(data || [])
-    setLoadingStates(false)
-  }
-
-  const loadCities = async (stateName: string) => {
-    setLoadingCities(true)
-    const supabase = createClient()
-    
-    // Find state by name
-    const state = states.find(s => s.name === stateName)
-    if (!state) {
-      setLoadingCities(false)
-      return [] as any[]
-    }
-
-    // First get all districts for this state
-    const { data: districts } = await supabase
-      .from('service_areas')
-      .select('id')
-      .eq('parent_id', state.id)
-      .eq('level', 'district')
-      .eq('is_active', true)
-
-    if (!districts || districts.length === 0) {
-      setCities([])
-      setLoadingCities(false)
-      return [] as any[]
-    }
-
-    // Get all cities from all districts
-    const districtIds = districts.map(d => d.id)
-    const { data } = await supabase
-      .from('service_areas')
-      .select('id, name')
-      .in('parent_id', districtIds)
-      .eq('level', 'city')
-      .eq('is_active', true)
-      .order('name')
-    
-    setCities(data || [])
-    setLoadingCities(false)
-    return data || []
-  }
-
-  const handleStateChange = (stateName: string) => {
-    setFormData({ ...formData, state: stateName, city: '' })
-    setCities([])
-    if (stateName) {
-      loadCities(stateName)
-    }
-  }
-
-  const detectLocation = async () => {
-    setDetecting(true)
-
-    if (!navigator.geolocation) {
-      toast.error('Geolocation is not supported by your browser')
-      setDetecting(false)
-      return
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords
-        
-        try {
-          const response = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`, { cache: 'no-store' })
-          if (response.ok) {
-            const geo = await response.json()
-
-            const formattedAddress = geo.formatted_address || ''
-            const detectedPincode = geo.pincode || ''
-            const detectedState = (geo.state || '').toString()
-            const detectedCity = (geo.city || '').toString()
-
-            // Try to auto-select state from service_areas list (case-insensitive)
-            let selectedState = formData.state
-            if (detectedState) {
-              const match = states.find(s => s.name.toLowerCase() === detectedState.toLowerCase())
-              if (match) {
-                selectedState = match.name
-                setFormData(prev => ({ ...prev, state: match.name, city: '' }))
-                // Ensure cities are loaded for this state, then set city if matched
-                const loaded = await loadCities(match.name)
-                if (detectedCity) {
-                  const cityMatch = loaded.find((c: any) => c.name.toLowerCase() === detectedCity.toLowerCase())
-                  if (cityMatch) {
-                    setFormData(prev => ({ ...prev, city: cityMatch.name }))
-                  }
-                }
-              }
-            }
-
-            setFormData(prev => ({
-              ...prev,
-              address: formattedAddress,
-              pincode: detectedPincode,
-            }))
-
-            if (geo.source === 'nominatim') {
-              const { LOCATION_FALLBACK_WARNING } = await import('@/lib/constants')
-              toast.warning(LOCATION_FALLBACK_WARNING)
-            } else {
-              toast.success('✓ Location detected successfully!')
-            }
-          } else {
-            toast.error('Failed to detect location. Please enter manually.')
-          }
-        } catch (error) {
-          console.error('Geocoding error:', error)
-          toast.error('Failed to detect location. Please enter manually.')
-        }
-        
-        setDetecting(false)
-      },
-      () => {
-        toast.error('Location permission denied. Please enter manually.')
-        setDetecting(false)
-      }
-    )
-  }
 
   // Password strength validation
   const passwordStrength = {
@@ -208,12 +60,7 @@ function SignUpForm() {
         throw new Error('Passwords do not match')
       }
 
-      // Validate location fields
-      if (!formData.state || !formData.city || !formData.address || !formData.pincode) {
-        throw new Error('Please fill in all location fields')
-      }
-
-      // Sign up with Supabase
+      // Sign up with Supabase Auth
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -223,22 +70,20 @@ function SignUpForm() {
             phone: formData.phone,
             country_code: formData.countryCode,
             role: formData.role,
-            state: formData.state,
-            city: formData.city,
-            address: formData.address,
-            pincode: formData.pincode,
           },
           emailRedirectTo: `${window.location.origin}/auth/confirm`,
         },
       })
-
+      
       if (signUpError) throw signUpError
 
       if (data.user) {
         setSuccess(true)
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during sign up')
+    } catch (err: unknown) {
+      const error = err as { message?: string }
+      console.error('Signup error:', err)
+      setError(error?.message || 'An error occurred during sign up')
     } finally {
       setLoading(false)
     }
@@ -409,97 +254,6 @@ function SignUpForm() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   required
-                  className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
-                />
-              </div>
-            </div>
-
-            {/* Location Section */}
-            <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-              <div className="flex items-center justify-between mb-2">
-                <Label className="text-slate-700 dark:text-slate-300">Location Details</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={detectLocation}
-                  disabled={detecting}
-                  className="text-xs"
-                >
-                  {detecting ? (
-                    <>
-                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                      Detecting...
-                    </>
-                  ) : (
-                    <>
-                      <MapPin className="mr-1 h-3 w-3" />
-                      Auto Detect
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {/* State & City Row */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-2">
-                  <Label htmlFor="state" className="text-xs text-slate-600 dark:text-slate-400">State *</Label>
-                  <select
-                    id="state"
-                    value={formData.state}
-                    onChange={(e) => handleStateChange(e.target.value)}
-                    disabled={loadingStates}
-                    required
-                    className="flex h-10 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 disabled:opacity-50"
-                  >
-                    <option value="">{loadingStates ? 'Loading states...' : 'Select State'}</option>
-                    {states.map(state => (
-                      <option key={state.id} value={state.name}>{state.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="city" className="text-xs text-slate-600 dark:text-slate-400">City *</Label>
-                  <select
-                    id="city"
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    disabled={!formData.state || loadingCities}
-                    required
-                    className="flex h-10 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 disabled:opacity-50"
-                  >
-                    <option value="">{loadingCities ? 'Loading cities...' : 'Select City'}</option>
-                    {cities.map(city => (
-                      <option key={city.id} value={city.name}>{city.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Address */}
-              <div className="space-y-2">
-                <Label htmlFor="address" className="text-xs text-slate-600 dark:text-slate-400">Address *</Label>
-                <Input
-                  id="address"
-                  placeholder="House no, Street, Area"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  required
-                  className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
-                />
-              </div>
-
-              {/* Pincode */}
-              <div className="space-y-2">
-                <Label htmlFor="pincode" className="text-xs text-slate-600 dark:text-slate-400">PIN Code *</Label>
-                <Input
-                  id="pincode"
-                  placeholder="500034"
-                  value={formData.pincode}
-                  onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
-                  required
-                  maxLength={6}
                   className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
                 />
               </div>

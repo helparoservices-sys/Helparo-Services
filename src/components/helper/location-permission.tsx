@@ -63,10 +63,6 @@ export function LocationPermissionPrompt() {
             city = geo.city || ''
             state = geo.state || ''
             pincode = geo.pincode || ''
-            if (geo.source === 'nominatim') {
-              const { LOCATION_FALLBACK_WARNING } = await import('@/lib/constants')
-              showError('Please verify address', LOCATION_FALLBACK_WARNING)
-            }
           }
         } catch {}
 

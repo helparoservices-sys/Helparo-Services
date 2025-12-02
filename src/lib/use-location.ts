@@ -52,11 +52,10 @@ export const useLocation = () => {
         locality: ''
       }
 
-      const { LOCATION_FALLBACK_WARNING } = await import('@/lib/constants')
       setLocation(prev => ({
         ...prev,
         address,
-        error: geo.source === 'nominatim' ? LOCATION_FALLBACK_WARNING : null
+        error: null
       }))
 
       return address

@@ -115,7 +115,7 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'role', 'customer')::user_role,
     NEW.raw_user_meta_data->>'full_name',
     NEW.raw_user_meta_data->>'phone',
-    COALESCE(NEW.raw_user_meta_data->>'country_code', '+1')
+    COALESCE(NEW.raw_user_meta_data->>'country_code', '+91')
   );
   RETURN NEW;
 END;

@@ -15,11 +15,15 @@ import {
   Search,
   Wallet,
   FileText,
-  TrendingUp
+  TrendingUp,
+  Power,
+  Zap
 } from 'lucide-react'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { getHelperDashboardStats } from '@/app/actions/helper-dashboard'
+import { getHelperAvailability, toggleHelperAvailability, toggleEmergencyAvailability } from '@/app/actions/helper-availability'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 
 interface DashboardStats {
   earnings: {
@@ -64,9 +68,14 @@ export default function HelperDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [isAvailableNow, setIsAvailableNow] = useState(false)
+  const [emergencyAvailable, setEmergencyAvailable] = useState(false)
+  const [togglingAvailability, setTogglingAvailability] = useState(false)
+  const [togglingEmergency, setTogglingEmergency] = useState(false)
 
   useEffect(() => {
     checkProfile()
+    loadAvailability()
   }, [])
 
   const checkProfile = async () => {
@@ -101,6 +110,49 @@ export default function HelperDashboard() {
     }
     
     setLoading(false)
+  }
+
+  const loadAvailability = async () => {
+    const result = await getHelperAvailability()
+    console.log('🔍 Dashboard received availability:', result)
+    if ('error' in result) {
+      console.error('Failed to load availability:', result.error)
+    } else {
+      console.log('✅ Setting state:', { 
+        isAvailableNow: result.isAvailableNow, 
+        emergencyAvailable: result.emergencyAvailable 
+      })
+      setIsAvailableNow(result.isAvailableNow)
+      setEmergencyAvailable(result.emergencyAvailable)
+    }
+  }
+
+  const handleAvailabilityToggle = async (newValue: boolean) => {
+    setTogglingAvailability(true)
+    const result = await toggleHelperAvailability(newValue)
+    
+    if ('error' in result) {
+      toast.error(result.error)
+    } else {
+      setIsAvailableNow(newValue)
+      toast.success(newValue ? 'You are now available for jobs' : 'You are now unavailable')
+    }
+    
+    setTogglingAvailability(false)
+  }
+
+  const handleEmergencyToggle = async (newValue: boolean) => {
+    setTogglingEmergency(true)
+    const result = await toggleEmergencyAvailability(newValue)
+    
+    if ('error' in result) {
+      toast.error(result.error)
+    } else {
+      setEmergencyAvailable(newValue)
+      toast.success(newValue ? 'Emergency availability enabled' : 'Emergency availability disabled')
+    }
+    
+    setTogglingEmergency(false)
   }
 
   if (loading) {
@@ -186,6 +238,73 @@ export default function HelperDashboard() {
           </div>
         </div>
       )}
+
+      {/* Availability Toggles */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Available Now Toggle */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border-2 border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-3 rounded-lg ${isAvailableNow ? 'bg-green-100 dark:bg-green-900/30' : 'bg-slate-100 dark:bg-slate-700'}`}>
+                <Power className={`h-6 w-6 ${isAvailableNow ? 'text-green-600 dark:text-green-400' : 'text-slate-400'}`} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900 dark:text-white">Available Now</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  {isAvailableNow ? 'Accepting job requests' : 'Not accepting jobs'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => handleAvailabilityToggle(!isAvailableNow)}
+              disabled={togglingAvailability}
+              className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                isAvailableNow 
+                  ? 'bg-green-600 focus:ring-green-500' 
+                  : 'bg-slate-300 dark:bg-slate-600 focus:ring-slate-500'
+              } ${togglingAvailability ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <span
+                className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                  isAvailableNow ? 'translate-x-7' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* Emergency Available Toggle */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border-2 border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-3 rounded-lg ${emergencyAvailable ? 'bg-red-100 dark:bg-red-900/30' : 'bg-slate-100 dark:bg-slate-700'}`}>
+                <Zap className={`h-6 w-6 ${emergencyAvailable ? 'text-red-600 dark:text-red-400' : 'text-slate-400'}`} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900 dark:text-white">Emergency Available</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  {emergencyAvailable ? 'Accepting urgent requests' : 'Not accepting emergencies'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => handleEmergencyToggle(!emergencyAvailable)}
+              disabled={togglingEmergency}
+              className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                emergencyAvailable 
+                  ? 'bg-red-600 focus:ring-red-500' 
+                  : 'bg-slate-300 dark:bg-slate-600 focus:ring-slate-500'
+              } ${togglingEmergency ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <span
+                className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                  emergencyAvailable ? 'translate-x-7' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

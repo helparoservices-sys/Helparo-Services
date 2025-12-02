@@ -35,7 +35,6 @@ export default function CustomerSidebar({ collapsed }: SidebarProps) {
         { icon: LayoutDashboard, label: 'Dashboard', href: '/customer/dashboard' },
         { icon: Search, label: 'Find Helpers', href: '/customer/find-helpers' },
         { icon: ClipboardList, label: 'My Requests', href: '/customer/requests' },
-        { icon: Package, label: 'My Bookings', href: '/customer/bookings' },
       ]
     },
     {

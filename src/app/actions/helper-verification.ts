@@ -109,7 +109,17 @@ export async function uploadVerificationDocuments(formData: FormData) {
 
     await uploadFile(idFront, 'id_front', validation1.sanitizedName!)
     if (idBack) await uploadFile(idBack, 'id_back', validateFile(idBack, ALLOWED_MIME_TYPES.VERIFICATION, FILE_SIZE_LIMITS.DOCUMENT).sanitizedName!)
-    await uploadFile(selfie, 'selfie', validation2.sanitizedName!)
+    const selfiePath = await uploadFile(selfie, 'selfie', validation2.sanitizedName!)
+
+    // Get public URL for selfie and update profile avatar_url
+    const { data: { publicUrl } } = supabase.storage.from('kyc').getPublicUrl(selfiePath)
+    
+    await supabase
+      .from('profiles')
+      .update({ avatar_url: publicUrl })
+      .eq('id', user.id)
+
+    console.log('✅ Updated avatar_url:', publicUrl)
 
     // Update helper profile
     await supabase
@@ -219,6 +229,12 @@ export async function uploadOnboardingDocuments(formData: FormData) {
       .insert(documentsToInsert)
     
     if (insertError) throw insertError
+
+    // Update profile avatar_url with selfie
+    await supabase
+      .from('profiles')
+      .update({ avatar_url: selfieResult.url })
+      .eq('id', user.id)
 
     // Update profile verification status (pending review)
     await supabase

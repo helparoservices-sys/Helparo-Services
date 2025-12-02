@@ -439,6 +439,160 @@ export async function findBestMatchingHelpers(serviceRequestId: string, limit = 
   }
 }
 
+/**
+ * Search helpers directly by filters (WITHOUT needing a service request)
+ * For "Find Helpers" page
+ */
+export async function searchHelpersByFilters(filters: {
+  serviceCategory: string
+  customerLat?: number
+  customerLng?: number
+  maxDistance?: number
+  minRating?: number
+  limit?: number
+}) {
+  try {
+    const supabase = await createClient()
+    
+    const { serviceCategory, customerLat, customerLng, maxDistance = 50, minRating = 0, limit = 20 } = filters
+
+    console.log('🔍 searchHelpersByFilters called with:', {
+      serviceCategory,
+      customerLat,
+      customerLng,
+      maxDistance,
+      minRating,
+      limit
+    })
+
+    // Build query to find helpers with matching service
+    let query = supabase
+      .from('helper_profiles')
+      .select(`
+        id,
+        user_id,
+        service_categories,
+        skills,
+        years_of_experience,
+        hourly_rate,
+        latitude,
+        longitude,
+        address,
+        service_radius_km,
+        service_areas,
+        is_available_now,
+        emergency_availability,
+        total_jobs_completed,
+        response_rate_percent,
+        completion_rate_percent,
+        profiles!inner (
+          id,
+          full_name,
+          email,
+          phone,
+          avatar_url
+        )
+      `)
+      .eq('is_approved', true)
+      .eq('is_available_now', true)
+      .contains('service_categories', [serviceCategory])
+
+    const { data: helpers, error } = await query
+
+    console.log('📊 Database query result:', {
+      helpersCount: helpers?.length || 0,
+      error: error?.message,
+      firstHelper: helpers?.[0] ? 'Found helpers' : 'No helpers'
+    })
+
+    if (error) throw error
+    if (!helpers || helpers.length === 0) {
+      return { success: true, helpers: [] }
+    }
+
+    // Calculate match scores and filter by distance
+    const matchedHelpers = helpers
+      .map((helper: any) => {
+        let matchScore = 0
+        let distance = 0
+
+        // 1. Service category match (base score)
+        matchScore += 30
+
+        // 2. Distance scoring (if customer location provided)
+        if (customerLat && customerLng && helper.latitude && helper.longitude) {
+          distance = calculateDistance(customerLat, customerLng, helper.latitude, helper.longitude)
+          
+          if (distance <= 5) matchScore += 25
+          else if (distance <= 10) matchScore += 15
+          else if (distance <= 20) matchScore += 8
+          else if (distance <= maxDistance) matchScore += 3
+          else return null // Too far, exclude
+        }
+
+        // 3. Experience bonus
+        if (helper.years_of_experience >= 10) matchScore += 15
+        else if (helper.years_of_experience >= 5) matchScore += 10
+        else if (helper.years_of_experience >= 2) matchScore += 5
+
+        // 4. Rating bonus (calculate from completion rate as proxy)
+        const estimatedRating = (helper.completion_rate_percent || 0) / 20 // 0-100 -> 0-5
+        if (estimatedRating < minRating) return null // Filter out low ratings
+        
+        if (estimatedRating >= 4.5) matchScore += 15
+        else if (estimatedRating >= 4.0) matchScore += 10
+        else if (estimatedRating >= 3.5) matchScore += 5
+
+        // 5. Availability bonus
+        if (helper.is_available_now) matchScore += 10
+        if (helper.emergency_availability) matchScore += 5
+
+        // 6. Jobs completed bonus
+        if (helper.total_jobs_completed >= 50) matchScore += 10
+        else if (helper.total_jobs_completed >= 20) matchScore += 5
+        else if (helper.total_jobs_completed >= 5) matchScore += 2
+
+        return {
+          helper_id: helper.id, // Use helper profile ID, not user_id
+          match_score: Math.min(matchScore, 100),
+          helper: {
+            id: helper.id, // Use helper profile ID, not user_id
+            full_name: helper.profiles.full_name,
+            email: helper.profiles.email,
+            phone: helper.profiles.phone,
+            avatar_url: helper.profiles.avatar_url,
+            hourly_rate: helper.hourly_rate,
+            years_of_experience: helper.years_of_experience,
+            skills: helper.skills,
+            address: helper.address,
+            service_areas: helper.service_areas,
+            total_bookings: helper.total_jobs_completed,
+            rating: estimatedRating,
+            response_rate: helper.response_rate_percent,
+            completion_rate: helper.completion_rate_percent,
+          },
+          matching_factors: {
+            specialization_match: true,
+            location_proximity: distance,
+            availability_match: helper.is_available_now,
+            rating_bonus: estimatedRating >= 4.0 ? 10 : 0,
+            experience_bonus: helper.years_of_experience >= 5 ? 10 : 0,
+            emergency_available: helper.emergency_availability,
+          }
+        }
+      })
+      .filter(Boolean) // Remove nulls (filtered out helpers)
+      .sort((a: any, b: any) => b.match_score - a.match_score)
+      .slice(0, limit)
+
+    logger.info('Helpers search completed', { category: serviceCategory, found: matchedHelpers.length })
+    return { success: true, helpers: matchedHelpers }
+  } catch (error: any) {
+    logger.error('Search helpers error', { error })
+    return handleServerActionError(error)
+  }
+}
+
 // Helper function to calculate distance between two coordinates (Haversine formula)
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371 // Earth's radius in km

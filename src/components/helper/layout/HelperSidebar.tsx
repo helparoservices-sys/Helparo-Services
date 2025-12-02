@@ -63,12 +63,6 @@ export default function HelperSidebar({ collapsed }: HelperSidebarProps) {
     {
       label: 'My Jobs',
       icon: Briefcase,
-      href: '/helper/assigned',
-      requiresVerification: true
-    },
-    {
-      label: 'My Bookings',
-      icon: FileText,
       href: '/helper/bookings',
       requiresVerification: true
     },

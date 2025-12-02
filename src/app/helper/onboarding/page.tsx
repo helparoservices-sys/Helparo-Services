@@ -568,10 +568,6 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
             const geo = await response.json()
             const formattedAddress = geo.formatted_address || ''
             const detectedPincode = geo.pincode || ''
-            if (geo.source === 'nominatim') {
-              const { LOCATION_FALLBACK_WARNING } = await import('@/lib/constants')
-              setLocationError(LOCATION_FALLBACK_WARNING)
-            }
 
             onChange({
               address: formattedAddress,
@@ -580,7 +576,7 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
               longitude: longitude.toFixed(6)
             })
 
-            toast.success('✓ Location detected and address filled successfully!')
+            toast.success('✓ Location detected successfully!')
           } else {
             onChange({
               latitude: latitude.toFixed(6),
@@ -692,7 +688,7 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
                 Auto-Detect Your Location
               </h4>
               <p className="text-xs text-slate-600 dark:text-slate-400">
-                Allow location access to automatically fill your address details
+                Uses Google Maps to detect your location. If incorrect, please enter manually below.
               </p>
             </div>
             <button
@@ -729,10 +725,13 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
           <textarea
             value={data.address || ''}
             onChange={(e) => onChange({ address: e.target.value })}
-            placeholder="Enter your complete address"
+            placeholder="Enter your complete address (or use auto-detect above)"
             className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             rows={3}
           />
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            💡 If auto-detect shows wrong location, you can edit it here manually
+          </p>
         </div>
 
         {/* Pincode & Service Radius */}

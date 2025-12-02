@@ -7,7 +7,7 @@ type GeoResult = {
   city: string | null
   lat: number
   lng: number
-  source: 'google' | 'nominatim'
+  source: 'google'
 }
 
 function component(components: any[], type: string): string | null {
@@ -30,76 +30,46 @@ export async function GET(req: NextRequest) {
 
     const language = 'en-IN'
 
-    // Try Google first if API key present
+    // Google Maps Geocoding API (REQUIRED)
     const googleKey = process.env.GOOGLE_MAPS_API_KEY
-    if (googleKey) {
-      try {
-        const gUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${googleKey}&language=${language}`
-        const gRes = await fetch(gUrl, { cache: 'no-store' })
-        if (gRes.ok) {
-          const gData = await gRes.json()
-          const result = gData?.results?.[0]
-          if (result) {
-            const comps = result.address_components || []
-            const city = norm(
-              component(comps, 'locality') ||
-              component(comps, 'postal_town') ||
-              component(comps, 'sublocality') ||
-              component(comps, 'administrative_area_level_2')
-            ) || null
-            const state = norm(component(comps, 'administrative_area_level_1')) || null
-            const pincode = norm(component(comps, 'postal_code')) || null
-            const payload: GeoResult = {
-              formatted_address: result.formatted_address,
-              pincode,
-              state,
-              city,
-              lat,
-              lng,
-              source: 'google'
-            }
-            return NextResponse.json(payload, { headers: { 'Cache-Control': 'no-store' } })
-          }
-        }
-      } catch {
-        // fallthrough to nominatim
-      }
+    if (!googleKey) {
+      return NextResponse.json({ error: 'Google Maps API key not configured' }, { status: 500 })
     }
 
-    // Fallback to Nominatim
-    const nUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&zoom=18`
-    const nRes = await fetch(nUrl, {
-      headers: {
-        'User-Agent': 'HelparoServices/1.0 (reverse-geocode)'
-      },
-      cache: 'no-store'
-    })
-    if (!nRes.ok) {
-      return NextResponse.json({ error: 'Reverse geocoding failed' }, { status: 502 })
+    const gUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${googleKey}&language=${language}`
+    const gRes = await fetch(gUrl, { cache: 'no-store' })
+    
+    if (!gRes.ok) {
+      return NextResponse.json({ error: 'Geocoding service unavailable' }, { status: 502 })
     }
-    const nData = await nRes.json()
-    const addr = nData?.address || {}
-    const city = norm(addr.city || addr.town || addr.village || addr.suburb || addr.county) || null
-    const state = norm(addr.state) || null
-    const pincode = norm(addr.postcode || addr.postal_code) || null
-    const formatted = norm(nData.display_name) || [
-      addr.house_number,
-      addr.road || addr.street,
-      addr.suburb || addr.neighbourhood || addr.locality,
-      addr.city || addr.town || addr.village,
-      addr.state,
-      addr.postcode
-    ].filter(Boolean).join(', ')
 
+    const gData = await gRes.json()
+    const result = gData?.results?.[0]
+    
+    if (!result) {
+      return NextResponse.json({ error: 'Location not found' }, { status: 404 })
+    }
+
+    const comps = result.address_components || []
+    const city = norm(
+      component(comps, 'locality') ||
+      component(comps, 'postal_town') ||
+      component(comps, 'sublocality') ||
+      component(comps, 'administrative_area_level_2')
+    ) || null
+    const state = norm(component(comps, 'administrative_area_level_1')) || null
+    const pincode = norm(component(comps, 'postal_code')) || null
+    
     const payload: GeoResult = {
-      formatted_address: formatted,
+      formatted_address: result.formatted_address,
       pincode,
       state,
       city,
       lat,
       lng,
-      source: 'nominatim'
+      source: 'google'
     }
+    
     return NextResponse.json(payload, { headers: { 'Cache-Control': 'no-store' } })
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Unknown error' }, { status: 500 })
