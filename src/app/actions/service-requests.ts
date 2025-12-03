@@ -312,6 +312,17 @@ export async function getHelperServiceRequests() {
       user_id: user.id 
     })
 
+    // First, let's check total open requests without filters (for debugging)
+    const { count: totalOpenRequests } = await supabase
+      .from('service_requests')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'open')
+    
+    logger.info('Total open requests in database', { 
+      count: totalOpenRequests,
+      helper_id: helperProfile.id 
+    })
+
     // Get all open service requests
     const { data: requests, error } = await supabase
       .from('service_requests')
@@ -349,8 +360,18 @@ export async function getHelperServiceRequests() {
 
     logger.info('Service requests fetched', { 
       count: requests?.length || 0,
-      helper_id: helperProfile.id
+      helper_id: helperProfile.id,
+      requests_sample: requests?.slice(0, 2) // Log first 2 requests for debugging
     })
+
+    // If no requests, log why
+    if (!requests || requests.length === 0) {
+      logger.warn('No service requests found', {
+        helper_id: helperProfile.id,
+        user_id: user.id,
+        message: 'Check if there are any open requests in the database and if RLS policies are correct'
+      })
+    }
 
     type RequestWithRelations = {
       id: string

@@ -104,12 +104,22 @@ export default function HelperRequestsPage() {
 
   const loadRequests = async () => {
     setLoading(true)
+    console.log('🔍 Fetching service requests...')
     const result = await getHelperServiceRequests()
     
+    console.log('📦 Result from getHelperServiceRequests:', result)
+    
     if ('error' in result) {
+      console.error('❌ Error loading requests:', result.error)
       toast.error(result.error || 'Failed to load requests')
+      setRequests([])
     } else if ('requests' in result) {
+      console.log('✅ Requests loaded:', result.requests.length, 'requests')
+      console.log('📋 Requests data:', result.requests)
       setRequests(result.requests)
+    } else {
+      console.warn('⚠️ Unexpected result format:', result)
+      setRequests([])
     }
     
     setLoading(false)
