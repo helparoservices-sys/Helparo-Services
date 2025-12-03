@@ -21,12 +21,12 @@ interface AddressAutocompleteProps {
   value: string
   onChange: (value: string) => void
   onAddressSelect?: (address: {
-    formatted_address: string
+    display_name: string
     city: string
     state: string
     pincode: string
-    latitude: number
-    longitude: number
+    lat: number
+    lng: number
   }) => void
   placeholder?: string
   required?: boolean
@@ -66,12 +66,12 @@ export function AddressAutocomplete({
       onChange(address.formatted_address)
       if (onAddressSelect) {
         onAddressSelect({
-          formatted_address: address.formatted_address,
+          display_name: address.formatted_address,
           city: address.city,
           state: address.state,
           pincode: address.pincode,
-          latitude: coordinates.latitude,
-          longitude: coordinates.longitude
+          lat: coordinates.latitude,
+          lng: coordinates.longitude
         })
       }
     }
@@ -117,17 +117,19 @@ export function AddressAutocomplete({
   const handleSuggestionClick = async (suggestion: AddressSuggestion) => {
     const addr = suggestion.address || {}
     const selectedAddress = {
-      formatted_address: suggestion.display_name,
+      display_name: suggestion.display_name,
       city: addr.city || addr.town || addr.village || '',
       state: addr.state || '',
-      pincode: addr.postcode || '',
-      latitude: parseFloat(suggestion.lat),
-      longitude: parseFloat(suggestion.lon)
+      pincode: addr.postcode || addr.pincode || '',
+      lat: parseFloat(suggestion.lat),
+      lng: parseFloat(suggestion.lon)
     }
 
     onChange(suggestion.display_name)
     setShowSuggestions(false)
     setSuggestions([])
+    
+    console.log('✅ Address selected:', selectedAddress)
     onAddressSelect?.(selectedAddress)
   }
 
@@ -136,12 +138,12 @@ export function AddressAutocomplete({
     if (coords && address) {
       onChange(address.formatted_address)
       onAddressSelect?.({
-        formatted_address: address.formatted_address,
+        display_name: address.formatted_address,
         city: address.city,
         state: address.state,
         pincode: address.pincode,
-        latitude: coords.latitude,
-        longitude: coords.longitude
+        lat: coords.latitude,
+        lng: coords.longitude
       })
     }
   }

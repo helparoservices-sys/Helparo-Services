@@ -45,7 +45,10 @@ export async function createServiceRequest(formData: z.infer<typeof createServic
     // Sanitize text inputs (prevent XSS)
     const sanitizedTitle = sanitizeText(validatedData.title)
     const sanitizedDescription = sanitizeHTML(validatedData.description)
+    const sanitizedAddress = validatedData.service_address ? sanitizeText(validatedData.service_address) : null
     const sanitizedCity = validatedData.city ? sanitizeText(validatedData.city) : null
+    const sanitizedState = validatedData.state ? sanitizeText(validatedData.state) : null
+    const sanitizedPincode = validatedData.pincode ? sanitizeText(validatedData.pincode) : null
     const sanitizedCountry = validatedData.country ? sanitizeText(validatedData.country) : null
 
     // Additional security checks
@@ -65,12 +68,18 @@ export async function createServiceRequest(formData: z.infer<typeof createServic
         category_id: validatedData.category_id,
         title: sanitizedTitle,
         description: sanitizedDescription,
-        city: sanitizedCity,
+        service_address: sanitizedAddress,
+        service_city: sanitizedCity,
+        service_state: sanitizedState,
+        service_pincode: sanitizedPincode,
+        city: sanitizedCity, // Keep for backward compatibility
         country: sanitizedCountry,
         budget_min: validatedData.budget_min || null,
         budget_max: validatedData.budget_max || null,
-        latitude: validatedData.latitude || null,
-        longitude: validatedData.longitude || null,
+        service_location_lat: validatedData.latitude || null,
+        service_location_lng: validatedData.longitude || null,
+        latitude: validatedData.latitude || null, // Keep for backward compatibility
+        longitude: validatedData.longitude || null, // Keep for backward compatibility
         status: 'open',
         created_at: new Date().toISOString(),
       })

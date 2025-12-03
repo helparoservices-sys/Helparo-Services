@@ -67,10 +67,15 @@ export default function NewRequestPage() {
         category_id: form.category_id,
         title: form.title,
         description: form.description,
+        service_address: form.address || undefined,
         city: form.city || undefined,
+        state: form.state || undefined,
+        pincode: form.pincode || undefined,
         country: form.country || 'India',
         budget_min: form.budget_min ? Number(form.budget_min) : undefined,
         budget_max: form.budget_max ? Number(form.budget_max) : undefined,
+        latitude: form.location_lat || undefined,
+        longitude: form.location_lng || undefined,
       })
 
       if ('error' in result && result.error) {
@@ -79,9 +84,9 @@ export default function NewRequestPage() {
 
       setSuccess('✅ Request created successfully! Matching helpers will be notified.')
       
-      // Redirect to requests list after 2 seconds
+      // Redirect to bookings page after 2 seconds
       setTimeout(() => {
-        router.push('/customer/requests')
+        router.push('/customer/bookings')
       }, 2000)
     } catch (e: any) {
       setError(e.message || 'Failed to create request')

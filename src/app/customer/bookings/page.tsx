@@ -79,6 +79,8 @@ export default function CustomerBookingsPage() {
         assigned_helper_id,
         service_address,
         service_city,
+        service_state,
+        service_pincode,
         budget_min,
         budget_max,
         helper_profile:assigned_helper_id (
@@ -91,7 +93,6 @@ export default function CustomerBookingsPage() {
       .order('created_at', { ascending: false })
 
     if (!error && bookingsData) {
-      // Transform the data to match the Booking interface
       const transformedBookings = bookingsData.map((booking: typeof bookingsData[0]) => ({
         ...booking,
         helper_profile: Array.isArray(booking.helper_profile) && booking.helper_profile.length > 0

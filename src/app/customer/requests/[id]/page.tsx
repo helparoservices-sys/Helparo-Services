@@ -160,7 +160,9 @@ export default function RequestDetailPage() {
         .eq('reviewee_id', r.assigned_helper_id)
         .maybeSingle()
       
-      if (rev) setReviewed(true)
+      if (rev) {
+        setReviewed(true)
+      }
     }
 
     setLoading(false)

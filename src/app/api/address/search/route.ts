@@ -29,17 +29,38 @@ export async function GET(req: NextRequest) {
     }
     
     // Normalize shape to consumer expectations
-    const results = gData.results.map((r: any) => ({
-      display_name: r.formatted_address || r.name,
-      lat: r.geometry?.location?.lat?.toString?.() || '',
-      lon: r.geometry?.location?.lng?.toString?.() || '',
-      address: {
-        city: null,
-        state: null,
-        pincode: null
-      },
-      source: 'google'
-    }))
+    const results = gData.results.map((r: any) => {
+      // Parse address_components to extract city, state, pincode
+      const components = r.address_components || []
+      let city = ''
+      let state = ''
+      let pincode = ''
+      
+      components.forEach((component: any) => {
+        const types = component.types || []
+        if (types.includes('locality')) {
+          city = component.long_name
+        } else if (types.includes('administrative_area_level_3') && !city) {
+          city = component.long_name
+        } else if (types.includes('administrative_area_level_1')) {
+          state = component.long_name
+        } else if (types.includes('postal_code')) {
+          pincode = component.long_name
+        }
+      })
+      
+      return {
+        display_name: r.formatted_address || r.name,
+        lat: r.geometry?.location?.lat?.toString?.() || '',
+        lon: r.geometry?.location?.lng?.toString?.() || '',
+        address: {
+          city: city || null,
+          state: state || null,
+          pincode: pincode || null
+        },
+        source: 'google'
+      }
+    })
     
     return NextResponse.json({ results }, { headers: { 'Cache-Control': 'no-store' } })
   } catch {
