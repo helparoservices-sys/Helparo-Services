@@ -138,7 +138,7 @@ export default function HelperRequestsPage() {
       if (statusFilter === 'available') {
         filtered = filtered.filter(req => !req.my_bid)
       } else if (statusFilter === 'bid_submitted') {
-        filtered = filtered.filter(req => req.my_bid && req.my_bid.status === 'pending')
+        filtered = filtered.filter(req => req.my_bid && req.my_bid.status === 'applied')
       } else if (statusFilter === 'bid_accepted') {
         filtered = filtered.filter(req => req.my_bid && req.my_bid.status === 'accepted')
       } else if (statusFilter === 'bid_rejected') {
@@ -198,6 +198,7 @@ export default function HelperRequestsPage() {
           return <Badge className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Accepted</Badge>
         case 'rejected':
           return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Rejected</Badge>
+        case 'applied':
         case 'pending':
           return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Bid Pending</Badge>
         default:
@@ -367,7 +368,7 @@ export default function HelperRequestsPage() {
                           {request.my_bid.message}
                         </p>
                       )}
-                      {request.my_bid.status === 'pending' && (
+                      {request.my_bid.status === 'applied' && (
                         <Button
                           size="sm"
                           variant="outline"
