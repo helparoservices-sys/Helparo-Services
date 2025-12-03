@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { MapPin, Loader2, Navigation, X } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { MapPin, Loader2, Navigation } from 'lucide-react'
 import { useLocation } from '@/lib/use-location'
-import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api'
 
 interface AddressSuggestion {
   display_name: string
@@ -19,7 +18,7 @@ interface AddressSuggestion {
   }
 }
 
-interface AddressMapPickerProps {
+interface AddressMapSelectorProps {
   value: string
   onChange: (value: string) => void
   onAddressSelect?: (address: {
@@ -33,42 +32,27 @@ interface AddressMapPickerProps {
   placeholder?: string
   required?: boolean
   className?: string
-  showMap?: boolean
-  mapHeight?: string
 }
 
-const mapContainerStyle = {
-  width: '100%',
-  height: '400px'
-}
-
-const defaultCenter = {
-  lat: 20.5937, // India center
-  lng: 78.9629
-}
-
-export function AddressMapPicker({
+export function AddressMapSelector({
   value,
   onChange,
   onAddressSelect,
-  placeholder = 'Enter address or drop a pin on the map',
+  placeholder = 'Enter address or click on map',
   required = false,
-  className = '',
-  showMap = true,
-  mapHeight = '400px'
-}: AddressMapPickerProps) {
+  className = ''
+}: AddressMapSelectorProps) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null)
-  const [mapCenter, setMapCenter] = useState(defaultCenter)
-  const [mapZoom, setMapZoom] = useState(5)
   const [isGettingAddress, setIsGettingAddress] = useState(false)
+  const [mapLoaded, setMapLoaded] = useState(false)
   
   const { requestLocation, isLoading: locationLoading, address, coordinates } = useLocation()
   const searchTimeout = useRef<NodeJS.Timeout>()
   const wrapperRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<any>(null)
+  const mapRef = useRef<HTMLIFrameElement>(null)
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -87,8 +71,6 @@ export function AddressMapPicker({
     if (address && coordinates && !value) {
       onChange(address.formatted_address)
       setSelectedLocation({ lat: coordinates.latitude, lng: coordinates.longitude })
-      setMapCenter({ lat: coordinates.latitude, lng: coordinates.longitude })
-      setMapZoom(15)
       
       if (onAddressSelect) {
         onAddressSelect({
@@ -155,8 +137,6 @@ export function AddressMapPicker({
     setShowSuggestions(false)
     setSuggestions([])
     setSelectedLocation({ lat: selectedAddress.lat, lng: selectedAddress.lng })
-    setMapCenter({ lat: selectedAddress.lat, lng: selectedAddress.lng })
-    setMapZoom(15)
     
     console.log('✅ Address selected:', selectedAddress)
     onAddressSelect?.(selectedAddress)
@@ -167,8 +147,6 @@ export function AddressMapPicker({
     if (coords && address) {
       onChange(address.formatted_address)
       setSelectedLocation({ lat: coords.latitude, lng: coords.longitude })
-      setMapCenter({ lat: coords.latitude, lng: coords.longitude })
-      setMapZoom(15)
       
       onAddressSelect?.({
         display_name: address.formatted_address,
@@ -181,59 +159,16 @@ export function AddressMapPicker({
     }
   }
 
-  // Reverse geocode when map is clicked
-  const getAddressFromCoordinates = async (lat: number, lng: number) => {
-    setIsGettingAddress(true)
-    try {
-      const response = await fetch(`/api/address/reverse?lat=${lat}&lng=${lng}`, { cache: 'no-store' })
-      if (response.ok) {
-        const data = await response.json()
-        if (data.address) {
-          onChange(data.address.display_name)
-          onAddressSelect?.({
-            display_name: data.address.display_name,
-            city: data.address.city || '',
-            state: data.address.state || '',
-            pincode: data.address.pincode || '',
-            lat,
-            lng
-          })
-        }
-      }
-    } catch (error) {
-      console.error('Reverse geocoding error:', error)
-    } finally {
-      setIsGettingAddress(false)
+  // Generate Google Maps embed URL
+  const getMapUrl = () => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    if (selectedLocation) {
+      // Show specific location with marker
+      return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${selectedLocation.lat},${selectedLocation.lng}&zoom=15`
+    } else {
+      // Show default map of India
+      return `https://www.google.com/maps/embed/v1/view?key=${apiKey}&center=20.5937,78.9629&zoom=5`
     }
-  }
-
-  const handleMapClick = useCallback((e: any) => {
-    if (e.latLng) {
-      const lat = e.latLng.lat()
-      const lng = e.latLng.lng()
-      setSelectedLocation({ lat, lng })
-      getAddressFromCoordinates(lat, lng)
-    }
-  }, [])
-
-  const handleMarkerDragEnd = useCallback((e: any) => {
-    if (e.latLng) {
-      const lat = e.latLng.lat()
-      const lng = e.latLng.lng()
-      setSelectedLocation({ lat, lng })
-      getAddressFromCoordinates(lat, lng)
-    }
-  }, [])
-
-  const onMapLoad = useCallback((map: any) => {
-    mapRef.current = map
-  }, [])
-
-  const clearLocation = () => {
-    setSelectedLocation(null)
-    onChange('')
-    setMapZoom(5)
-    setMapCenter(defaultCenter)
   }
 
   return (
@@ -247,23 +182,12 @@ export function AddressMapPicker({
             onChange={handleInputChange}
             placeholder={placeholder}
             required={required}
-            className={`w-full px-4 py-3 pl-10 pr-20 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-700 dark:text-white ${className}`}
+            className={`w-full px-4 py-3 pl-10 pr-10 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-700 dark:text-white ${className}`}
           />
           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
           
           {(isSearching || isGettingAddress) && (
             <Loader2 className="absolute right-14 top-1/2 -translate-y-1/2 h-5 w-5 text-blue-600 animate-spin" />
-          )}
-
-          {value && (
-            <button
-              type="button"
-              onClick={clearLocation}
-              className="absolute right-10 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              title="Clear location"
-            >
-              <X className="h-5 w-5" />
-            </button>
           )}
 
           <button
@@ -310,40 +234,35 @@ export function AddressMapPicker({
         )}
       </div>
 
-      {/* Google Map */}
-      {showMap && (
-        <div className="rounded-lg overflow-hidden border border-slate-300 dark:border-slate-600" style={{ height: mapHeight }}>
-          <LoadScript googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}>
-            <GoogleMap
-              mapContainerStyle={{ ...mapContainerStyle, height: mapHeight }}
-              center={mapCenter}
-              zoom={mapZoom}
-              onClick={handleMapClick}
-              onLoad={onMapLoad}
-              options={{
-                streetViewControl: false,
-                mapTypeControl: false,
-                fullscreenControl: true,
-                zoomControl: true,
-              }}
-            >
-              {selectedLocation && (
-                <Marker
-                  position={selectedLocation}
-                  draggable={true}
-                  onDragEnd={handleMarkerDragEnd}
-                />
-              )}
-            </GoogleMap>
-          </LoadScript>
-          
-          <div className="absolute bottom-4 left-4 bg-white dark:bg-slate-800 px-3 py-2 rounded-lg shadow-lg text-xs text-slate-600 dark:text-slate-300">
-            💡 Click or drag the pin to set your location
+      {/* Google Maps Embed */}
+      <div className="rounded-lg overflow-hidden border-2 border-slate-300 dark:border-slate-600 shadow-md">
+        <iframe
+          ref={mapRef}
+          src={getMapUrl()}
+          width="100%"
+          height="350"
+          style={{ border: 0 }}
+          allowFullScreen
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          onLoad={() => setMapLoaded(true)}
+          className="w-full"
+        />
+        {!mapLoaded && (
+          <div className="flex items-center justify-center h-[350px] bg-slate-100 dark:bg-slate-800">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
           </div>
+        )}
+      </div>
+
+      {selectedLocation && (
+        <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+          <MapPin className="h-4 w-4" />
+          <span>Location: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}</span>
         </div>
       )}
     </div>
   )
 }
 
-export default AddressMapPicker
+export default AddressMapSelector
