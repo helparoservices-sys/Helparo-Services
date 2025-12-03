@@ -291,15 +291,26 @@ export async function getHelperServiceRequests() {
     const supabase = await createClient()
 
     // Get helper profile
-    const { data: helperProfile } = await supabase
+    const { data: helperProfile, error: profileError } = await supabase
       .from('helper_profiles')
       .select('id, latitude, longitude')
       .eq('user_id', user.id)
       .maybeSingle()
 
+    if (profileError) {
+      logger.error('Failed to fetch helper profile', { error: profileError, user_id: user.id })
+      return { error: 'Failed to load helper profile' }
+    }
+
     if (!helperProfile) {
+      logger.error('Helper profile not found', { user_id: user.id })
       return { error: 'Helper profile not found' }
     }
+
+    logger.info('Fetching service requests for helper', { 
+      helper_id: helperProfile.id, 
+      user_id: user.id 
+    })
 
     // Get all open service requests
     const { data: requests, error } = await supabase
@@ -326,9 +337,20 @@ export async function getHelperServiceRequests() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      logger.error('Failed to fetch service requests', { error })
+      logger.error('Failed to fetch service requests', { 
+        error, 
+        error_code: error.code,
+        error_message: error.message,
+        error_details: error.details,
+        helper_id: helperProfile.id
+      })
       return { error: 'Failed to load service requests' }
     }
+
+    logger.info('Service requests fetched', { 
+      count: requests?.length || 0,
+      helper_id: helperProfile.id
+    })
 
     type RequestWithRelations = {
       id: string

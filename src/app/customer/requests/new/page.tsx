@@ -84,9 +84,9 @@ export default function NewRequestPage() {
 
       setSuccess('✅ Request created successfully! Matching helpers will be notified.')
       
-      // Redirect to bookings page after 2 seconds
+      // Redirect to requests page after 2 seconds
       setTimeout(() => {
-        router.push('/customer/bookings')
+        router.push('/customer/requests')
       }, 2000)
     } catch (e: any) {
       setError(e.message || 'Failed to create request')
