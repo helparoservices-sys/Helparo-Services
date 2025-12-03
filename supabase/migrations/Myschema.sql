@@ -947,7 +947,8 @@ CREATE TABLE public.service_requests (
   service_pincode character varying,
   CONSTRAINT service_requests_pkey PRIMARY KEY (id),
   CONSTRAINT service_requests_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.profiles(id),
-  CONSTRAINT service_requests_assigned_helper_id_fkey FOREIGN KEY (assigned_helper_id) REFERENCES public.profiles(id)
+  CONSTRAINT service_requests_assigned_helper_id_fkey FOREIGN KEY (assigned_helper_id) REFERENCES public.profiles(id),
+  CONSTRAINT service_requests_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.service_categories(id)
 );
 CREATE TABLE public.sla_configurations (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),

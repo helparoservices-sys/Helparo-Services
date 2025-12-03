@@ -333,7 +333,9 @@ export async function getHelperServiceRequests() {
         category_id,
         service_address,
         service_city,
-        scheduled_time,
+        preferred_date,
+        preferred_time_start,
+        preferred_time_end,
         budget_min,
         budget_max,
         status,
@@ -380,7 +382,9 @@ export async function getHelperServiceRequests() {
       category_id: string | null
       service_address: string | null
       service_city: string | null
-      scheduled_time: string | null
+      preferred_date: string | null
+      preferred_time_start: string | null
+      preferred_time_end: string | null
       budget_min: number | null
       budget_max: number | null
       status: string
@@ -424,13 +428,25 @@ export async function getHelperServiceRequests() {
       // Find helper's application if exists
       const myApplication = req.request_applications?.find(app => app.helper_id === helperProfile.id)
 
+      // Format scheduled time from preferred_date and preferred_time_start
+      let scheduledTime = null
+      if (req.preferred_date) {
+        scheduledTime = req.preferred_date
+        if (req.preferred_time_start) {
+          scheduledTime += ` ${req.preferred_time_start}`
+          if (req.preferred_time_end) {
+            scheduledTime += ` - ${req.preferred_time_end}`
+          }
+        }
+      }
+
       return {
         id: req.id,
         title: req.title || 'Untitled Request',
         description: req.description || '',
         category: req.service_categories?.name || 'Uncategorized',
         location_address: req.service_address || req.service_city || 'Location not specified',
-        scheduled_time: req.scheduled_time,
+        scheduled_time: scheduledTime,
         pricing_type: 'fixed',
         budget_min: req.budget_min,
         budget_max: req.budget_max,
