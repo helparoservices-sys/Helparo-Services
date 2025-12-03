@@ -211,29 +211,72 @@ export async function updateHelperProfileServices(data: {
       return { error: 'Experience years must be between 0 and 50' }
     }
 
-    // Update helper profile
-    const { error: updateError } = await supabase
-      .from('helper_profiles')
-      .update({
-        service_categories: data.service_categories,
-        skills_specialization: data.skills,
-        service_radius_km: data.service_radius_km,
-        experience_years: data.experience_years,
-        working_hours: data.working_hours,
-        service_areas: data.service_areas,
-      })
-      .eq('user_id', user.id)
-
-    if (updateError) {
-      logger.error('Failed to update helper profile', { error: updateError })
-      return { error: 'Failed to update profile' }
+    // Build update object dynamically to avoid setting undefined values
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    }
+    
+    if (data.service_categories !== undefined) {
+      updateData.service_categories = data.service_categories
+    }
+    if (data.skills !== undefined) {
+      updateData.skills_specialization = data.skills
+    }
+    if (data.service_radius_km !== undefined) {
+      updateData.service_radius_km = data.service_radius_km
+    }
+    if (data.experience_years !== undefined) {
+      updateData.experience_years = data.experience_years
+      updateData.years_of_experience = data.experience_years // Also update this field for consistency
+    }
+    if (data.working_hours !== undefined) {
+      updateData.working_hours = data.working_hours
+    }
+    if (data.service_areas !== undefined) {
+      updateData.service_areas = data.service_areas
+    }
+    if (data.service_area_ids !== undefined) {
+      updateData.service_area_ids = data.service_area_ids
     }
 
-    logger.info('Helper profile services updated', { user_id: user.id })
+    logger.info('Updating helper profile', { 
+      user_id: user.id, 
+      updateData: JSON.stringify(updateData)
+    })
+
+    // Update helper profile
+    const { data: updatedProfile, error: updateError } = await supabase
+      .from('helper_profiles')
+      .update(updateData)
+      .eq('user_id', user.id)
+      .select()
+      .single()
+
+    if (updateError) {
+      logger.error('Failed to update helper profile', { 
+        error: updateError,
+        user_id: user.id,
+        errorCode: updateError.code,
+        errorDetails: updateError.details,
+        errorHint: updateError.hint,
+        errorMessage: updateError.message
+      })
+      return { error: `Failed to update profile: ${updateError.message}` }
+    }
+
+    if (!updatedProfile) {
+      logger.error('No profile returned after update', { user_id: user.id })
+      return { error: 'Failed to update profile - no data returned' }
+    }
+
+    logger.info('Helper profile services updated successfully', { 
+      user_id: user.id,
+      profile_id: updatedProfile.id
+    })
 
     revalidatePath('/helper/services')
 
-    return { success: true }
+    return { success: true, data: updatedProfile }
   } catch (error) {
     logger.error('Update helper profile services error', { error })
     return { error: 'An unexpected error occurred' }
