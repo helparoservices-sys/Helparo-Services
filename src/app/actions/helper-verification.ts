@@ -163,25 +163,65 @@ export async function uploadOnboardingDocuments(formData: FormData) {
       const validation = validateFile(file, ALLOWED_MIME_TYPES.VERIFICATION, FILE_SIZE_LIMITS.DOCUMENT)
       if (!validation.valid) throw new Error(validation.error || 'Invalid file')
       
-      // Use document type in path for better organization
-      const path = `${user.id}/${docType}_${validation.sanitizedName}`
+      // Create a clean timestamp-based filename
+      const timestamp = Date.now()
+      const randomString = Math.random().toString(36).substring(2, 15)
+      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+      const cleanFileName = `${docType}_${timestamp}-${randomString}.${fileExt}`
       
-      const { error: uploadError } = await supabase.storage
+      // Use simple path structure: userId/filename
+      const path = `${user.id}/${cleanFileName}`
+      
+      logger.info('Uploading file to storage', { 
+        userId: user.id, 
+        docType, 
+        path, 
+        fileSize: file.size,
+        fileType: file.type 
+      })
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('kyc')
-        .upload(path, file, { cacheControl: '3600', upsert: false })
-      if (uploadError) throw uploadError
+        .upload(path, file, { 
+          cacheControl: '3600', 
+          upsert: true, // Allow overwriting for resubmissions
+          contentType: file.type 
+        })
       
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage.from('kyc').getPublicUrl(path)
+      if (uploadError) {
+        logger.error('File upload error', { error: uploadError, path, docType })
+        throw uploadError
+      }
+      
+      logger.info('File uploaded successfully', { path, uploadData })
+      
+      // Get public URL for the file
+      const { data: { publicUrl } } = supabase.storage
+        .from('kyc')
+        .getPublicUrl(path)
+      
+      logger.info('Generated public URL', { publicUrl })
       
       return { path, url: publicUrl, docType }
     }
 
     // Upload all files
+    logger.info('Starting file uploads', { 
+      hasIdProof: !!idProof, 
+      hasSelfie: !!selfie,
+      hasCert: !!cert,
+      hasAddrProof: !!addrProof
+    })
+
     const idProofResult = await processFile(idProof, 'id_proof')
     const selfieResult = await processFile(selfie, 'selfie')
     const certResult = cert ? await processFile(cert, 'certificate') : null
     const addrProofResult = addrProof ? await processFile(addrProof, 'address_proof') : null
+
+    logger.info('All files uploaded', { 
+      idProofPath: idProofResult.path,
+      selfiePath: selfieResult.path 
+    })
 
     // Delete old verification documents for this helper (to prevent duplicates)
     await supabase
@@ -224,13 +264,18 @@ export async function uploadOnboardingDocuments(formData: FormData) {
       })
     }
 
+    logger.info('Inserting verification documents', { count: documentsToInsert.length })
+
     const { error: insertError } = await supabase
       .from('verification_documents')
       .insert(documentsToInsert)
     
-    if (insertError) throw insertError
+    if (insertError) {
+      logger.error('Failed to insert verification documents', { error: insertError })
+      throw insertError
+    }
 
-    // Update profile avatar_url with selfie
+    // Update profile avatar_url with selfie signed URL
     await supabase
       .from('profiles')
       .update({ avatar_url: selfieResult.url })
@@ -245,11 +290,11 @@ export async function uploadOnboardingDocuments(formData: FormData) {
         is_approved: false,
       }, { onConflict: 'user_id' })
 
-    logger.info('Onboarding documents uploaded', { user_id: user.id })
+    logger.info('Onboarding documents uploaded successfully', { user_id: user.id })
     revalidatePath('/helper/verification')
     return { success: true }
   } catch (error) {
     logger.error('Upload onboarding documents error', { error })
-    return { error: 'Failed to upload onboarding documents' }
+    return { error: error instanceof Error ? error.message : 'Failed to upload onboarding documents' }
   }
 }
