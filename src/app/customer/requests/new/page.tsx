@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PaymentProtectionBadge, MoneyBackGuarantee } from '@/components/trust-badges'
-import AddressAutocomplete from '@/components/address-autocomplete'
+import AddressMapPicker from '@/components/address-map-picker'
 import { createServiceRequest, getServiceCategories } from '@/app/actions/service-requests'
 import { AlertCircle, CheckCircle2, MapPin, Calendar, DollarSign } from 'lucide-react'
 
@@ -192,7 +192,7 @@ export default function NewRequestPage() {
                     <MapPin className="h-4 w-4" />
                     Service Location
                   </Label>
-                  <AddressAutocomplete
+                  <AddressMapPicker
                     value={form.address}
                     onChange={(value) => setForm({ ...form, address: value })}
                     onAddressSelect={(selected) => {
@@ -206,7 +206,9 @@ export default function NewRequestPage() {
                         location_lng: selected.lng,
                       })
                     }}
-                    placeholder="Enter service address"
+                    placeholder="Enter address or drop a pin on the map"
+                    showMap={true}
+                    mapHeight="350px"
                   />
                 </div>
 
