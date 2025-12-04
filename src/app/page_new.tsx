@@ -59,8 +59,6 @@ export default function LandingPage() {
 
       {/* Hero Section - Bold Gradient */}
       <section className="relative overflow-hidden bg-gradient-to-br from-purple-50 via-white to-teal-50 py-24 md:py-32">
-      {/* Hero Section - Bold Gradient */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-purple-50 via-white to-teal-50 py-24 md:py-32">
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
