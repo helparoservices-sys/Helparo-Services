@@ -75,48 +75,31 @@ export default function LoginPage() {
   // }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 relative overflow-hidden">
-      {/* Logo Watermark Background */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <img 
-          src="/logo.jpg" 
-          alt="Helparo" 
-          className="h-96 w-96 object-contain opacity-[0.03] dark:opacity-[0.02]"
-          loading="lazy"
-          decoding="async"
-        />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-teal-50 p-4 relative overflow-hidden">
+      {/* Animated Background Blobs */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-teal-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-40 left-1/2 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
       </div>
 
       {/* Login Card */}
-      <div className="w-full max-w-md relative z-10">
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/20 dark:border-slate-700/50 shadow-2xl rounded-2xl p-8">
+      <div className="w-full max-w-md relative z-10 animate-float">
+        <div className="bg-white/90 backdrop-blur-2xl border-2 border-purple-100 shadow-2xl rounded-3xl p-8 hover:shadow-purple-500/20 transition-all duration-500">
           {/* Header with Logo */}
           <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center justify-center gap-2 mb-6 group">
-              <div className="relative">
-                <img
-                  src="/logo.jpg"
-                  alt="Helparo"
-                  className="h-12 w-12 rounded-xl object-cover shadow-lg group-hover:shadow-xl transition-shadow duration-300"
-                  loading="lazy"
-                  decoding="async"
-                  onError={(e) => {
-                    const img = e.currentTarget as HTMLImageElement
-                    img.style.display = 'none'
-                    const fallback = document.getElementById('logo-fallback')
-                    if (fallback) fallback.style.display = 'flex'
-                  }}
-                />
-                <div id="logo-fallback" style={{ display: 'none' }} className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg">
-                  <Sparkles className="h-7 w-7" />
+            <Link href="/" className="inline-flex items-center justify-center gap-3 mb-6 group">
+              <div className="relative h-14 w-14 overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 to-teal-500 p-0.5 group-hover:scale-110 transition-transform duration-300">
+                <div className="h-full w-full bg-white rounded-2xl flex items-center justify-center">
+                  <Sparkles className="h-8 w-8 text-purple-600 animate-pulse" />
                 </div>
               </div>
-              <span className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">Helparo</span>
+              <span className="text-3xl font-black bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">Helparo</span>
             </Link>
             
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Welcome Back</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Sign in to your account
+            <h1 className="text-3xl font-black text-gray-900 mb-2">Welcome Back</h1>
+            <p className="text-sm text-gray-600 font-medium">
+              Sign in to your account 👋
             </p>
           </div>
 
@@ -124,7 +107,7 @@ export default function LoginPage() {
           {loginMethod === 'password' && (
             <form onSubmit={handlePasswordLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-slate-700 dark:text-slate-300">Email</Label>
+                <Label htmlFor="email" className="text-gray-700 font-semibold">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -132,14 +115,14 @@ export default function LoginPage() {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
-                  className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
+                  className="bg-white border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300 hover:border-purple-300"
                 />
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-slate-700 dark:text-slate-300">Password</Label>
-                  <Link href="/auth/forgot-password" className="text-xs text-primary hover:text-primary/80 hover:underline transition-colors">
+                  <Label htmlFor="password" className="text-gray-700 font-semibold">Password</Label>
+                  <Link href="/auth/forgot-password" className="text-xs text-purple-600 hover:text-teal-600 hover:underline font-semibold transition-colors">
                     Forgot password?
                   </Link>
                 </div>
@@ -151,12 +134,12 @@ export default function LoginPage() {
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
-                    className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 pr-10"
+                    className="bg-white border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300 hover:border-purple-300 pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-600 transition-colors"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -171,7 +154,7 @@ export default function LoginPage() {
 
               <Button 
                 type="submit" 
-                className="w-full shadow-lg hover:shadow-xl transition-all duration-300" 
+                className="w-full bg-gradient-to-r from-purple-600 to-teal-600 hover:from-purple-700 hover:to-teal-700 text-white font-bold text-lg py-6 rounded-xl shadow-2xl shadow-purple-500/40 hover:shadow-purple-500/60 hover:scale-105 transition-all duration-300" 
                 size="lg" 
                 disabled={loading}
               >
@@ -190,19 +173,19 @@ export default function LoginPage() {
           {/* Magic Link Form disabled temporarily */}
 
           {/* Sign Up Link */}
-          <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-6">
+          <p className="text-center text-sm text-gray-600 font-medium mt-6">
             Don't have an account?{' '}
-            <Link href="/auth/signup" className="text-primary font-medium hover:underline transition-colors">
+            <Link href="/auth/signup" className="text-purple-600 font-bold hover:text-teal-600 hover:underline transition-colors">
               Sign Up
             </Link>
           </p>
 
           {/* Legal links as modal */}
-          <div className="text-center text-xs text-slate-500 dark:text-slate-400 mt-3">
+          <div className="text-center text-xs text-gray-500 mt-3">
             By signing in, you agree to our{' '}
-            <a href="/legal/terms" onClick={(e) => { e.preventDefault(); setShowTerms(true); }} className="text-primary hover:underline">Terms</a>
+            <a href="/legal/terms" onClick={(e) => { e.preventDefault(); setShowTerms(true); }} className="text-purple-600 hover:underline font-semibold">Terms</a>
             {' '}and{' '}
-            <a href="/legal/privacy" onClick={(e) => { e.preventDefault(); setShowPrivacy(true); }} className="text-primary hover:underline">Privacy Policy</a>.
+            <a href="/legal/privacy" onClick={(e) => { e.preventDefault(); setShowPrivacy(true); }} className="text-purple-600 hover:underline font-semibold">Privacy Policy</a>.
           </div>
 
           <LegalModal type="terms" open={showTerms} onOpenChange={setShowTerms} />

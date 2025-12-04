@@ -106,13 +106,13 @@ function SignUpForm() {
           <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/20 dark:border-slate-700/50 shadow-2xl rounded-2xl p-8">
             <div className="text-center space-y-6">
               <div className="flex justify-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg">
-                  <CheckCircle className="h-8 w-8" />
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-teal-500 text-white shadow-2xl shadow-purple-500/50 animate-bounce">
+                  <CheckCircle className="h-10 w-10" />
                 </div>
               </div>
               
               <div>
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Check Your Email</h1>
+                <h1 className="text-3xl font-black bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent mb-2">Check Your Email</h1>
                 <p className="text-sm text-slate-600 dark:text-slate-400">
                   We've sent a verification link to <strong className="text-slate-900 dark:text-white">{formData.email}</strong>
                 </p>
@@ -123,7 +123,7 @@ function SignUpForm() {
               </p>
 
               <Button 
-                className="w-full shadow-lg hover:shadow-xl transition-all duration-300" 
+                className="w-full bg-gradient-to-r from-purple-600 to-teal-600 hover:from-purple-700 hover:to-teal-700 text-white font-bold shadow-2xl shadow-purple-500/40 hover:shadow-purple-500/60 hover:scale-105 transition-all duration-300" 
                 onClick={() => router.push('/auth/login')}
               >
                 Go to Login
@@ -136,60 +136,46 @@ function SignUpForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 relative overflow-hidden">
-      {/* Logo Watermark Background */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <img 
-          src="/logo.jpg" 
-          alt="Helparo" 
-          className="h-96 w-96 object-contain opacity-[0.03] dark:opacity-[0.02]"
-          loading="lazy"
-          decoding="async"
-        />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-teal-50 p-4 relative overflow-hidden">
+      {/* Animated Background Blobs */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-teal-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-40 left-1/2 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
       </div>
 
       {/* Signup Card */}
-      <div className="w-full max-w-md relative z-10">
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/20 dark:border-slate-700/50 shadow-2xl rounded-2xl p-8">
+      <div className="w-full max-w-md relative z-10 animate-float">
+        <div className="bg-white/90 backdrop-blur-2xl border-2 border-purple-100 shadow-2xl rounded-3xl p-8 hover:shadow-purple-500/20 transition-all duration-500">
           {/* Header with Logo */}
           <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center justify-center gap-2 mb-6 group">
-              <div className="relative">
-                <img
-                  src="/logo.jpg"
-                  alt="Helparo"
-                  className="h-12 w-12 rounded-xl object-cover shadow-lg group-hover:shadow-xl transition-shadow duration-300"
-                  loading="lazy"
-                  decoding="async"
-                  onError={(e) => {
-                    const img = e.currentTarget as HTMLImageElement
-                    img.style.display = 'none'
-                    const fallback = document.getElementById('signup-logo-fallback')
-                    if (fallback) fallback.style.display = 'flex'
-                  }}
-                />
-                <div id="signup-logo-fallback" style={{ display: 'none' }} className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg">
-                  <Sparkles className="h-7 w-7" />
+            <Link href="/" className="inline-flex items-center justify-center gap-3 mb-6 group">
+              <div className="relative h-14 w-14 overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 to-teal-500 p-0.5 group-hover:scale-110 transition-transform duration-300">
+                <div className="h-full w-full bg-white rounded-2xl flex items-center justify-center">
+                  <Sparkles className="h-8 w-8 text-purple-600 animate-pulse" />
                 </div>
               </div>
-              <span className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">Helparo</span>
+              <span className="text-3xl font-black bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">Helparo</span>
             </Link>
             
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Create Your Account</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Join thousands of customers and helpers
+            <h1 className="text-3xl font-black text-gray-900 mb-2">Create Your Account</h1>
+            <p className="text-sm text-gray-600 font-medium">
+              Join thousands of customers and helpers 🚀
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Role Selection */}
             <div className="space-y-2">
-              <Label className="text-slate-700 dark:text-slate-300">I want to</Label>
-              <div className="grid grid-cols-2 gap-2">
+              <Label className="text-gray-900 font-bold">I want to</Label>
+              <div className="grid grid-cols-2 gap-3">
                 <Button
                   type="button"
                   variant={formData.role === 'customer' ? 'default' : 'outline'}
-                  className={formData.role === 'customer' ? 'shadow-lg' : 'bg-white/50 dark:bg-slate-700/50'}
+                  className={formData.role === 'customer' 
+                    ? 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-bold shadow-lg shadow-purple-500/30 border-0'
+                    : 'border-2 border-purple-200 hover:border-purple-400 hover:bg-purple-50 font-semibold transition-all duration-300'
+                  }
                   onClick={() => setFormData({ ...formData, role: 'customer' })}
                 >
                   Find Services
@@ -197,7 +183,10 @@ function SignUpForm() {
                 <Button
                   type="button"
                   variant={formData.role === 'helper' ? 'default' : 'outline'}
-                  className={formData.role === 'helper' ? 'shadow-lg' : 'bg-white/50 dark:bg-slate-700/50'}
+                  className={formData.role === 'helper' 
+                    ? 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-bold shadow-lg shadow-purple-500/30 border-0'
+                    : 'border-2 border-purple-200 hover:border-purple-400 hover:bg-purple-50 font-semibold transition-all duration-300'
+                  }
                   onClick={() => setFormData({ ...formData, role: 'helper' })}
                 >
                   Offer Services
@@ -207,20 +196,20 @@ function SignUpForm() {
 
             {/* Full Name */}
             <div className="space-y-2">
-              <Label htmlFor="fullName" className="text-slate-700 dark:text-slate-300">Full Name</Label>
+              <Label htmlFor="fullName" className="text-gray-700 font-semibold">Full Name</Label>
               <Input
                 id="fullName"
                 placeholder="John Doe"
                 value={formData.fullName}
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                 required
-                className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
+                className="bg-white border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300 hover:border-purple-300"
               />
             </div>
 
             {/* Email */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700 dark:text-slate-300">Email</Label>
+              <Label htmlFor="email" className="text-gray-700 font-semibold">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -228,24 +217,20 @@ function SignUpForm() {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
-                className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
+                className="bg-white border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300 hover:border-purple-300"
               />
             </div>
 
             {/* Phone with Country Code */}
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-slate-700 dark:text-slate-300">Phone Number</Label>
+              <Label htmlFor="phone" className="text-gray-700 font-semibold">Phone Number</Label>
               <div className="flex gap-2">
                 <select
-                  className="flex h-10 w-24 rounded-md border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
+                  className="flex h-10 w-24 rounded-lg border-2 border-gray-200 bg-white px-3 py-2 text-sm font-medium focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300 hover:border-purple-300"
                   value={formData.countryCode}
                   onChange={(e) => setFormData({ ...formData, countryCode: e.target.value })}
                 >
                   <option value="+91">+91 (IN)</option>
-                  {/* <option value="+1">+1 (US)</option>
-                  <option value="+44">+44 (UK)</option>
-                  <option value="+61">+61 (AU)</option>
-                  <option value="+86">+86 (CN)</option> */}
                 </select>
                 <Input
                   id="phone"
@@ -254,14 +239,14 @@ function SignUpForm() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   required
-                  className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
+                  className="bg-white border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300 hover:border-purple-300"
                 />
               </div>
             </div>
 
             {/* Password */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-700 dark:text-slate-300">Password</Label>
+              <Label htmlFor="password" className="text-gray-700 font-semibold">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -270,12 +255,12 @@ function SignUpForm() {
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
-                  className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 pr-10"
+                  className="bg-white border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300 hover:border-purple-300 pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-600 transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -295,7 +280,7 @@ function SignUpForm() {
 
             {/* Confirm Password */}
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-slate-700 dark:text-slate-300">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-gray-700 font-semibold">Confirm Password</Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
@@ -304,12 +289,12 @@ function SignUpForm() {
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                   required
-                  className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 pr-10"
+                  className="bg-white border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300 hover:border-purple-300 pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-600 transition-colors"
                 >
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -344,7 +329,7 @@ function SignUpForm() {
             {/* Submit Button */}
             <Button 
               type="submit" 
-              className="w-full shadow-lg hover:shadow-xl transition-all duration-300" 
+              className="w-full bg-gradient-to-r from-purple-600 to-teal-600 hover:from-purple-700 hover:to-teal-700 text-white font-bold text-lg py-6 rounded-xl shadow-2xl shadow-purple-500/40 hover:shadow-purple-500/60 hover:scale-105 transition-all duration-300" 
               size="lg" 
               disabled={loading}
             >
@@ -359,9 +344,9 @@ function SignUpForm() {
             </Button>
 
             {/* Login Link */}
-            <p className="text-center text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-center text-sm text-gray-600 font-medium">
               Already have an account?{' '}
-              <Link href="/auth/login" className="text-primary font-medium hover:underline transition-colors">
+              <Link href="/auth/login" className="text-purple-600 font-bold hover:text-teal-600 hover:underline transition-colors">
                 Sign In
               </Link>
             </p>
