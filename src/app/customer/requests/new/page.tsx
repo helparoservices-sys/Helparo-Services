@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { PaymentProtectionBadge, MoneyBackGuarantee } from '@/components/trust-badges'
 import AddressMapSelector from '@/components/address-map-selector'
 import { createServiceRequest, getServiceCategories } from '@/app/actions/service-requests'
-import { AlertCircle, CheckCircle2, MapPin, Calendar, DollarSign } from 'lucide-react'
+import { AlertCircle, CheckCircle2, MapPin, Calendar, DollarSign, Phone, Zap } from 'lucide-react'
 
 interface Category { id: string; name: string }
 
@@ -27,10 +27,12 @@ export default function NewRequestPage() {
     location_lat: null as number | null,
     location_lng: null as number | null,
     country: 'India',
+    phone: '',
     budget_min: '',
     budget_max: '',
     preferred_date: '',
     preferred_time: '',
+    urgency: 'normal' as 'instant' | 'normal' | 'flexible',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -186,31 +188,45 @@ export default function NewRequestPage() {
                   />
                 </div>
 
-                {/* Location */}
-                <div className="space-y-2">
+                {/* Location - Map First */}
+                <div className="space-y-4">
                   <Label className="text-sm font-medium flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    Service Location
+                    <MapPin className="h-4 w-4 text-purple-600" />
+                    Service Location *
                   </Label>
-                  <AddressMapSelector
-                    value={form.address}
-                    onChange={(value) => setForm({ ...form, address: value })}
-                    onAddressSelect={(selected) => {
-                      setForm({
-                        ...form,
-                        address: selected.display_name,
-                        city: selected.city || '',
-                        state: selected.state || '',
-                        pincode: selected.pincode || '',
-                        location_lat: selected.lat,
-                        location_lng: selected.lng,
-                      })
-                    }}
-                    placeholder="Enter address or use current location"
-                  />
+                  <div className="space-y-3">
+                    <AddressMapSelector
+                      value={form.address}
+                      onChange={(value) => setForm({ ...form, address: value })}
+                      onAddressSelect={(selected) => {
+                        // Extract street and area, exclude door number
+                        const addressParts = selected.display_name.split(',').map(p => p.trim())
+                        const formattedAddress = addressParts.slice(1, 3).join(', ') // Skip first part (door number)
+                        
+                        setForm({
+                          ...form,
+                          address: formattedAddress || selected.display_name,
+                          city: selected.city || '',
+                          state: selected.state || '',
+                          pincode: selected.pincode || '',
+                          location_lat: selected.lat,
+                          location_lng: selected.lng,
+                        })
+                      }}
+                      placeholder="Search address or click on map to select location"
+                    />
+                    
+                    {/* Auto-filled Location Details */}
+                    {form.location_lat && form.location_lng && (
+                      <div className="flex items-center gap-2 text-xs text-gray-600 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2">
+                        <MapPin className="h-3 w-3 text-purple-600" />
+                        <span>Location: {form.location_lat.toFixed(6)}, {form.location_lng.toFixed(6)}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Location Details Grid */}
+                {/* City, State, Pincode - Auto-filled but editable */}
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="city" className="text-sm font-medium">City</Label>
@@ -219,6 +235,7 @@ export default function NewRequestPage() {
                       value={form.city} 
                       onChange={(e) => setForm({ ...form, city: e.target.value })} 
                       placeholder="City"
+                      className="bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-100"
                     />
                   </div>
                   <div className="space-y-2">
@@ -228,6 +245,7 @@ export default function NewRequestPage() {
                       value={form.state} 
                       onChange={(e) => setForm({ ...form, state: e.target.value })} 
                       placeholder="State"
+                      className="bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-100"
                     />
                   </div>
                   <div className="space-y-2">
@@ -237,65 +255,136 @@ export default function NewRequestPage() {
                       value={form.pincode} 
                       onChange={(e) => setForm({ ...form, pincode: e.target.value })} 
                       placeholder="Pincode"
+                      className="bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-100"
                     />
                   </div>
                 </div>
 
-                {/* Budget */}
+                {/* Phone Number */}
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm font-medium flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-purple-600" />
+                    Contact Phone Number *
+                  </Label>
+                  <Input 
+                    id="phone"
+                    type="tel"
+                    placeholder="+91 1234567890"
+                    value={form.phone} 
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })} 
+                    required
+                    className="h-11 bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-100"
+                  />
+                  <p className="text-xs text-gray-500">Helpers will contact you on this number</p>
+                </div>
+
+                {/* Budget - Now Optional */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    Budget Range (₹)
+                    <DollarSign className="h-4 w-4 text-purple-600" />
+                    Budget Range (₹) <span className="text-gray-400 text-xs font-normal">(Optional)</span>
                   </Label>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Input 
-                        id="budget_min" 
-                        type="number" 
-                        min={0} 
-                        placeholder="Min ₹"
-                        value={form.budget_min} 
-                        onChange={(e) => setForm({ ...form, budget_min: e.target.value })} 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Input 
-                        id="budget_max" 
-                        type="number" 
-                        min={0} 
-                        placeholder="Max ₹"
-                        value={form.budget_max} 
-                        onChange={(e) => setForm({ ...form, budget_max: e.target.value })} 
-                      />
-                    </div>
+                    <Input 
+                      id="budget_min" 
+                      type="number" 
+                      min={0} 
+                      placeholder="Min ₹"
+                      value={form.budget_min} 
+                      onChange={(e) => setForm({ ...form, budget_min: e.target.value })} 
+                      className="bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-100"
+                    />
+                    <Input 
+                      id="budget_max" 
+                      type="number" 
+                      min={0} 
+                      placeholder="Max ₹"
+                      value={form.budget_max} 
+                      onChange={(e) => setForm({ ...form, budget_max: e.target.value })} 
+                      className="bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-100"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">Leave empty if you want helpers to quote their rates</p>
+                </div>
+
+                {/* Urgency Level */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-purple-600" />
+                    When do you need this? *
+                  </Label>
+                  <div className="grid grid-cols-3 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, urgency: 'instant' })}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        form.urgency === 'instant'
+                          ? 'border-red-500 bg-red-50 shadow-lg shadow-red-100'
+                          : 'border-gray-200 hover:border-red-300'
+                      }`}
+                    >
+                      <Zap className={`h-6 w-6 mx-auto mb-2 ${form.urgency === 'instant' ? 'text-red-600' : 'text-gray-400'}`} />
+                      <div className="text-sm font-bold">Urgent</div>
+                      <div className="text-xs text-gray-500">ASAP / Today</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, urgency: 'normal' })}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        form.urgency === 'normal'
+                          ? 'border-purple-500 bg-purple-50 shadow-lg shadow-purple-100'
+                          : 'border-gray-200 hover:border-purple-300'
+                      }`}
+                    >
+                      <Calendar className={`h-6 w-6 mx-auto mb-2 ${form.urgency === 'normal' ? 'text-purple-600' : 'text-gray-400'}`} />
+                      <div className="text-sm font-bold">Normal</div>
+                      <div className="text-xs text-gray-500">This week</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, urgency: 'flexible' })}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        form.urgency === 'flexible'
+                          ? 'border-green-500 bg-green-50 shadow-lg shadow-green-100'
+                          : 'border-gray-200 hover:border-green-300'
+                      }`}
+                    >
+                      <Calendar className={`h-6 w-6 mx-auto mb-2 ${form.urgency === 'flexible' ? 'text-green-600' : 'text-gray-400'}`} />
+                      <div className="text-sm font-bold">Flexible</div>
+                      <div className="text-xs text-gray-500">Anytime</div>
+                    </button>
                   </div>
                 </div>
 
-                {/* Preferred Schedule */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Preferred Schedule (Optional)
-                  </Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input 
-                      type="date" 
-                      value={form.preferred_date} 
-                      onChange={(e) => setForm({ ...form, preferred_date: e.target.value })} 
-                      min={new Date().toISOString().split('T')[0]}
-                    />
-                    <Input 
-                      type="time" 
-                      value={form.preferred_time} 
-                      onChange={(e) => setForm({ ...form, preferred_time: e.target.value })} 
-                    />
+                {/* Preferred Schedule - Only show if not instant */}
+                {form.urgency !== 'instant' && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-purple-600" />
+                      Preferred Schedule <span className="text-gray-400 text-xs font-normal">(Optional)</span>
+                    </Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input 
+                        type="date" 
+                        value={form.preferred_date} 
+                        onChange={(e) => setForm({ ...form, preferred_date: e.target.value })} 
+                        min={new Date().toISOString().split('T')[0]}
+                        className="bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-100"
+                      />
+                      <Input 
+                        type="time" 
+                        value={form.preferred_time} 
+                        onChange={(e) => setForm({ ...form, preferred_time: e.target.value })} 
+                        className="bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-100"
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <Button 
                   type="submit" 
                   disabled={saving}
-                  className="w-full h-12 text-base bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  className="w-full h-12 text-base bg-gradient-to-r from-purple-600 to-teal-600 hover:from-purple-700 hover:to-teal-700 font-bold shadow-lg shadow-purple-500/30"
                 >
                   {saving ? 'Creating Request...' : 'Create Request'}
                 </Button>
