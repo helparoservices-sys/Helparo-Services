@@ -155,7 +155,7 @@ export default function LandingPage() {
               We're not just another marketplace—we're your trusted partner
             </p>
           </FadeInSection>
-          <StaggerChildren className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">rid-cols-3">
+          <StaggerChildren className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             <StaggerItem>
               <ModernFeatureCard 
                 icon={Shield}
@@ -322,9 +322,11 @@ export default function LandingPage() {
             <Button size="lg" className="bg-white text-purple-700 hover:bg-gray-100 font-black text-xl px-12 py-7 rounded-2xl shadow-2xl" asChild>
               <Link href="/auth/signup">Start Now <ArrowRight className="ml-2 h-6 w-6" /></Link>
             </Button>
-            <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10 font-bold text-xl px-12 py-7 rounded-2xl" asChild>
-              <SmoothScrollLink href="#features">Learn More</SmoothScrollLink>
-            </Button>
+            <SmoothScrollLink href="#features">
+              <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10 font-bold text-xl px-12 py-7 rounded-2xl">
+                Learn More
+              </Button>
+            </SmoothScrollLink>
           </div>
         </FadeInSection>
       </section>
