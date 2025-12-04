@@ -1,6 +1,10 @@
+'use client'
+
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { PlatformTrustBadges } from '@/components/trust-badges'
+import { SmoothScrollLink } from '@/components/smooth-scroll-link'
+import { FadeInSection, StaggerChildren, StaggerItem } from '@/components/fade-in-section'
 import { 
   CheckCircle, 
   Shield, 
@@ -33,18 +37,18 @@ export default function LandingPage() {
             <span className="text-2xl font-black bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">Helparo</span>
           </div>
           <nav className="hidden md:flex gap-8">
-            <Link href="#features" className="text-sm font-semibold text-gray-700 hover:text-purple-600 transition-colors">
+            <SmoothScrollLink href="#features" className="text-sm font-semibold text-gray-700 hover:text-purple-600 transition-colors">
               Features
-            </Link>
-            <Link href="#how-it-works" className="text-sm font-semibold text-gray-700 hover:text-purple-600 transition-colors">
+            </SmoothScrollLink>
+            <SmoothScrollLink href="#how-it-works" className="text-sm font-semibold text-gray-700 hover:text-purple-600 transition-colors">
               How It Works
-            </Link>
-            <Link href="#services" className="text-sm font-semibold text-gray-700 hover:text-purple-600 transition-colors">
+            </SmoothScrollLink>
+            <SmoothScrollLink href="#services" className="text-sm font-semibold text-gray-700 hover:text-purple-600 transition-colors">
               Services
-            </Link>
-            <Link href="#trust" className="text-sm font-semibold text-gray-700 hover:text-purple-600 transition-colors">
+            </SmoothScrollLink>
+            <SmoothScrollLink href="#trust" className="text-sm font-semibold text-gray-700 hover:text-purple-600 transition-colors">
               Safety
-            </Link>
+            </SmoothScrollLink>
           </nav>
           <div className="flex items-center gap-3">
             <Button variant="ghost" className="font-semibold" asChild>
@@ -141,7 +145,7 @@ export default function LandingPage() {
       {/* Features Section - Cards with Gradient Borders */}
       <section id="features" className="py-24 bg-white">
         <div className="container mx-auto px-6">
-          <div className="text-center mb-20">
+          <FadeInSection className="text-center mb-20">
             <h2 className="text-5xl font-black sm:text-6xl mb-6">
               <span className="bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">
                 Why Helparo?
@@ -150,52 +154,64 @@ export default function LandingPage() {
             <p className="text-xl text-gray-600 max-w-2xl mx-auto font-medium">
               We're not just another marketplace—we're your trusted partner
             </p>
-          </div>
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            <ModernFeatureCard 
-              icon={Shield}
-              title="Verified Pros"
-              description="Background checks, ID verification, and skill assessments for every helper."
-              gradient="from-purple-500 to-purple-600"
-            />
-            <ModernFeatureCard 
-              icon={Zap}
-              title="Instant Pays"
-              description="Helpers get paid immediately. Just 12% commission. Fair and transparent."
-              gradient="from-yellow-500 to-orange-500"
-            />
-            <ModernFeatureCard 
-              icon={MapPin}
-              title="Near You"
-              description="GPS-powered matching finds the closest available helpers in seconds."
-              gradient="from-teal-500 to-cyan-500"
-            />
-            <ModernFeatureCard 
-              icon={Clock}
-              title="24/7 Ready"
-              description="Emergency services available round the clock. We've got your back."
-              gradient="from-blue-500 to-indigo-500"
-            />
-            <ModernFeatureCard 
-              icon={Star}
-              title="Top Rated"
-              description="Real reviews from real customers. Quality you can trust every time."
-              gradient="from-pink-500 to-rose-500"
-            />
-            <ModernFeatureCard 
-              icon={Users}
-              title="No Surprises"
-              description="See prices upfront. No hidden fees. Pay what you see. That's it."
-              gradient="from-green-500 to-emerald-500"
-            />
-          </div>
+          </FadeInSection>
+          <StaggerChildren className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">rid-cols-3">
+            <StaggerItem>
+              <ModernFeatureCard 
+                icon={Shield}
+                title="Verified Pros"
+                description="Background checks, ID verification, and skill assessments for every helper."
+                gradient="from-purple-500 to-purple-600"
+              />
+            </StaggerItem>
+            <StaggerItem>
+              <ModernFeatureCard 
+                icon={Zap}
+                title="Instant Pays"
+                description="Helpers get paid immediately. Just 12% commission. Fair and transparent."
+                gradient="from-yellow-500 to-orange-500"
+              />
+            </StaggerItem>
+            <StaggerItem>
+              <ModernFeatureCard 
+                icon={MapPin}
+                title="Near You"
+                description="GPS-powered matching finds the closest available helpers in seconds."
+                gradient="from-teal-500 to-cyan-500"
+              />
+            </StaggerItem>
+            <StaggerItem>
+              <ModernFeatureCard 
+                icon={Clock}
+                title="24/7 Ready"
+                description="Emergency services available round the clock. We've got your back."
+                gradient="from-blue-500 to-indigo-500"
+              />
+            </StaggerItem>
+            <StaggerItem>
+              <ModernFeatureCard 
+                icon={Star}
+                title="Top Rated"
+                description="Real reviews from real customers. Quality you can trust every time."
+                gradient="from-pink-500 to-rose-500"
+              />
+            </StaggerItem>
+            <StaggerItem>
+              <ModernFeatureCard 
+                icon={Users}
+                title="No Surprises"
+                description="See prices upfront. No hidden fees. Pay what you see. That's it."
+                gradient="from-green-500 to-emerald-500"
+              />
+            </StaggerItem>
+          </StaggerChildren>
         </div>
       </section>
 
       {/* How It Works - Minimalist Timeline */}
       <section id="how-it-works" className="py-24 bg-gradient-to-br from-purple-50 to-teal-50">
         <div className="container mx-auto px-6">
-          <div className="text-center mb-20">
+          <FadeInSection className="text-center mb-20">
             <h2 className="text-5xl font-black sm:text-6xl mb-6">
               <span className="text-gray-900">Simple. Fast. </span>
               <span className="bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">Done.</span>
@@ -203,37 +219,43 @@ export default function LandingPage() {
             <p className="text-xl text-gray-600 font-medium">
               Three steps to your perfect service
             </p>
-          </div>
-          <div className="max-w-5xl mx-auto grid gap-12 md:grid-cols-3 relative">
+          </FadeInSection>
+          <StaggerChildren className="max-w-5xl mx-auto grid gap-12 md:grid-cols-3 relative">
             {/* Connection Line */}
             <div className="hidden md:block absolute top-24 left-0 right-0 h-1 bg-gradient-to-r from-purple-300 via-teal-300 to-purple-300"></div>
             
-            <ModernStepCard 
-              number="1"
-              title="Post Request"
-              description="Tell us what you need. Pick your service. Set your budget. Takes 60 seconds."
-              icon={Sparkles}
-            />
-            <ModernStepCard 
-              number="2"
-              title="Match & Choose"
-              description="Get instant bids from verified helpers nearby. Compare. Pick the best."
-              icon={Users}
-            />
-            <ModernStepCard 
-              number="3"
-              title="Pay & Done"
-              description="Service completed? Rate and pay. Money released instantly. Simple."
-              icon={CheckCircle}
-            />
-          </div>
+            <StaggerItem>
+              <ModernStepCard 
+                number="1"
+                title="Post Request"
+                description="Tell us what you need. Pick your service. Set your budget. Takes 60 seconds."
+                icon={Sparkles}
+              />
+            </StaggerItem>
+            <StaggerItem>
+              <ModernStepCard 
+                number="2"
+                title="Match & Choose"
+                description="Get instant bids from verified helpers nearby. Compare. Pick the best."
+                icon={Users}
+              />
+            </StaggerItem>
+            <StaggerItem>
+              <ModernStepCard 
+                number="3"
+                title="Pay & Done"
+                description="Service completed? Rate and pay. Money released instantly. Simple."
+                icon={CheckCircle}
+              />
+            </StaggerItem>
+          </StaggerChildren>
         </div>
       </section>
 
       {/* Services Section - Modern Grid */}
       <section id="services" className="py-24 bg-white">
         <div className="container mx-auto px-6">
-          <div className="text-center mb-20">
+          <FadeInSection className="text-center mb-20">
             <h2 className="text-5xl font-black sm:text-6xl mb-6">
               <span className="bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">
                 Popular Services
@@ -242,8 +264,8 @@ export default function LandingPage() {
             <p className="text-xl text-gray-600 font-medium">
               Whatever you need, we deliver
             </p>
-          </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          </FadeInSection>
+          <StaggerChildren className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { name: 'Plumbing', icon: '🔧', color: 'from-blue-500 to-cyan-500' },
               { name: 'Electrical', icon: '💡', color: 'from-yellow-500 to-orange-500' },
@@ -254,19 +276,21 @@ export default function LandingPage() {
               { name: 'Appliances', icon: '🔌', color: 'from-indigo-500 to-purple-500' },
               { name: 'Car Service', icon: '🚗', color: 'from-gray-700 to-gray-900' }
             ].map((service) => (
-              <div key={service.name} className="group relative overflow-hidden rounded-3xl border-2 border-gray-100 bg-white p-8 hover:border-transparent hover:shadow-2xl transition-all duration-300 cursor-pointer">
-                <div className={`absolute inset-0 bg-gradient-to-br ${service.color} opacity-0 group-hover:opacity-10 transition-opacity`}></div>
-                <div className="relative z-10">
-                  <div className="text-5xl mb-4">{service.icon}</div>
-                  <h3 className="text-2xl font-black mb-2 text-gray-900">{service.name}</h3>
-                  <p className="text-sm text-gray-600 font-medium mb-4">Professional service at your doorstep</p>
-                  <div className={`inline-flex items-center text-sm font-bold bg-gradient-to-r ${service.color} bg-clip-text text-transparent group-hover:translate-x-2 transition-transform`}>
-                    Book Now <ArrowRight className="ml-1 h-4 w-4" />
+              <StaggerItem key={service.name}>
+                <div className="group relative overflow-hidden rounded-3xl border-2 border-gray-100 bg-white p-8 hover:border-transparent hover:shadow-2xl transition-all duration-300 cursor-pointer">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${service.color} opacity-0 group-hover:opacity-10 transition-opacity`}></div>
+                  <div className="relative z-10">
+                    <div className="text-5xl mb-4">{service.icon}</div>
+                    <h3 className="text-2xl font-black mb-2 text-gray-900">{service.name}</h3>
+                    <p className="text-sm text-gray-600 font-medium mb-4">Professional service at your doorstep</p>
+                    <div className={`inline-flex items-center text-sm font-bold bg-gradient-to-r ${service.color} bg-clip-text text-transparent group-hover:translate-x-2 transition-transform`}>
+                      Book Now <ArrowRight className="ml-1 h-4 w-4" />
+                    </div>
                   </div>
                 </div>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerChildren>
         </div>
       </section>
 
@@ -277,7 +301,7 @@ export default function LandingPage() {
           <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
         </div>
         
-        <div className="container mx-auto px-6 text-center relative z-10">
+        <FadeInSection className="container mx-auto px-6 text-center relative z-10">
           <div className="w-24 h-24 mx-auto mb-8 bg-white/20 backdrop-blur-sm rounded-3xl flex items-center justify-center">
             <Shield className="h-14 w-14 text-white" />
           </div>
@@ -299,10 +323,10 @@ export default function LandingPage() {
               <Link href="/auth/signup">Start Now <ArrowRight className="ml-2 h-6 w-6" /></Link>
             </Button>
             <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10 font-bold text-xl px-12 py-7 rounded-2xl" asChild>
-              <Link href="#features">Learn More</Link>
+              <SmoothScrollLink href="#features">Learn More</SmoothScrollLink>
             </Button>
           </div>
-        </div>
+        </FadeInSection>
       </section>
 
       {/* Footer - Clean & Modern */}
