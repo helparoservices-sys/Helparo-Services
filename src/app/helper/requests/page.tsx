@@ -179,7 +179,7 @@ export default function HelperRequestsPage() {
     if ('error' in result) {
       toast.error(result.error || 'Failed to submit bid')
     } else {
-      toast.success('Bid submitted successfully!')
+      toast.success('🎉 Bid submitted successfully! Check "My Bids" to track its status.')
       setBidAmount({ ...bidAmount, [requestId]: '' })
       setBidMessage({ ...bidMessage, [requestId]: '' })
       loadRequests()

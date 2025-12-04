@@ -34,7 +34,7 @@ interface ApplicationRow {
   helper_id: string
   status: string
   created_at: string
-  bid_amount?: number
+  proposed_rate?: number
   estimated_duration_hours?: number
   availability_note?: string
   profiles?: {
@@ -125,7 +125,7 @@ export default function RequestDetailPage() {
         helper_id, 
         status, 
         created_at,
-        bid_amount,
+        proposed_rate,
         estimated_duration_hours,
         availability_note,
         profiles:helper_id (
@@ -433,10 +433,10 @@ export default function RequestDetailPage() {
                                   {(app.profiles as any)?.full_name || 'Helper'}
                                 </h3>
                                 <div className="text-sm text-slate-600 dark:text-slate-400 space-y-1 mt-1">
-                                  {app.bid_amount && (
+                                  {app.proposed_rate && (
                                     <div className="flex items-center gap-1">
                                       <DollarSign className="h-3 w-3" />
-                                      Bid: ₹{app.bid_amount.toLocaleString()}
+                                      Bid: ₹{app.proposed_rate.toLocaleString()}
                                     </div>
                                   )}
                                   {app.estimated_duration_hours && (

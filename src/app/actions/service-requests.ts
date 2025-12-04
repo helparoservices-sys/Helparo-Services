@@ -344,7 +344,7 @@ export async function getHelperServiceRequests() {
         service_location_lng,
         profiles:customer_id(full_name),
         service_categories(name),
-        request_applications(id, helper_id, bid_amount, status, cover_note)
+        request_applications(id, helper_id, proposed_rate, status, cover_note)
       `)
       .eq('status', 'open')
       .order('created_at', { ascending: false })
@@ -396,7 +396,7 @@ export async function getHelperServiceRequests() {
       request_applications: Array<{
         id: string
         helper_id: string
-        bid_amount: number
+        proposed_rate: number
         status: string
         cover_note: string | null
       }> | null
@@ -458,7 +458,7 @@ export async function getHelperServiceRequests() {
         my_bid: myApplication
           ? {
               id: myApplication.id,
-              amount: myApplication.bid_amount,
+              amount: myApplication.proposed_rate,
               status: myApplication.status,
               message: myApplication.cover_note || '',
             }
@@ -546,7 +546,7 @@ export async function submitBid(data: {
     const { error: bidError } = await supabase.from('request_applications').insert({
       request_id: data.requestId,
       helper_id: helperProfile.id,
-      bid_amount: data.amount,
+      proposed_rate: data.amount,
       cover_note: data.message ? sanitizeText(data.message) : null,
       status: 'applied',
       created_at: new Date().toISOString(),

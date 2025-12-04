@@ -16,7 +16,8 @@ import {
   TrendingUp,
   Gift,
   Phone,
-  Lock
+  Lock,
+  DollarSign
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -58,6 +59,12 @@ export default function HelperSidebar({ collapsed }: HelperSidebarProps) {
       label: 'Browse Requests',
       icon: Search,
       href: '/helper/requests',
+      requiresVerification: true
+    },
+    {
+      label: 'My Bids',
+      icon: DollarSign,
+      href: '/helper/bids',
       requiresVerification: true
     },
     {
