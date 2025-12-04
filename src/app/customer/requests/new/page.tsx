@@ -99,7 +99,7 @@ export default function NewRequestPage() {
         }
 
         setInstantHelpers(data.data || [])
-      } catch (err: any) {
+      } catch (err) {
         console.error('Error fetching instant helpers:', err)
         setError('Failed to load instant booking helpers')
       } finally {
@@ -172,8 +172,9 @@ export default function NewRequestPage() {
       setTimeout(() => {
         router.push('/customer/requests')
       }, 2000)
-    } catch (e: any) {
-      setError(e.message || 'Failed to create request')
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : 'Failed to create request'
+      setError(errorMessage)
     } finally {
       setSaving(false)
     }
@@ -251,7 +252,6 @@ export default function NewRequestPage() {
                 {bookingFlow === 'instant' ? 'Service Details' : 'Request Details'}
               </CardTitle>
             </CardHeader>
-            <CardContent>
             <CardContent>
               {error && (
                 <div className="mb-4 rounded-lg border border-red-300 bg-red-50 dark:bg-red-900/20 p-4 flex gap-2">
