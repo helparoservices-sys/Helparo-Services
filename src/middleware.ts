@@ -34,14 +34,11 @@ export async function middleware(request: NextRequest) {
   })
 
   // Add security headers
-  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN')
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.headers.set('X-XSS-Protection', '1; mode=block')
   response.headers.set('X-Permitted-Cross-Domain-Policies', 'none')
-  response.headers.set('Cross-Origin-Embedder-Policy', 'require-corp')
-  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin')
-  response.headers.set('Cross-Origin-Resource-Policy', 'same-origin')
   response.headers.set(
     'Permissions-Policy',
     'camera=(), microphone=(), geolocation=(self), payment=(self)'
@@ -51,12 +48,13 @@ export async function middleware(request: NextRequest) {
   response.headers.set(
     'Content-Security-Policy',
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://opnjibjsddwyojrerbll.supabase.co; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://opnjibjsddwyojrerbll.supabase.co https://vercel.live https://*.vercel.live; " +
     "style-src 'self' 'unsafe-inline'; " +
     "img-src 'self' data: https: blob:; " +
-    "font-src 'self' data:; " +
-    "connect-src 'self' https://opnjibjsddwyojrerbll.supabase.co wss://opnjibjsddwyojrerbll.supabase.co; " +
-    "frame-ancestors 'none';"
+    "font-src 'self' data: https://fonts.gstatic.com; " +
+    "connect-src 'self' https://opnjibjsddwyojrerbll.supabase.co wss://opnjibjsddwyojrerbll.supabase.co https://vercel.live wss://*.vercel.live; " +
+    "frame-src 'self' https://www.google.com https://maps.google.com; " +
+    "frame-ancestors 'self';"
   )
   
   // HSTS for production
