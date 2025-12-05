@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { 
   CheckCircle2, 
@@ -16,6 +15,7 @@ import {
   AlertCircle,
   ArrowLeft
 } from 'lucide-react'
+import { Avatar, AvatarImage, AvatarFallback } from '@radix-ui/react-avatar'
 
 interface InstantBooking {
   helper: {
