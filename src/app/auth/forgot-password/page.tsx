@@ -65,16 +65,9 @@ export default function ForgotPasswordPage() {
                   className="h-12 w-12 rounded-xl object-cover shadow-lg group-hover:shadow-xl transition-shadow duration-300"
                   loading="lazy"
                   decoding="async"
-                  onError={(e) => {
-                    const img = e.currentTarget as HTMLImageElement
-                    img.style.display = 'none'
-                    const fallback = document.getElementById('logo-fallback')
-                    if (fallback) fallback.style.display = 'flex'
-                  }}
+
                 />
-                <div id="logo-fallback" style={{ display: 'none' }} className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg">
-                  <Sparkles className="h-7 w-7" />
-                </div>
+
               </div>
               <span className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">Helparo</span>
             </Link>

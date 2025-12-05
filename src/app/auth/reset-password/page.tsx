@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, ShieldCheck, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react'
 import Image from 'next/image'
-import Image from 'next/image'
 import { updatePasswordAction } from '@/app/actions/auth'
 
 export default function ResetPasswordPage() {
@@ -141,9 +140,6 @@ export default function ResetPasswordPage() {
             <div className="inline-flex items-center gap-2 mb-4">
               <div className="relative">
                 <Image src="/logo.jpg" alt="Helparo" width={48} height={48} className="rounded-xl object-cover shadow-lg" />
-                <div id="reset-logo-fallback" style={{ display: 'none' }} className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg">
-                  <Sparkles className="h-7 w-7" />
-                </div>
               </div>
               <span className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">Helparo</span>
             </div>

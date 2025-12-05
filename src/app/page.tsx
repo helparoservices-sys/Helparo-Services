@@ -19,7 +19,8 @@ import {
   Home,
   Car,
   ArrowRight,
-  BadgeCheck
+  BadgeCheck,
+  FileText
 } from 'lucide-react'
 
 export default function LandingPage() {
@@ -227,7 +228,7 @@ export default function LandingPage() {
                 number="1"
                 title="Post Request"
                 description="Tell us what you need. Pick your service. Set your budget. Takes 60 seconds."
-                icon={Sparkles}
+                icon={FileText}
               />
             </StaggerItem>
             <StaggerItem>
