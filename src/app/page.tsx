@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { PlatformTrustBadges } from '@/components/trust-badges'
 import { SmoothScrollLink } from '@/components/smooth-scroll-link'
@@ -17,7 +18,6 @@ import {
   Lightbulb,
   Home,
   Car,
-  Sparkles,
   ArrowRight,
   BadgeCheck
 } from 'lucide-react'
@@ -29,10 +29,8 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 w-full border-b border-purple-100 bg-white/80 backdrop-blur-xl">
         <div className="container mx-auto flex h-20 items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <div className="relative h-12 w-12 overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 to-teal-500 p-0.5">
-              <div className="h-full w-full bg-white rounded-2xl flex items-center justify-center">
-                <Sparkles className="h-7 w-7 text-purple-600" />
-              </div>
+            <div className="relative h-12 w-12 overflow-hidden rounded-2xl p-1">
+              <Image src="/logo.jpg" alt="Helparo" width={48} height={48} className="object-contain" />
             </div>
             <span className="text-2xl font-black bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">Helparo</span>
           </div>
@@ -131,8 +129,8 @@ export default function LandingPage() {
                     <FloatingServiceCard icon={Car} title="Auto Fix" color="blue" />
                   </div>
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-purple-500 to-teal-500 flex items-center justify-center shadow-2xl">
-                      <Sparkles className="h-16 w-16 text-white" />
+                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-purple-500 to-teal-500 flex items-center justify-center shadow-2xl p-4">
+                      <Image src="/logo.jpg" alt="Helparo" width={96} height={96} className="object-contain rounded-full" />
                     </div>
                   </div>
                 </div>
@@ -337,10 +335,8 @@ export default function LandingPage() {
           <div className="grid gap-12 md:grid-cols-4">
             <div>
               <div className="flex items-center gap-3 mb-6">
-                <div className="relative h-12 w-12 overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 to-teal-500 p-0.5">
-                  <div className="h-full w-full bg-white rounded-2xl flex items-center justify-center">
-                    <Sparkles className="h-7 w-7 text-purple-600" />
-                  </div>
+                <div className="relative h-12 w-12 overflow-hidden rounded-2xl p-1">
+                  <Image src="/logo.jpg" alt="Helparo" width={48} height={48} className="object-contain" />
                 </div>
                 <span className="text-2xl font-black bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">Helparo</span>
               </div>

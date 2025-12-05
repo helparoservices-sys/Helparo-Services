@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Sparkles, Eye, EyeOff, Mail, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Mail, Loader2 } from 'lucide-react'
+import Image from 'next/image'
 import { loginAction /*, sendMagicLinkAction*/ } from '@/app/actions/auth'
 import { LegalModal } from '@/components/legal/legal-modal'
 import { logger } from '@/lib/logger'
@@ -89,9 +90,9 @@ export default function LoginPage() {
           {/* Header with Logo */}
           <div className="text-center mb-8">
             <Link href="/" className="inline-flex items-center justify-center gap-3 mb-6 group">
-              <div className="relative h-14 w-14 overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 to-teal-500 p-0.5 group-hover:scale-110 transition-transform duration-300">
-                <div className="h-full w-full bg-white rounded-2xl flex items-center justify-center">
-                  <Sparkles className="h-8 w-8 text-purple-600 animate-pulse" />
+              <div className="relative h-14 w-14 overflow-hidden rounded-2xl p-0.5 group-hover:scale-110 transition-transform duration-300">
+                <div className="h-full w-full bg-white rounded-2xl flex items-center justify-center p-2">
+                  <Image src="/logo.jpg" alt="Helparo" width={48} height={48} className="object-contain" />
                 </div>
               </div>
               <span className="text-3xl font-black bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">Helparo</span>
