@@ -18,7 +18,7 @@ export async function createAdminUser(data: {
   country_code: string
 }) {
   try {
-    // Validate that the current user is an admin
+    /// Validate that the current user is an admin
     const cookieStore = cookies()
     const supabase = createClient(
       supabaseUrl,
