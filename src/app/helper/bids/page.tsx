@@ -52,14 +52,12 @@ export default function HelperBidsPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    checkVerification()
-  }, [])
-
-  useEffect(() => {
-    if (isVerified) {
-      loadBids()
+    const init = async () => {
+      await checkVerification()
+      await loadBids()
     }
-  }, [isVerified])
+    init()
+  }, [])
 
   const checkVerification = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -84,23 +82,14 @@ export default function HelperBidsPage() {
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
+      console.log('No user found')
       setLoading(false)
       return
     }
 
-    // Get helper profile
-    const { data: helperProfile } = await supabase
-      .from('helper_profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .single()
+    console.log('Loading bids for user:', user.id)
 
-    if (!helperProfile) {
-      setLoading(false)
-      return
-    }
-
-    // Get all bids by this helper
+    // Get all bids by this helper using user.id (from profiles table)
     const { data, error } = await supabase
       .from('request_applications')
       .select(`
@@ -125,7 +114,7 @@ export default function HelperBidsPage() {
           )
         )
       `)
-      .eq('helper_id', helperProfile.id)
+      .eq('helper_id', user.id)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -134,6 +123,7 @@ export default function HelperBidsPage() {
       return
     }
 
+    console.log('Bids loaded:', data?.length, data)
     setBids(data as any || [])
     setLoading(false)
   }

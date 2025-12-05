@@ -425,8 +425,8 @@ export async function getHelperServiceRequests() {
         distance = R * c
       }
 
-      // Find helper's application if exists
-      const myApplication = req.request_applications?.find(app => app.helper_id === helperProfile.id)
+      // Find helper's application if exists - use user.id (from profiles table)
+      const myApplication = req.request_applications?.find(app => app.helper_id === user.id)
 
       // Format scheduled time from preferred_date and preferred_time_start
       let scheduledTime = null
@@ -499,7 +499,7 @@ export async function submitBid(data: {
 
     const supabase = await createClient()
 
-    // Get helper profile
+    // Get helper profile to verify they exist
     const { data: helperProfile } = await supabase
       .from('helper_profiles')
       .select('id')
@@ -530,22 +530,22 @@ export async function submitBid(data: {
       return { error: 'This request is no longer accepting bids' }
     }
 
-    // Check for existing bid
+    // Check for existing bid - use user.id (from profiles table)
     const { data: existingBid } = await supabase
       .from('request_applications')
       .select('id')
       .eq('request_id', data.requestId)
-      .eq('helper_id', helperProfile.id)
+      .eq('helper_id', user.id)
       .maybeSingle()
 
     if (existingBid) {
       return { error: 'You have already submitted a bid for this request' }
     }
 
-    // Submit bid
+    // Submit bid - use user.id (from profiles table) not helperProfile.id
     const { error: bidError } = await supabase.from('request_applications').insert({
       request_id: data.requestId,
-      helper_id: helperProfile.id,
+      helper_id: user.id,
       proposed_rate: data.amount,
       cover_note: data.message ? sanitizeText(data.message) : null,
       status: 'applied',
@@ -559,7 +559,7 @@ export async function submitBid(data: {
 
     logger.info('Bid submitted', {
       request_id: data.requestId,
-      helper_id: helperProfile.id,
+      helper_id: user.id,
       amount: data.amount,
     })
 
@@ -581,18 +581,7 @@ export async function withdrawBid(bidId: string) {
 
     const supabase = await createClient()
 
-    // Get helper profile
-    const { data: helperProfile } = await supabase
-      .from('helper_profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (!helperProfile) {
-      return { error: 'Helper profile not found' }
-    }
-
-    // Check if bid exists and belongs to helper
+    // Check if bid exists and belongs to helper - use user.id (from profiles table)
     const { data: bid, error: bidError } = await supabase
       .from('request_applications')
       .select('id, status, helper_id')
@@ -603,7 +592,7 @@ export async function withdrawBid(bidId: string) {
       return { error: 'Bid not found' }
     }
 
-    if (bid.helper_id !== helperProfile.id) {
+    if (bid.helper_id !== user.id) {
       return { error: 'You do not have permission to withdraw this bid' }
     }
 
@@ -627,7 +616,7 @@ export async function withdrawBid(bidId: string) {
 
     logger.info('Bid withdrawn', {
       bid_id: bidId,
-      helper_id: helperProfile.id,
+      helper_id: user.id,
     })
 
     return { success: true }
