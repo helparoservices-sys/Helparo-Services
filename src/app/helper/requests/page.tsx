@@ -160,32 +160,42 @@ export default function HelperRequestsPage() {
   }
 
   const handleSubmitBid = async (requestId: string) => {
-    const amount = parseFloat(bidAmount[requestId] || '0')
-    const message = bidMessage[requestId] || ''
+    try {
+      const amount = parseFloat(bidAmount[requestId] || '0')
+      const message = bidMessage[requestId] || ''
 
-    if (!amount || amount <= 0) {
-      toast.error('Please enter a valid bid amount')
-      return
+      console.log('Submitting bid:', { requestId, amount, message })
+
+      if (!amount || amount <= 0) {
+        toast.error('Please enter a valid bid amount')
+        return
+      }
+
+      setSubmitting({ ...submitting, [requestId]: true })
+
+      const result = await submitBid({
+        requestId,
+        amount,
+        message: message.trim(),
+      })
+
+      console.log('Bid submission result:', result)
+
+      if ('error' in result) {
+        toast.error(result.error || 'Failed to submit bid')
+        setSubmitting({ ...submitting, [requestId]: false })
+      } else {
+        toast.success('🎉 Bid submitted successfully! Check "My Bids" to track its status.')
+        setBidAmount({ ...bidAmount, [requestId]: '' })
+        setBidMessage({ ...bidMessage, [requestId]: '' })
+        setSubmitting({ ...submitting, [requestId]: false })
+        await loadRequests()
+      }
+    } catch (error) {
+      console.error('Error submitting bid:', error)
+      toast.error('An unexpected error occurred')
+      setSubmitting({ ...submitting, [requestId]: false })
     }
-
-    setSubmitting({ ...submitting, [requestId]: true })
-
-    const result = await submitBid({
-      requestId,
-      amount,
-      message: message.trim(),
-    })
-
-    if ('error' in result) {
-      toast.error(result.error || 'Failed to submit bid')
-    } else {
-      toast.success('🎉 Bid submitted successfully! Check "My Bids" to track its status.')
-      setBidAmount({ ...bidAmount, [requestId]: '' })
-      setBidMessage({ ...bidMessage, [requestId]: '' })
-      loadRequests()
-    }
-
-    setSubmitting({ ...submitting, [requestId]: false })
   }
 
   const handleWithdrawBid = async (requestId: string, bidId: string) => {
@@ -391,14 +401,21 @@ export default function HelperRequestsPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className="text-xs text-slate-600 dark:text-slate-400 mb-1 block">
-                            Bid Amount (₹)
+                            Bid Amount (₹) *
                           </label>
                           <Input
                             type="number"
                             placeholder="Enter amount"
                             value={bidAmount[request.id] || ''}
                             onChange={(e) => setBidAmount({ ...bidAmount, [request.id]: e.target.value })}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && bidAmount[request.id] && parseFloat(bidAmount[request.id]) > 0) {
+                                e.preventDefault()
+                                handleSubmitBid(request.id)
+                              }
+                            }}
                             min={0}
+                            required
                           />
                         </div>
                         <div>
@@ -409,15 +426,33 @@ export default function HelperRequestsPage() {
                             placeholder="Add a message..."
                             value={bidMessage[request.id] || ''}
                             onChange={(e) => setBidMessage({ ...bidMessage, [request.id]: e.target.value })}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && bidAmount[request.id] && parseFloat(bidAmount[request.id]) > 0) {
+                                e.preventDefault()
+                                handleSubmitBid(request.id)
+                              }
+                            }}
                           />
                         </div>
                       </div>
                       <Button
-                        onClick={() => handleSubmitBid(request.id)}
-                        disabled={submitting[request.id]}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          console.log('Button clicked for request:', request.id)
+                          handleSubmitBid(request.id)
+                        }}
+                        disabled={submitting[request.id] || !bidAmount[request.id] || parseFloat(bidAmount[request.id]) <= 0}
                         className="w-full"
                       >
-                        {submitting[request.id] ? 'Submitting...' : 'Submit Bid'}
+                        {submitting[request.id] ? (
+                          <>
+                            <span className="animate-spin mr-2">⏳</span>
+                            Submitting...
+                          </>
+                        ) : (
+                          'Submit Bid'
+                        )}
                       </Button>
                     </div>
                   )}

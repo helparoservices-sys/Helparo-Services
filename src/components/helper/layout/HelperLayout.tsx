@@ -8,6 +8,7 @@ import HelperTopbar from './HelperTopbar'
 import Breadcrumb from '@/components/admin/layout/Breadcrumb'
 import { ToastProvider } from '@/components/ui/toast-notification'
 import { LocationPermissionPrompt } from '@/components/helper/location-permission'
+import { Toaster } from 'sonner'
 
 interface HelperLayoutProps {
   children: ReactNode
@@ -20,6 +21,7 @@ export default function HelperLayout({ children }: HelperLayoutProps) {
   return (
     <RoleGuard allowedRole="helper">
       <ToastProvider>
+        <Toaster position="top-right" richColors />
         <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 dark:from-slate-900 dark:via-indigo-950 dark:to-purple-950 relative overflow-hidden">
           {/* Location Permission Prompt */}
           <LocationPermissionPrompt />
