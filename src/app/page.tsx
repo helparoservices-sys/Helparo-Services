@@ -26,45 +26,6 @@ import {
 export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-guardianTeal to-aquaGlow text-deepNavy">
-        <div className="container mx-auto px-6 py-20 text-center">
-          <h1 className="text-4xl font-bold mb-6 animate-fadeIn">
-            Get Trusted Help in Minutes
-          </h1>
-          <p className="text-lg mb-8">
-            Find professional helpers for your needs quickly and easily.
-          </p>
-          <div className="flex justify-center gap-4">
-            <button className="px-6 py-3 bg-deepNavy text-white rounded-xl shadow-strong hover:shadow-subtle transition-all">
-              Book a Helper
-            </button>
-            <button className="px-6 py-3 bg-white text-deepNavy border border-deepNavy rounded-xl hover:bg-deepNavy hover:text-white transition-all">
-              Learn More
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Quick Categories */}
-      <section className="container mx-auto px-6 py-12">
-        <h2 className="text-2xl font-bold mb-6 text-center">Quick Categories</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-6 bg-white rounded-xl shadow-subtle hover:shadow-strong transition-all">
-            <h3 className="text-lg font-bold mb-2">Cleaning Services</h3>
-            <p className="text-sm text-gray-600">Professional cleaning for homes and offices.</p>
-          </div>
-          <div className="p-6 bg-white rounded-xl shadow-subtle hover:shadow-strong transition-all">
-            <h3 className="text-lg font-bold mb-2">Plumbing</h3>
-            <p className="text-sm text-gray-600">Expert plumbing services for your home.</p>
-          </div>
-          <div className="p-6 bg-white rounded-xl shadow-subtle hover:shadow-strong transition-all">
-            <h3 className="text-lg font-bold mb-2">Electrical</h3>
-            <p className="text-sm text-gray-600">Reliable electrical repairs and installations.</p>
-          </div>
-        </div>
-      </section>
-
       {/* Header - Glassmorphism */}
       <header className="sticky top-0 z-50 w-full border-b border-purple-100 bg-white/80 backdrop-blur-xl">
         <div className="container mx-auto flex h-20 items-center justify-between px-6">

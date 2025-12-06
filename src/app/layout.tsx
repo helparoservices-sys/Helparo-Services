@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next'
-import { Suspense } from 'react'
 import './globals.css'
 import { PageTransition } from '@/components/page-transition'
 
