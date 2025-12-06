@@ -233,19 +233,19 @@
 
 /* Guardian Teal Theme Utilities */
 .btn-primary-teal {
-  @apply bg-guardianTeal hover:bg-guardianTeal/90 text-white font-semibold rounded-xl px-6 py-3 shadow-card hover:shadow-strong transition-all duration-300 hover:scale-105;
+  @apply bg-guardian-teal hover:bg-guardian-teal-600 text-white font-semibold rounded-xl px-6 py-3 shadow-teal-md hover:shadow-teal-lg transition-all duration-300 hover:scale-105;
 }
 
 .btn-accent-glow {
-  @apply bg-aquaGlow hover:bg-aquaGlow/90 text-deepNavy font-bold rounded-xl px-6 py-3 shadow-glow-sm hover:shadow-glow transition-all duration-300 hover:scale-105;
+  @apply bg-aqua-glow hover:bg-aqua-glow-600 text-deep-navy font-bold rounded-xl px-6 py-3 shadow-glow-sm hover:shadow-glow transition-all duration-300 hover:scale-105;
 }
 
 .btn-outline-teal {
-  @apply border-2 border-guardianTeal text-guardianTeal hover:bg-guardianTeal hover:text-white font-semibold rounded-xl px-6 py-3 transition-all duration-300;
+  @apply border-2 border-guardian-teal text-guardian-teal hover:bg-guardian-teal hover:text-white font-semibold rounded-xl px-6 py-3 transition-all duration-300;
 }
 
 .card-hover-lift {
-  @apply transition-all duration-300 hover:shadow-strong hover:-translate-y-1;
+  @apply transition-all duration-300 hover:shadow-teal-lg hover:-translate-y-1;
 }
 
 .shimmer-effect {
@@ -271,23 +271,23 @@
 }
 
 .gradient-teal {
-  @apply bg-gradient-to-r from-guardianTeal to-aquaGlow;
+  @apply bg-gradient-to-r from-guardian-teal to-aqua-glow;
 }
 
 .gradient-navy-teal {
-  @apply bg-gradient-to-br from-deepNavy via-guardianTeal to-aquaGlow;
+  @apply bg-gradient-to-br from-deep-navy via-guardian-teal to-aqua-glow;
 }
 
 .text-gradient-teal {
-  @apply bg-gradient-to-r from-guardianTeal to-aquaGlow bg-clip-text text-transparent;
+  @apply bg-gradient-to-r from-guardian-teal to-aqua-glow bg-clip-text text-transparent;
 }
 
 .glass-card {
-  @apply bg-white/80 backdrop-blur-xl border border-white/20 shadow-card rounded-2xl;
+  @apply bg-white/80 backdrop-blur-xl border border-white/20 shadow-teal-md rounded-2xl;
 }
 
 .dark .glass-card {
-  @apply bg-deepNavy/80 border-guardianTeal/20;
+  @apply bg-deep-navy/80 border-guardian-teal/20;
 }
 
 /* Smooth scrolling */
