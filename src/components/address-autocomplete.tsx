@@ -3,6 +3,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { MapPin, Loader2, Navigation } from 'lucide-react'
 import { useLocation } from '@/lib/use-location'
+import { Loader } from '@googlemaps/js-api-loader'
+
+interface PlacePrediction {
+  description: string
+  place_id: string
+  structured_formatting: {
+    main_text: string
+    secondary_text: string
+  }
+}
 
 interface AddressSuggestion {
   display_name: string
@@ -41,12 +51,45 @@ export function AddressAutocomplete({
   required = false,
   className = ''
 }: AddressAutocompleteProps) {
-  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([])
+  const [suggestions, setSuggestions] = useState<PlacePrediction[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const { requestLocation, isLoading: locationLoading, address, coordinates } = useLocation()
   const searchTimeout = useRef<NodeJS.Timeout>()
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null)
+  const placesService = useRef<google.maps.places.PlacesService | null>(null)
+  const isGoogleMapsLoaded = useRef(false)
+
+  // Load Google Maps API
+  useEffect(() => {
+    const loadGoogleMaps = async () => {
+      if (isGoogleMapsLoaded.current) return
+
+      try {
+        const loader = new Loader({
+          apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+          version: 'weekly',
+          libraries: ['places']
+        })
+
+        await loader.load()
+        
+        autocompleteService.current = new google.maps.places.AutocompleteService()
+        
+        // Create a dummy div for PlacesService (required by Google)
+        const dummyDiv = document.createElement('div')
+        placesService.current = new google.maps.places.PlacesService(dummyDiv)
+        
+        isGoogleMapsLoaded.current = true
+        console.log('✅ Google Maps Places API loaded')
+      } catch (error) {
+        console.error('❌ Failed to load Google Maps:', error)
+      }
+    }
+
+    loadGoogleMaps()
+  }, [])
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -78,24 +121,34 @@ export function AddressAutocomplete({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, coordinates])
 
-  // Search for address suggestions
+  // Search for address suggestions using Google Places API
   const searchAddress = async (query: string) => {
-    if (query.length < 3) {
+    if (query.length < 3 || !autocompleteService.current) {
       setSuggestions([])
       return
     }
 
     setIsSearching(true)
     try {
-      const response = await fetch(`/api/address/search?q=${encodeURIComponent(query)}`, { cache: 'no-store' })
-      if (response.ok) {
-        const data = await response.json()
-        setSuggestions(data?.results || [])
-        setShowSuggestions(true)
-      }
+      autocompleteService.current.getPlacePredictions(
+        {
+          input: query,
+          componentRestrictions: { country: 'in' }, // Restrict to India
+          types: ['geocode', 'establishment'] // All types of places
+        },
+        (predictions, status) => {
+          setIsSearching(false)
+          
+          if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+            setSuggestions(predictions)
+            setShowSuggestions(true)
+          } else {
+            setSuggestions([])
+          }
+        }
+      )
     } catch (error) {
       console.error('Address search error:', error)
-    } finally {
       setIsSearching(false)
     }
   }
@@ -114,23 +167,56 @@ export function AddressAutocomplete({
     }, 500)
   }
 
-  const handleSuggestionClick = async (suggestion: AddressSuggestion) => {
-    const addr = suggestion.address || {}
-    const selectedAddress = {
-      display_name: suggestion.display_name,
-      city: addr.city || addr.town || addr.village || '',
-      state: addr.state || '',
-      pincode: addr.postcode || addr.pincode || '',
-      lat: parseFloat(suggestion.lat),
-      lng: parseFloat(suggestion.lon)
-    }
+  const handleSuggestionClick = async (prediction: PlacePrediction) => {
+    if (!placesService.current) return
 
-    onChange(suggestion.display_name)
-    setShowSuggestions(false)
-    setSuggestions([])
+    setIsSearching(true)
     
-    console.log('✅ Address selected:', selectedAddress)
-    onAddressSelect?.(selectedAddress)
+    // Get place details using place_id
+    placesService.current.getDetails(
+      {
+        placeId: prediction.place_id,
+        fields: ['address_components', 'geometry', 'formatted_address']
+      },
+      (place, status) => {
+        setIsSearching(false)
+        
+        if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+          // Extract address components
+          let city = ''
+          let state = ''
+          let pincode = ''
+          
+          place.address_components?.forEach((component) => {
+            if (component.types.includes('locality')) {
+              city = component.long_name
+            }
+            if (component.types.includes('administrative_area_level_1')) {
+              state = component.long_name
+            }
+            if (component.types.includes('postal_code')) {
+              pincode = component.long_name
+            }
+          })
+
+          const selectedAddress = {
+            display_name: place.formatted_address || prediction.description,
+            city: city,
+            state: state,
+            pincode: pincode,
+            lat: place.geometry?.location?.lat() || 0,
+            lng: place.geometry?.location?.lng() || 0
+          }
+
+          onChange(selectedAddress.display_name)
+          setShowSuggestions(false)
+          setSuggestions([])
+          
+          console.log('✅ Google Places Address selected:', selectedAddress)
+          onAddressSelect?.(selectedAddress)
+        }
+      }
+    )
   }
 
   const handleUseCurrentLocation = async () => {
@@ -183,24 +269,22 @@ export function AddressAutocomplete({
       {/* Suggestions Dropdown */}
       {showSuggestions && suggestions.length > 0 && (
         <div className="absolute z-50 w-full mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-          {suggestions.map((suggestion, index) => (
+          {suggestions.map((prediction) => (
             <button
-              key={index}
+              key={prediction.place_id}
               type="button"
-              onClick={() => handleSuggestionClick(suggestion)}
+              onClick={() => handleSuggestionClick(prediction)}
               className="w-full px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-slate-100 dark:border-slate-700 last:border-b-0"
             >
               <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 text-slate-400 mt-1 flex-shrink-0" />
+                <MapPin className="h-4 w-4 text-blue-600 mt-1 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                    {suggestion.display_name}
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">
+                    {prediction.structured_formatting.main_text}
                   </p>
-                  {suggestion.address?.postcode && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      PIN: {suggestion.address.postcode}
-                    </p>
-                  )}
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                    {prediction.structured_formatting.secondary_text}
+                  </p>
                 </div>
               </div>
             </button>

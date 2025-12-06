@@ -116,7 +116,7 @@ export default async function CustomerDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
         <Link 
           href="/customer/requests/new"
           className="block bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all group"
@@ -130,6 +130,29 @@ export default async function CustomerDashboard() {
           <p className="text-sm text-blue-100 mb-3">Post a service request and get bids from helpers</p>
           <div className="flex items-center text-sm font-medium group-hover:gap-2 transition-all">
             Create Now <ArrowRight className="h-4 w-4 ml-1" />
+          </div>
+        </Link>
+
+        <Link 
+          href="/customer/requests/ai"
+          className="block bg-gradient-to-r from-purple-600 to-teal-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all group relative overflow-hidden"
+        >
+          <div className="absolute top-2 right-2">
+            <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full">
+              AI ✨
+            </span>
+          </div>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-white/20 rounded-lg">
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold">AI Smart Request</h3>
+          </div>
+          <p className="text-sm text-purple-100 mb-3">Upload photos, get instant AI pricing & notify all helpers</p>
+          <div className="flex items-center text-sm font-medium group-hover:gap-2 transition-all">
+            Try AI Magic <ArrowRight className="h-4 w-4 ml-1" />
           </div>
         </Link>
       </div>
