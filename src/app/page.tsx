@@ -25,74 +25,76 @@ import {
 
 export default function LandingPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-white">
-      {/* Header - Glassmorphism */}
-      <header className="sticky top-0 z-50 w-full border-b border-purple-100 bg-white/80 backdrop-blur-xl">
+    <div className="flex min-h-screen flex-col bg-trust-light">
+      {/* Header - Glassmorphism with Guardian Teal */}
+      <header className="sticky top-0 z-50 w-full border-b border-guardianTeal/10 glass-card">
         <div className="container mx-auto flex h-20 items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <div className="relative h-12 w-12 overflow-hidden rounded-2xl p-1">
-              <Image src="/logo.jpg" alt="Helparo" width={48} height={48} className="object-contain" />
+            <div className="relative h-12 w-12 overflow-hidden rounded-2xl p-1 bg-gradient-to-br from-guardianTeal to-aquaGlow">
+              <Image src="/logo.jpg" alt="Helparo" width={48} height={48} className="object-contain rounded-xl" />
             </div>
-            <span className="text-2xl font-black bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">Helparo</span>
+            <span className="text-2xl font-black text-gradient-teal">Helparo</span>
           </div>
           <nav className="hidden md:flex gap-8">
-            <SmoothScrollLink href="#features" className="text-sm font-semibold text-gray-700 hover:text-purple-600 transition-colors">
+            <SmoothScrollLink href="#features" className="text-sm font-semibold text-deepNavy hover:text-guardianTeal transition-colors">
               Features
             </SmoothScrollLink>
-            <SmoothScrollLink href="#how-it-works" className="text-sm font-semibold text-gray-700 hover:text-purple-600 transition-colors">
+            <SmoothScrollLink href="#how-it-works" className="text-sm font-semibold text-deepNavy hover:text-guardianTeal transition-colors">
               How It Works
             </SmoothScrollLink>
-            <SmoothScrollLink href="#services" className="text-sm font-semibold text-gray-700 hover:text-purple-600 transition-colors">
+            <SmoothScrollLink href="#services" className="text-sm font-semibold text-deepNavy hover:text-guardianTeal transition-colors">
               Services
             </SmoothScrollLink>
-            <SmoothScrollLink href="#trust" className="text-sm font-semibold text-gray-700 hover:text-purple-600 transition-colors">
+            <SmoothScrollLink href="#trust" className="text-sm font-semibold text-deepNavy hover:text-guardianTeal transition-colors">
               Safety
             </SmoothScrollLink>
           </nav>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" className="font-semibold" asChild>
+            <Button variant="ghost" className="font-semibold text-deepNavy hover:text-guardianTeal" asChild>
               <Link href="/auth/login">Sign In</Link>
             </Button>
-            <Button className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-full px-6 shadow-lg shadow-purple-500/30" asChild>
+            <Button className="btn-accent-glow" asChild>
               <Link href="/auth/signup">Get Started</Link>
             </Button>
           </div>
         </div>
       </header>
 
-      {/* Hero Section - Bold Gradient */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-purple-50 via-white to-teal-50 py-24 md:py-32">
+      {/* Hero Section - Guardian Teal Gradient */}
+      <section className="relative overflow-hidden gradient-navy-teal py-24 md:py-32">
         {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-teal-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-          <div className="absolute top-40 left-1/2 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+        <div className="absolute inset-0 overflow-hidden opacity-30">
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-aquaGlow rounded-full mix-blend-multiply filter blur-3xl animate-float"></div>
+          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-guardianTeal rounded-full mix-blend-multiply filter blur-3xl animate-float animation-delay-2000"></div>
+          <div className="absolute top-40 left-1/2 w-96 h-96 bg-aquaGlow/50 rounded-full mix-blend-multiply filter blur-3xl animate-float animation-delay-4000"></div>
         </div>
 
         <div className="container mx-auto px-6 relative z-10">
           <div className="grid gap-16 lg:grid-cols-2 lg:gap-12 items-center">
-            <div className="flex flex-col gap-8">
-              <div className="inline-flex items-center rounded-full bg-white border-2 border-purple-100 px-5 py-2 w-fit shadow-sm">
-                <BadgeCheck className="mr-2 h-5 w-5 text-purple-600" />
-                <span className="text-sm font-bold text-purple-900">100% Verified Professionals</span>
+            <div className="flex flex-col gap-8 animate-fadeInUp">
+              <div className="inline-flex items-center rounded-full glass-card px-5 py-2 w-fit shadow-glow-sm">
+                <BadgeCheck className="mr-2 h-5 w-5 text-aquaGlow" />
+                <span className="text-sm font-bold text-white">100% Verified Professionals</span>
               </div>
               <h1 className="text-5xl font-black tracking-tight sm:text-6xl md:text-7xl lg:text-8xl leading-tight">
-                <span className="bg-gradient-to-r from-purple-600 via-purple-700 to-teal-600 bg-clip-text text-transparent">
-                  Services
+                <span className="text-white">
+                  Get Trusted Help
                 </span>
                 <br />
-                <span className="text-gray-900">Made Simple</span>
+                <span className="text-gradient-teal bg-gradient-to-r from-aquaGlow to-white bg-clip-text text-transparent">
+                  in Minutes
+                </span>
               </h1>
-              <p className="text-xl text-gray-600 md:text-2xl font-medium leading-relaxed">
+              <p className="text-xl text-white/90 md:text-2xl font-medium leading-relaxed">
                 Connect with expert helpers instantly. From plumbing to cleaning—get it done right, get it done now. 💫
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="bg-gradient-to-r from-purple-600 to-teal-600 hover:from-purple-700 hover:to-teal-700 text-white font-bold text-lg px-8 py-6 rounded-2xl shadow-2xl shadow-purple-500/40 hover:shadow-purple-500/60 transition-all hover:scale-105" asChild>
+                <Button size="lg" className="btn-accent-glow text-lg px-8 py-6 rounded-2xl" asChild>
                   <Link href="/auth/signup?role=customer">
                     Find Helpers <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" className="border-2 border-purple-600 text-purple-600 hover:bg-purple-50 font-bold text-lg px-8 py-6 rounded-2xl" asChild>
+                <Button size="lg" className="btn-outline-teal bg-white/10 border-white text-white hover:bg-white hover:text-deepNavy text-lg px-8 py-6 rounded-2xl backdrop-blur-sm" asChild>
                   <Link href="/auth/signup?role=helper">
                     Earn as Helper
                   </Link>
@@ -100,16 +102,16 @@ export default function LandingPage() {
               </div>
               <div className="flex items-center gap-10 pt-4">
                 <div className="text-center">
-                  <div className="text-4xl font-black bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">10K+</div>
-                  <div className="text-sm text-gray-600 font-semibold">Helpers</div>
+                  <div className="text-4xl font-black text-aquaGlow">10K+</div>
+                  <div className="text-sm text-white/80 font-semibold">Helpers</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-4xl font-black bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">50K+</div>
-                  <div className="text-sm text-gray-600 font-semibold">Completed</div>
+                  <div className="text-4xl font-black text-aquaGlow">50K+</div>
+                  <div className="text-sm text-white/80 font-semibold">Completed</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-4xl font-black bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">4.8★</div>
-                  <div className="text-sm text-gray-600 font-semibold">Rating</div>
+                  <div className="text-4xl font-black text-aquaGlow">4.8★</div>
+                  <div className="text-sm text-white/80 font-semibold">Rating</div>
                 </div>
               </div>
             </div>
@@ -118,19 +120,19 @@ export default function LandingPage() {
                 {/* Floating Cards */}
                 <div className="absolute top-0 left-0 right-0 bottom-0">
                   <div className="absolute top-0 left-0 transform hover:scale-110 transition-transform duration-300">
-                    <FloatingServiceCard icon={Wrench} title="Plumbing" color="purple" />
+                    <FloatingServiceCard icon={Wrench} title="Plumbing" color="teal" />
                   </div>
                   <div className="absolute top-0 right-0 transform hover:scale-110 transition-transform duration-300">
-                    <FloatingServiceCard icon={Lightbulb} title="Electrical" color="yellow" />
+                    <FloatingServiceCard icon={Lightbulb} title="Electrical" color="glow" />
                   </div>
                   <div className="absolute bottom-0 left-0 transform hover:scale-110 transition-transform duration-300">
-                    <FloatingServiceCard icon={Home} title="Cleaning" color="teal" />
+                    <FloatingServiceCard icon={Home} title="Cleaning" color="navy" />
                   </div>
                   <div className="absolute bottom-0 right-0 transform hover:scale-110 transition-transform duration-300">
-                    <FloatingServiceCard icon={Car} title="Auto Fix" color="blue" />
+                    <FloatingServiceCard icon={Car} title="Auto Fix" color="teal" />
                   </div>
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-purple-500 to-teal-500 flex items-center justify-center shadow-2xl p-4">
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-glow">
+                    <div className="w-32 h-32 rounded-full gradient-teal flex items-center justify-center shadow-glow-lg p-4">
                       <Image src="/logo.jpg" alt="Helparo" width={96} height={96} className="object-contain rounded-full" />
                     </div>
                   </div>
@@ -141,16 +143,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features Section - Cards with Gradient Borders */}
+      {/* Features Section - Guardian Teal Theme */}
       <section id="features" className="py-24 bg-white">
         <div className="container mx-auto px-6">
           <FadeInSection className="text-center mb-20">
             <h2 className="text-5xl font-black sm:text-6xl mb-6">
-              <span className="bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">
+              <span className="text-gradient-teal">
                 Why Helparo?
               </span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto font-medium">
+            <p className="text-xl text-deepNavy/70 max-w-2xl mx-auto font-medium">
               We&apos;re not just another marketplace—we&apos;re your trusted partner
             </p>
           </FadeInSection>
@@ -160,7 +162,7 @@ export default function LandingPage() {
                 icon={Shield}
                 title="Verified Pros"
                 description="Background checks, ID verification, and skill assessments for every helper."
-                gradient="from-purple-500 to-purple-600"
+                gradient="from-guardianTeal to-guardianTeal/80"
               />
             </StaggerItem>
             <StaggerItem>
@@ -168,7 +170,7 @@ export default function LandingPage() {
                 icon={Zap}
                 title="Instant Pays"
                 description="Helpers get paid immediately. Just 12% commission. Fair and transparent."
-                gradient="from-yellow-500 to-orange-500"
+                gradient="from-aquaGlow to-aquaGlow/80"
               />
             </StaggerItem>
             <StaggerItem>
@@ -176,7 +178,7 @@ export default function LandingPage() {
                 icon={MapPin}
                 title="Near You"
                 description="GPS-powered matching finds the closest available helpers in seconds."
-                gradient="from-teal-500 to-cyan-500"
+                gradient="from-guardianTeal/70 to-aquaGlow/70"
               />
             </StaggerItem>
             <StaggerItem>
@@ -184,7 +186,7 @@ export default function LandingPage() {
                 icon={Clock}
                 title="24/7 Ready"
                 description="Emergency services available round the clock. We've got your back."
-                gradient="from-blue-500 to-indigo-500"
+                gradient="from-deepNavy to-guardianTeal"
               />
             </StaggerItem>
             <StaggerItem>
@@ -192,7 +194,7 @@ export default function LandingPage() {
                 icon={Star}
                 title="Top Rated"
                 description="Real reviews from real customers. Quality you can trust every time."
-                gradient="from-pink-500 to-rose-500"
+                gradient="from-aquaGlow to-guardianTeal"
               />
             </StaggerItem>
             <StaggerItem>
@@ -200,28 +202,28 @@ export default function LandingPage() {
                 icon={Users}
                 title="No Surprises"
                 description="See prices upfront. No hidden fees. Pay what you see. That's it."
-                gradient="from-green-500 to-emerald-500"
+                gradient="from-guardianTeal to-deepNavy"
               />
             </StaggerItem>
           </StaggerChildren>
         </div>
       </section>
 
-      {/* How It Works - Minimalist Timeline */}
-      <section id="how-it-works" className="py-24 bg-gradient-to-br from-purple-50 to-teal-50">
+      {/* How It Works - Guardian Teal Timeline */}
+      <section id="how-it-works" className="py-24 bg-gradient-to-br from-guardianTeal/5 to-aquaGlow/5">
         <div className="container mx-auto px-6">
           <FadeInSection className="text-center mb-20">
             <h2 className="text-5xl font-black sm:text-6xl mb-6">
-              <span className="text-gray-900">Simple. Fast. </span>
-              <span className="bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">Done.</span>
+              <span className="text-deepNavy">Simple. Fast. </span>
+              <span className="text-gradient-teal">Done.</span>
             </h2>
-            <p className="text-xl text-gray-600 font-medium">
+            <p className="text-xl text-deepNavy/70 font-medium">
               Three steps to your perfect service
             </p>
           </FadeInSection>
           <StaggerChildren className="max-w-5xl mx-auto grid gap-12 md:grid-cols-3 relative">
             {/* Connection Line */}
-            <div className="hidden md:block absolute top-24 left-0 right-0 h-1 bg-gradient-to-r from-purple-300 via-teal-300 to-purple-300"></div>
+            <div className="hidden md:block absolute top-24 left-0 right-0 h-1 gradient-teal"></div>
             
             <StaggerItem>
               <ModernStepCard 
@@ -379,53 +381,52 @@ export default function LandingPage() {
   )
 }
 
-// Modern Floating Service Card
+// Modern Floating Service Card with Guardian Teal
 function FloatingServiceCard({ icon: Icon, title, color }: { icon: React.ElementType; title: string; color: string }) {
   const colorMap: Record<string, string> = {
-    purple: 'from-purple-500 to-purple-600',
-    yellow: 'from-yellow-400 to-orange-500',
-    teal: 'from-teal-500 to-cyan-500',
-    blue: 'from-blue-500 to-indigo-600'
+    teal: 'from-guardianTeal to-guardianTeal/80',
+    glow: 'from-aquaGlow to-aquaGlow/80',
+    navy: 'from-deepNavy to-deepNavy/80',
   }
   
   return (
-    <div className={`w-40 h-40 rounded-3xl bg-gradient-to-br ${colorMap[color]} p-1 shadow-2xl animate-float`}>
-      <div className="h-full w-full rounded-3xl bg-white flex flex-col items-center justify-center gap-2">
-        <Icon className="h-12 w-12 text-gray-900" />
-        <span className="font-black text-gray-900">{title}</span>
+    <div className={`w-40 h-40 rounded-3xl bg-gradient-to-br ${colorMap[color]} p-1 shadow-glow animate-float`}>
+      <div className="h-full w-full rounded-3xl bg-white flex flex-col items-center justify-center gap-2 card-hover-lift">
+        <Icon className="h-12 w-12 text-deepNavy" />
+        <span className="font-black text-deepNavy">{title}</span>
       </div>
     </div>
   )
 }
 
-// Modern Feature Card with Gradient Border
+// Modern Feature Card with Guardian Teal Gradient Border
 function ModernFeatureCard({ icon: Icon, title, description, gradient }: { icon: React.ElementType; title: string; description: string; gradient: string }) {
   return (
-    <div className="group relative overflow-hidden rounded-3xl bg-white border-2 border-gray-100 p-8 hover:border-transparent hover:shadow-2xl transition-all duration-300">
-      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-10 transition-opacity`}></div>
+    <div className="group relative overflow-hidden rounded-3xl bg-white border-2 border-guardianTeal/10 p-8 card-hover-lift hover:border-guardianTeal/30 transition-all duration-300">
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
       <div className="relative z-10">
-        <div className={`inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-white mb-6 shadow-lg`}>
+        <div className={`inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-white mb-6 shadow-card group-hover:shadow-strong transition-shadow duration-300`}>
           <Icon className="h-8 w-8" />
         </div>
-        <h3 className="text-2xl font-black mb-3 text-gray-900">{title}</h3>
-        <p className="text-gray-600 font-medium leading-relaxed">{description}</p>
+        <h3 className="text-2xl font-black mb-3 text-deepNavy">{title}</h3>
+        <p className="text-deepNavy/70 font-medium leading-relaxed">{description}</p>
       </div>
     </div>
   )
 }
 
-// Modern Step Card
+// Modern Step Card with Guardian Teal Theme
 function ModernStepCard({ number, title, description, icon: Icon }: { number: string; title: string; description: string; icon: React.ElementType }) {
   return (
     <div className="relative flex flex-col items-center text-center">
-      <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-teal-600 text-white text-3xl font-black mb-6 shadow-2xl">
+      <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full gradient-teal text-white text-3xl font-black mb-6 shadow-glow animate-pulse">
         {number}
       </div>
-      <div className="w-16 h-16 rounded-full bg-white border-4 border-purple-200 flex items-center justify-center mb-6 -mt-14 relative z-0">
-        <Icon className="h-7 w-7 text-purple-600" />
+      <div className="w-16 h-16 rounded-full bg-white border-4 border-guardianTeal/20 flex items-center justify-center mb-6 -mt-14 relative z-0 group-hover:border-guardianTeal/40 transition-colors duration-300">
+        <Icon className="h-7 w-7 text-guardianTeal" />
       </div>
-      <h3 className="text-2xl font-black mb-3 text-gray-900">{title}</h3>
-      <p className="text-gray-600 font-medium leading-relaxed">{description}</p>
+      <h3 className="text-2xl font-black mb-3 text-deepNavy">{title}</h3>
+      <p className="text-deepNavy/70 font-medium leading-relaxed">{description}</p>
     </div>
   )
 }
