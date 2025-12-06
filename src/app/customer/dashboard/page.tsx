@@ -116,7 +116,7 @@ export default async function CustomerDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Link 
           href="/customer/requests/new"
           className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all group"
@@ -130,22 +130,6 @@ export default async function CustomerDashboard() {
           <p className="text-sm text-blue-100 mb-3">Post a service request and get bids from helpers</p>
           <div className="flex items-center text-sm font-medium group-hover:gap-2 transition-all">
             Create Now <ArrowRight className="h-4 w-4 ml-1" />
-          </div>
-        </Link>
-
-        <Link 
-          href="/customer/find-helpers"
-          className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all group"
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <Search className="h-6 w-6 text-blue-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Find Helpers</h3>
-          </div>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">Browse verified professionals by category</p>
-          <div className="flex items-center text-sm font-medium text-blue-600 group-hover:gap-2 transition-all">
-            Browse Now <ArrowRight className="h-4 w-4 ml-1" />
           </div>
         </Link>
 
