@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ User authenticated:', session.user.email)
 
-    // Base query for instant booking helpers
+    // Base query for instant booking helpers (include both online and offline)
     let query = supabase
       .from('helper_profiles')
       .select(`
@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
         service_categories,
         skills,
         experience_years,
+        is_available_now,
         profiles:user_id (
           id,
           full_name,
@@ -99,15 +100,22 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Sort by: auto_accept first, then by response time, then by price
+    // Sort by: Available now first, then auto_accept, then response time, then price
     filteredHelpers.sort((a, b) => {
+      // Priority 1: Available now (online helpers first)
+      if (a.is_available_now && !b.is_available_now) return -1
+      if (!a.is_available_now && b.is_available_now) return 1
+      
+      // Priority 2: Auto accept enabled
       if (a.auto_accept_enabled && !b.auto_accept_enabled) return -1
       if (!a.auto_accept_enabled && b.auto_accept_enabled) return 1
       
+      // Priority 3: Response time
       if (a.response_time_minutes !== b.response_time_minutes) {
         return (a.response_time_minutes || 999) - (b.response_time_minutes || 999)
       }
       
+      // Priority 4: Price
       return (a.instant_booking_price || 0) - (b.instant_booking_price || 0)
     })
 
