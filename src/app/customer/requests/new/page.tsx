@@ -84,6 +84,7 @@ export default function NewRequestPage() {
       }
 
       setLoadingHelpers(true)
+      setError('') // Clear any previous errors
       try {
         const params = new URLSearchParams({
           category_id: form.category_id,
@@ -91,17 +92,33 @@ export default function NewRequestPage() {
           ...(form.location_lng && { lng: form.location_lng.toString() }),
         })
 
+        console.log('🔍 Fetching instant helpers with params:', {
+          category_id: form.category_id,
+          lat: form.location_lat,
+          lng: form.location_lng,
+          url: `/api/helpers/instant?${params}`
+        })
+
         const response = await fetch(`/api/helpers/instant?${params}`)
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch helpers: ${response.status}`)
+        }
+        
         const data = await response.json()
+
+        console.log('✅ Instant helpers response:', data)
 
         if (data.error) {
           throw new Error(data.error)
         }
 
         setInstantHelpers(data.data || [])
+        console.log('📊 Set instant helpers:', data.data?.length || 0)
       } catch (err) {
-        console.error('Error fetching instant helpers:', err)
-        setError('Failed to load instant booking helpers')
+        console.error('❌ Error fetching instant helpers:', err)
+        // Don't show error to user - just show "no helpers available" in the UI
+        setInstantHelpers([])
       } finally {
         setLoadingHelpers(false)
       }

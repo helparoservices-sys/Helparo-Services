@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +10,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = await createClient()
     const searchParams = request.nextUrl.searchParams
     
     const categoryId = searchParams.get('category_id')
@@ -22,8 +21,11 @@ export async function GET(request: NextRequest) {
     // Validate user is authenticated
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
+      console.error('❌ No session found - user not authenticated')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    console.log('✅ User authenticated:', session.user.email)
 
     // Base query for instant booking helpers
     let query = supabase
@@ -53,9 +55,12 @@ export async function GET(request: NextRequest) {
       .eq('is_approved', true)
       .eq('verification_status', 'approved')
 
+    console.log('🔍 Instant Booking Query Params:', { categoryId, lat, lng })
+
     // Filter by category if provided
     if (categoryId) {
       query = query.contains('service_categories', [categoryId])
+      console.log('📂 Filtering by category:', categoryId)
     }
 
     const { data: helpers, error } = await query
@@ -64,6 +69,19 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching instant helpers:', error)
       return NextResponse.json({ error: 'Failed to fetch helpers' }, { status: 500 })
     }
+
+    console.log('📋 Instant Booking Query Results:', {
+      categoryId,
+      totalHelpers: helpers?.length || 0,
+      helpers: helpers?.map(h => ({
+        name: h.profiles?.full_name,
+        categories: h.service_categories?.length || 0,
+        categoryIds: h.service_categories,
+        price: h.instant_booking_price,
+        enabled: h.instant_booking_enabled,
+        approved: h.is_approved
+      }))
+    })
 
     // If location provided, filter by service radius
     let filteredHelpers = helpers || []
