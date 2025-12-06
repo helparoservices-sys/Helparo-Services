@@ -26,6 +26,45 @@ import {
 export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-white">
+      {/* Hero Section */}
+      <section className="relative bg-gradient-to-br from-guardianTeal to-aquaGlow text-deepNavy">
+        <div className="container mx-auto px-6 py-20 text-center">
+          <h1 className="text-4xl font-bold mb-6 animate-fadeIn">
+            Get Trusted Help in Minutes
+          </h1>
+          <p className="text-lg mb-8">
+            Find professional helpers for your needs quickly and easily.
+          </p>
+          <div className="flex justify-center gap-4">
+            <button className="px-6 py-3 bg-deepNavy text-white rounded-xl shadow-strong hover:shadow-subtle transition-all">
+              Book a Helper
+            </button>
+            <button className="px-6 py-3 bg-white text-deepNavy border border-deepNavy rounded-xl hover:bg-deepNavy hover:text-white transition-all">
+              Learn More
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Categories */}
+      <section className="container mx-auto px-6 py-12">
+        <h2 className="text-2xl font-bold mb-6 text-center">Quick Categories</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="p-6 bg-white rounded-xl shadow-subtle hover:shadow-strong transition-all">
+            <h3 className="text-lg font-bold mb-2">Cleaning Services</h3>
+            <p className="text-sm text-gray-600">Professional cleaning for homes and offices.</p>
+          </div>
+          <div className="p-6 bg-white rounded-xl shadow-subtle hover:shadow-strong transition-all">
+            <h3 className="text-lg font-bold mb-2">Plumbing</h3>
+            <p className="text-sm text-gray-600">Expert plumbing services for your home.</p>
+          </div>
+          <div className="p-6 bg-white rounded-xl shadow-subtle hover:shadow-strong transition-all">
+            <h3 className="text-lg font-bold mb-2">Electrical</h3>
+            <p className="text-sm text-gray-600">Reliable electrical repairs and installations.</p>
+          </div>
+        </div>
+      </section>
+
       {/* Header - Glassmorphism */}
       <header className="sticky top-0 z-50 w-full border-b border-purple-100 bg-white/80 backdrop-blur-xl">
         <div className="container mx-auto flex h-20 items-center justify-between px-6">
@@ -151,7 +190,7 @@ export default function LandingPage() {
               </span>
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto font-medium">
-              We're not just another marketplace—we're your trusted partner
+              We&apos;re not just another marketplace—we&apos;re your trusted partner
             </p>
           </FadeInSection>
           <StaggerChildren className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -309,7 +348,7 @@ export default function LandingPage() {
           </h2>
           <p className="text-2xl max-w-3xl mx-auto mb-12 text-purple-100 font-medium leading-relaxed">
             Every helper verified with government IDs. Background checked. Skill certified. 
-            Plus real-time tracking and SOS features. Your safety isn't optional—it's guaranteed.
+            Plus real-time tracking and SOS features. Your safety isn&apos;t optional—it&apos;s guaranteed.
           </p>
           
           {/* Trust Badges */}
@@ -380,7 +419,7 @@ export default function LandingPage() {
 }
 
 // Modern Floating Service Card
-function FloatingServiceCard({ icon: Icon, title, color }: { icon: any; title: string; color: string }) {
+function FloatingServiceCard({ icon: Icon, title, color }: { icon: React.ElementType; title: string; color: string }) {
   const colorMap: Record<string, string> = {
     purple: 'from-purple-500 to-purple-600',
     yellow: 'from-yellow-400 to-orange-500',
@@ -399,7 +438,7 @@ function FloatingServiceCard({ icon: Icon, title, color }: { icon: any; title: s
 }
 
 // Modern Feature Card with Gradient Border
-function ModernFeatureCard({ icon: Icon, title, description, gradient }: { icon: any; title: string; description: string; gradient: string }) {
+function ModernFeatureCard({ icon: Icon, title, description, gradient }: { icon: React.ElementType; title: string; description: string; gradient: string }) {
   return (
     <div className="group relative overflow-hidden rounded-3xl bg-white border-2 border-gray-100 p-8 hover:border-transparent hover:shadow-2xl transition-all duration-300">
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-10 transition-opacity`}></div>
@@ -415,7 +454,7 @@ function ModernFeatureCard({ icon: Icon, title, description, gradient }: { icon:
 }
 
 // Modern Step Card
-function ModernStepCard({ number, title, description, icon: Icon }: { number: string; title: string; description: string; icon: any }) {
+function ModernStepCard({ number, title, description, icon: Icon }: { number: string; title: string; description: string; icon: React.ElementType }) {
   return (
     <div className="relative flex flex-col items-center text-center">
       <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-teal-600 text-white text-3xl font-black mb-6 shadow-2xl">
