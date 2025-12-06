@@ -69,6 +69,8 @@ export default function HelperProfilePage() {
     try {
       console.log('🔍 Loading helper profile with ID:', helperId)
       const supabase = createClient()
+      
+      // Fetch helper profile
       const { data, error } = await supabase
         .from('helper_profiles')
         .select(`
@@ -92,6 +94,25 @@ export default function HelperProfilePage() {
         return
       }
 
+      // Fetch service category names if service_categories array exists
+      let categoryNames: string[] = []
+      if (data.service_categories && data.service_categories.length > 0) {
+        const { data: categories } = await supabase
+          .from('service_categories')
+          .select('id, name')
+          .in('id', data.service_categories)
+          .eq('is_active', true)
+        
+        if (categories) {
+          // Create a map for quick lookup
+          const categoryMap = new Map(categories.map(c => [c.id, c.name]))
+          // Map UUIDs to names in the same order
+          categoryNames = data.service_categories
+            .map((id: string) => categoryMap.get(id))
+            .filter(Boolean) as string[]
+        }
+      }
+
       // Flatten the profiles data into the helper object
       const helperData = {
         ...data,
@@ -99,6 +120,7 @@ export default function HelperProfilePage() {
         email: data.profiles?.email || '',
         phone: data.profiles?.phone || '',
         avatar_url: data.profiles?.avatar_url || null,
+        service_categories: categoryNames, // Use fetched category names
         // Map database column names to display names
         total_bookings: data.total_jobs_completed || 0,
         response_rate: data.response_rate_percent || 100,

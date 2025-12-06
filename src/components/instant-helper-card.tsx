@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarImage, AvatarFallback } from '@radix-ui/react-avatar'
-import { CheckCircle2, Clock, DollarSign, Star, Zap } from 'lucide-react'
+import { CheckCircle2, Clock, DollarSign, Star, Zap, ExternalLink } from 'lucide-react'
+import Link from 'next/link'
 
 interface InstantHelper {
   id: string
@@ -70,9 +71,22 @@ export function InstantHelperCard({ helper, onSelect, selected }: InstantHelperC
           {/* Helper Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className={`font-bold text-lg truncate ${isOffline ? 'text-gray-500' : 'text-gray-900'}`}>
-                {helper.profiles.full_name}
-              </h3>
+              <Link 
+                href={`/customer/helper/${helper.id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="group/name flex items-center gap-1.5"
+              >
+                <h3 className={`font-bold text-lg truncate transition-colors ${
+                  isOffline 
+                    ? 'text-gray-500 group-hover/name:text-gray-700' 
+                    : 'text-gray-900 group-hover/name:text-teal-600'
+                }`}>
+                  {helper.profiles.full_name}
+                </h3>
+                <ExternalLink className={`h-4 w-4 opacity-0 group-hover/name:opacity-100 transition-opacity ${
+                  isOffline ? 'text-gray-500' : 'text-teal-600'
+                }`} />
+              </Link>
               {helper.auto_accept_enabled && (
                 <Badge className={`text-xs px-2 py-0.5 ${isOffline ? 'bg-gray-300 text-gray-600' : 'bg-green-500 text-white'}`}>
                   <Zap className="h-3 w-3 mr-1" />
