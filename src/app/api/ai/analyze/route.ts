@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { images, description, categoryId, location } = body
+    const { images, description, categoryId, categoryName: providedCategoryName, location } = body
 
     if (!images || images.length === 0) {
       return NextResponse.json(
@@ -29,14 +29,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get category name
-    const { data: category } = await supabase
-      .from('service_categories')
-      .select('name')
-      .eq('id', categoryId)
-      .single()
-
-    const categoryName = category?.name || 'General Service'
+    // Use provided category name, or try to look up from database
+    let categoryName = providedCategoryName
+    if (!categoryName) {
+      const { data: category } = await supabase
+        .from('service_categories')
+        .select('name')
+        .eq('id', categoryId)
+        .single()
+      categoryName = category?.name || 'General Service'
+    }
 
     console.log('🔍 Starting AI analysis for:', {
       categoryName,

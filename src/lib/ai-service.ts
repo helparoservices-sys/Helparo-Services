@@ -1,7 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
 // Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+const apiKey = process.env.GEMINI_API_KEY || ''
+const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null
 
 interface AIAnalysisResult {
   estimatedPrice: number
@@ -14,6 +15,81 @@ interface AIAnalysisResult {
   confidence: number
 }
 
+// Category-based pricing estimates (fallback when AI is not available)
+const categoryPricing: Record<string, { min: number; max: number; avg: number; duration: number }> = {
+  'Electrical': { min: 200, max: 2500, avg: 800, duration: 60 },
+  'Plumbing': { min: 200, max: 3000, avg: 700, duration: 45 },
+  'AC & Appliance Repair': { min: 300, max: 4000, avg: 1200, duration: 90 },
+  'Carpentry': { min: 500, max: 5000, avg: 1500, duration: 120 },
+  'Painting': { min: 500, max: 8000, avg: 2000, duration: 180 },
+  'Cleaning': { min: 300, max: 2000, avg: 600, duration: 60 },
+  'Pest Control': { min: 500, max: 3000, avg: 1000, duration: 60 },
+  'Home Repair & Maintenance': { min: 300, max: 3000, avg: 900, duration: 90 },
+  'Locksmith': { min: 200, max: 1500, avg: 500, duration: 30 },
+  'Gardening & Landscaping': { min: 400, max: 5000, avg: 1200, duration: 120 },
+  'Moving & Packing': { min: 1000, max: 10000, avg: 3000, duration: 240 },
+  'Other': { min: 300, max: 2000, avg: 700, duration: 60 },
+}
+
+// Estimate price based on description keywords
+function estimatePriceFromDescription(description: string, categoryName: string): AIAnalysisResult {
+  const basePrice = categoryPricing[categoryName] || categoryPricing['Other']
+  const descLower = description.toLowerCase()
+  
+  let priceMultiplier = 1.0
+  let severityLevel: 'low' | 'medium' | 'high' | 'critical' = 'medium'
+  let urgencyLevel: 'normal' | 'urgent' | 'emergency' = 'normal'
+  
+  // Check for urgency keywords
+  if (descLower.includes('emergency') || descLower.includes('urgent') || descLower.includes('immediately')) {
+    priceMultiplier *= 1.3
+    urgencyLevel = 'emergency'
+    severityLevel = 'high'
+  }
+  
+  // Check for severity keywords
+  if (descLower.includes('shock') || descLower.includes('spark') || descLower.includes('fire') || descLower.includes('leak')) {
+    severityLevel = 'high'
+    priceMultiplier *= 1.2
+  }
+  if (descLower.includes('broken') || descLower.includes('not working') || descLower.includes('damage')) {
+    severityLevel = 'medium'
+    priceMultiplier *= 1.1
+  }
+  if (descLower.includes('minor') || descLower.includes('small') || descLower.includes('simple')) {
+    severityLevel = 'low'
+    priceMultiplier *= 0.8
+  }
+  
+  // Check for complexity
+  if (descLower.includes('multiple') || descLower.includes('complete') || descLower.includes('full')) {
+    priceMultiplier *= 1.4
+  }
+  if (descLower.includes('replace') || descLower.includes('install')) {
+    priceMultiplier *= 1.3
+  }
+  if (descLower.includes('repair') || descLower.includes('fix')) {
+    priceMultiplier *= 1.0
+  }
+  if (descLower.includes('check') || descLower.includes('inspect')) {
+    priceMultiplier *= 0.7
+  }
+  
+  const estimatedPrice = Math.round(basePrice.avg * priceMultiplier)
+  const estimatedDuration = Math.round(basePrice.duration * priceMultiplier)
+  
+  return {
+    estimatedPrice: Math.max(basePrice.min, Math.min(basePrice.max, estimatedPrice)),
+    estimatedDuration: Math.max(15, Math.min(480, estimatedDuration)),
+    severity: severityLevel,
+    requiredSkills: [categoryName],
+    materialsNeeded: ['Standard materials - will be assessed on site'],
+    urgency: urgencyLevel,
+    description: `${categoryName} service requested: ${description}. A professional will assess and provide the exact requirements on site.`,
+    confidence: 65,
+  }
+}
+
 /**
  * Analyze job images and description using Google Gemini AI
  */
@@ -23,6 +99,14 @@ export async function analyzeJobWithAI(
   categoryName: string,
   location?: string
 ): Promise<AIAnalysisResult> {
+  console.log('🔍 analyzeJobWithAI called with:', { categoryName, descriptionLength: description.length, imagesCount: images.length })
+  
+  // If no API key, use smart fallback estimation
+  if (!genAI || !apiKey) {
+    console.log('⚠️ GEMINI_API_KEY not set, using smart estimation')
+    return estimatePriceFromDescription(description, categoryName)
+  }
+
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
 
@@ -113,17 +197,9 @@ Respond with ONLY valid JSON, no additional text.`
   } catch (error) {
     console.error('❌ AI Analysis Error:', error)
     
-    // Fallback to basic estimation
-    return {
-      estimatedPrice: 500,
-      estimatedDuration: 60,
-      severity: 'medium',
-      requiredSkills: [categoryName],
-      materialsNeeded: ['Standard materials'],
-      urgency: 'normal',
-      description: description || 'Service request requires professional assessment',
-      confidence: 50,
-    }
+    // Fallback to smart estimation based on category and description
+    console.log('📊 Using smart estimation fallback')
+    return estimatePriceFromDescription(description, categoryName)
   }
 }
 

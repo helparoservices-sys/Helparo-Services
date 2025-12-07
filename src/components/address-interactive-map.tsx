@@ -38,7 +38,7 @@ interface AddressInteractiveMapProps {
 
 declare global {
   interface Window {
-    google: any
+    google: typeof google
   }
 }
 
@@ -62,16 +62,48 @@ export function AddressInteractiveMap({
   const searchTimeout = useRef<NodeJS.Timeout>()
   const wrapperRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<HTMLDivElement>(null)
-  const googleMapRef = useRef<any>(null)
-  const markerRef = useRef<any>(null)
+  const googleMapRef = useRef<google.maps.Map | null>(null)
+  const markerRef = useRef<google.maps.Marker | null>(null)
+  const scriptLoadedRef = useRef(false)
 
   // Handle Google Maps load
   const handleGoogleMapsLoad = () => {
-    console.log('✅ Google Maps loaded!')
+    console.log('✅ Google Maps script loaded!')
+    scriptLoadedRef.current = true
     if (mapRef.current && !googleMapRef.current) {
       setTimeout(initializeMap, 100)
     }
   }
+
+  // Check if Google Maps is already loaded on mount
+  useEffect(() => {
+    // Check immediately
+    if (window.google?.maps && !googleMapRef.current && mapRef.current) {
+      console.log('✅ Google Maps already available, initializing...')
+      scriptLoadedRef.current = true
+      setTimeout(initializeMap, 100)
+      return
+    }
+    
+    // Poll for Google Maps if not yet available (handles race conditions)
+    let attempts = 0
+    const maxAttempts = 50 // 5 seconds max
+    const checkGoogle = setInterval(() => {
+      attempts++
+      if (window.google?.maps && !googleMapRef.current && mapRef.current) {
+        console.log(`✅ Google Maps found after ${attempts} attempts`)
+        scriptLoadedRef.current = true
+        clearInterval(checkGoogle)
+        setTimeout(initializeMap, 100)
+      } else if (attempts >= maxAttempts) {
+        console.log('⚠️ Google Maps not found after polling')
+        clearInterval(checkGoogle)
+      }
+    }, 100)
+    
+    return () => clearInterval(checkGoogle)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -109,14 +141,17 @@ export function AddressInteractiveMap({
 
       // Force resize
       setTimeout(() => {
-        window.google.maps.event.trigger(googleMapRef.current, 'resize')
-        googleMapRef.current.setCenter(defaultCenter)
+        if (googleMapRef.current) {
+          window.google.maps.event.trigger(googleMapRef.current, 'resize')
+          googleMapRef.current.setCenter(defaultCenter)
+        }
         setMapLoaded(true)
         console.log('✅ Map loaded and ready')
       }, 300)
 
       // Add click listener to place marker
-      googleMapRef.current.addListener('click', (e: any) => {
+      googleMapRef.current.addListener('click', (e: google.maps.MapMouseEvent) => {
+        if (!e.latLng) return
         const lat = e.latLng.lat()
         const lng = e.latLng.lng()
         updateMarkerPosition({ lat, lng })
@@ -155,7 +190,8 @@ export function AddressInteractiveMap({
       },
     })
 
-    markerRef.current.addListener('dragend', (e: any) => {
+    markerRef.current.addListener('dragend', (e: google.maps.MapMouseEvent) => {
+      if (!e.latLng) return
       const lat = e.latLng.lat()
       const lng = e.latLng.lng()
       setSelectedLocation({ lat, lng })

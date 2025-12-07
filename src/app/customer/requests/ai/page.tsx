@@ -104,6 +104,12 @@ export default function AIRequestPage() {
   }
 
   const analyzeWithAI = async () => {
+    console.log('🔍 Analyze button clicked!')
+    console.log('Images:', images.length)
+    console.log('Description:', description)
+    console.log('CategoryId:', categoryId)
+    console.log('Address:', address)
+    
     if (images.length < 3) {
       toast.error('Please upload at least 3 images (minimum required)')
       return
@@ -118,6 +124,7 @@ export default function AIRequestPage() {
     }
 
     setAnalyzing(true)
+    console.log('✅ Starting AI analysis...')
     try {
       const response = await fetch('/api/ai/analyze', {
         method: 'POST',
@@ -135,20 +142,26 @@ export default function AIRequestPage() {
         }),
       })
 
+      console.log('📡 API Response status:', response.status)
       const data = await response.json()
+      console.log('📦 API Response data:', data)
 
       if (!response.ok) {
+        console.error('❌ API Error:', data.error)
         throw new Error(data.error || 'AI analysis failed')
       }
 
+      console.log('✅ AI Analysis successful!')
       setAiAnalysis(data.analysis)
       setStep('analysis')
       toast.success('AI analysis completed!')
     } catch (error: any) {
-      console.error('AI analysis error:', error)
+      console.error('❌ AI analysis error:', error)
+      console.error('Error message:', error.message)
       toast.error(error.message || 'Failed to analyze images')
     } finally {
       setAnalyzing(false)
+      console.log('🏁 Analysis complete, analyzing set to false')
     }
   }
 
@@ -205,61 +218,77 @@ export default function AIRequestPage() {
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="p-3 bg-gradient-to-br from-purple-500 to-teal-500 rounded-lg">
-          <Brain className="h-6 w-6 text-white" />
+        <div className="p-3 bg-gradient-to-br from-purple-500 via-pink-500 to-teal-500 rounded-2xl shadow-lg animate-pulse">
+          <Brain className="h-8 w-8 text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">AI-Powered Service Request</h1>
-          <p className="text-gray-600">Upload photos, get instant pricing, notify all helpers</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-teal-600 bg-clip-text text-transparent">AI-Powered Service Request</h1>
+          <p className="text-gray-600 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-yellow-500" />
+            Upload photos, get instant pricing, notify all helpers
+          </p>
         </div>
       </div>
 
-      {/* Progress Steps */}
-      <div className="flex items-center justify-center gap-4">
-        <div className={`flex items-center gap-2 ${step === 'upload' ? 'text-teal-600' : 'text-gray-400'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-            step === 'upload' ? 'bg-teal-600 text-white' : 'bg-gray-200'
-          }`}>1</div>
-          <span className="font-medium">Upload</span>
-        </div>
-        <div className="w-16 h-1 bg-gray-200" />
-        <div className={`flex items-center gap-2 ${step === 'analysis' ? 'text-teal-600' : 'text-gray-400'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-            step === 'analysis' ? 'bg-teal-600 text-white' : 'bg-gray-200'
-          }`}>2</div>
-          <span className="font-medium">AI Analysis</span>
-        </div>
-        <div className="w-16 h-1 bg-gray-200" />
-        <div className={`flex items-center gap-2 ${step === 'review' ? 'text-teal-600' : 'text-gray-400'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-            step === 'review' ? 'bg-teal-600 text-white' : 'bg-gray-200'
-          }`}>3</div>
-          <span className="font-medium">Broadcast</span>
+      {/* Progress Steps - Enhanced */}
+      <div className="bg-gradient-to-r from-purple-50 via-white to-teal-50 rounded-2xl p-6 shadow-md border border-purple-100">
+        <div className="flex items-center justify-center gap-4">
+          <div className={`flex items-center gap-2 ${step === 'upload' ? 'text-purple-600' : 'text-gray-400'}`}>
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ${
+              step === 'upload' ? 'bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg scale-110' : 'bg-gray-200'
+            }`}>
+              {step === 'upload' ? <Upload className="h-5 w-5" /> : '1'}
+            </div>
+            <span className="font-semibold hidden sm:inline">Upload</span>
+          </div>
+          <div className={`w-20 h-1.5 rounded-full ${step !== 'upload' ? 'bg-gradient-to-r from-purple-400 to-teal-400' : 'bg-gray-200'}`} />
+          <div className={`flex items-center gap-2 ${step === 'analysis' ? 'text-teal-600' : 'text-gray-400'}`}>
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ${
+              step === 'analysis' ? 'bg-gradient-to-br from-teal-500 to-cyan-500 text-white shadow-lg scale-110' : 'bg-gray-200'
+            }`}>
+              {step === 'analysis' ? <Brain className="h-5 w-5" /> : '2'}
+            </div>
+            <span className="font-semibold hidden sm:inline">AI Analysis</span>
+          </div>
+          <div className={`w-20 h-1.5 rounded-full ${step === 'review' ? 'bg-gradient-to-r from-teal-400 to-green-400' : 'bg-gray-200'}`} />
+          <div className={`flex items-center gap-2 ${step === 'review' ? 'text-green-600' : 'text-gray-400'}`}>
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ${
+              step === 'review' ? 'bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg scale-110' : 'bg-gray-200'
+            }`}>
+              {step === 'review' ? <CheckCircle2 className="h-5 w-5" /> : '3'}
+            </div>
+            <span className="font-semibold hidden sm:inline">Broadcast</span>
+          </div>
         </div>
       </div>
 
       {/* Step 1: Upload */}
       {step === 'upload' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
-              Upload Problem Details
+        <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-purple-50/30 to-teal-50/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-md">
+                <Upload className="h-5 w-5 text-white" />
+              </div>
+              <span className="bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-transparent font-bold">
+                Upload Problem Details
+              </span>
             </CardTitle>
-            <p className="text-sm text-gray-600 mt-2">
-              Provide detailed information for accurate AI pricing
+            <p className="text-sm text-gray-600 mt-1 ml-12">
+              ✨ Provide detailed information for accurate AI-powered pricing
             </p>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Image Upload */}
-            <div>
-              <Label className="text-base font-semibold flex items-center gap-2">
-                <div className="p-1.5 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-lg">
-                  <ImageIcon className="h-4 w-4 text-white" />
+          <CardContent className="space-y-8 pt-4">
+            {/* Image Upload - Enhanced */}
+            <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl p-6 border-2 border-purple-200">
+              <Label className="text-lg font-bold flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl shadow-md">
+                  <ImageIcon className="h-5 w-5 text-white" />
                 </div>
-                Photos * <span className="text-sm font-normal text-gray-500">(3-5 images required)</span>
+                <span className="text-gray-800">Photos</span>
+                <span className="text-sm font-normal text-purple-600 bg-purple-100 px-3 py-1 rounded-full">3-5 images required</span>
               </Label>
-              <div className="mt-2 border-2 border-dashed border-purple-300 rounded-xl p-8 text-center hover:border-purple-500 hover:bg-purple-50/50 transition-all bg-gradient-to-br from-purple-50/30 to-indigo-50/30">
+              <div className="border-3 border-dashed border-purple-300 rounded-2xl p-8 text-center hover:border-purple-500 hover:bg-purple-100/50 transition-all cursor-pointer group bg-white/80">
                 <input
                   type="file"
                   accept="image/*"
@@ -269,58 +298,66 @@ export default function AIRequestPage() {
                   id="image-upload"
                   disabled={images.length >= 5}
                 />
-                <label htmlFor="image-upload" className={`cursor-pointer ${images.length >= 5 ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                  <div className="p-4 bg-white rounded-full w-20 h-20 mx-auto mb-4 shadow-md">
-                    <ImageIcon className="h-12 w-12 mx-auto text-purple-600" />
+                <label htmlFor="image-upload" className={`cursor-pointer block ${images.length >= 5 ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
+                    <ImageIcon className="h-12 w-12 text-white" />
                   </div>
-                  <p className="text-sm font-semibold text-gray-800 mb-1">
-                    {images.length === 0 ? '📸 Click to upload photos' : `📸 ${images.length}/5 photos uploaded`}
+                  <p className="text-xl font-bold text-gray-800 mb-2">
+                    {images.length === 0 ? '📸 Click to Upload Photos' : `📸 ${images.length}/5 Photos Uploaded`}
                   </p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    ✨ Clear photos help AI provide accurate pricing
+                  <p className="text-gray-600">
+                    Drag & drop or click to select multiple images
                   </p>
+                  <div className="mt-4 flex items-center justify-center gap-2 text-sm text-purple-600">
+                    <Sparkles className="h-4 w-4" />
+                    <span>Clear photos = Better AI analysis = Accurate pricing!</span>
+                  </div>
                 </label>
               </div>
 
-              {/* Image Preview */}
+              {/* Image Preview - Enhanced */}
               {images.length > 0 && (
-                <div className="mt-4 grid grid-cols-5 gap-2">
+                <div className="mt-6 grid grid-cols-5 gap-3">
                   {images.map((img, idx) => (
                     <div key={idx} className="relative group">
                       <img 
                         src={img} 
                         alt={`Upload ${idx + 1}`}
-                        className="w-full h-24 object-cover rounded-lg border-2 border-gray-200"
+                        className="w-full h-28 object-cover rounded-xl border-3 border-purple-200 shadow-md group-hover:border-purple-400 transition-all"
                       />
                       <button
                         onClick={() => removeImage(idx)}
-                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-lg"
                         type="button"
                       >
                         <X className="h-4 w-4" />
                       </button>
+                      <div className="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
+                        {idx + 1}
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Service Category */}
-            <div>
-              <Label htmlFor="category" className="text-base font-semibold flex items-center gap-2">
-                <div className="p-1.5 bg-gradient-to-br from-orange-500 to-pink-600 rounded-lg">
-                  <Sparkles className="h-4 w-4 text-white" />
+            {/* Service Category - Enhanced */}
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border-2 border-orange-200">
+              <Label htmlFor="category" className="text-lg font-bold flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-orange-500 to-pink-500 rounded-xl shadow-md">
+                  <Sparkles className="h-5 w-5 text-white" />
                 </div>
-                Service Category *
+                <span className="text-gray-800">Service Category</span>
+                <span className="text-red-500">*</span>
               </Label>
               <select
                 id="category"
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="mt-2 w-full px-4 py-3 border-2 border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white text-gray-800 font-medium text-base"
+                className="w-full px-5 py-4 border-2 border-orange-200 rounded-xl shadow-sm focus:outline-none focus:ring-4 focus:ring-orange-200 focus:border-orange-400 bg-white text-gray-800 font-semibold text-lg transition-all"
                 required
               >
-                <option value="">Select a category...</option>
+                <option value="">🔍 Select a category...</option>
                 <option value="electrical">⚡ Electrical</option>
                 <option value="plumbing">🚰 Plumbing</option>
                 <option value="ac_repair">❄️ AC & Appliance Repair</option>
@@ -334,16 +371,19 @@ export default function AIRequestPage() {
                 <option value="moving">📦 Moving & Packing</option>
                 <option value="other">🔧 Other</option>
               </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Helps AI understand the type of service and match with right helpers
+              <p className="text-sm text-orange-600 mt-2 flex items-center gap-1">
+                <span>💡</span> Helps AI match you with the right professional
               </p>
             </div>
 
-            {/* Service Location */}
-            <div className="space-y-4">
-              <Label className="text-base font-semibold flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-purple-600" />
-                Service Location *
+            {/* Service Location - Enhanced */}
+            <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-6 border-2 border-teal-200">
+              <Label className="text-lg font-bold flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl shadow-md">
+                  <MapPin className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-gray-800">Service Location</span>
+                <span className="text-red-500">*</span>
               </Label>
               <AddressInteractiveMap
                 value={address}
@@ -353,182 +393,212 @@ export default function AIRequestPage() {
                   setLocationLat(selected.lat)
                   setLocationLng(selected.lng)
                 }}
-                placeholder="Search for your service location (city, area, landmark)"
+                placeholder="🔍 Search your location (area, city, landmark)"
                 required
                 showMap={true}
-                mapHeight="400px"
+                mapHeight="350px"
               />
-
-              {/* Detailed Address - What helper actually needs */}
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border-2 border-blue-200 dark:border-blue-700 space-y-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="p-1.5 bg-blue-600 rounded-lg">
-                    <MapPin className="h-4 w-4 text-white" />
-                  </div>
-                  <h4 className="font-semibold text-blue-900 dark:text-blue-100">Complete Address Details</h4>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="flatNumber" className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                      Flat/House No. *
-                    </Label>
-                    <Input 
-                      id="flatNumber" 
-                      value={flatNumber} 
-                      onChange={(e) => setFlatNumber(e.target.value)} 
-                      placeholder="e.g., A-101, 2nd Floor"
-                      className="bg-white border-blue-200 focus:border-blue-500 focus:ring-blue-100"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="floor" className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                      Floor
-                    </Label>
-                    <Input 
-                      id="floor" 
-                      value={floor} 
-                      onChange={(e) => setFloor(e.target.value)} 
-                      placeholder="e.g., 2nd Floor, Ground"
-                      className="bg-white border-blue-200 focus:border-blue-500 focus:ring-blue-100"
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="landmark" className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                    Nearby Landmark (Optional but helpful)
-                  </Label>
-                  <Input 
-                    id="landmark" 
-                    value={landmark} 
-                    onChange={(e) => setLandmark(e.target.value)} 
-                    placeholder="e.g., Near Apollo Pharmacy, Behind SBI Bank"
-                    className="bg-white border-blue-200 focus:border-blue-500 focus:ring-blue-100"
-                  />
-                </div>
-                
-                <p className="text-xs text-blue-700 dark:text-blue-300 flex items-start gap-1.5">
-                  <span className="mt-0.5">💡</span>
-                  <span><strong>Why this matters:</strong> Flat number helps the helper reach your exact location. Landmark makes it easier to find, especially in new areas!</span>
-                </p>
-              </div>
             </div>
 
-            {/* Description */}
-            <div>
-              <Label htmlFor="description" className="text-base font-semibold">
-                Problem Description *
+            {/* Detailed Address - Enhanced */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl shadow-md">
+                  <MapPin className="h-5 w-5 text-white" />
+                </div>
+                <h4 className="font-bold text-lg text-gray-800">Complete Address Details</h4>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="flatNumber" className="font-semibold text-gray-700 flex items-center gap-1">
+                    🏠 Flat/House No. <span className="text-red-500">*</span>
+                  </Label>
+                  <Input 
+                    id="flatNumber" 
+                    value={flatNumber} 
+                    onChange={(e) => setFlatNumber(e.target.value)} 
+                    placeholder="e.g., A-101, 2nd Floor"
+                    className="bg-white border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 py-3 text-base"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="floor" className="font-semibold text-gray-700">
+                    🏢 Floor
+                  </Label>
+                  <Input 
+                    id="floor" 
+                    value={floor} 
+                    onChange={(e) => setFloor(e.target.value)} 
+                    placeholder="e.g., Ground, 1st, 2nd"
+                    className="bg-white border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 py-3 text-base"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2 mt-4">
+                <Label htmlFor="landmark" className="font-semibold text-gray-700">
+                  📍 Nearby Landmark <span className="text-gray-400 font-normal">(Optional but helpful)</span>
+                </Label>
+                <Input 
+                  id="landmark" 
+                  value={landmark} 
+                  onChange={(e) => setLandmark(e.target.value)} 
+                  placeholder="e.g., Near Apollo Pharmacy, Opposite SBI Bank"
+                  className="bg-white border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 py-3 text-base"
+                />
+              </div>
+              
+              <p className="text-sm text-blue-600 mt-4 bg-blue-100 p-3 rounded-xl flex items-start gap-2">
+                <span className="text-lg">💡</span>
+                <span><strong>Pro Tip:</strong> Accurate address details help the helper reach you faster without confusion!</span>
+              </p>
+            </div>
+
+            {/* Description - Enhanced */}
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border-2 border-green-200">
+              <Label htmlFor="description" className="text-lg font-bold flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl shadow-md">
+                  <AlertTriangle className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-gray-800">Problem Description</span>
+                <span className="text-red-500">*</span>
               </Label>
               <Textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe the issue in detail... (e.g., AC not cooling, water leaking, strange noise)"
-                className="mt-2 min-h-[120px]"
+                placeholder="📝 Describe the issue in detail...&#10;&#10;Examples:&#10;• AC not cooling properly, making noise&#10;• Water leaking from pipe under sink&#10;• Switch giving electric shock"
+                className="min-h-[150px] bg-white border-2 border-green-200 focus:border-green-500 focus:ring-4 focus:ring-green-100 text-base"
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Be specific about symptoms, when it started, and what you've noticed
+              <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
+                <span>✨</span> More details = More accurate AI pricing!
               </p>
             </div>
 
-            {/* Error Code */}
-            <div>
-              <Label htmlFor="errorCode" className="text-base font-semibold">
-                Error Code (if any)
-              </Label>
-              <Input
-                id="errorCode"
-                value={errorCode}
-                onChange={(e) => setErrorCode(e.target.value)}
-                placeholder="E.g., E1, F03, or type 'N/A' if none"
-                className="mt-2"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Check your device display for error codes
-              </p>
-            </div>
+            {/* Additional Info Grid - Enhanced */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Error Code */}
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <Label htmlFor="errorCode" className="font-semibold text-gray-700 flex items-center gap-2">
+                  🔢 Error Code <span className="text-gray-400 font-normal">(if any)</span>
+                </Label>
+                <Input
+                  id="errorCode"
+                  value={errorCode}
+                  onChange={(e) => setErrorCode(e.target.value)}
+                  placeholder="E.g., E1, F03, or 'N/A'"
+                  className="mt-2 bg-white border-2 border-gray-200 focus:border-purple-400 py-3"
+                />
+              </div>
 
-            {/* Problem Duration */}
-            <div>
-              <Label htmlFor="problemDuration" className="text-base font-semibold">
-                How long has this problem existed?
-              </Label>
-              <select
-                id="problemDuration"
-                value={problemDuration}
-                onChange={(e) => setProblemDuration(e.target.value)}
-                className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              >
-                <option value="">Select duration</option>
-                <option value="just_now">Just started (today)</option>
-                <option value="few_days">Few days ago</option>
-                <option value="week">About a week</option>
-                <option value="weeks">Few weeks</option>
-                <option value="month_plus">More than a month</option>
-              </select>
+              {/* Problem Duration */}
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <Label htmlFor="problemDuration" className="font-semibold text-gray-700 flex items-center gap-2">
+                  ⏰ How long has this existed?
+                </Label>
+                <select
+                  id="problemDuration"
+                  value={problemDuration}
+                  onChange={(e) => setProblemDuration(e.target.value)}
+                  className="mt-2 w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-4 focus:ring-purple-100 focus:border-purple-400 bg-white font-medium"
+                >
+                  <option value="">Select duration</option>
+                  <option value="just_now">🆕 Just started (today)</option>
+                  <option value="few_days">📅 Few days ago</option>
+                  <option value="week">📆 About a week</option>
+                  <option value="weeks">🗓️ Few weeks</option>
+                  <option value="month_plus">📆 More than a month</option>
+                </select>
+              </div>
             </div>
 
             {/* Previous Attempts */}
-            <div>
-              <Label htmlFor="previousAttempts" className="text-base font-semibold">
-                Have you tried fixing it yourself?
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <Label htmlFor="previousAttempts" className="font-semibold text-gray-700 flex items-center gap-2">
+                🔧 Have you tried fixing it yourself?
               </Label>
               <Textarea
                 id="previousAttempts"
                 value={previousAttempts}
                 onChange={(e) => setPreviousAttempts(e.target.value)}
-                placeholder="Describe what you've tried (e.g., restarted device, checked connections, cleaned filters) or type 'N/A'"
-                className="mt-2"
-                rows={3}
+                placeholder="What you've tried: restarted, checked connections, cleaned, etc. Type 'N/A' if nothing"
+                className="mt-2 bg-white border-2 border-gray-200 focus:border-purple-400"
+                rows={2}
               />
             </div>
 
-            {/* Preferred Time */}
-            <div>
-              <Label htmlFor="preferredTime" className="text-base font-semibold">
-                When do you need help?
+            {/* Urgency - Enhanced */}
+            <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl p-6 border-2 border-red-200">
+              <Label htmlFor="preferredTime" className="text-lg font-bold flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl shadow-md">
+                  <Clock className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-gray-800">When do you need help?</span>
               </Label>
               <select
                 id="preferredTime"
                 value={preferredTime}
                 onChange={(e) => setPreferredTime(e.target.value)}
-                className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full px-5 py-4 border-2 border-red-200 rounded-xl focus:ring-4 focus:ring-red-100 focus:border-red-400 bg-white font-semibold text-lg"
               >
-                <option value="">Select urgency</option>
-                <option value="asap">As soon as possible (Emergency)</option>
-                <option value="today">Within today</option>
-                <option value="tomorrow">Tomorrow</option>
-                <option value="this_week">This week</option>
-                <option value="flexible">Flexible timing</option>
+                <option value="">⏰ Select urgency level</option>
+                <option value="asap">🚨 EMERGENCY - As soon as possible</option>
+                <option value="today">☀️ Within today</option>
+                <option value="tomorrow">📅 Tomorrow</option>
+                <option value="this_week">📆 This week</option>
+                <option value="flexible">🙂 Flexible timing</option>
               </select>
             </div>
 
-            <Button
-              onClick={analyzeWithAI}
-              disabled={analyzing || images.length < 3 || !description.trim()}
-              className="w-full bg-gradient-to-r from-purple-600 to-teal-600 hover:from-purple-700 hover:to-teal-700 text-white py-6 text-lg"
-            >
-              {analyzing ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  AI is analyzing...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-5 w-5 mr-2" />
-                  Analyze with AI
-                </>
-              )}
-            </Button>
+            {/* Submit Button - Super Enhanced */}
+            <div className="pt-4">
+              <Button
+                onClick={analyzeWithAI}
+                disabled={analyzing || images.length < 3 || !description.trim() || !categoryId || !address.trim()}
+                className="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-teal-600 hover:from-purple-700 hover:via-pink-700 hover:to-teal-700 text-white py-8 text-xl font-bold rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {analyzing ? (
+                  <div className="flex items-center justify-center gap-3">
+                    <Loader2 className="h-7 w-7 animate-spin" />
+                    <span>🤖 AI is analyzing your request...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-3">
+                    <Sparkles className="h-7 w-7" />
+                    <span>✨ Analyze with AI & Get Instant Price</span>
+                    <Brain className="h-7 w-7" />
+                  </div>
+                )}
+              </Button>
+            </div>
 
-            {images.length < 3 && (
-              <p className="text-center text-sm text-amber-600">
-                ⚠️ Please upload at least 3 photos for accurate AI analysis
-              </p>
-            )}
+            {/* Validation Messages - Enhanced */}
+            <div className="space-y-2">
+              {images.length < 3 && (
+                <div className="text-center text-sm bg-amber-100 text-amber-700 p-3 rounded-xl border border-amber-200 flex items-center justify-center gap-2">
+                  <ImageIcon className="h-4 w-4" />
+                  <span>📸 Please upload at least <strong>3 photos</strong> for accurate AI analysis</span>
+                </div>
+              )}
+              {!description.trim() && images.length >= 3 && (
+                <div className="text-center text-sm bg-amber-100 text-amber-700 p-3 rounded-xl border border-amber-200">
+                  📝 Please describe the problem in the <strong>"Problem Description"</strong> field
+                </div>
+              )}
+              {!categoryId && images.length >= 3 && description.trim() && (
+                <div className="text-center text-sm bg-amber-100 text-amber-700 p-3 rounded-xl border border-amber-200">
+                  🔍 Please select a <strong>service category</strong>
+                </div>
+              )}
+              {!address.trim() && images.length >= 3 && description.trim() && categoryId && (
+                <div className="text-center text-sm bg-amber-100 text-amber-700 p-3 rounded-xl border border-amber-200">
+                  📍 Please enter your <strong>service location</strong>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
