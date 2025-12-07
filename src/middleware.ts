@@ -48,11 +48,11 @@ export async function middleware(request: NextRequest) {
   response.headers.set(
     'Content-Security-Policy',
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://opnjibjsddwyojrerbll.supabase.co https://vercel.live https://*.vercel.live; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://opnjibjsddwyojrerbll.supabase.co https://vercel.live https://*.vercel.live https://maps.googleapis.com https://*.googleapis.com; " +
     "style-src 'self' 'unsafe-inline'; " +
-    "img-src 'self' data: https: blob:; " +
+    "img-src 'self' data: https: blob: https://*.googleapis.com https://*.gstatic.com; " +
     "font-src 'self' data: https://fonts.gstatic.com; " +
-    "connect-src 'self' https://opnjibjsddwyojrerbll.supabase.co wss://opnjibjsddwyojrerbll.supabase.co https://vercel.live wss://*.vercel.live; " +
+    "connect-src 'self' https://opnjibjsddwyojrerbll.supabase.co wss://opnjibjsddwyojrerbll.supabase.co https://vercel.live wss://*.vercel.live https://*.googleapis.com https://*.gstatic.com; " +
     "frame-src 'self' https://www.google.com https://maps.google.com; " +
     "frame-ancestors 'self';"
   )
