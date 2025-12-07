@@ -83,43 +83,6 @@ export function AddressInteractiveMap({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Initialize map when script is loaded
-  useEffect(() => {
-    if (!scriptLoaded) {
-      console.log('⏳ Script not loaded yet')
-      return
-    }
-
-    if (!mapRef.current) {
-      console.log('⏳ Map ref not ready')
-      return
-    }
-
-    if (googleMapRef.current) {
-      console.log('✓ Map already initialized')
-      return
-    }
-
-    if (!window.google?.maps) {
-      console.log('⚠️ Script loaded but google.maps not available')
-      return
-    }
-
-    console.log('🗺️ All conditions met - initializing map!')
-    
-    // Small delay to ensure everything is ready
-    const timer = setTimeout(() => {
-      try {
-        initializeMap()
-      } catch (error) {
-        console.error('Error in initializeMap:', error)
-        setMapError('Failed to initialize map')
-      }
-    }, 100)
-
-    return () => clearTimeout(timer)
-  }, [scriptLoaded])
-
   const initializeMap = () => {
     if (!mapRef.current || !window.google?.maps || googleMapRef.current) {
       console.log('Cannot initialize map', { 
@@ -150,8 +113,46 @@ export function AddressInteractiveMap({
         googleMapRef.current.setCenter(defaultCenter)
         setMapLoaded(true)
         console.log('✅ Map loaded and ready')
-      }, 300)ons/red-dot.png'
+      }, 300)
+
+      // Add click listener to place marker
+      googleMapRef.current.addListener('click', (e: any) => {
+        const lat = e.latLng.lat()
+        const lng = e.latLng.lng()
+        updateMarkerPosition({ lat, lng })
+        reverseGeocode(lat, lng)
+      })
+
+      // Create marker if we have a location
+      if (selectedLocation) {
+        createMarker(selectedLocation)
       }
+
+      console.log('✅ Map initialized successfully')
+    } catch (error) {
+      console.error('❌ Error initializing map:', error)
+      setMapError('Failed to initialize map')
+    }
+  }
+
+  const createMarker = (position: { lat: number; lng: number }) => {
+    if (!googleMapRef.current) return
+
+    // Remove existing marker
+    if (markerRef.current) {
+      markerRef.current.setMap(null)
+    }
+
+    // Create new marker
+    markerRef.current = new window.google.maps.Marker({
+      position,
+      map: googleMapRef.current,
+      draggable: true,
+      animation: window.google.maps.Animation.DROP,
+      icon: {
+        url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+        scaledSize: new window.google.maps.Size(40, 40),
+      },
     })
 
     markerRef.current.addListener('dragend', (e: any) => {
