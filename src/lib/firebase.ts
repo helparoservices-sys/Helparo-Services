@@ -24,8 +24,11 @@ const firebaseConfig = {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const auth = getAuth(app);
 
-// Enable app verification for testing (remove in production)
-// auth.settings.appVerificationDisabledForTesting = true;
+// Enable app verification for testing - CRITICAL for development
+if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+  auth.settings.appVerificationDisabledForTesting = true;
+  console.log('Firebase: Test mode enabled for localhost');
+}
 
 export { 
   app, 

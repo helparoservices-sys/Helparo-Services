@@ -48,12 +48,12 @@ export async function middleware(request: NextRequest) {
   response.headers.set(
     'Content-Security-Policy',
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://opnjibjsddwyojrerbll.supabase.co https://vercel.live https://*.vercel.live https://maps.googleapis.com https://*.googleapis.com; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://opnjibjsddwyojrerbll.supabase.co https://vercel.live https://*.vercel.live https://maps.googleapis.com https://*.googleapis.com https://www.google.com https://www.gstatic.com https://apis.google.com https://*.firebaseapp.com; " +
     "style-src 'self' 'unsafe-inline'; " +
     "img-src 'self' data: https: blob: https://*.googleapis.com https://*.gstatic.com; " +
     "font-src 'self' data: https://fonts.gstatic.com; " +
-    "connect-src 'self' https://opnjibjsddwyojrerbll.supabase.co wss://opnjibjsddwyojrerbll.supabase.co https://vercel.live wss://*.vercel.live https://*.googleapis.com https://*.gstatic.com; " +
-    "frame-src 'self' https://www.google.com https://maps.google.com; " +
+    "connect-src 'self' https://opnjibjsddwyojrerbll.supabase.co wss://opnjibjsddwyojrerbll.supabase.co https://vercel.live wss://*.vercel.live https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.google.com; " +
+    "frame-src 'self' https://www.google.com https://maps.google.com https://*.firebaseapp.com https://helparo-firebase.firebaseapp.com; " +
     "frame-ancestors 'self';"
   )
   
