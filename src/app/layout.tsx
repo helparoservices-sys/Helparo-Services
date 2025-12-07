@@ -7,6 +7,11 @@ export const metadata: Metadata = {
   description: 'Connect with verified service professionals for all your needs. Plumbing, electrical, cleaning, repairs, and more.',
   keywords: 'service marketplace, plumbing, electrical, cleaning, repairs, home services',
   authors: [{ name: 'Helparo' }],
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
   openGraph: {
     title: 'Helparo - Your Trusted Service Marketplace',
     description: 'Connect with verified service professionals for all your needs.',

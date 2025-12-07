@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { 
   Search, 
   Plus, 
@@ -9,8 +10,11 @@ import {
   TrendingUp,
   CheckCircle,
   Clock,
-  ArrowRight
+  ArrowRight,
+  MapPin
 } from 'lucide-react'
+
+const LocationSelector = dynamic(() => import('@/components/location-selector').then(mod => ({ default: mod.LocationSelector })), { ssr: false })
 
 export default async function CustomerDashboard() {
   const supabase = await createClient()
@@ -70,10 +74,15 @@ export default async function CustomerDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Section */}
+      {/* Welcome Section with Location */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white shadow-lg">
-        <h1 className="text-3xl font-bold mb-2">Welcome back, {firstName}!</h1>
-        <p className="text-blue-100">Manage your service requests and track your rewards</p>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold mb-2">Welcome back, {firstName}!</h1>
+            <p className="text-blue-100">Manage your service requests and track your rewards</p>
+          </div>
+          <LocationSelector />
+        </div>
       </div>
 
       {/* Stats Grid */}

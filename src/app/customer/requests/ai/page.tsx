@@ -104,6 +104,10 @@ export default function AIRequestPage() {
       toast.error('Please describe the problem in detail')
       return
     }
+    if (!categoryId) {
+      toast.error('Please select a service category')
+      return
+    }
 
     setAnalyzing(true)
     try {
@@ -117,7 +121,8 @@ export default function AIRequestPage() {
           problemDuration,
           previousAttempts,
           preferredTime,
-          categoryId: '10000000-0000-0000-0000-000000000015', // AC Repair for now
+          categoryId: categoryId,
+          categoryName: getCategoryName(categoryId),
           location: 'Visakhapatnam, Andhra Pradesh',
         }),
       })
@@ -137,6 +142,24 @@ export default function AIRequestPage() {
     } finally {
       setAnalyzing(false)
     }
+  }
+
+  const getCategoryName = (id: string): string => {
+    const categories: Record<string, string> = {
+      'electrical': 'Electrical',
+      'plumbing': 'Plumbing',
+      'ac_repair': 'AC & Appliance Repair',
+      'carpentry': 'Carpentry',
+      'painting': 'Painting',
+      'cleaning': 'Cleaning',
+      'pest_control': 'Pest Control',
+      'home_repair': 'Home Repair & Maintenance',
+      'locksmith': 'Locksmith',
+      'gardening': 'Gardening & Landscaping',
+      'moving': 'Moving & Packing',
+      'other': 'Other'
+    }
+    return categories[id] || 'General Service'
   }
 
   const broadcastToHelpers = async () => {
@@ -267,6 +290,37 @@ export default function AIRequestPage() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Service Category */}
+            <div>
+              <Label htmlFor="category" className="text-base font-semibold">
+                Service Category *
+              </Label>
+              <select
+                id="category"
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                required
+              >
+                <option value="">Select a category...</option>
+                <option value="electrical">⚡ Electrical</option>
+                <option value="plumbing">🚰 Plumbing</option>
+                <option value="ac_repair">❄️ AC & Appliance Repair</option>
+                <option value="carpentry">🔨 Carpentry</option>
+                <option value="painting">🎨 Painting</option>
+                <option value="cleaning">🧹 Cleaning</option>
+                <option value="pest_control">🐛 Pest Control</option>
+                <option value="home_repair">🏠 Home Repair & Maintenance</option>
+                <option value="locksmith">🔑 Locksmith</option>
+                <option value="gardening">🌱 Gardening & Landscaping</option>
+                <option value="moving">📦 Moving & Packing</option>
+                <option value="other">🔧 Other</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Helps AI understand the type of service and match with right helpers
+              </p>
             </div>
 
             {/* Description */}
