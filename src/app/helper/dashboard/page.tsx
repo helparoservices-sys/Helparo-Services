@@ -16,12 +16,11 @@ import {
   Wallet,
   FileText,
   TrendingUp,
-  Power,
-  Zap
+  Power
 } from 'lucide-react'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { getHelperDashboardStats } from '@/app/actions/helper-dashboard'
-import { getHelperAvailability, toggleHelperAvailability, toggleEmergencyAvailability } from '@/app/actions/helper-availability'
+import { getHelperAvailability, toggleHelperAvailability } from '@/app/actions/helper-availability'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
@@ -69,9 +68,7 @@ export default function HelperDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [isAvailableNow, setIsAvailableNow] = useState(false)
-  const [emergencyAvailable, setEmergencyAvailable] = useState(false)
   const [togglingAvailability, setTogglingAvailability] = useState(false)
-  const [togglingEmergency, setTogglingEmergency] = useState(false)
 
   useEffect(() => {
     checkProfile()
@@ -145,12 +142,8 @@ export default function HelperDashboard() {
       if ('error' in result) {
         console.error('Failed to load availability:', result.error)
       } else {
-        console.log('✅ Setting state:', { 
-          isAvailableNow: result.isAvailableNow, 
-          emergencyAvailable: result.emergencyAvailable 
-        })
+        console.log('✅ Setting state:', { isAvailableNow: result.isAvailableNow })
         setIsAvailableNow(result.isAvailableNow)
-        setEmergencyAvailable(result.emergencyAvailable)
       }
     } catch (err) {
       console.error('Load availability error:', err)
@@ -169,20 +162,6 @@ export default function HelperDashboard() {
     }
     
     setTogglingAvailability(false)
-  }
-
-  const handleEmergencyToggle = async (newValue: boolean) => {
-    setTogglingEmergency(true)
-    const result = await toggleEmergencyAvailability(newValue)
-    
-    if ('error' in result) {
-      toast.error(result.error)
-    } else {
-      setEmergencyAvailable(newValue)
-      toast.success(newValue ? 'Emergency availability enabled' : 'Emergency availability disabled')
-    }
-    
-    setTogglingEmergency(false)
   }
 
   if (loading) {
@@ -269,69 +248,56 @@ export default function HelperDashboard() {
         </div>
       )}
 
-      {/* Availability Toggles */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Available Now Toggle */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border-2 border-slate-200 dark:border-slate-700">
+      {/* Availability Control */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border-2 border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className={`p-6 transition-colors ${isAvailableNow ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20' : ''}`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`p-3 rounded-lg ${isAvailableNow ? 'bg-green-100 dark:bg-green-900/30' : 'bg-slate-100 dark:bg-slate-700'}`}>
-                <Power className={`h-6 w-6 ${isAvailableNow ? 'text-green-600 dark:text-green-400' : 'text-slate-400'}`} />
+            <div className="flex items-center gap-4">
+              <div className={`p-4 rounded-xl transition-all ${
+                isAvailableNow 
+                  ? 'bg-green-500 shadow-lg shadow-green-500/30' 
+                  : 'bg-slate-200 dark:bg-slate-700'
+              }`}>
+                <Power className={`h-7 w-7 ${isAvailableNow ? 'text-white' : 'text-slate-400'}`} />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900 dark:text-white">Available Now</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  {isAvailableNow ? 'Accepting job requests' : 'Not accepting jobs'}
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                  {isAvailableNow ? "You're Online" : "You're Offline"}
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+                  {isAvailableNow 
+                    ? 'You are visible to customers and can receive job requests' 
+                    : 'Go online to start accepting job requests'}
                 </p>
               </div>
             </div>
             <button
               onClick={() => handleAvailabilityToggle(!isAvailableNow)}
               disabled={togglingAvailability}
-              className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              className={`relative inline-flex h-10 w-20 items-center rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                 isAvailableNow 
-                  ? 'bg-green-600 focus:ring-green-500' 
+                  ? 'bg-green-600 focus:ring-green-500 shadow-lg shadow-green-500/30' 
                   : 'bg-slate-300 dark:bg-slate-600 focus:ring-slate-500'
               } ${togglingAvailability ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <span
-                className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
-                  isAvailableNow ? 'translate-x-7' : 'translate-x-1'
+                className={`inline-block h-8 w-8 transform rounded-full bg-white shadow-md transition-transform ${
+                  isAvailableNow ? 'translate-x-10' : 'translate-x-1'
                 }`}
               />
             </button>
           </div>
         </div>
 
-        {/* Emergency Available Toggle */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border-2 border-slate-200 dark:border-slate-700">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`p-3 rounded-lg ${emergencyAvailable ? 'bg-red-100 dark:bg-red-900/30' : 'bg-slate-100 dark:bg-slate-700'}`}>
-                <Zap className={`h-6 w-6 ${emergencyAvailable ? 'text-red-600 dark:text-red-400' : 'text-slate-400'}`} />
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-900 dark:text-white">Emergency Available</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  {emergencyAvailable ? 'Accepting urgent requests' : 'Not accepting emergencies'}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => handleEmergencyToggle(!emergencyAvailable)}
-              disabled={togglingEmergency}
-              className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                emergencyAvailable 
-                  ? 'bg-red-600 focus:ring-red-500' 
-                  : 'bg-slate-300 dark:bg-slate-600 focus:ring-slate-500'
-              } ${togglingEmergency ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <span
-                className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
-                  emergencyAvailable ? 'translate-x-7' : 'translate-x-1'
-                }`}
-              />
-            </button>
+        {/* Status indicator */}
+        <div className={`px-6 py-3 border-t border-slate-200 dark:border-slate-700 flex items-center text-xs ${
+          isAvailableNow ? 'bg-green-50/50 dark:bg-green-900/10' : 'bg-slate-50 dark:bg-slate-900/30'
+        }`}>
+          <div className="flex items-center gap-1.5">
+            <span className={`h-2 w-2 rounded-full ${isAvailableNow ? 'bg-green-500 animate-pulse' : 'bg-slate-400'}`}></span>
+            <span className="text-slate-600 dark:text-slate-400">
+              {isAvailableNow ? 'Accepting job requests' : 'Not accepting jobs'}
+            </span>
           </div>
         </div>
       </div>
