@@ -1,21 +1,63 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { scheduleVideoCall, createVideoCallSession } from '@/app/actions/video-calls'
+import { createClient } from '@/lib/supabase/client'
+
+interface ServiceRequest {
+  id: string
+  title: string
+  status: string
+  created_at: string
+}
 
 export default function CustomerScheduleVideoCallPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [loadingRequests, setLoadingRequests] = useState(true)
   const [error, setError] = useState('')
+  const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([])
   
   const [serviceRequestId, setServiceRequestId] = useState('')
   const [callType, setCallType] = useState('consultation')
   const [scheduledTime, setScheduledTime] = useState('')
+
+  useEffect(() => {
+    loadServiceRequests()
+  }, [])
+
+  const loadServiceRequests = async () => {
+    setLoadingRequests(true)
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      setLoadingRequests(false)
+      return
+    }
+
+    // Fetch active service requests for the customer
+    const { data, error } = await supabase
+      .from('service_requests')
+      .select('id, title, status, created_at')
+      .eq('customer_id', user.id)
+      .in('status', ['open', 'assigned', 'in_progress', 'pending_payment'])
+      .order('created_at', { ascending: false })
+
+    if (!error && data) {
+      setServiceRequests(data)
+      // Auto-select first request if available
+      if (data.length > 0) {
+        setServiceRequestId(data[0].id)
+      }
+    }
+    setLoadingRequests(false)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,14 +106,42 @@ export default function CustomerScheduleVideoCallPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Service Request ID *</label>
-                <Input
-                  value={serviceRequestId}
-                  onChange={(e) => setServiceRequestId(e.target.value)}
-                  placeholder="Enter service request ID"
-                  required
-                />
-                <p className="text-xs text-muted-foreground">Select from your active bookings</p>
+                <label className="text-sm font-medium">Service Request *</label>
+                {loadingRequests ? (
+                  <div className="flex items-center gap-2 py-2">
+                    <LoadingSpinner size="sm" />
+                    <span className="text-sm text-muted-foreground">Loading your requests...</span>
+                  </div>
+                ) : serviceRequests.length === 0 ? (
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-sm text-amber-700">No active service requests found.</p>
+                    <p className="text-xs text-amber-600 mt-1">Create a service request first to schedule a video call.</p>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2"
+                      onClick={() => router.push('/customer/requests/new')}
+                    >
+                      Create New Request
+                    </Button>
+                  </div>
+                ) : (
+                  <select
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={serviceRequestId}
+                    onChange={(e) => setServiceRequestId(e.target.value)}
+                    required
+                  >
+                    <option value="">Select a service request</option>
+                    {serviceRequests.map((request) => (
+                      <option key={request.id} value={request.id}>
+                        {request.title} ({request.status.replace('_', ' ')}) - {new Date(request.created_at).toLocaleDateString()}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <p className="text-xs text-muted-foreground">Select from your active service requests</p>
               </div>
 
               <div className="space-y-2">

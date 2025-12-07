@@ -15,7 +15,9 @@ import {
   Calendar,
   TrendingUp,
   AlertCircle,
-  Eye
+  Eye,
+  Users,
+  Timer
 } from 'lucide-react'
 import Link from 'next/link'
 import { VerificationGate } from '@/components/helper/verification-gate'
@@ -27,6 +29,7 @@ interface BidHistory {
   status: string
   proposed_rate: number
   cover_note: string | null
+  total_bids_count?: number
   service_request: {
     id: string
     title: string
@@ -123,8 +126,23 @@ export default function HelperBidsPage() {
       return
     }
 
-    console.log('Bids loaded:', data?.length, data)
-    setBids(data as any || [])
+    // Fetch total bids count for each request
+    const bidsWithCount = await Promise.all(
+      (data || []).map(async (bid: any) => {
+        if (bid.service_requests?.id) {
+          const { count } = await supabase
+            .from('request_applications')
+            .select('id', { count: 'exact', head: true })
+            .eq('request_id', bid.service_requests.id)
+          
+          return { ...bid, total_bids_count: count || 0 }
+        }
+        return { ...bid, total_bids_count: 0 }
+      })
+    )
+
+    console.log('Bids loaded:', bidsWithCount?.length, bidsWithCount)
+    setBids(bidsWithCount as any || [])
     setLoading(false)
   }
 
@@ -304,6 +322,25 @@ export default function HelperBidsPage() {
                           {bid.service_request?.profiles && (
                             <span className="text-xs bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded">
                               Customer: {(bid.service_request.profiles as any).full_name}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Job Created & Bids Count Info */}
+                        <div className="flex flex-wrap items-center gap-3 mt-2 text-xs">
+                          {bid.service_request?.created_at && (
+                            <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-md">
+                              <Timer className="h-3.5 w-3.5" />
+                              Job Posted: {new Date(bid.service_request.created_at).toLocaleDateString()} 
+                              <span className="text-amber-500 dark:text-amber-300 ml-1">
+                                ({Math.floor((new Date().getTime() - new Date(bid.service_request.created_at).getTime()) / (1000 * 60 * 60 * 24))}d ago)
+                              </span>
+                            </span>
+                          )}
+                          {(bid.total_bids_count ?? 0) > 0 && (
+                            <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded-md">
+                              <Users className="h-3.5 w-3.5" />
+                              {bid.total_bids_count} {bid.total_bids_count === 1 ? 'helper' : 'helpers'} bid
                             </span>
                           )}
                         </div>
