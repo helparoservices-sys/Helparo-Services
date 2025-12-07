@@ -89,42 +89,42 @@ export default async function CustomerDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Link 
+          href="/customer/wallet"
+          className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-green-300 dark:hover:border-green-600 transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-600 dark:text-slate-400">Wallet Balance</span>
-            <Wallet className="h-5 w-5 text-green-600" />
+            <span className="text-sm text-slate-600 dark:text-slate-400 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">Wallet Balance</span>
+            <Wallet className="h-5 w-5 text-green-600 group-hover:scale-110 transition-transform" />
           </div>
           <p className="text-2xl font-bold text-slate-900 dark:text-white">₹{availableBalance.toFixed(2)}</p>
           <p className="text-xs text-slate-500 mt-1">Escrow: ₹{escrowBalance.toFixed(2)}</p>
-        </div>
+        </Link>
 
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+        <Link 
+          href="/customer/bookings?tab=active"
+          className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600 transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-600 dark:text-slate-400">Loyalty Points</span>
-            <Star className="h-5 w-5 text-yellow-600" />
-          </div>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">{loyaltyPoints}</p>
-          <p className="text-xs text-slate-500 mt-1 capitalize">Tier: {tier}</p>
-        </div>
-
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-600 dark:text-slate-400">Active Requests</span>
-            <Clock className="h-5 w-5 text-blue-600" />
+            <span className="text-sm text-slate-600 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Active Requests</span>
+            <Clock className="h-5 w-5 text-blue-600 group-hover:scale-110 transition-transform" />
           </div>
           <p className="text-2xl font-bold text-slate-900 dark:text-white">{activeRequests || 0}</p>
           <p className="text-xs text-slate-500 mt-1">In progress</p>
-        </div>
+        </Link>
 
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+        <Link 
+          href="/customer/bookings?tab=completed"
+          className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-green-300 dark:hover:border-green-600 transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-600 dark:text-slate-400">Completed</span>
-            <CheckCircle className="h-5 w-5 text-green-600" />
+            <span className="text-sm text-slate-600 dark:text-slate-400 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">Completed</span>
+            <CheckCircle className="h-5 w-5 text-green-600 group-hover:scale-110 transition-transform" />
           </div>
           <p className="text-2xl font-bold text-slate-900 dark:text-white">{completedRequests || 0}</p>
           <p className="text-xs text-slate-500 mt-1">Total jobs done</p>
-        </div>
+        </Link>
       </div>
 
       {/* Quick Actions */}
@@ -376,41 +376,6 @@ export default async function CustomerDashboard() {
             </Link>
           </div>
         )}
-      </div>
-
-      {/* Feature Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link href="/customer/loyalty" className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all">
-          <div className="flex items-center gap-3 mb-2">
-            <Star className="h-6 w-6 text-yellow-600" />
-            <h3 className="font-semibold text-slate-900 dark:text-white">Loyalty Program</h3>
-          </div>
-          <p className="text-sm text-slate-600 dark:text-slate-400">Earn points & unlock rewards</p>
-        </Link>
-
-        <Link href="/customer/referrals" className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all">
-          <div className="flex items-center gap-3 mb-2">
-            <TrendingUp className="h-6 w-6 text-green-600" />
-            <h3 className="font-semibold text-slate-900 dark:text-white">Refer & Earn</h3>
-          </div>
-          <p className="text-sm text-slate-600 dark:text-slate-400">Get rewards for referrals</p>
-        </Link>
-
-        <Link href="/customer/promos" className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all">
-          <div className="flex items-center gap-3 mb-2">
-            <Gift className="h-6 w-6 text-purple-600" />
-            <h3 className="font-semibold text-slate-900 dark:text-white">Promo Codes</h3>
-          </div>
-          <p className="text-sm text-slate-600 dark:text-slate-400">Apply discounts at checkout</p>
-        </Link>
-
-        <Link href="/customer/support" className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all">
-          <div className="flex items-center gap-3 mb-2">
-            <Plus className="h-6 w-6 text-blue-600" />
-            <h3 className="font-semibold text-slate-900 dark:text-white">Get Support</h3>
-          </div>
-          <p className="text-sm text-slate-600 dark:text-slate-400">24/7 customer assistance</p>
-        </Link>
       </div>
     </div>
   )
