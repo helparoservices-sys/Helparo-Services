@@ -57,6 +57,8 @@ export default function AIRequestPage() {
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null)
   const [selectedTier, setSelectedTier] = useState<PriceTier>('standard')
 
+  const [broadcasting, setBroadcasting] = useState(false)
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
@@ -184,15 +186,69 @@ export default function AIRequestPage() {
   }
 
   const broadcastToHelpers = async () => {
-    // This will notify all helpers who match the required skills
-    toast.success('Request broadcast to all qualified helpers!')
+    if (!aiAnalysis) {
+      toast.error('Please complete AI analysis first')
+      return
+    }
+
+    setBroadcasting(true)
     
-    // Here you would create the service request with AI analysis
-    // and send notifications to all matching helpers
-    
-    setTimeout(() => {
-      router.push('/customer/requests')
-    }, 2000)
+    try {
+      const response = await fetch('/api/requests/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          categoryId,
+          categoryName: getCategoryName(categoryId),
+          description,
+          address,
+          flatNumber,
+          floor,
+          landmark,
+          locationLat,
+          locationLng,
+          images,
+          aiAnalysis,
+          selectedTier,
+          estimatedPrice: getPriceForTier(aiAnalysis.estimatedPrice, selectedTier),
+          urgency: aiAnalysis.urgency,
+          problemDuration,
+          errorCode,
+          preferredTime
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to broadcast request')
+      }
+
+      // Show success with number of helpers notified
+      toast.success(
+        <div className="flex flex-col gap-1">
+          <span className="font-bold">🎉 Request Broadcasted!</span>
+          <span>Notified {data.helpersNotified} qualified {getCategoryName(categoryId)} helpers</span>
+          {data.helpersNotified > 0 && (
+            <span className="text-xs text-gray-600">They will respond soon!</span>
+          )}
+        </div>,
+        { duration: 5000 }
+      )
+
+      setStep('review')
+      
+      // Redirect after showing success
+      setTimeout(() => {
+        router.push('/customer/requests')
+      }, 3000)
+
+    } catch (error: any) {
+      console.error('Broadcast error:', error)
+      toast.error(error.message || 'Failed to broadcast request')
+    } finally {
+      setBroadcasting(false)
+    }
   }
 
   const getSeverityColor = (severity: string) => {
@@ -861,15 +917,26 @@ export default function AIRequestPage() {
                 variant="outline"
                 onClick={() => setStep('upload')}
                 className="flex-1"
+                disabled={broadcasting}
               >
                 Back to Edit
               </Button>
               <Button
                 onClick={broadcastToHelpers}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-teal-600 hover:from-purple-700 hover:to-teal-700 text-lg py-6"
+                disabled={broadcasting}
+                className="flex-1 bg-gradient-to-r from-purple-600 to-teal-600 hover:from-purple-700 hover:to-teal-700 text-lg py-6 disabled:opacity-50"
               >
-                <Sparkles className="h-5 w-5 mr-2" />
-                Broadcast to All Helpers (₹{getPriceForTier(aiAnalysis.estimatedPrice, selectedTier)})
+                {broadcasting ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Notifying Helpers...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-5 w-5 mr-2" />
+                    Broadcast to All Helpers (₹{getPriceForTier(aiAnalysis.estimatedPrice, selectedTier)})
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>
