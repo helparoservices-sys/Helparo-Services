@@ -639,6 +639,8 @@
     "enum_name": "price_type",
     "value": "per_unit"
   },
+
+  
   {
     "schema": "public",
     "enum_name": "price_type",
