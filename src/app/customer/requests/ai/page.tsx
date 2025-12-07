@@ -573,6 +573,101 @@ export default function AIRequestPage() {
               </p>
             </div>
 
+            {/* What's Included Section */}
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-5 border-2 border-green-200 dark:border-green-700">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-2 bg-green-600 rounded-lg">
+                  <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-green-900 dark:text-green-100 text-lg">What's Included in the Price</h3>
+              </div>
+              <ul className="space-y-2 text-sm text-green-800 dark:text-green-200">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span><strong>Professional Labor:</strong> Expert service by verified helper</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span><strong>Basic Tools:</strong> Helper brings standard tools needed for the job</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span><strong>Professional Inspection:</strong> Complete diagnosis and assessment</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span><strong>Service Guarantee:</strong> Quality workmanship assured</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Not Included Section */}
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-xl p-5 border-2 border-orange-200 dark:border-orange-700">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-2 bg-orange-600 rounded-lg">
+                  <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-orange-900 dark:text-orange-100 text-lg">Not Included (Billed Separately)</h3>
+              </div>
+              <ul className="space-y-2 text-sm text-orange-800 dark:text-orange-200">
+                <li className="flex items-start gap-2">
+                  <span className="text-orange-600 mt-0.5">✗</span>
+                  <span><strong>Replacement Parts:</strong> Filters, cartridges, valves, or components</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-orange-600 mt-0.5">✗</span>
+                  <span><strong>Materials & Consumables:</strong> Spare parts, adhesives, sealants</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-orange-600 mt-0.5">✗</span>
+                  <span><strong>Specialized Equipment:</strong> Heavy machinery or special tools if needed</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-orange-600 mt-0.5">✗</span>
+                  <span><strong>Transportation:</strong> Parts delivery or emergency call-out fees (if any)</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Additional Costs Disclaimer */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-5 border-2 border-blue-200 dark:border-blue-700">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-blue-600 rounded-lg flex-shrink-0">
+                  <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-blue-900 dark:text-blue-100 text-base mb-2">💰 Additional Costs Policy</h3>
+                  <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
+                    The estimated price covers <strong>labor and standard tools only</strong>. If replacement parts or special materials are needed, 
+                    the helper will inform you before proceeding. You can either:
+                  </p>
+                  <ul className="mt-2 space-y-1 text-sm text-blue-700 dark:text-blue-300">
+                    <li className="flex items-start gap-2">
+                      <span className="mt-0.5">•</span>
+                      <span>Provide the parts yourself (helper will install)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-0.5">•</span>
+                      <span>Ask the helper to source parts (you'll be charged separately at cost + convenience fee)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-0.5">•</span>
+                      <span>Review and approve any additional costs before work begins</span>
+                    </li>
+                  </ul>
+                  <p className="mt-3 text-xs text-blue-600 dark:text-blue-400 font-medium bg-blue-100 dark:bg-blue-900/40 px-3 py-2 rounded-lg">
+                    ⚡ No surprises! All additional costs require your approval before proceeding.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Required Skills */}
             <div>
               <Label>Required Skills</Label>
