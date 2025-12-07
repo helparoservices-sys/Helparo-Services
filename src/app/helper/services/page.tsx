@@ -20,6 +20,11 @@ interface HelperProfile {
   pincode: string
 }
 
+// Map to store UUID -> name resolution
+interface CategoryNameMap {
+  [key: string]: string
+}
+
 export default function HelperServicesPage() {
   const [profile, setProfile] = useState<HelperProfile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -33,6 +38,7 @@ export default function HelperServicesPage() {
   const [subcategories, setSubcategories] = useState<any[]>([])
   const [expandedCategories, setExpandedCategories] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
+  const [categoryNameMap, setCategoryNameMap] = useState<CategoryNameMap>({})
 
   // Service area state
   const [states, setStates] = useState<any[]>([])
@@ -73,6 +79,36 @@ export default function HelperServicesPage() {
       setIsApproved(false)
     } else if ('data' in result && result.data?.helperProfile) {
       const profileData = result.data.helperProfile
+      
+      // Resolve category names from UUIDs
+      const supabase = createClient()
+      if (profileData.service_categories && profileData.service_categories.length > 0) {
+        // Try to resolve by both UUID and slug format
+        const categoryIds = profileData.service_categories.map((cat: string) => {
+          // Convert space-separated hex to UUID format if needed
+          // e.g., "10000000 0000 0000 0000 000000000001" -> "10000000-0000-0000-0000-000000000001"
+          if (cat.includes(' ')) {
+            return cat.replace(/ /g, '-').toLowerCase()
+          }
+          return cat
+        })
+        
+        const { data: categoriesData } = await supabase
+          .from('service_categories')
+          .select('id, name, slug')
+        
+        if (categoriesData) {
+          const nameMap: CategoryNameMap = {}
+          categoriesData.forEach(cat => {
+            nameMap[cat.id] = cat.name
+            nameMap[cat.slug] = cat.name
+            // Also map without dashes for the space-separated format
+            nameMap[cat.id.replace(/-/g, ' ')] = cat.name
+          })
+          setCategoryNameMap(nameMap)
+        }
+      }
+      
       setProfile(profileData)
       setIsApproved(true)
       
@@ -86,7 +122,6 @@ export default function HelperServicesPage() {
       
       // Load service area IDs from area names
       if (profileData.service_areas && profileData.service_areas.length > 0) {
-        const supabase = createClient()
         const { data: areaData } = await supabase
           .from('service_areas')
           .select('id')
@@ -120,6 +155,18 @@ export default function HelperServicesPage() {
 
     setCategories(rootCategories || [])
     setSubcategories(allSubcategories || [])
+    
+    // Build category name map for UUID -> name resolution
+    const nameMap: CategoryNameMap = {}
+    rootCategories?.forEach(cat => {
+      nameMap[cat.id] = cat.name
+      nameMap[cat.slug] = cat.name
+    })
+    allSubcategories?.forEach(cat => {
+      nameMap[cat.id] = cat.name
+      nameMap[cat.slug] = cat.name
+    })
+    setCategoryNameMap(nameMap)
   }
 
   const loadServiceAreaData = async () => {
@@ -405,6 +452,14 @@ export default function HelperServicesPage() {
   }
 
   const formatCategoryName = (slug: string): string => {
+    // If it looks like a UUID (with dashes or spaces), return placeholder
+    if (slug.match(/^[0-9a-f]{8}[-\s][0-9a-f]{4}[-\s][0-9a-f]{4}[-\s][0-9a-f]{4}[-\s][0-9a-f]{12}$/i)) {
+      return 'Service'
+    }
+    // If it looks like hex without separators
+    if (slug.match(/^[0-9a-f]{32}$/i)) {
+      return 'Service'
+    }
     return slug
       .split('-')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -507,11 +562,18 @@ export default function HelperServicesPage() {
                 {!editing ? (
                   <>
                     <div className="flex flex-wrap gap-2">
-                      {profile.service_categories.map((cat, idx) => (
-                        <span key={idx} className="px-4 py-2 bg-green-100 text-green-700 rounded-full font-medium capitalize">
-                          {formatCategoryName(cat)}
-                        </span>
-                      ))}
+                      {profile.service_categories.map((cat, idx) => {
+                        // Try multiple formats to resolve the name
+                        const resolvedName = categoryNameMap[cat] || 
+                                            categoryNameMap[cat.replace(/ /g, '-')] ||
+                                            categoryNameMap[cat.toLowerCase()] ||
+                                            formatCategoryName(cat)
+                        return (
+                          <span key={idx} className="px-4 py-2 bg-green-100 text-green-700 rounded-full font-medium">
+                            {resolvedName}
+                          </span>
+                        )
+                      })}
                     </div>
                     <p className="text-sm text-gray-500 mt-3">
                       Click "Edit Services" to modify your service categories
