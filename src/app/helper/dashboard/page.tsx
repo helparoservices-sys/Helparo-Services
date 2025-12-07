@@ -79,51 +79,81 @@ export default function HelperDashboard() {
   }, [])
 
   const checkProfile = async () => {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) return
+    try {
+      const supabase = createClient()
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      
+      if (authError || !user) {
+        console.error('Auth error:', authError)
+        setError('Not authenticated')
+        setLoading(false)
+        return
+      }
 
-    const { data: profile } = await supabase
-      .from('helper_profiles')
-      .select('address, service_categories')
-      .eq('user_id', user.id)
-      .single()
+      const { data: profile, error: profileError } = await supabase
+        .from('helper_profiles')
+        .select('address, service_categories')
+        .eq('user_id', user.id)
+        .maybeSingle()
 
-    // Redirect to onboarding if profile incomplete
-    if (!profile?.address || !profile?.service_categories?.length) {
-      router.push('/helper/onboarding')
-      return
+      if (profileError) {
+        console.error('Profile fetch error:', profileError)
+        setError('Failed to load profile')
+        setLoading(false)
+        return
+      }
+
+      // Redirect to onboarding if profile incomplete
+      if (!profile?.address || !profile?.service_categories?.length) {
+        router.push('/helper/onboarding')
+        return
+      }
+
+      loadDashboard()
+    } catch (err) {
+      console.error('Check profile error:', err)
+      setError('Failed to check profile')
+      setLoading(false)
     }
-
-    loadDashboard()
   }
 
   const loadDashboard = async () => {
-    setLoading(true)
-    const result = await getHelperDashboardStats()
-    
-    if ('error' in result) {
-      setError(result.error || 'Failed to load dashboard')
-    } else if ('stats' in result) {
-      setStats(result.stats)
+    try {
+      setLoading(true)
+      console.log('Loading dashboard stats...')
+      const result = await getHelperDashboardStats()
+      
+      console.log('Dashboard result:', result)
+      
+      if ('error' in result) {
+        setError(result.error || 'Failed to load dashboard')
+      } else if ('stats' in result) {
+        setStats(result.stats)
+      }
+    } catch (err) {
+      console.error('Load dashboard error:', err)
+      setError('Failed to load dashboard data')
+    } finally {
+      setLoading(false)
     }
-    
-    setLoading(false)
   }
 
   const loadAvailability = async () => {
-    const result = await getHelperAvailability()
-    console.log('🔍 Dashboard received availability:', result)
-    if ('error' in result) {
-      console.error('Failed to load availability:', result.error)
-    } else {
-      console.log('✅ Setting state:', { 
-        isAvailableNow: result.isAvailableNow, 
-        emergencyAvailable: result.emergencyAvailable 
-      })
-      setIsAvailableNow(result.isAvailableNow)
-      setEmergencyAvailable(result.emergencyAvailable)
+    try {
+      const result = await getHelperAvailability()
+      console.log('🔍 Dashboard received availability:', result)
+      if ('error' in result) {
+        console.error('Failed to load availability:', result.error)
+      } else {
+        console.log('✅ Setting state:', { 
+          isAvailableNow: result.isAvailableNow, 
+          emergencyAvailable: result.emergencyAvailable 
+        })
+        setIsAvailableNow(result.isAvailableNow)
+        setEmergencyAvailable(result.emergencyAvailable)
+      }
+    } catch (err) {
+      console.error('Load availability error:', err)
     }
   }
 
