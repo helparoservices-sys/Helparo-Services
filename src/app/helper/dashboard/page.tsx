@@ -367,6 +367,8 @@ export default function HelperDashboard() {
           )}
         </Link>
 
+        {/* === HIDDEN FOR PLAY STORE DEPLOYMENT - MY WALLET CARD ===
+        * TODO: Uncomment when payment integration is complete
         <Link 
           href="/helper/wallet"
           className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all group"
@@ -382,6 +384,7 @@ export default function HelperDashboard() {
             View Earnings <ArrowRight className="h-4 w-4 ml-1" />
           </div>
         </Link>
+        === END HIDDEN WALLET CARD === */}
 
         <Link 
           href="/helper/services"

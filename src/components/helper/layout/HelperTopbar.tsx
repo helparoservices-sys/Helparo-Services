@@ -110,7 +110,8 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
           </Link>
 
-          {/* Wallet */}
+          {/* === HIDDEN FOR PLAY STORE DEPLOYMENT - WALLET ===
+          * TODO: Uncomment when payment integration is complete
           <Link
             href="/helper/wallet"
             className="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
@@ -118,6 +119,7 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
             <Wallet className="h-4 w-4" />
             <span className="text-sm font-semibold">₹{balance.toFixed(2)}</span>
           </Link>
+          === END HIDDEN WALLET === */}
 
           {/* User Menu */}
           <div className="relative">

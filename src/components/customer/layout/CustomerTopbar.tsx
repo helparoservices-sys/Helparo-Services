@@ -60,7 +60,8 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
 
         {/* Right Section */}
         <div className="flex items-center gap-4">
-          {/* Wallet Balance */}
+          {/* === HIDDEN FOR PLAY STORE DEPLOYMENT - WALLET BALANCE ===
+          * TODO: Uncomment when payment integration is complete
           <Link 
             href="/customer/wallet"
             className="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
@@ -68,6 +69,7 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
             <Wallet className="h-4 w-4" />
             <span className="text-sm font-semibold">₹{balance.toFixed(2)}</span>
           </Link>
+          === END HIDDEN WALLET === */}
 
           {/* Notifications */}
           <Link

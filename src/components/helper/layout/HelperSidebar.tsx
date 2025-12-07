@@ -91,12 +91,15 @@ export default function HelperSidebar({ collapsed }: HelperSidebarProps) {
       href: '/helper/services',
       requiresVerification: false
     },
+    /* === HIDDEN FOR PLAY STORE DEPLOYMENT - SUBSCRIPTIONS ===
+    * TODO: Uncomment when payment integration is complete
     {
       label: 'Subscriptions',
       icon: TrendingUp,
       href: '/helper/subscriptions',
       requiresVerification: true
     },
+    === END HIDDEN SUBSCRIPTIONS === */
     {
       label: 'Emergency SOS',
       icon: Phone,

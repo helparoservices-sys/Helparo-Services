@@ -36,6 +36,8 @@ export default function CustomerSidebar({ collapsed }: SidebarProps) {
         { icon: ClipboardList, label: 'My Requests', href: '/customer/requests' },
       ]
     },
+    /* === HIDDEN FOR PLAY STORE DEPLOYMENT - PAYMENT FEATURES === 
+    * TODO: Uncomment when payment integration is complete
     {
       title: 'Payments',
       items: [
@@ -43,14 +45,19 @@ export default function CustomerSidebar({ collapsed }: SidebarProps) {
         { icon: CreditCard, label: 'Subscriptions', href: '/customer/subscriptions' },
       ]
     },
+    === END HIDDEN PAYMENTS === */
     {
       title: 'Rewards',
       items: [
+        /* === HIDDEN FOR PLAY STORE - LOYALTY POINTS ===
         { icon: Star, label: 'Loyalty Points', href: '/customer/loyalty' },
+        === END HIDDEN === */
         { icon: Award, label: 'Badges', href: '/customer/badges' },
         { icon: Users, label: 'Referrals', href: '/customer/referrals' },
       ]
     },
+    /* === HIDDEN FOR PLAY STORE DEPLOYMENT - DEALS FEATURES ===
+    * TODO: Uncomment when payment integration is complete
     {
       title: 'Deals',
       items: [
@@ -59,6 +66,7 @@ export default function CustomerSidebar({ collapsed }: SidebarProps) {
         { icon: Percent, label: 'Promo Codes', href: '/customer/promos' },
       ]
     },
+    === END HIDDEN DEALS === */
     {
       title: 'Other',
       items: [

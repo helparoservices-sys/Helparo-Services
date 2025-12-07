@@ -89,7 +89,9 @@ export default async function CustomerDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* === HIDDEN FOR PLAY STORE DEPLOYMENT - WALLET BALANCE CARD ===
+        * TODO: Uncomment when payment integration is complete
         <Link 
           href="/customer/wallet"
           className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-green-300 dark:hover:border-green-600 transition-all cursor-pointer group"
@@ -101,6 +103,7 @@ export default async function CustomerDashboard() {
           <p className="text-2xl font-bold text-slate-900 dark:text-white">₹{availableBalance.toFixed(2)}</p>
           <p className="text-xs text-slate-500 mt-1">Escrow: ₹{escrowBalance.toFixed(2)}</p>
         </Link>
+        === END HIDDEN WALLET CARD === */}
 
         <Link 
           href="/customer/bookings?tab=active"
