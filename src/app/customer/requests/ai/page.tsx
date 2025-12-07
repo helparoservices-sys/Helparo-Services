@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import AddressInteractiveMap from '@/components/address-interactive-map'
 import { 
   Upload, 
   Brain, 
@@ -18,7 +19,8 @@ import {
   Loader2,
   Sparkles,
   X,
-  Image as ImageIcon
+  Image as ImageIcon,
+  MapPin
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -45,6 +47,12 @@ export default function AIRequestPage() {
   const [previousAttempts, setPreviousAttempts] = useState('')
   const [preferredTime, setPreferredTime] = useState('')
   const [categoryId, setCategoryId] = useState('')
+  const [address, setAddress] = useState('')
+  const [flatNumber, setFlatNumber] = useState('')
+  const [floor, setFloor] = useState('')
+  const [landmark, setLandmark] = useState('')
+  const [locationLat, setLocationLat] = useState<number | null>(null)
+  const [locationLng, setLocationLng] = useState<number | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null)
   const [selectedTier, setSelectedTier] = useState<PriceTier>('standard')
@@ -245,10 +253,13 @@ export default function AIRequestPage() {
           <CardContent className="space-y-6">
             {/* Image Upload */}
             <div>
-              <Label className="text-base font-semibold">
+              <Label className="text-base font-semibold flex items-center gap-2">
+                <div className="p-1.5 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-lg">
+                  <ImageIcon className="h-4 w-4 text-white" />
+                </div>
                 Photos * <span className="text-sm font-normal text-gray-500">(3-5 images required)</span>
               </Label>
-              <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-teal-500 transition-colors">
+              <div className="mt-2 border-2 border-dashed border-purple-300 rounded-xl p-8 text-center hover:border-purple-500 hover:bg-purple-50/50 transition-all bg-gradient-to-br from-purple-50/30 to-indigo-50/30">
                 <input
                   type="file"
                   accept="image/*"
@@ -259,12 +270,14 @@ export default function AIRequestPage() {
                   disabled={images.length >= 5}
                 />
                 <label htmlFor="image-upload" className={`cursor-pointer ${images.length >= 5 ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                  <ImageIcon className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-                  <p className="text-sm font-medium text-gray-700">
-                    {images.length === 0 ? 'Click to upload photos' : `${images.length}/5 photos uploaded`}
+                  <div className="p-4 bg-white rounded-full w-20 h-20 mx-auto mb-4 shadow-md">
+                    <ImageIcon className="h-12 w-12 mx-auto text-purple-600" />
+                  </div>
+                  <p className="text-sm font-semibold text-gray-800 mb-1">
+                    {images.length === 0 ? '📸 Click to upload photos' : `📸 ${images.length}/5 photos uploaded`}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Clear photos help AI provide accurate pricing
+                  <p className="text-xs text-gray-600 mt-1">
+                    ✨ Clear photos help AI provide accurate pricing
                   </p>
                 </label>
               </div>
@@ -294,14 +307,17 @@ export default function AIRequestPage() {
 
             {/* Service Category */}
             <div>
-              <Label htmlFor="category" className="text-base font-semibold">
+              <Label htmlFor="category" className="text-base font-semibold flex items-center gap-2">
+                <div className="p-1.5 bg-gradient-to-br from-orange-500 to-pink-600 rounded-lg">
+                  <Sparkles className="h-4 w-4 text-white" />
+                </div>
                 Service Category *
               </Label>
               <select
                 id="category"
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="mt-2 w-full px-4 py-3 border-2 border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white text-gray-800 font-medium text-base"
                 required
               >
                 <option value="">Select a category...</option>
@@ -321,6 +337,83 @@ export default function AIRequestPage() {
               <p className="text-xs text-gray-500 mt-1">
                 Helps AI understand the type of service and match with right helpers
               </p>
+            </div>
+
+            {/* Service Location */}
+            <div className="space-y-4">
+              <Label className="text-base font-semibold flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-purple-600" />
+                Service Location *
+              </Label>
+              <AddressInteractiveMap
+                value={address}
+                onChange={(value) => setAddress(value)}
+                onAddressSelect={(selected) => {
+                  setAddress(selected.display_name)
+                  setLocationLat(selected.lat)
+                  setLocationLng(selected.lng)
+                }}
+                placeholder="Search for your service location (city, area, landmark)"
+                required
+                showMap={true}
+                mapHeight="400px"
+              />
+
+              {/* Detailed Address - What helper actually needs */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border-2 border-blue-200 dark:border-blue-700 space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="p-1.5 bg-blue-600 rounded-lg">
+                    <MapPin className="h-4 w-4 text-white" />
+                  </div>
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100">Complete Address Details</h4>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="flatNumber" className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                      Flat/House No. *
+                    </Label>
+                    <Input 
+                      id="flatNumber" 
+                      value={flatNumber} 
+                      onChange={(e) => setFlatNumber(e.target.value)} 
+                      placeholder="e.g., A-101, 2nd Floor"
+                      className="bg-white border-blue-200 focus:border-blue-500 focus:ring-blue-100"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="floor" className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                      Floor
+                    </Label>
+                    <Input 
+                      id="floor" 
+                      value={floor} 
+                      onChange={(e) => setFloor(e.target.value)} 
+                      placeholder="e.g., 2nd Floor, Ground"
+                      className="bg-white border-blue-200 focus:border-blue-500 focus:ring-blue-100"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="landmark" className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    Nearby Landmark (Optional but helpful)
+                  </Label>
+                  <Input 
+                    id="landmark" 
+                    value={landmark} 
+                    onChange={(e) => setLandmark(e.target.value)} 
+                    placeholder="e.g., Near Apollo Pharmacy, Behind SBI Bank"
+                    className="bg-white border-blue-200 focus:border-blue-500 focus:ring-blue-100"
+                  />
+                </div>
+                
+                <p className="text-xs text-blue-700 dark:text-blue-300 flex items-start gap-1.5">
+                  <span className="mt-0.5">💡</span>
+                  <span><strong>Why this matters:</strong> Flat number helps the helper reach your exact location. Landmark makes it easier to find, especially in new areas!</span>
+                </p>
+              </div>
             </div>
 
             {/* Description */}
