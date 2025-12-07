@@ -118,22 +118,6 @@ export default async function CustomerDashboard() {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
         <Link 
-          href="/customer/requests/new"
-          className="block bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all group"
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-white/20 rounded-lg">
-              <Plus className="h-6 w-6" />
-            </div>
-            <h3 className="text-lg font-semibold">Get Help Now</h3>
-          </div>
-          <p className="text-sm text-blue-100 mb-3">Post a service request and get bids from helpers</p>
-          <div className="flex items-center text-sm font-medium group-hover:gap-2 transition-all">
-            Create Now <ArrowRight className="h-4 w-4 ml-1" />
-          </div>
-        </Link>
-
-        <Link 
           href="/customer/requests/ai"
           className="block bg-gradient-to-r from-purple-600 to-teal-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all group relative overflow-hidden"
         >
@@ -153,6 +137,22 @@ export default async function CustomerDashboard() {
           <p className="text-sm text-purple-100 mb-3">Upload photos, get instant AI pricing & notify all helpers</p>
           <div className="flex items-center text-sm font-medium group-hover:gap-2 transition-all">
             Try AI Magic <ArrowRight className="h-4 w-4 ml-1" />
+          </div>
+        </Link>
+
+        <Link 
+          href="/customer/requests/new"
+          className="block bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all group"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-white/20 rounded-lg">
+              <Search className="h-6 w-6" />
+            </div>
+            <h3 className="text-lg font-semibold">Get Quotes</h3>
+          </div>
+          <p className="text-sm text-blue-100 mb-3">Post your requirements and compare quotes from helpers</p>
+          <div className="flex items-center text-sm font-medium group-hover:gap-2 transition-all">
+            Request Quotes <ArrowRight className="h-4 w-4 ml-1" />
           </div>
         </Link>
       </div>

@@ -85,11 +85,13 @@ export default function AIRequestPage() {
   const getPriceForTier = (basePrice: number, tier: PriceTier): number => {
     switch (tier) {
       case 'budget':
-        return Math.round(basePrice * 0.85) // -15%
+        return Math.round(basePrice * 0.85); // -15%
       case 'standard':
-        return basePrice
+        return basePrice;
       case 'priority':
-        return Math.round(basePrice * 1.15) // +15%
+        return Math.round(basePrice * 1.15); // +15%
+      default:
+        return basePrice;
     }
   }
 
@@ -151,20 +153,20 @@ export default function AIRequestPage() {
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'low': return 'bg-green-100 text-green-700'
-      case 'medium': return 'bg-yellow-100 text-yellow-700'
-      case 'high': return 'bg-orange-100 text-orange-700'
-      case 'critical': return 'bg-red-100 text-red-700'
-      default: return 'bg-gray-100 text-gray-700'
+      case 'low': return 'bg-green-100 text-green-700';
+      case 'medium': return 'bg-yellow-100 text-yellow-700';
+      case 'high': return 'bg-orange-100 text-orange-700';
+      case 'critical': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
     }
   }
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
-      case 'normal': return 'bg-blue-100 text-blue-700'
-      case 'urgent': return 'bg-orange-100 text-orange-700'
-      case 'emergency': return 'bg-red-100 text-red-700'
-      default: return 'bg-gray-100 text-gray-700'
+      case 'normal': return 'bg-blue-100 text-blue-700';
+      case 'urgent': return 'bg-orange-100 text-orange-700';
+      case 'emergency': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
     }
   }
 
@@ -380,52 +382,6 @@ export default function AIRequestPage() {
                 ⚠️ Please upload at least 3 photos for accurate AI analysis
               </p>
             )}
-          </CardContent>
-        </Card>
-      )}
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Description */}
-            <div>
-              <Label htmlFor="description">Describe the Problem</Label>
-              <Textarea
-                id="description"
-                placeholder="E.g., AC is not cooling properly, making loud noise, and water is leaking from the indoor unit..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={5}
-                className="mt-2"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Be specific about the issue, when it started, and any symptoms
-              </p>
-            </div>
-
-            {/* Analyze Button */}
-            <Button
-              onClick={analyzeWithAI}
-              disabled={analyzing || images.length === 0 || !description.trim()}
-              className="w-full bg-gradient-to-r from-purple-600 to-teal-600 hover:from-purple-700 hover:to-teal-700"
-              size="lg"
-            >
-              {analyzing ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Analyzing with AI...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-5 w-5 mr-2" />
-                  Analyze with AI
-                </>
-              )}
-            </Button>
           </CardContent>
         </Card>
       )}
