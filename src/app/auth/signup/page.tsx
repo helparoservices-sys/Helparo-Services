@@ -6,20 +6,16 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Eye, EyeOff, CheckCircle, XCircle, Loader2, Phone, ArrowRight, ArrowLeft } from 'lucide-react'
+import { Eye, EyeOff, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase/client'
 import { LegalModal } from '@/components/legal/legal-modal'
 import { toast } from 'sonner'
-import { sendOTP, verifyOTP, resendOTP } from '@/lib/otp-service'
 
 function SignUpForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const defaultRole = searchParams.get('role') || 'customer'
-  
-  // Multi-step form state: 'details' -> 'phone' -> 'otp' -> 'success'
-  const [currentStep, setCurrentStep] = useState<'details' | 'phone' | 'otp' | 'success'>('details')
   
   const [formData, setFormData] = useState({
     email: '',
@@ -35,15 +31,9 @@ function SignUpForm() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
   const [showTerms, setShowTerms] = useState(false)
   const [showPrivacy, setShowPrivacy] = useState(false)
-  const [legalConsent, setLegalConsent] = useState(false)
-
-  // OTP related state
-  const [otp, setOtp] = useState('')
-  const [countdown, setCountdown] = useState(0)
-  const [phoneVerified, setPhoneVerified] = useState(false)
-  const [firebaseUserId, setFirebaseUserId] = useState<string>('')
 
   // Password strength validation
   const passwordStrength = {
@@ -56,156 +46,20 @@ function SignUpForm() {
 
   const passwordMatch = formData.password === formData.confirmPassword && formData.confirmPassword !== ''
 
-  // Countdown timer for resend OTP
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
-      return () => clearTimeout(timer)
-    }
-  }, [countdown])
-
-  // No reCAPTCHA needed with custom OTP service
-
-  // Format phone number with country code
-  const formatPhoneNumber = (phone: string) => {
-    const cleaned = phone.replace(/\D/g, '')
-    if (cleaned.length === 10) {
-      return `${formData.countryCode}${cleaned}`
-    }
-    return `${formData.countryCode}${cleaned}`
-  }
-
-  // Validate details form before proceeding to OTP
-  const validateDetails = () => {
-    if (!formData.fullName.trim()) {
-      setError('Please enter your full name')
-      return false
-    }
-    if (!formData.email.trim()) {
-      setError('Please enter your email')
-      return false
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      setError('Please enter a valid email address')
-      return false
-    }
-    if (formData.phone.length !== 10) {
-      setError('Please enter a valid 10-digit phone number')
-      return false
-    }
-    if (!Object.values(passwordStrength).every(Boolean)) {
-      setError('Password does not meet strength requirements')
-      return false
-    }
-    if (!passwordMatch) {
-      setError('Passwords do not match')
-      return false
-    }
-    if (!legalConsent) {
-      setError('Please accept the Terms & Conditions and Privacy Policy')
-      return false
-    }
-    return true
-  }
-
-  // Proceed to phone verification step
-  const handleProceedToPhone = async () => {
-    if (!validateDetails()) return
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     setError('')
-    setCurrentStep('phone')
-  }
+    setLoading(true)
 
-  // Send OTP to phone number using custom OTP service
-  const handleSendOTP = async () => {
     try {
-      setLoading(true)
-      setError('')
-      
-      const formattedPhone = formatPhoneNumber(formData.phone)
-      console.log('Sending OTP to:', formattedPhone)
-      
-      // Use custom OTP service (no Firebase, no reCAPTCHA needed)
-      const result = await sendOTP(formattedPhone)
-      
-      if (result.success) {
-        setCurrentStep('otp')
-        setCountdown(60)
-        toast.success(result.message)
-      } else {
-        throw new Error(result.message)
-      }
-      
-    } catch (err: any) {
-      console.error('Send OTP Error:', err)
-      setError(err.message || 'Failed to send OTP. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Verify OTP and create account
-  const handleVerifyOTP = async () => {
-    try {
-      setLoading(true)
-      setError('')
-      
-      if (otp.length !== 6) {
-        throw new Error('Please enter a valid 6-digit OTP')
+      // Validate password
+      if (!Object.values(passwordStrength).every(Boolean)) {
+        throw new Error('Password does not meet strength requirements')
       }
 
-      const formattedPhone = formatPhoneNumber(formData.phone)
-      console.log('Verifying OTP for:', formattedPhone)
-      
-      // Verify OTP using custom service
-      const result = await verifyOTP(formattedPhone, otp)
-      
-      if (result.success && result.userId) {
-        setPhoneVerified(true)
-        setFirebaseUserId(result.userId)
-        toast.success('Phone verified successfully!')
-        
-        // Create user account in Supabase
-        await createUserAccount(result.userId)
-      } else {
-        throw new Error(result.message)
+      if (!passwordMatch) {
+        throw new Error('Passwords do not match')
       }
-      
-    } catch (err: any) {
-      console.error('Verify OTP Error:', err)
-      setError(err.message || 'Invalid OTP. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Resend OTP
-  const handleResendOTP = async () => {
-    setOtp('')
-    setError('')
-    
-    try {
-      setLoading(true)
-      const formattedPhone = formatPhoneNumber(formData.phone)
-      const result = await resendOTP(formattedPhone)
-      
-      if (result.success) {
-        setCountdown(60)
-        toast.success(result.message)
-      } else {
-        throw new Error(result.message)
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to resend OTP')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Create user account in Supabase after phone verification
-  const createUserAccount = async (firebaseUid: string) => {
-    try {
-      setLoading(true)
-      setError('')
 
       // Sign up with Supabase Auth
       const { data, error: signUpError } = await supabase.auth.signUp({
@@ -217,8 +71,6 @@ function SignUpForm() {
             phone: formData.phone,
             country_code: formData.countryCode,
             role: formData.role,
-            firebase_uid: firebaseUid,
-            phone_verified: true,
           },
           emailRedirectTo: `${window.location.origin}/auth/confirm`,
         },
@@ -227,7 +79,7 @@ function SignUpForm() {
       if (signUpError) throw signUpError
 
       if (data.user) {
-        setCurrentStep('success')
+        setSuccess(true)
       }
     } catch (err: unknown) {
       const error = err as { message?: string }
@@ -238,8 +90,7 @@ function SignUpForm() {
     }
   }
 
-  // Success Screen
-  if (currentStep === 'success') {
+  if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 relative overflow-hidden">
         {/* Logo Watermark Background */}
@@ -268,13 +119,6 @@ function SignUpForm() {
                 </p>
               </div>
 
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <span className="text-sm text-green-700">
-                  Phone verified: {formData.countryCode} {formData.phone}
-                </span>
-              </div>
-
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 Please check your email and click the verification link to activate your account.
               </p>
@@ -294,12 +138,19 @@ function SignUpForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-teal-50 p-4 relative overflow-hidden">
+      {/* Animated Background Blobs */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-teal-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-40 left-1/2 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+      </div>
+
       {/* Signup Card */}
-      <div className="w-full max-w-md relative z-10">
+      <div className="w-full max-w-md relative z-10 animate-float">
         <div className="bg-white/90 backdrop-blur-2xl border-2 border-purple-100 shadow-2xl rounded-3xl p-8 hover:shadow-purple-500/20 transition-all duration-500">
           {/* Header with Logo */}
-          <div className="text-center mb-6">
-            <Link href="/" className="inline-flex items-center justify-center gap-3 mb-4 group">
+          <div className="text-center mb-8">
+            <Link href="/" className="inline-flex items-center justify-center gap-3 mb-6 group">
               <div className="relative h-14 w-14 overflow-hidden rounded-2xl p-0.5 group-hover:scale-110 transition-transform duration-300">
                 <div className="h-full w-full bg-white rounded-2xl flex items-center justify-center p-2">
                   <Image src="/logo.jpg" alt="Helparo" width={48} height={48} className="object-contain" />
@@ -308,35 +159,13 @@ function SignUpForm() {
               <span className="text-3xl font-black bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">Helparo</span>
             </Link>
             
-            <h1 className="text-2xl font-black text-gray-900 mb-2">
-              {currentStep === 'details' && 'Create Your Account'}
-              {currentStep === 'phone' && 'Verify Your Phone'}
-              {currentStep === 'otp' && 'Enter OTP'}
-            </h1>
+            <h1 className="text-3xl font-black text-gray-900 mb-2">Create Your Account</h1>
             <p className="text-sm text-gray-600 font-medium">
-              {currentStep === 'details' && 'Join thousands of customers and helpers 🚀'}
-              {currentStep === 'phone' && "We'll send you a 6-digit verification code"}
-              {currentStep === 'otp' && `Enter the code sent to ${formData.countryCode} ${formData.phone}`}
+              Join thousands of customers and helpers 🚀
             </p>
           </div>
 
-          {/* Step Indicator */}
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <div className={`w-10 h-1 rounded-full transition-colors ${currentStep === 'details' ? 'bg-purple-600' : 'bg-purple-200'}`}></div>
-            <div className={`w-10 h-1 rounded-full transition-colors ${currentStep === 'phone' ? 'bg-purple-600' : currentStep === 'otp' ? 'bg-purple-200' : 'bg-gray-200'}`}></div>
-            <div className={`w-10 h-1 rounded-full transition-colors ${currentStep === 'otp' ? 'bg-purple-600' : 'bg-gray-200'}`}></div>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg animate-fade-in mb-4">
-              {error}
-            </div>
-          )}
-
-          {/* Step 1: User Details */}
-          {currentStep === 'details' && (
-            <form onSubmit={(e) => { e.preventDefault(); handleProceedToPhone(); }} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Role Selection */}
             <div className="space-y-2">
               <Label className="text-gray-900 font-bold">I want to</Label>
@@ -409,13 +238,11 @@ function SignUpForm() {
                   type="tel"
                   placeholder="1234567890"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   required
-                  maxLength={10}
                   className="bg-white border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300 hover:border-purple-300"
                 />
               </div>
-              <p className="text-xs text-gray-500">We&apos;ll send an OTP to verify this number</p>
             </div>
 
             {/* Password */}
@@ -483,16 +310,22 @@ function SignUpForm() {
               <input
                 type="checkbox"
                 id="legalConsent"
-                checked={legalConsent}
-                onChange={(e) => setLegalConsent(e.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-slate-300 focus:ring-2 focus:ring-primary/50"
+                required
+                className="mt-1 h-4 w-4 rounded border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-primary/50"
               />
-              <Label htmlFor="legalConsent" className="text-xs leading-tight text-slate-600">
+              <Label htmlFor="legalConsent" className="text-xs leading-tight text-slate-600 dark:text-slate-400">
                 I have read and agree to the{' '}
-                <button type="button" onClick={() => setShowTerms(true)} className="text-primary hover:underline">Terms & Conditions</button>{' '}and{' '}
-                <button type="button" onClick={() => setShowPrivacy(true)} className="text-primary hover:underline">Privacy Policy</button>. I understand I may be asked to re-accept if they update.
+                <Link href="/legal/terms" onClick={(e) => { e.preventDefault(); setShowTerms(true); }} className="text-primary hover:underline">Terms & Conditions</Link>{' '}and{' '}
+                <Link href="/legal/privacy" onClick={(e) => { e.preventDefault(); setShowPrivacy(true); }} className="text-primary hover:underline">Privacy Policy</Link>. I understand I may be asked to re-accept if they update.
               </Label>
             </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg animate-fade-in">
+                {error}
+              </div>
+            )}
 
             {/* Submit Button */}
             <Button 
@@ -501,8 +334,14 @@ function SignUpForm() {
               size="lg" 
               disabled={loading}
             >
-              Continue to Phone Verification
-              <ArrowRight className="w-5 h-5 ml-2" />
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Creating Account...
+                </>
+              ) : (
+                'Create Account'
+              )}
             </Button>
 
             {/* Login Link */}
@@ -513,119 +352,6 @@ function SignUpForm() {
               </Link>
             </p>
           </form>
-          )}
-
-          {/* Step 2: Send OTP */}
-          {currentStep === 'phone' && (
-            <div className="space-y-4">
-              <div className="text-center mb-4">
-                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Phone className="w-8 h-8 text-purple-600" />
-                </div>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <p className="text-sm text-gray-600">Sending OTP to</p>
-                <p className="text-xl font-bold text-gray-900">{formData.countryCode} {formData.phone}</p>
-              </div>
-
-              <Button 
-                onClick={handleSendOTP} 
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-purple-600 to-teal-600 hover:from-purple-700 hover:to-teal-700 text-white font-bold py-6"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Sending OTP...
-                  </>
-                ) : (
-                  <>
-                    Send OTP
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </>
-                )}
-              </Button>
-
-              <button
-                onClick={() => {
-                  setCurrentStep('details')
-                  setError('')
-                }}
-                className="w-full text-sm text-gray-500 hover:text-gray-700 flex items-center justify-center gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to details
-              </button>
-            </div>
-          )}
-
-          {/* Step 3: Verify OTP */}
-          {currentStep === 'otp' && (
-            <div className="space-y-4">
-              <div className="text-center mb-4">
-                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Phone className="w-8 h-8 text-purple-600" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="otp">Enter 6-digit OTP</Label>
-                <Input
-                  id="otp"
-                  type="text"
-                  placeholder="000000"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  maxLength={6}
-                  className="text-center text-2xl tracking-widest font-mono bg-white border-2 border-gray-200 focus:border-purple-500"
-                />
-              </div>
-
-              <Button 
-                onClick={handleVerifyOTP} 
-                disabled={loading || otp.length !== 6}
-                className="w-full bg-gradient-to-r from-purple-600 to-teal-600 hover:from-purple-700 hover:to-teal-700 text-white font-bold py-6"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  'Verify & Create Account'
-                )}
-              </Button>
-
-              <div className="text-center">
-                {countdown > 0 ? (
-                  <p className="text-sm text-gray-500">
-                    Resend OTP in <span className="font-medium text-purple-600">{countdown}s</span>
-                  </p>
-                ) : (
-                  <button
-                    onClick={handleResendOTP}
-                    disabled={loading}
-                    className="text-sm text-purple-600 hover:underline font-medium"
-                  >
-                    Didn&apos;t receive OTP? Resend
-                  </button>
-                )}
-              </div>
-
-              <button
-                onClick={() => {
-                  setCurrentStep('phone')
-                  setOtp('')
-                  setError('')
-                }}
-                className="w-full text-sm text-gray-500 hover:text-gray-700 flex items-center justify-center gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Change phone number
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Modals */}

@@ -25,7 +25,7 @@ graph TB
         H[Cashfree Payments]
         I[Google Maps API]
         J[Agora Video Calls]
-        K[Firebase Notifications]
+        K[Push Notifications]
         L[Twilio SMS]
     end
 
@@ -418,7 +418,7 @@ graph TB
         F[Cashfree API]
         G[Google Maps]
         H[Agora SDK]
-        I[Firebase FCM]
+        I[Push Notifications]
         J[Twilio API]
     end
 

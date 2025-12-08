@@ -420,7 +420,7 @@ Trust Score (0-100) =
 - **SMS**: Twilio/MSG91
 - **Email**: Resend
 - **Maps/Geocoding**: Google Maps API
-- **Push Notifications**: Firebase Cloud Messaging
+- **Push Notifications**: Supabase Realtime / Web Push API
 - **Video Calls**: Agora/Twilio Video
 
 ### Infrastructure
