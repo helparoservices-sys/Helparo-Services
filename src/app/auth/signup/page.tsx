@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Suspense, useEffect } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,6 @@ import { Eye, EyeOff, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase/client'
 import { LegalModal } from '@/components/legal/legal-modal'
-import { toast } from 'sonner'
 
 function SignUpForm() {
   const router = useRouter()
