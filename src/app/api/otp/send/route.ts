@@ -1,11 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
-// Generate a 6-digit OTP
-function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString()
-}
-
 export async function POST(request: Request) {
   try {
     const body = await request.json()
@@ -63,43 +58,13 @@ export async function POST(request: Request) {
       }, { status: 409 })
     }
 
-    // Generate OTP and store for verification
-    const otp = generateOTP()
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
-
-    // Delete any existing unverified OTP for this user
-    await supabase
-      .from('phone_verifications')
-      .delete()
-      .eq('user_id', user.id)
-      .is('verified_at', null)
-
-    // Store OTP in database (Firebase will send SMS, we verify against our stored OTP)
-    const { error: insertError } = await supabase
-      .from('phone_verifications')
-      .insert({
-        user_id: user.id,
-        phone: cleanPhone,
-        country_code: countryCode,
-        otp_code: otp,
-        otp_expires_at: expiresAt.toISOString(),
-        attempts: 0
-      })
-
-    if (insertError) {
-      console.error('Insert OTP error:', insertError)
-      return NextResponse.json({ error: 'Failed to generate OTP' }, { status: 500 })
-    }
-
-    // Return success - Firebase will handle actual SMS sending on the client side
-    // The client will use Firebase Phone Auth, but we verify against our stored OTP
+    // Firebase handles OTP sending and verification on client side
+    // This API just validates the phone number
     return NextResponse.json({ 
       success: true,
-      message: 'Ready to send OTP via Firebase',
+      message: 'Phone validated. Ready for Firebase OTP.',
       phone: cleanPhone.slice(-4).padStart(10, '*'), // Masked phone
-      expiresIn: 600, // 10 minutes in seconds
-      // For development without Firebase, include the OTP
-      ...(process.env.NODE_ENV === 'development' && { devOtp: otp })
+      expiresIn: 600
     })
 
   } catch (error) {
