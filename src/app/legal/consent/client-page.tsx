@@ -28,6 +28,7 @@ export default function ConsentPage() {
   const [error, setError] = useState('')
   const [user, setUser] = useState<{ id: string } | null>(null)
   const [role, setRole] = useState('customer')
+  const [hasPhone, setHasPhone] = useState(false)
   const [activeTab, setActiveTab] = useState<'terms' | 'privacy'>('terms')
 
   useEffect(() => {
@@ -43,14 +44,15 @@ export default function ConsentPage() {
 
         setUser(user)
 
-        // Get user's role
+        // Get user's role and phone
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, phone, phone_verified')
           .eq('id', user.id)
           .maybeSingle()
 
         setRole(profile?.role || 'customer')
+        setHasPhone(!!(profile?.phone && profile?.phone_verified))
 
         // Fetch latest legal documents
         const { data: termsData } = await supabase
@@ -109,12 +111,16 @@ export default function ConsentPage() {
     loadData()
   }, [router])
 
-  // If already accepted both, redirect
+  // If already accepted both, redirect (check phone first)
   useEffect(() => {
     if (!loading && termsAccepted && privacyAccepted) {
-      router.push(`/${role}/dashboard`)
+      if (!hasPhone) {
+        router.push('/auth/complete-profile')
+      } else {
+        router.push(`/${role}/dashboard`)
+      }
     }
-  }, [loading, termsAccepted, privacyAccepted, role, router])
+  }, [loading, termsAccepted, privacyAccepted, role, hasPhone, router])
 
   const handleAccept = async () => {
     if (!user) return
@@ -153,8 +159,18 @@ export default function ConsentPage() {
         }
       }
 
-      // Success - redirect to dashboard
-      router.push(`/${role}/dashboard`)
+      // Check if phone is missing - redirect to complete profile
+      const { data: updatedProfile } = await supabase
+        .from('profiles')
+        .select('phone, phone_verified')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (!updatedProfile?.phone || !updatedProfile?.phone_verified) {
+        router.push('/auth/complete-profile')
+      } else {
+        router.push(`/${role}/dashboard`)
+      }
     } catch (err: unknown) {
       const error = err as { message?: string }
       console.error('Error accepting:', err)

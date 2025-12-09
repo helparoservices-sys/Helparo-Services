@@ -116,6 +116,11 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Function: Check rate limit
 -- Returns: 'allowed', 'rate_limited', or 'blocked'
 -- ============================================
+-- Drop existing function first to avoid signature conflicts
+DROP FUNCTION IF EXISTS public.check_otp_rate_limit(VARCHAR, VARCHAR, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS public.check_otp_rate_limit(VARCHAR, VARCHAR);
+DROP FUNCTION IF EXISTS public.check_otp_rate_limit(VARCHAR);
+
 CREATE OR REPLACE FUNCTION public.check_otp_rate_limit(
   p_identifier VARCHAR,
   p_identifier_type VARCHAR DEFAULT 'phone',

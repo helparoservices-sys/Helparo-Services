@@ -19,7 +19,7 @@ export async function GET(request: Request) {
       // Check if profile exists and has been properly set up
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, role, full_name, phone')
+        .select('id, role, full_name, phone, phone_verified')
         .eq('id', user.id)
         .maybeSingle()
 
@@ -73,8 +73,8 @@ export async function GET(request: Request) {
         return NextResponse.redirect(new URL('/legal/consent', requestUrl.origin))
       }
 
-      // Check if phone is missing - redirect to complete profile
-      if (!profile?.phone) {
+      // Check if phone is missing or not verified - redirect to complete profile
+      if (!profile?.phone || !(profile as any)?.phone_verified) {
         return NextResponse.redirect(new URL('/auth/complete-profile', requestUrl.origin))
       }
       

@@ -71,7 +71,7 @@ export async function loginAction(formData: FormData) {
       // Get user profile with status
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role, status, is_banned, ban_reason')
+        .select('role, status, is_banned, ban_reason, phone, phone_verified')
         .eq('id', data.user.id)
         .single()
 
@@ -79,6 +79,8 @@ export async function loginAction(formData: FormData) {
       const status = (profile as any)?.status
       const isBanned = (profile as any)?.is_banned
       const banReason = (profile as any)?.ban_reason
+      const phone = (profile as any)?.phone
+      const phoneVerified = (profile as any)?.phone_verified
       
       // Check if user is allowed to login
       if (isBanned) {
@@ -139,6 +141,11 @@ export async function loginAction(formData: FormData) {
       // Create session record for tracking
       if (data.session?.access_token) {
         await createSessionRecord(data.session.access_token)
+      }
+      
+      // Check if phone is missing or not verified - redirect to complete profile
+      if (!phone || !phoneVerified) {
+        redirect('/auth/complete-profile')
       }
       
       // Server-side redirect
