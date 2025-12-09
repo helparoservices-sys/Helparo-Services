@@ -124,28 +124,62 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to generate OTP' }, { status: 500 })
     }
 
-    // Send OTP via Supabase Auth (uses configured Twilio)
-    // Supabase will use the Twilio configuration you set up in the dashboard
+    // Send OTP via Twilio directly
     const fullPhone = `${countryCode}${cleanPhone}`
     
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      phone: fullPhone,
-      options: {
-        channel: 'sms',
-        // This won't actually sign in, just sends the OTP
-        // We'll verify manually using our stored OTP
-      }
-    })
+    const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID
+    const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN
+    const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER
 
-    // If Supabase OTP fails, we'll send via Twilio directly as fallback
-    if (otpError) {
-      console.log('Supabase OTP send info:', otpError.message)
-      // For now, we'll use our own OTP stored in database
-      // In production, you'd integrate Twilio SDK here
-      
-      // Since Twilio is configured in Supabase, let's try a different approach
-      // We'll just use our stored OTP and assume SMS was sent
-      console.log(`OTP for ${fullPhone}: ${otp}`) // Remove in production!
+    if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
+      console.error('Twilio credentials not configured')
+      // In development, log the OTP for testing
+      console.log(`[DEV] OTP for ${fullPhone}: ${otp}`)
+      return NextResponse.json({ 
+        success: true,
+        message: 'OTP sent successfully',
+        phone: cleanPhone.slice(-4).padStart(10, '*'),
+        expiresIn: 600,
+        // Remove in production - this is for testing without Twilio
+        ...(process.env.NODE_ENV === 'development' && { devOtp: otp })
+      })
+    }
+
+    // Send SMS via Twilio API
+    try {
+      const twilioResponse = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Basic ' + Buffer.from(`${twilioAccountSid}:${twilioAuthToken}`).toString('base64'),
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            To: fullPhone,
+            From: twilioPhoneNumber,
+            Body: `Your Helparo verification code is: ${otp}. Valid for 10 minutes. Do not share this code with anyone.`,
+          }),
+        }
+      )
+
+      const twilioResult = await twilioResponse.json()
+
+      if (!twilioResponse.ok) {
+        console.error('Twilio error:', twilioResult)
+        return NextResponse.json({ 
+          error: 'Failed to send OTP. Please try again.',
+          code: 'SMS_FAILED'
+        }, { status: 500 })
+      }
+
+      console.log('SMS sent successfully:', twilioResult.sid)
+    } catch (twilioError) {
+      console.error('Twilio request error:', twilioError)
+      return NextResponse.json({ 
+        error: 'Failed to send OTP. Please try again.',
+        code: 'SMS_FAILED'
+      }, { status: 500 })
     }
 
     return NextResponse.json({ 
