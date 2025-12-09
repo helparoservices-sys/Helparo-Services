@@ -3,10 +3,19 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
-import { Loader2, CheckCircle, XCircle, FileText, Users, Wrench } from 'lucide-react'
+import { Loader2, CheckCircle, XCircle, FileText, Users, Wrench, Shield, X, Scale } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+
+interface LegalDoc {
+  title: string
+  content_md: string
+  version: number
+  type: string
+}
 
 export default function CompleteSignupPage() {
   const router = useRouter()
@@ -17,6 +26,13 @@ export default function CompleteSignupPage() {
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [privacyAccepted, setPrivacyAccepted] = useState(false)
   const [pendingRoleForTerms, setPendingRoleForTerms] = useState<string | null>(null)
+  
+  // Legal document modal state
+  const [showLegalModal, setShowLegalModal] = useState(false)
+  const [activeTab, setActiveTab] = useState<'terms' | 'privacy'>('terms')
+  const [terms, setTerms] = useState<LegalDoc | null>(null)
+  const [privacy, setPrivacy] = useState<LegalDoc | null>(null)
+  const [loadingDocs, setLoadingDocs] = useState(false)
 
   useEffect(() => {
     const checkAndSetup = async () => {
@@ -66,6 +82,42 @@ export default function CompleteSignupPage() {
     setPendingRoleForTerms(role)
     setStatus('acceptTerms')
     setMessage('Please review and accept our terms')
+  }
+
+  // Load legal documents when opening modal
+  const openLegalModal = async (tab: 'terms' | 'privacy') => {
+    setActiveTab(tab)
+    setShowLegalModal(true)
+    
+    // Only load if not already loaded
+    if (!terms || !privacy) {
+      setLoadingDocs(true)
+      try {
+        const { data: termsData } = await supabase
+          .from('legal_documents')
+          .select('title, content_md, version, type')
+          .eq('type', 'terms')
+          .eq('is_active', true)
+          .order('version', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        const { data: privacyData } = await supabase
+          .from('legal_documents')
+          .select('title, content_md, version, type')
+          .eq('type', 'privacy')
+          .eq('is_active', true)
+          .order('version', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        setTerms(termsData)
+        setPrivacy(privacyData)
+      } catch (err) {
+        console.error('Error loading legal docs:', err)
+      }
+      setLoadingDocs(false)
+    }
   }
 
   const handleTermsAccepted = async () => {
@@ -294,41 +346,72 @@ export default function CompleteSignupPage() {
           {/* Terms Acceptance */}
           {status === 'acceptTerms' && (
             <>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Almost There!</h1>
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Scale className="h-6 w-6 text-purple-600" />
+                <h1 className="text-2xl font-bold text-gray-900">Almost There!</h1>
+              </div>
               <p className="text-gray-600 mb-6">Please review and accept our terms to continue</p>
               
-              <div className="space-y-4 text-left">
-                {/* Terms Checkbox */}
-                <label className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors border-2 border-transparent has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50">
-                  <input
-                    type="checkbox"
-                    checked={termsAccepted}
-                    onChange={(e) => setTermsAccepted(e.target.checked)}
-                    className="mt-1 h-5 w-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                  />
-                  <div>
-                    <span className="text-gray-700">I agree to the </span>
-                    <Link href="/legal/terms" target="_blank" className="text-purple-600 font-semibold hover:underline">
-                      Terms of Service
-                    </Link>
+              <div className="space-y-3 text-left">
+                {/* Terms Button */}
+                <div className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                  termsAccepted 
+                    ? 'border-purple-500 bg-purple-50' 
+                    : 'border-gray-200 bg-gray-50 hover:border-purple-300'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={termsAccepted}
+                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                        className="h-5 w-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      />
+                      <div>
+                        <span className="text-gray-700">I agree to the </span>
+                        <span className="text-purple-600 font-semibold">Terms of Service</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openLegalModal('terms')}
+                      className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-800 font-medium"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Read
+                    </button>
                   </div>
-                </label>
+                </div>
 
-                {/* Privacy Checkbox */}
-                <label className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors border-2 border-transparent has-[:checked]:border-teal-500 has-[:checked]:bg-teal-50">
-                  <input
-                    type="checkbox"
-                    checked={privacyAccepted}
-                    onChange={(e) => setPrivacyAccepted(e.target.checked)}
-                    className="mt-1 h-5 w-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                  />
-                  <div>
-                    <span className="text-gray-700">I agree to the </span>
-                    <Link href="/legal/privacy" target="_blank" className="text-teal-600 font-semibold hover:underline">
-                      Privacy Policy
-                    </Link>
+                {/* Privacy Button */}
+                <div className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                  privacyAccepted 
+                    ? 'border-teal-500 bg-teal-50' 
+                    : 'border-gray-200 bg-gray-50 hover:border-teal-300'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={privacyAccepted}
+                        onChange={(e) => setPrivacyAccepted(e.target.checked)}
+                        className="h-5 w-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                      />
+                      <div>
+                        <span className="text-gray-700">I agree to the </span>
+                        <span className="text-teal-600 font-semibold">Privacy Policy</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openLegalModal('privacy')}
+                      className="flex items-center gap-1 text-sm text-teal-600 hover:text-teal-800 font-medium"
+                    >
+                      <Shield className="h-4 w-4" />
+                      Read
+                    </button>
                   </div>
-                </label>
+                </div>
               </div>
 
               <Button
@@ -336,7 +419,8 @@ export default function CompleteSignupPage() {
                 disabled={!termsAccepted || !privacyAccepted}
                 className="w-full mt-6 py-6 rounded-xl bg-gradient-to-r from-purple-600 to-teal-600 text-white font-bold text-lg hover:from-purple-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
               >
-                Continue
+                <CheckCircle className="mr-2 h-5 w-5" />
+                Accept & Continue
               </Button>
 
               <button
@@ -424,6 +508,121 @@ export default function CompleteSignupPage() {
           )}
         </div>
       </div>
+
+      {/* Legal Document Modal */}
+      {showLegalModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-purple-600 to-teal-600 text-white p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Scale className="h-6 w-6" />
+                <h2 className="text-xl font-bold">Legal Agreement</h2>
+              </div>
+              <button
+                onClick={() => setShowLegalModal(false)}
+                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-2 p-4 border-b bg-gray-50">
+              <button
+                onClick={() => setActiveTab('terms')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                  activeTab === 'terms'
+                    ? 'bg-purple-600 text-white shadow-lg'
+                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                <FileText className="h-4 w-4" />
+                Terms & Conditions
+                {termsAccepted && <CheckCircle className="h-4 w-4 text-green-300" />}
+              </button>
+              <button
+                onClick={() => setActiveTab('privacy')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                  activeTab === 'privacy'
+                    ? 'bg-teal-600 text-white shadow-lg'
+                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                <Shield className="h-4 w-4" />
+                Privacy Policy
+                {privacyAccepted && <CheckCircle className="h-4 w-4 text-green-300" />}
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {loadingDocs ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+                </div>
+              ) : (
+                <>
+                  {activeTab === 'terms' && terms && (
+                    <div className="prose prose-slate max-w-none">
+                      <div className="flex items-center gap-2 mb-4 pb-4 border-b">
+                        <FileText className="h-5 w-5 text-purple-600" />
+                        <h3 className="text-xl font-bold text-gray-900 m-0">{terms.title}</h3>
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">v{terms.version}</span>
+                      </div>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {terms.content_md}
+                      </ReactMarkdown>
+                    </div>
+                  )}
+                  {activeTab === 'privacy' && privacy && (
+                    <div className="prose prose-slate max-w-none">
+                      <div className="flex items-center gap-2 mb-4 pb-4 border-b">
+                        <Shield className="h-5 w-5 text-teal-600" />
+                        <h3 className="text-xl font-bold text-gray-900 m-0">{privacy.title}</h3>
+                        <span className="text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded-full">v{privacy.version}</span>
+                      </div>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {privacy.content_md}
+                      </ReactMarkdown>
+                    </div>
+                  )}
+                  {!terms && !privacy && (
+                    <p className="text-gray-500 text-center py-8">No legal documents available.</p>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="border-t p-4 bg-gray-50 flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={activeTab === 'terms' ? termsAccepted : privacyAccepted}
+                  onChange={(e) => {
+                    if (activeTab === 'terms') {
+                      setTermsAccepted(e.target.checked)
+                    } else {
+                      setPrivacyAccepted(e.target.checked)
+                    }
+                  }}
+                  className="h-5 w-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                />
+                <span className="text-sm text-gray-700">
+                  I have read and agree to the {activeTab === 'terms' ? 'Terms of Service' : 'Privacy Policy'}
+                </span>
+              </label>
+              <Button
+                onClick={() => setShowLegalModal(false)}
+                className="bg-gradient-to-r from-purple-600 to-teal-600 hover:from-purple-700 hover:to-teal-700 text-white"
+              >
+                Done
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
