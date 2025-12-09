@@ -1,139 +1,196 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { PlatformTrustBadges } from '@/components/trust-badges'
-import { SmoothScrollLink } from '@/components/smooth-scroll-link'
-import { FadeInSection, StaggerChildren, StaggerItem } from '@/components/fade-in-section'
 import { 
-  CheckCircle, 
-  Shield, 
-  Users, 
-  Zap, 
-  Star,
-  Clock,
-  MapPin,
-  Wrench,
-  Lightbulb,
-  Home,
-  Car,
   ArrowRight,
+  Shield,
+  Clock,
+  Star,
+  MapPin,
+  CheckCircle,
+  Phone,
+  Zap,
   BadgeCheck,
-  FileText
+  Play,
+  ChevronRight,
+  Sparkles
 } from 'lucide-react'
+import { useState, useEffect } from 'react'
 
 export default function LandingPage() {
+  const [currentService, setCurrentService] = useState(0)
+  const services = ['Plumber', 'Electrician', 'Cleaner', 'Carpenter', 'AC Repair']
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentService((prev) => (prev + 1) % services.length)
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [services.length])
+
   return (
-    <div className="flex min-h-screen flex-col bg-trust-light">
-      {/* Header - Glassmorphism with Guardian Teal */}
-      <header className="sticky top-0 z-50 w-full border-b border-guardianTeal/10 glass-card">
-        <div className="container mx-auto flex h-20 items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <div className="relative h-12 w-12 overflow-hidden rounded-2xl p-1 bg-gradient-to-br from-guardianTeal to-aquaGlow">
-              <Image src="/logo.jpg" alt="Helparo" width={48} height={48} className="object-contain rounded-xl" />
+    <div className="min-h-screen bg-white">
+      {/* Header - Clean & Minimal like Zomato */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                <span className="text-white font-bold text-lg">H</span>
+              </div>
+              <span className="text-xl font-bold text-gray-900">Helparo</span>
+            </Link>
+
+            {/* Navigation */}
+            <nav className="hidden md:flex items-center gap-8">
+              <Link href="#services" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+                Services
+              </Link>
+              <Link href="#how-it-works" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+                How it works
+              </Link>
+              <Link href="#safety" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+                Safety
+              </Link>
+              <Link href="/helper/register" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+                Become a Helper
+              </Link>
+            </nav>
+
+            {/* CTA Buttons */}
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="sm" className="hidden sm:flex" asChild>
+                <Link href="/auth/login">Log in</Link>
+              </Button>
+              <Button size="sm" className="bg-gray-900 hover:bg-gray-800 text-white rounded-full px-5" asChild>
+                <Link href="/auth/signup">Sign up</Link>
+              </Button>
             </div>
-            <span className="text-2xl font-black text-gradient-teal">Helparo</span>
-          </div>
-          <nav className="hidden md:flex gap-8">
-            <SmoothScrollLink href="#features" className="text-sm font-semibold text-deepNavy hover:text-guardianTeal transition-colors">
-              Features
-            </SmoothScrollLink>
-            <SmoothScrollLink href="#how-it-works" className="text-sm font-semibold text-deepNavy hover:text-guardianTeal transition-colors">
-              How It Works
-            </SmoothScrollLink>
-            <SmoothScrollLink href="#services" className="text-sm font-semibold text-deepNavy hover:text-guardianTeal transition-colors">
-              Services
-            </SmoothScrollLink>
-            <SmoothScrollLink href="#trust" className="text-sm font-semibold text-deepNavy hover:text-guardianTeal transition-colors">
-              Safety
-            </SmoothScrollLink>
-          </nav>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" className="font-semibold text-deepNavy hover:text-guardianTeal" asChild>
-              <Link href="/auth/login">Sign In</Link>
-            </Button>
-            <Button className="btn-accent-glow" asChild>
-              <Link href="/auth/signup">Get Started</Link>
-            </Button>
           </div>
         </div>
       </header>
 
-      {/* Hero Section - Guardian Teal Gradient */}
-      <section className="relative overflow-hidden gradient-navy-teal py-24 md:py-32">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden opacity-30">
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-aquaGlow rounded-full mix-blend-multiply filter blur-3xl animate-float"></div>
-          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-guardianTeal rounded-full mix-blend-multiply filter blur-3xl animate-float animation-delay-2000"></div>
-          <div className="absolute top-40 left-1/2 w-96 h-96 bg-aquaGlow/50 rounded-full mix-blend-multiply filter blur-3xl animate-float animation-delay-4000"></div>
-        </div>
-
-        <div className="container mx-auto px-6 relative z-10">
-          <div className="grid gap-16 lg:grid-cols-2 lg:gap-12 items-center">
-            <div className="flex flex-col gap-8 animate-fadeInUp">
-              <div className="inline-flex items-center rounded-full glass-card px-5 py-2 w-fit shadow-glow-sm">
-                <BadgeCheck className="mr-2 h-5 w-5 text-aquaGlow" />
-                <span className="text-sm font-bold text-white">100% Verified Professionals</span>
+      {/* Hero Section - Modern & Bold */}
+      <section className="pt-24 pb-16 lg:pt-32 lg:pb-24 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            {/* Left Content */}
+            <div className="space-y-8">
+              {/* Trust Badge */}
+              <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium">
+                <BadgeCheck className="w-4 h-4" />
+                <span>100% Verified Professionals</span>
               </div>
-              <h1 className="text-5xl font-black tracking-tight sm:text-6xl md:text-7xl lg:text-8xl leading-tight">
-                <span className="text-white">
-                  Get Trusted Help
+
+              {/* Main Heading */}
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
+                Get a trusted{' '}
+                <span className="relative">
+                  <span className="text-emerald-600 transition-all duration-500">
+                    {services[currentService]}
+                  </span>
+                  <span className="absolute bottom-0 left-0 w-full h-1 bg-emerald-200 rounded-full"></span>
                 </span>
                 <br />
-                <span className="text-gradient-teal bg-gradient-to-r from-aquaGlow to-white bg-clip-text text-transparent">
-                  in Minutes
-                </span>
+                at your doorstep
               </h1>
-              <p className="text-xl text-white/90 md:text-2xl font-medium leading-relaxed">
-                Connect with expert helpers instantly. From plumbing to cleaning—get it done right, get it done now. 💫
+
+              {/* Subtitle */}
+              <p className="text-lg sm:text-xl text-gray-600 max-w-lg">
+                Book verified professionals for home services. Fast, reliable, and affordable. 
+                Get help in minutes, not days.
               </p>
+
+              {/* CTA Buttons */}
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="btn-accent-glow text-lg px-8 py-6 rounded-2xl" asChild>
-                  <Link href="/auth/signup?role=customer">
-                    Find Helpers <ArrowRight className="ml-2 h-5 w-5" />
+                <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-8 h-14 text-base font-semibold shadow-lg shadow-emerald-200" asChild>
+                  <Link href="/auth/signup">
+                    Book a Service
+                    <ArrowRight className="ml-2 w-5 h-5" />
                   </Link>
                 </Button>
-                <Button size="lg" className="btn-outline-teal bg-white/10 border-white text-white hover:bg-white hover:text-deepNavy text-lg px-8 py-6 rounded-2xl backdrop-blur-sm" asChild>
-                  <Link href="/auth/signup?role=helper">
-                    Earn as Helper
+                <Button size="lg" variant="outline" className="rounded-xl px-8 h-14 text-base font-semibold border-2" asChild>
+                  <Link href="#how-it-works">
+                    <Play className="mr-2 w-5 h-5" />
+                    See how it works
                   </Link>
                 </Button>
               </div>
-              <div className="flex items-center gap-10 pt-4">
-                <div className="text-center">
-                  <div className="text-4xl font-black text-aquaGlow">10K+</div>
-                  <div className="text-sm text-white/80 font-semibold">Helpers</div>
+
+              {/* Social Proof */}
+              <div className="flex items-center gap-8 pt-4">
+                <div className="flex -space-x-3">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 border-2 border-white flex items-center justify-center text-xs font-medium text-gray-600">
+                      {String.fromCharCode(64 + i)}
+                    </div>
+                  ))}
                 </div>
-                <div className="text-center">
-                  <div className="text-4xl font-black text-aquaGlow">50K+</div>
-                  <div className="text-sm text-white/80 font-semibold">Completed</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-4xl font-black text-aquaGlow">4.8★</div>
-                  <div className="text-sm text-white/80 font-semibold">Rating</div>
+                <div>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    ))}
+                    <span className="ml-1 text-sm font-semibold text-gray-900">4.8</span>
+                  </div>
+                  <p className="text-sm text-gray-500">from 50,000+ reviews</p>
                 </div>
               </div>
             </div>
+
+            {/* Right Content - Hero Image/Cards */}
             <div className="relative hidden lg:block">
-              <div className="relative h-[600px] w-full">
-                {/* Floating Cards */}
-                <div className="absolute top-0 left-0 right-0 bottom-0">
-                  <div className="absolute top-0 left-0 transform hover:scale-110 transition-transform duration-300">
-                    <FloatingServiceCard icon={Wrench} title="Plumbing" color="teal" />
+              <div className="relative">
+                {/* Main Card */}
+                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-6 pt-16 pb-16 shadow-2xl shadow-emerald-200/50">
+                  <div className="bg-white rounded-2xl p-6 space-y-4 shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-500">Live booking</span>
+                      <span className="flex items-center gap-2 text-sm font-medium text-emerald-600">
+                        <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                        Just now
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center">
+                        <span className="text-2xl">🔧</span>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">Plumber Booked</h3>
+                        <p className="text-sm text-gray-500">Koramangala, Bangalore</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Clock className="w-4 h-4" />
+                      <span>Arriving in 25 mins</span>
+                    </div>
                   </div>
-                  <div className="absolute top-0 right-0 transform hover:scale-110 transition-transform duration-300">
-                    <FloatingServiceCard icon={Lightbulb} title="Electrical" color="glow" />
+                </div>
+
+                {/* Floating Stats Card */}
+                <div className="absolute top-0 -right-4 bg-white rounded-2xl p-4 shadow-xl border border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                      <Star className="w-6 h-6 text-yellow-500 fill-yellow-500" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-gray-900">4.8</p>
+                      <p className="text-xs text-gray-500">Avg. Rating</p>
+                    </div>
                   </div>
-                  <div className="absolute bottom-0 left-0 transform hover:scale-110 transition-transform duration-300">
-                    <FloatingServiceCard icon={Home} title="Cleaning" color="navy" />
-                  </div>
-                  <div className="absolute bottom-0 right-0 transform hover:scale-110 transition-transform duration-300">
-                    <FloatingServiceCard icon={Car} title="Auto Fix" color="teal" />
-                  </div>
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-glow">
-                    <div className="w-32 h-32 rounded-full gradient-teal flex items-center justify-center shadow-glow-lg p-4">
-                      <Image src="/logo.jpg" alt="Helparo" width={96} height={96} className="object-contain rounded-full" />
+                </div>
+
+                {/* Floating Badge */}
+                <div className="absolute bottom-0 -left-4 bg-white rounded-2xl p-4 shadow-xl border border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+                      <Shield className="w-6 h-6 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">100% Safe</p>
+                      <p className="text-xs text-gray-500">Verified helpers</p>
                     </div>
                   </div>
                 </div>
@@ -143,290 +200,343 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features Section - Guardian Teal Theme */}
-      <section id="features" className="py-24 bg-white">
-        <div className="container mx-auto px-6">
-          <FadeInSection className="text-center mb-20">
-            <h2 className="text-5xl font-black sm:text-6xl mb-6">
-              <span className="text-gradient-teal">
-                Why Helparo?
-              </span>
-            </h2>
-            <p className="text-xl text-deepNavy/70 max-w-2xl mx-auto font-medium">
-              We&apos;re not just another marketplace—we&apos;re your trusted partner
+      {/* Trusted By Section */}
+      <section className="py-12 bg-gray-50 border-y border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+              Trusted by thousands across India
             </p>
-          </FadeInSection>
-          <StaggerChildren className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            <StaggerItem>
-              <ModernFeatureCard 
-                icon={Shield}
-                title="Verified Pros"
-                description="Background checks, ID verification, and skill assessments for every helper."
-                gradient="from-guardianTeal to-guardianTeal/80"
-              />
-            </StaggerItem>
-            <StaggerItem>
-              <ModernFeatureCard 
-                icon={Zap}
-                title="Instant Pays"
-                description="Helpers get paid immediately. Just 12% commission. Fair and transparent."
-                gradient="from-aquaGlow to-aquaGlow/80"
-              />
-            </StaggerItem>
-            <StaggerItem>
-              <ModernFeatureCard 
-                icon={MapPin}
-                title="Near You"
-                description="GPS-powered matching finds the closest available helpers in seconds."
-                gradient="from-guardianTeal/70 to-aquaGlow/70"
-              />
-            </StaggerItem>
-            <StaggerItem>
-              <ModernFeatureCard 
-                icon={Clock}
-                title="24/7 Ready"
-                description="Emergency services available round the clock. We've got your back."
-                gradient="from-deepNavy to-guardianTeal"
-              />
-            </StaggerItem>
-            <StaggerItem>
-              <ModernFeatureCard 
-                icon={Star}
-                title="Top Rated"
-                description="Real reviews from real customers. Quality you can trust every time."
-                gradient="from-aquaGlow to-guardianTeal"
-              />
-            </StaggerItem>
-            <StaggerItem>
-              <ModernFeatureCard 
-                icon={Users}
-                title="No Surprises"
-                description="See prices upfront. No hidden fees. Pay what you see. That's it."
-                gradient="from-guardianTeal to-deepNavy"
-              />
-            </StaggerItem>
-          </StaggerChildren>
+            <div className="flex items-center gap-12 flex-wrap justify-center">
+              <div className="text-center">
+                <p className="text-3xl font-bold text-gray-900">10K+</p>
+                <p className="text-sm text-gray-500">Active Helpers</p>
+              </div>
+              <div className="w-px h-12 bg-gray-200 hidden sm:block"></div>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-gray-900">50K+</p>
+                <p className="text-sm text-gray-500">Jobs Completed</p>
+              </div>
+              <div className="w-px h-12 bg-gray-200 hidden sm:block"></div>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-gray-900">25+</p>
+                <p className="text-sm text-gray-500">Cities</p>
+              </div>
+              <div className="w-px h-12 bg-gray-200 hidden sm:block"></div>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-gray-900">4.8★</p>
+                <p className="text-sm text-gray-500">Customer Rating</p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* How It Works - Guardian Teal Timeline */}
-      <section id="how-it-works" className="py-24 bg-gradient-to-br from-guardianTeal/5 to-aquaGlow/5">
-        <div className="container mx-auto px-6">
-          <FadeInSection className="text-center mb-20">
-            <h2 className="text-5xl font-black sm:text-6xl mb-6">
-              <span className="text-deepNavy">Simple. Fast. </span>
-              <span className="text-gradient-teal">Done.</span>
+      {/* Services Section */}
+      <section id="services" className="py-20 lg:py-28">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <span className="inline-flex items-center gap-2 bg-purple-50 text-purple-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <Sparkles className="w-4 h-4" />
+              Our Services
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+              What do you need help with?
             </h2>
-            <p className="text-xl text-deepNavy/70 font-medium">
-              Three steps to your perfect service
+            <p className="text-lg text-gray-600">
+              Choose from a wide range of home services. All professionals are verified and rated.
             </p>
-          </FadeInSection>
-          <StaggerChildren className="max-w-5xl mx-auto grid gap-12 md:grid-cols-3 relative">
-            {/* Connection Line */}
-            <div className="hidden md:block absolute top-24 left-0 right-0 h-1 gradient-teal"></div>
-            
-            <StaggerItem>
-              <ModernStepCard 
-                number="1"
-                title="Post Request"
-                description="Tell us what you need. Pick your service. Set your budget. Takes 60 seconds."
-                icon={FileText}
-              />
-            </StaggerItem>
-            <StaggerItem>
-              <ModernStepCard 
-                number="2"
-                title="Match & Choose"
-                description="Get instant bids from verified helpers nearby. Compare. Pick the best."
-                icon={Users}
-              />
-            </StaggerItem>
-            <StaggerItem>
-              <ModernStepCard 
-                number="3"
-                title="Pay & Done"
-                description="Service completed? Rate and pay. Money released instantly. Simple."
-                icon={CheckCircle}
-              />
-            </StaggerItem>
-          </StaggerChildren>
-        </div>
-      </section>
+          </div>
 
-      {/* Services Section - Modern Grid */}
-      <section id="services" className="py-24 bg-white">
-        <div className="container mx-auto px-6">
-          <FadeInSection className="text-center mb-20">
-            <h2 className="text-5xl font-black sm:text-6xl mb-6">
-              <span className="bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">
-                Popular Services
-              </span>
-            </h2>
-            <p className="text-xl text-gray-600 font-medium">
-              Whatever you need, we deliver
-            </p>
-          </FadeInSection>
-          <StaggerChildren className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { name: 'Plumbing', icon: '🔧', color: 'from-blue-500 to-cyan-500' },
-              { name: 'Electrical', icon: '💡', color: 'from-yellow-500 to-orange-500' },
-              { name: 'Cleaning', icon: '✨', color: 'from-teal-500 to-green-500' },
-              { name: 'Carpentry', icon: '🔨', color: 'from-purple-500 to-pink-500' },
-              { name: 'Painting', icon: '🎨', color: 'from-red-500 to-rose-500' },
-              { name: 'AC Repair', icon: '❄️', color: 'from-cyan-500 to-blue-500' },
-              { name: 'Appliances', icon: '🔌', color: 'from-indigo-500 to-purple-500' },
-              { name: 'Car Service', icon: '🚗', color: 'from-gray-700 to-gray-900' }
+              { name: 'Plumbing', icon: '🔧', desc: 'Leaks, pipes, taps & more', color: 'bg-blue-50 hover:bg-blue-100', iconBg: 'bg-blue-100' },
+              { name: 'Electrical', icon: '💡', desc: 'Wiring, switches & repairs', color: 'bg-yellow-50 hover:bg-yellow-100', iconBg: 'bg-yellow-100' },
+              { name: 'Cleaning', icon: '✨', desc: 'Deep clean, sanitization', color: 'bg-emerald-50 hover:bg-emerald-100', iconBg: 'bg-emerald-100' },
+              { name: 'Carpentry', icon: '🪚', desc: 'Furniture, doors & fittings', color: 'bg-orange-50 hover:bg-orange-100', iconBg: 'bg-orange-100' },
+              { name: 'AC Repair', icon: '❄️', desc: 'Service, repair & install', color: 'bg-cyan-50 hover:bg-cyan-100', iconBg: 'bg-cyan-100' },
+              { name: 'Painting', icon: '🎨', desc: 'Interior & exterior', color: 'bg-pink-50 hover:bg-pink-100', iconBg: 'bg-pink-100' },
+              { name: 'Appliances', icon: '🔌', desc: 'Repair & maintenance', color: 'bg-purple-50 hover:bg-purple-100', iconBg: 'bg-purple-100' },
+              { name: 'Pest Control', icon: '🦟', desc: 'Fumigation & treatment', color: 'bg-red-50 hover:bg-red-100', iconBg: 'bg-red-100' },
             ].map((service) => (
-              <StaggerItem key={service.name}>
-                <div className="group relative overflow-hidden rounded-3xl border-2 border-gray-100 bg-white p-8 hover:border-transparent hover:shadow-2xl transition-all duration-300 cursor-pointer">
-                  <div className={`absolute inset-0 bg-gradient-to-br ${service.color} opacity-0 group-hover:opacity-10 transition-opacity`}></div>
-                  <div className="relative z-10">
-                    <div className="text-5xl mb-4">{service.icon}</div>
-                    <h3 className="text-2xl font-black mb-2 text-gray-900">{service.name}</h3>
-                    <p className="text-sm text-gray-600 font-medium mb-4">Professional service at your doorstep</p>
-                    <div className={`inline-flex items-center text-sm font-bold bg-gradient-to-r ${service.color} bg-clip-text text-transparent group-hover:translate-x-2 transition-transform`}>
-                      Book Now <ArrowRight className="ml-1 h-4 w-4" />
+              <Link
+                key={service.name}
+                href={`/auth/signup?service=${encodeURIComponent(service.name.toLowerCase())}`}
+                className={`group p-6 rounded-2xl ${service.color} border-2 border-transparent hover:border-gray-200 transition-all duration-300 hover:shadow-lg`}
+              >
+                <div className={`w-14 h-14 ${service.iconBg} rounded-xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform`}>
+                  {service.icon}
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">{service.name}</h3>
+                <p className="text-sm text-gray-600 mb-3">{service.desc}</p>
+                <span className="inline-flex items-center text-sm font-medium text-gray-900 group-hover:text-emerald-600 transition-colors">
+                  Book now
+                  <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section id="how-it-works" className="py-20 lg:py-28 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <span className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <Zap className="w-4 h-4" />
+              Simple Process
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+              Book in 3 easy steps
+            </h2>
+            <p className="text-lg text-gray-600">
+              Getting help has never been this easy. No calls, no hassle.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+            {[
+              {
+                step: '01',
+                title: 'Choose Service',
+                desc: 'Select what you need. Browse through our wide range of services and pick what suits you.',
+                icon: '📱'
+              },
+              {
+                step: '02',
+                title: 'Get Matched',
+                desc: 'We instantly match you with verified professionals near you. Compare ratings and prices.',
+                icon: '🎯'
+              },
+              {
+                step: '03',
+                title: 'Sit Back & Relax',
+                desc: 'Your helper arrives on time. Pay securely after the job is done. Rate your experience.',
+                icon: '✅'
+              }
+            ].map((item, index) => (
+              <div key={item.step} className="relative">
+                {index < 2 && (
+                  <div className="hidden md:block absolute top-12 left-full w-full h-0.5 bg-gradient-to-r from-emerald-200 to-transparent -translate-x-1/2"></div>
+                )}
+                <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
+                  <div className="flex items-center gap-4 mb-6">
+                    <span className="text-5xl">{item.icon}</span>
+                    <span className="text-5xl font-bold text-gray-100">{item.step}</span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{item.title}</h3>
+                  <p className="text-gray-600 leading-relaxed">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why Choose Us */}
+      <section className="py-20 lg:py-28">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <span className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
+                <Shield className="w-4 h-4" />
+                Why Helparo
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">
+                Built for trust, designed for speed
+              </h2>
+              <p className="text-lg text-gray-600 mb-8">
+                We&apos;re not just another service app. We&apos;re building the most trusted network of home service professionals in India.
+              </p>
+
+              <div className="space-y-6">
+                {[
+                  { icon: BadgeCheck, title: 'Verified Professionals', desc: 'Every helper goes through background checks and skill verification.' },
+                  { icon: Clock, title: 'On-time Guarantee', desc: 'We respect your time. Get compensated if helper is late.' },
+                  { icon: Shield, title: 'Safe & Secure', desc: 'Real-time tracking, SOS button, and 24/7 support.' },
+                  { icon: Star, title: 'Quality Assured', desc: 'Not happy? Get a free re-service or full refund.' },
+                ].map((item) => (
+                  <div key={item.title} className="flex gap-4">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+                      <item.icon className="w-6 h-6 text-emerald-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-1">{item.title}</h3>
+                      <p className="text-gray-600 text-sm">{item.desc}</p>
                     </div>
                   </div>
-                </div>
-              </StaggerItem>
-            ))}
-          </StaggerChildren>
-        </div>
-      </section>
-
-      {/* Trust & Safety - Bold CTA */}
-      <section id="trust" className="py-32 bg-gradient-to-br from-purple-600 via-purple-700 to-teal-600 text-white relative overflow-hidden">
-        {/* Pattern Overlay */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
-        </div>
-        
-        <FadeInSection className="container mx-auto px-6 text-center relative z-10">
-          <div className="w-24 h-24 mx-auto mb-8 bg-white/20 backdrop-blur-sm rounded-3xl flex items-center justify-center">
-            <Shield className="h-14 w-14 text-white" />
-          </div>
-          <h2 className="text-5xl font-black sm:text-6xl md:text-7xl mb-8">
-            Safety First.<br />Always.
-          </h2>
-          <p className="text-2xl max-w-3xl mx-auto mb-12 text-purple-100 font-medium leading-relaxed">
-            Every helper verified with government IDs. Background checked. Skill certified. 
-            Plus real-time tracking and SOS features. Your safety isn&apos;t optional—it&apos;s guaranteed.
-          </p>
-          
-          {/* Trust Badges */}
-          <div className="max-w-4xl mx-auto my-16">
-            <PlatformTrustBadges />
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <Button size="lg" className="bg-white text-purple-700 hover:bg-gray-100 font-black text-xl px-12 py-7 rounded-2xl shadow-2xl" asChild>
-              <Link href="/auth/signup">Start Now <ArrowRight className="ml-2 h-6 w-6" /></Link>
-            </Button>
-            <SmoothScrollLink href="#features">
-              <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10 font-bold text-xl px-12 py-7 rounded-2xl">
-                Learn More
-              </Button>
-            </SmoothScrollLink>
-          </div>
-        </FadeInSection>
-      </section>
-
-      {/* Footer - Clean & Modern */}
-      <footer className="border-t border-gray-200 bg-gray-50 py-16">
-        <div className="container mx-auto px-6">
-          <div className="grid gap-12 md:grid-cols-4">
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="relative h-12 w-12 overflow-hidden rounded-2xl p-1">
-                  <Image src="/logo.jpg" alt="Helparo" width={48} height={48} className="object-contain" />
-                </div>
-                <span className="text-2xl font-black bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">Helparo</span>
+                ))}
               </div>
-              <p className="text-sm text-gray-600 font-medium leading-relaxed">
-                Your trusted service marketplace connecting customers with verified professionals across India.
+            </div>
+
+            <div className="relative">
+              <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 lg:p-12">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center text-white text-2xl font-bold">
+                      RS
+                    </div>
+                    <div>
+                      <h4 className="text-white font-semibold text-lg">Rajesh S.</h4>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-gray-300 text-lg leading-relaxed">
+                    &quot;Best service I&apos;ve ever used! The plumber came within 30 minutes and fixed my leaking pipe. 
+                    Professional, affordable, and the app makes everything so easy. Highly recommend!&quot;
+                  </p>
+                  <p className="text-gray-500 text-sm">Bangalore • 2 days ago</p>
+                </div>
+              </div>
+
+              {/* Floating Elements */}
+              <div className="absolute -top-4 -right-4 bg-white rounded-xl p-4 shadow-xl">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-emerald-500" />
+                  <span className="text-sm font-medium text-gray-900">50K+ Happy Customers</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Safety Section */}
+      <section id="safety" className="py-20 lg:py-28 bg-gray-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <span className="inline-flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <Shield className="w-4 h-4" />
+              Your Safety First
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+              We take safety seriously
+            </h2>
+            <p className="text-lg text-gray-400">
+              Your trust is our priority. Here&apos;s how we keep you safe.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { icon: BadgeCheck, title: 'ID Verified', desc: 'Aadhaar & PAN verified' },
+              { icon: Shield, title: 'Background Check', desc: 'Police verification done' },
+              { icon: MapPin, title: 'Live Tracking', desc: 'Track helper in real-time' },
+              { icon: Phone, title: 'SOS Button', desc: '24/7 emergency support' },
+            ].map((item) => (
+              <div key={item.title} className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-colors">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-4">
+                  <item.icon className="w-6 h-6 text-emerald-400" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
+                <p className="text-gray-400 text-sm">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 lg:py-28 bg-gradient-to-br from-emerald-500 to-teal-600">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
+            Ready to get started?
+          </h2>
+          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+            Join thousands of happy customers. Book your first service today and experience the difference.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" className="bg-white text-emerald-600 hover:bg-gray-100 rounded-xl px-8 h-14 text-base font-semibold shadow-lg" asChild>
+              <Link href="/auth/signup">
+                Book a Service
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Link>
+            </Button>
+            <Button size="lg" className="bg-white/20 backdrop-blur-sm text-white border-2 border-white hover:bg-white hover:text-emerald-600 rounded-xl px-8 h-14 text-base font-semibold transition-all" asChild>
+              <Link href="/helper/register">
+                Become a Helper
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-gray-400 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+            <div>
+              <Link href="/" className="flex items-center gap-2 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">H</span>
+                </div>
+                <span className="text-xl font-bold text-white">Helparo</span>
+              </Link>
+              <p className="text-sm mb-4">
+                India&apos;s most trusted home services platform. Connecting you with verified professionals.
               </p>
+              <div className="flex gap-4">
+                <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+                  <span className="sr-only">Twitter</span>
+                  𝕏
+                </a>
+                <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+                  <span className="sr-only">Instagram</span>
+                  📷
+                </a>
+                <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+                  <span className="sr-only">LinkedIn</span>
+                  in
+                </a>
+              </div>
             </div>
+
             <div>
-              <h3 className="font-black text-gray-900 mb-4 text-lg">For Customers</h3>
-              <ul className="space-y-3 text-sm text-gray-600 font-medium">
-                <li><Link href="#" className="hover:text-purple-600 transition-colors">Find Services</Link></li>
-                <li><Link href="#" className="hover:text-purple-600 transition-colors">How It Works</Link></li>
-                <li><Link href="#" className="hover:text-purple-600 transition-colors">Pricing</Link></li>
+              <h3 className="text-white font-semibold mb-4">For Customers</h3>
+              <ul className="space-y-3 text-sm">
+                <li><Link href="#" className="hover:text-white transition-colors">All Services</Link></li>
+                <li><Link href="#" className="hover:text-white transition-colors">How it works</Link></li>
+                <li><Link href="#" className="hover:text-white transition-colors">Pricing</Link></li>
+                <li><Link href="#" className="hover:text-white transition-colors">FAQs</Link></li>
               </ul>
             </div>
+
             <div>
-              <h3 className="font-black text-gray-900 mb-4 text-lg">For Helpers</h3>
-              <ul className="space-y-3 text-sm text-gray-600 font-medium">
-                <li><Link href="/auth/signup?role=helper" className="hover:text-purple-600 transition-colors">Become a Helper</Link></li>
-                <li><Link href="#" className="hover:text-purple-600 transition-colors">Earnings</Link></li>
-                <li><Link href="#" className="hover:text-purple-600 transition-colors">Requirements</Link></li>
+              <h3 className="text-white font-semibold mb-4">For Helpers</h3>
+              <ul className="space-y-3 text-sm">
+                <li><Link href="/helper/register" className="hover:text-white transition-colors">Become a Helper</Link></li>
+                <li><Link href="#" className="hover:text-white transition-colors">Helper App</Link></li>
+                <li><Link href="#" className="hover:text-white transition-colors">Earnings</Link></li>
+                <li><Link href="#" className="hover:text-white transition-colors">Resources</Link></li>
               </ul>
             </div>
+
             <div>
-              <h3 className="font-black text-gray-900 mb-4 text-lg">Company</h3>
-              <ul className="space-y-3 text-sm text-gray-600 font-medium">
-                <li><Link href="#" className="hover:text-purple-600 transition-colors">About Us</Link></li>
-                <li><Link href="#" className="hover:text-purple-600 transition-colors">Contact</Link></li>
-                <li><Link href="#" className="hover:text-purple-600 transition-colors">Terms & Privacy</Link></li>
+              <h3 className="text-white font-semibold mb-4">Company</h3>
+              <ul className="space-y-3 text-sm">
+                <li><Link href="#" className="hover:text-white transition-colors">About Us</Link></li>
+                <li><Link href="#" className="hover:text-white transition-colors">Careers</Link></li>
+                <li><Link href="/legal/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
+                <li><Link href="/legal/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
               </ul>
             </div>
           </div>
-          <div className="mt-16 pt-8 border-t border-gray-200 text-center">
-            <p className="text-sm text-gray-500 font-medium">© {new Date().getFullYear()} Helparo. All rights reserved. Made with 💜 in India</p>
+
+          <div className="border-t border-gray-800 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p className="text-sm">
+              © {new Date().getFullYear()} Helparo. All rights reserved.
+            </p>
+            <p className="text-sm">
+              Made with ❤️ in India
+            </p>
           </div>
         </div>
       </footer>
-    </div>
-  )
-}
-
-// Modern Floating Service Card with Guardian Teal
-function FloatingServiceCard({ icon: Icon, title, color }: { icon: React.ElementType; title: string; color: string }) {
-  const colorMap: Record<string, string> = {
-    teal: 'from-guardianTeal to-guardianTeal/80',
-    glow: 'from-aquaGlow to-aquaGlow/80',
-    navy: 'from-deepNavy to-deepNavy/80',
-  }
-  
-  return (
-    <div className={`w-40 h-40 rounded-3xl bg-gradient-to-br ${colorMap[color]} p-1 shadow-glow animate-float`}>
-      <div className="h-full w-full rounded-3xl bg-white flex flex-col items-center justify-center gap-2 card-hover-lift">
-        <Icon className="h-12 w-12 text-deepNavy" />
-        <span className="font-black text-deepNavy">{title}</span>
-      </div>
-    </div>
-  )
-}
-
-// Modern Feature Card with Guardian Teal Gradient Border
-function ModernFeatureCard({ icon: Icon, title, description, gradient }: { icon: React.ElementType; title: string; description: string; gradient: string }) {
-  return (
-    <div className="group relative overflow-hidden rounded-3xl bg-white border-2 border-guardianTeal/10 p-8 card-hover-lift hover:border-guardianTeal/30 transition-all duration-300">
-      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
-      <div className="relative z-10">
-        <div className={`inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-white mb-6 shadow-card group-hover:shadow-strong transition-shadow duration-300`}>
-          <Icon className="h-8 w-8" />
-        </div>
-        <h3 className="text-2xl font-black mb-3 text-deepNavy">{title}</h3>
-        <p className="text-deepNavy/70 font-medium leading-relaxed">{description}</p>
-      </div>
-    </div>
-  )
-}
-
-// Modern Step Card with Guardian Teal Theme
-function ModernStepCard({ number, title, description, icon: Icon }: { number: string; title: string; description: string; icon: React.ElementType }) {
-  return (
-    <div className="relative flex flex-col items-center text-center">
-      <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full gradient-teal text-white text-3xl font-black mb-6 shadow-glow animate-pulse">
-        {number}
-      </div>
-      <div className="w-16 h-16 rounded-full bg-white border-4 border-guardianTeal/20 flex items-center justify-center mb-6 -mt-14 relative z-0 group-hover:border-guardianTeal/40 transition-colors duration-300">
-        <Icon className="h-7 w-7 text-guardianTeal" />
-      </div>
-      <h3 className="text-2xl font-black mb-3 text-deepNavy">{title}</h3>
-      <p className="text-deepNavy/70 font-medium leading-relaxed">{description}</p>
     </div>
   )
 }

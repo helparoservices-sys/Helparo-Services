@@ -8,9 +8,9 @@ export const metadata: Metadata = {
   keywords: 'service marketplace, plumbing, electrical, cleaning, repairs, home services',
   authors: [{ name: 'Helparo' }],
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/logo.svg',
   },
   openGraph: {
     title: 'Helparo - Your Trusted Service Marketplace',
