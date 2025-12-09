@@ -147,7 +147,7 @@ function SignUpForm() {
               <div>
                 <h1 className="text-3xl font-black bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent mb-2">Check Your Email</h1>
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                  We've sent a verification link to <strong className="text-slate-900 dark:text-white">{formData.email}</strong>
+                  We&apos;ve sent a verification link to <strong className="text-slate-900 dark:text-white">{formData.email}</strong>
                 </p>
               </div>
 

@@ -72,6 +72,11 @@ export async function GET(request: Request) {
       if (needsConsent) {
         return NextResponse.redirect(new URL('/legal/consent', requestUrl.origin))
       }
+
+      // Check if phone is missing - redirect to complete profile
+      if (!profile?.phone) {
+        return NextResponse.redirect(new URL('/auth/complete-profile', requestUrl.origin))
+      }
       
       // Role-based redirect
       const role = (profile as any)?.role || 'customer'

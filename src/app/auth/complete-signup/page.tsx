@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
-import { Loader2 } from 'lucide-react'
+import { Loader2, CheckCircle, XCircle, FileText } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -11,6 +11,7 @@ export default function CompleteSignupPage() {
   const router = useRouter()
   const [status, setStatus] = useState<'loading' | 'error' | 'success'>('loading')
   const [message, setMessage] = useState('Setting up your account...')
+  const [step, setStep] = useState<'profile' | 'legal' | 'done'>('profile')
 
   useEffect(() => {
     const completeOAuthSignup = async () => {
@@ -25,18 +26,20 @@ export default function CompleteSignupPage() {
         // Get the pending role from localStorage (set before Google OAuth redirect)
         const pendingRole = localStorage.getItem('pendingSignupRole') || 'customer'
         
+        // Step 1: Set up profile
+        setStep('profile')
+        setMessage('Setting up your profile...')
+
         // Check if profile exists
         const { data: existingProfile } = await supabase
           .from('profiles')
-          .select('id, role, full_name')
+          .select('id, role, full_name, phone')
           .eq('id', user.id)
           .maybeSingle()
 
         if (existingProfile) {
-          // Profile exists - check if it needs role update (for new OAuth users)
-          // Only update if this is a new OAuth signup (role might be default 'customer')
+          // Profile exists - update with Google data if needed
           if (!existingProfile.full_name && user.user_metadata?.full_name) {
-            // Update with Google data
             await supabase
               .from('profiles')
               .update({
@@ -46,14 +49,13 @@ export default function CompleteSignupPage() {
               })
               .eq('id', user.id)
           } else if (pendingRole && pendingRole !== existingProfile.role) {
-            // New OAuth signup - update the role
             await supabase
               .from('profiles')
               .update({ role: pendingRole })
               .eq('id', user.id)
           }
         } else {
-          // Profile doesn't exist (trigger may not have fired) - create it
+          // Profile doesn't exist - create it
           const { error: insertError } = await supabase
             .from('profiles')
             .insert({
@@ -66,20 +68,85 @@ export default function CompleteSignupPage() {
 
           if (insertError) {
             console.error('Profile insert error:', insertError)
-            // Profile might already exist due to race condition, that's okay
+          }
+        }
+
+        // Step 2: Auto-accept legal terms (since user clicked "Continue with Google" after seeing terms notice)
+        setStep('legal')
+        setMessage('Accepting terms & conditions...')
+
+        // Get latest legal document versions
+        const { data: terms } = await supabase
+          .from('legal_documents')
+          .select('version')
+          .eq('type', 'terms')
+          .eq('is_active', true)
+          .order('version', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        const { data: privacy } = await supabase
+          .from('legal_documents')
+          .select('version')
+          .eq('type', 'privacy')
+          .eq('is_active', true)
+          .order('version', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        // Accept terms if exists
+        if (terms?.version) {
+          const { data: existingTerms } = await supabase
+            .from('legal_acceptances')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('document_type', 'terms')
+            .eq('document_version', terms.version)
+            .maybeSingle()
+
+          if (!existingTerms) {
+            await supabase
+              .from('legal_acceptances')
+              .insert({
+                user_id: user.id,
+                document_type: 'terms',
+                document_version: terms.version,
+              })
+          }
+        }
+
+        // Accept privacy if exists
+        if (privacy?.version) {
+          const { data: existingPrivacy } = await supabase
+            .from('legal_acceptances')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('document_type', 'privacy')
+            .eq('document_version', privacy.version)
+            .maybeSingle()
+
+          if (!existingPrivacy) {
+            await supabase
+              .from('legal_acceptances')
+              .insert({
+                user_id: user.id,
+                document_type: 'privacy',
+                document_version: privacy.version,
+              })
           }
         }
 
         // Clear the pending role from localStorage
         localStorage.removeItem('pendingSignupRole')
 
+        setStep('done')
         setStatus('success')
-        setMessage('Account setup complete! Redirecting...')
+        setMessage('Account setup complete!')
 
-        // Get final profile role for redirect
+        // Get final profile to check for phone
         const { data: finalProfile } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, phone')
           .eq('id', user.id)
           .maybeSingle()
 
@@ -87,8 +154,13 @@ export default function CompleteSignupPage() {
 
         // Small delay to show success message
         setTimeout(() => {
-          router.push(`/${role}/dashboard`)
-        }, 1000)
+          // If phone is missing, redirect to complete-profile page
+          if (!finalProfile?.phone) {
+            router.push('/auth/complete-profile')
+          } else {
+            router.push(`/${role}/dashboard`)
+          }
+        }, 1500)
 
       } catch (error) {
         console.error('Complete signup error:', error)
@@ -134,16 +206,12 @@ export default function CompleteSignupPage() {
             )}
             {status === 'success' && (
               <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-2xl shadow-green-500/50 animate-bounce">
-                <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+                <CheckCircle className="h-10 w-10" />
               </div>
             )}
             {status === 'error' && (
               <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-rose-500 text-white shadow-2xl shadow-red-500/50">
-                <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <XCircle className="h-10 w-10" />
               </div>
             )}
           </div>
@@ -154,7 +222,37 @@ export default function CompleteSignupPage() {
             {status === 'success' && 'Welcome to Helparo!'}
             {status === 'error' && 'Oops!'}
           </h1>
-          <p className="text-gray-600">{message}</p>
+          <p className="text-gray-600 mb-6">{message}</p>
+
+          {/* Progress Steps */}
+          {status === 'loading' && (
+            <div className="flex items-center justify-center gap-2 text-sm">
+              <div className={`flex items-center gap-1 ${step === 'profile' ? 'text-purple-600 font-semibold' : 'text-gray-400'}`}>
+                <div className={`w-2 h-2 rounded-full ${step === 'profile' ? 'bg-purple-600 animate-pulse' : step === 'legal' || step === 'done' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                Profile
+              </div>
+              <div className="w-8 h-px bg-gray-300"></div>
+              <div className={`flex items-center gap-1 ${step === 'legal' ? 'text-purple-600 font-semibold' : step === 'done' ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-2 h-2 rounded-full ${step === 'legal' ? 'bg-purple-600 animate-pulse' : step === 'done' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                Legal
+              </div>
+              <div className="w-8 h-px bg-gray-300"></div>
+              <div className={`flex items-center gap-1 ${step === 'done' ? 'text-green-600 font-semibold' : 'text-gray-400'}`}>
+                <div className={`w-2 h-2 rounded-full ${step === 'done' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                Done
+              </div>
+            </div>
+          )}
+
+          {/* Legal Notice for Google Users */}
+          {status === 'loading' && step === 'legal' && (
+            <div className="mt-6 p-4 bg-purple-50 rounded-xl border border-purple-100">
+              <div className="flex items-center gap-2 text-purple-700 text-sm">
+                <FileText className="h-4 w-4" />
+                <span>By continuing, you agree to our Terms & Privacy Policy</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
