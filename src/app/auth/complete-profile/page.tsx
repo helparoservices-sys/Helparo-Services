@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Loader2, Phone, AlertCircle, CheckCircle, ArrowRight, RefreshCw, Shield } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { auth, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from '@/lib/firebase'
 
 // Invalid phone patterns to block
 const INVALID_PHONE_PATTERNS = [
@@ -50,7 +51,7 @@ function validatePhone(phone: string): { valid: boolean; error?: string } {
 export default function CompleteProfilePage() {
   const router = useRouter()
   const [phone, setPhone] = useState('')
-  const [countryCode, setCountryCode] = useState('+91')
+  const [countryCode] = useState('+91')
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [step, setStep] = useState<'phone' | 'otp'>('phone')
   const [loading, setLoading] = useState(false)
@@ -62,7 +63,31 @@ export default function CompleteProfilePage() {
   const [role, setRole] = useState('customer')
   const [countdown, setCountdown] = useState(0)
   const [maskedPhone, setMaskedPhone] = useState('')
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null)
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null)
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([])
+  const recaptchaContainerRef = useRef<HTMLDivElement>(null)
+
+  // Initialize reCAPTCHA
+  const initializeRecaptcha = useCallback(() => {
+    if (typeof window === 'undefined' || recaptchaVerifier) return
+    
+    try {
+      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+        callback: () => {
+          // reCAPTCHA solved
+        },
+        'expired-callback': () => {
+          setError('reCAPTCHA expired. Please try again.')
+          setRecaptchaVerifier(null)
+        }
+      })
+      setRecaptchaVerifier(verifier)
+    } catch (err) {
+      console.error('Failed to initialize reCAPTCHA:', err)
+    }
+  }, [recaptchaVerifier])
 
   useEffect(() => {
     const checkProfile = async () => {
@@ -89,6 +114,9 @@ export default function CompleteProfilePage() {
 
         setRole(profile?.role || 'customer')
         setChecking(false)
+        
+        // Initialize reCAPTCHA after checking profile
+        setTimeout(initializeRecaptcha, 500)
       } catch (err) {
         console.error('Error checking profile:', err)
         setChecking(false)
@@ -96,7 +124,7 @@ export default function CompleteProfilePage() {
     }
 
     checkProfile()
-  }, [router])
+  }, [router, initializeRecaptcha])
 
   // Countdown timer for resend
   useEffect(() => {
@@ -146,7 +174,7 @@ export default function CompleteProfilePage() {
     }
   }
 
-  // Send OTP
+  // Send OTP using Firebase
   const handleSendOtp = async () => {
     if (!user) return
     
@@ -162,6 +190,7 @@ export default function CompleteProfilePage() {
         return
       }
 
+      // First check with our API if phone exists
       const response = await fetch('/api/otp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -176,6 +205,26 @@ export default function CompleteProfilePage() {
         return
       }
 
+      // Initialize reCAPTCHA if needed
+      if (!recaptchaVerifier) {
+        initializeRecaptcha()
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+
+      if (!recaptchaVerifier) {
+        setError('Please wait while we initialize verification...')
+        setLoading(false)
+        setTimeout(initializeRecaptcha, 100)
+        return
+      }
+
+      const cleanPhone = phone.replace(/[\s-]/g, '')
+      const fullPhone = `${countryCode}${cleanPhone}`
+      
+      // Send OTP via Firebase
+      const result = await signInWithPhoneNumber(auth, fullPhone, recaptchaVerifier)
+      setConfirmationResult(result)
+
       setMaskedPhone(data.phone || phone.slice(-4).padStart(10, '*'))
       setStep('otp')
       setCountdown(60)
@@ -184,15 +233,37 @@ export default function CompleteProfilePage() {
       
       setTimeout(() => otpInputRefs.current[0]?.focus(), 100)
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('Send OTP error:', err)
-      setError('Failed to send OTP. Please try again.')
+      
+      // Handle specific Firebase errors
+      if (err.code === 'auth/invalid-phone-number') {
+        setError('Invalid phone number format')
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Too many requests. Please try again later.')
+      } else if (err.code === 'auth/captcha-check-failed') {
+        setError('Verification failed. Please refresh and try again.')
+        setRecaptchaVerifier(null)
+      } else {
+        setError(err.message || 'Failed to send OTP. Please try again.')
+      }
+      
+      // Reset reCAPTCHA on error
+      if (recaptchaVerifier) {
+        try {
+          recaptchaVerifier.clear()
+        } catch (e) {
+          // Ignore
+        }
+        setRecaptchaVerifier(null)
+        setTimeout(initializeRecaptcha, 500)
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  // Verify OTP
+  // Verify OTP using Firebase
   const handleVerifyOtp = async () => {
     const otpCode = otp.join('')
     
@@ -201,24 +272,35 @@ export default function CompleteProfilePage() {
       return
     }
 
+    if (!confirmationResult) {
+      setError('Session expired. Please request a new OTP.')
+      setStep('phone')
+      return
+    }
+
     setError('')
     setLoading(true)
 
     try {
-      const response = await fetch('/api/otp/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, otp: otpCode })
-      })
+      // Verify OTP with Firebase
+      await confirmationResult.confirm(otpCode)
+      
+      // OTP verified! Now update Supabase profile
+      const cleanPhone = phone.replace(/[\s-]/g, '')
+      
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          phone: cleanPhone,
+          country_code: countryCode,
+          phone_verified: true,
+          phone_verified_at: new Date().toISOString()
+        })
+        .eq('id', user?.id)
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || 'Invalid OTP')
-        if (data.code === 'PHONE_EXISTS') {
-          setStep('phone')
-          setOtp(['', '', '', '', '', ''])
-        }
+      if (updateError) {
+        console.error('Profile update error:', updateError)
+        setError('Failed to update profile. Please try again.')
         setLoading(false)
         return
       }
@@ -226,12 +308,20 @@ export default function CompleteProfilePage() {
       setSuccess('Phone verified successfully! Redirecting...')
       
       setTimeout(() => {
-        router.push(`/${data.role || role}/dashboard`)
+        router.push(`/${role}/dashboard`)
       }, 1500)
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Verify OTP error:', err)
-      setError('Verification failed. Please try again.')
+      
+      if (err.code === 'auth/invalid-verification-code') {
+        setError('Invalid OTP. Please check and try again.')
+      } else if (err.code === 'auth/code-expired') {
+        setError('OTP has expired. Please request a new one.')
+        setStep('phone')
+      } else {
+        setError('Verification failed. Please try again.')
+      }
       setLoading(false)
     }
   }
@@ -240,7 +330,21 @@ export default function CompleteProfilePage() {
   const handleResendOtp = async () => {
     if (countdown > 0) return
     setOtp(['', '', '', '', '', ''])
-    await handleSendOtp()
+    setConfirmationResult(null)
+    
+    // Reset reCAPTCHA for resend
+    if (recaptchaVerifier) {
+      try {
+        recaptchaVerifier.clear()
+      } catch (e) {
+        // Ignore
+      }
+      setRecaptchaVerifier(null)
+    }
+    setTimeout(() => {
+      initializeRecaptcha()
+      setTimeout(handleSendOtp, 500)
+    }, 100)
   }
 
   // Go back to phone input
@@ -249,6 +353,7 @@ export default function CompleteProfilePage() {
     setOtp(['', '', '', '', '', ''])
     setError('')
     setSuccess('')
+    setConfirmationResult(null)
   }
 
   if (checking) {
@@ -261,6 +366,9 @@ export default function CompleteProfilePage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-teal-50 p-4 relative overflow-hidden">
+      {/* reCAPTCHA container (invisible) */}
+      <div id="recaptcha-container" ref={recaptchaContainerRef}></div>
+      
       {/* Animated Background Blobs */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
@@ -315,7 +423,7 @@ export default function CompleteProfilePage() {
                   <select
                     className="flex h-12 w-24 rounded-xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-medium focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300 hover:border-purple-300"
                     value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value)}
+                    disabled
                   >
                     <option value="+91">+91 🇮🇳</option>
                   </select>

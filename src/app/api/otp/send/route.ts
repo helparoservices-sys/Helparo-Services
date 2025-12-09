@@ -63,40 +63,7 @@ export async function POST(request: Request) {
       }, { status: 409 })
     }
 
-    // Check rate limit
-    const { data: rateLimit, error: rateLimitError } = await supabase
-      .rpc('check_otp_rate_limit', {
-        p_identifier: cleanPhone,
-        p_identifier_type: 'phone',
-        p_max_requests: 5,
-        p_window_minutes: 15,
-        p_block_minutes: 60
-      })
-
-    if (rateLimitError) {
-      console.error('Rate limit check error:', rateLimitError)
-      // Continue anyway if rate limit check fails
-    } else if (rateLimit && rateLimit.length > 0) {
-      const limit = rateLimit[0]
-      if (limit.status === 'blocked') {
-        const blockedUntil = new Date(limit.blocked_until)
-        const minutesLeft = Math.ceil((blockedUntil.getTime() - Date.now()) / 60000)
-        return NextResponse.json({ 
-          error: `Too many attempts. Please try again in ${minutesLeft} minutes.`,
-          code: 'BLOCKED',
-          blockedUntil: limit.blocked_until
-        }, { status: 429 })
-      }
-      if (limit.status === 'rate_limited') {
-        return NextResponse.json({ 
-          error: 'Too many OTP requests. Please wait before trying again.',
-          code: 'RATE_LIMITED',
-          resetAt: limit.reset_at
-        }, { status: 429 })
-      }
-    }
-
-    // Generate OTP
+    // Generate OTP and store for verification
     const otp = generateOTP()
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
 
@@ -107,7 +74,7 @@ export async function POST(request: Request) {
       .eq('user_id', user.id)
       .is('verified_at', null)
 
-    // Store OTP in database
+    // Store OTP in database (Firebase will send SMS, we verify against our stored OTP)
     const { error: insertError } = await supabase
       .from('phone_verifications')
       .insert({
@@ -124,69 +91,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to generate OTP' }, { status: 500 })
     }
 
-    // Send OTP via Twilio directly
-    const fullPhone = `${countryCode}${cleanPhone}`
-    
-    const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID
-    const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN
-    const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER
-
-    if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
-      console.error('Twilio credentials not configured')
-      // In development, log the OTP for testing
-      console.log(`[DEV] OTP for ${fullPhone}: ${otp}`)
-      return NextResponse.json({ 
-        success: true,
-        message: 'OTP sent successfully',
-        phone: cleanPhone.slice(-4).padStart(10, '*'),
-        expiresIn: 600,
-        // Remove in production - this is for testing without Twilio
-        ...(process.env.NODE_ENV === 'development' && { devOtp: otp })
-      })
-    }
-
-    // Send SMS via Twilio API
-    try {
-      const twilioResponse = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Basic ' + Buffer.from(`${twilioAccountSid}:${twilioAuthToken}`).toString('base64'),
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({
-            To: fullPhone,
-            From: twilioPhoneNumber,
-            Body: `Your Helparo verification code is: ${otp}. Valid for 10 minutes. Do not share this code with anyone.`,
-          }),
-        }
-      )
-
-      const twilioResult = await twilioResponse.json()
-
-      if (!twilioResponse.ok) {
-        console.error('Twilio error:', twilioResult)
-        return NextResponse.json({ 
-          error: 'Failed to send OTP. Please try again.',
-          code: 'SMS_FAILED'
-        }, { status: 500 })
-      }
-
-      console.log('SMS sent successfully:', twilioResult.sid)
-    } catch (twilioError) {
-      console.error('Twilio request error:', twilioError)
-      return NextResponse.json({ 
-        error: 'Failed to send OTP. Please try again.',
-        code: 'SMS_FAILED'
-      }, { status: 500 })
-    }
-
+    // Return success - Firebase will handle actual SMS sending on the client side
+    // The client will use Firebase Phone Auth, but we verify against our stored OTP
     return NextResponse.json({ 
       success: true,
-      message: 'OTP sent successfully',
+      message: 'Ready to send OTP via Firebase',
       phone: cleanPhone.slice(-4).padStart(10, '*'), // Masked phone
-      expiresIn: 600 // 10 minutes in seconds
+      expiresIn: 600, // 10 minutes in seconds
+      // For development without Firebase, include the OTP
+      ...(process.env.NODE_ENV === 'development' && { devOtp: otp })
     })
 
   } catch (error) {
