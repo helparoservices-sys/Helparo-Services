@@ -40,6 +40,10 @@ function SignUpForm() {
     setLoading(true)
 
     try {
+      // IMPORTANT: Store the selected role in localStorage BEFORE redirect
+      // This will be used after Google callback to update the profile
+      localStorage.setItem('pendingSignupRole', formData.role)
+      
       const { error: googleError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -48,16 +52,11 @@ function SignUpForm() {
             access_type: 'offline',
             prompt: 'consent',
           },
-          // Pass the selected role in the URL so we can retrieve it after callback
           skipBrowserRedirect: false,
         },
       })
 
       if (googleError) throw googleError
-      
-      // Store the selected role in localStorage before redirect
-      // This will be used after Google callback to update the profile
-      localStorage.setItem('pendingSignupRole', formData.role)
       
     } catch (err: unknown) {
       const error = err as { message?: string }

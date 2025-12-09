@@ -19,13 +19,17 @@ export async function GET(request: Request) {
       // Check if profile exists and has been properly set up
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, role, full_name, phone, phone_verified')
+        .select('id, role, full_name, phone, phone_verified, created_at')
         .eq('id', user.id)
         .maybeSingle()
 
       // For OAuth users, check if they need to complete signup
-      // Redirect if: no profile, no full_name, OR no role (role is NULL means user hasn't selected)
-      if (isOAuthUser && (!profile || !profile.full_name || profile.role === null)) {
+      // Redirect if: no profile, no full_name, OR user was just created (within last 30 seconds)
+      // This ensures complete-signup can read localStorage for role selection
+      const isNewUser = profile?.created_at && 
+        (new Date().getTime() - new Date(profile.created_at).getTime()) < 30000
+      
+      if (isOAuthUser && (!profile || !profile.full_name || isNewUser)) {
         return NextResponse.redirect(new URL('/auth/complete-signup', requestUrl.origin))
       }
 
