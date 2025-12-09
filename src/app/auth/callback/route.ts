@@ -9,10 +9,27 @@ export async function GET(request: Request) {
     const supabase = await createClient()
     await supabase.auth.exchangeCodeForSession(code)
 
-    // After session exchange, enforce legal acceptance
+    // After session exchange, get user info
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
-      // Fetch latest active versions
+      // Check if this is an OAuth user (Google, etc.)
+      const isOAuthUser = user.app_metadata?.provider === 'google' || 
+                          user.app_metadata?.providers?.includes('google')
+      
+      // Check if profile exists and has been properly set up
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, role, full_name, phone')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      // For OAuth users without a complete profile, redirect to complete-signup
+      // This allows the client-side page to read the role from localStorage
+      if (isOAuthUser && (!profile || !profile.full_name)) {
+        return NextResponse.redirect(new URL('/auth/complete-signup', requestUrl.origin))
+      }
+
+      // Fetch latest active versions for legal consent check
       const { data: terms } = await supabase
         .from('legal_documents')
         .select('*')
@@ -55,13 +72,9 @@ export async function GET(request: Request) {
       if (needsConsent) {
         return NextResponse.redirect(new URL('/legal/consent', requestUrl.origin))
       }
+      
       // Role-based redirect
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle()
-  const role = (profile as any)?.role || 'customer'
+      const role = (profile as any)?.role || 'customer'
       return NextResponse.redirect(new URL(`/${role}/dashboard`, requestUrl.origin))
     }
   }
