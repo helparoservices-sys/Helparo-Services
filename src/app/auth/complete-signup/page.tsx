@@ -10,10 +10,13 @@ import { Button } from '@/components/ui/button'
 
 export default function CompleteSignupPage() {
   const router = useRouter()
-  const [status, setStatus] = useState<'loading' | 'selectRole' | 'processing' | 'error' | 'success'>('loading')
+  const [status, setStatus] = useState<'loading' | 'selectRole' | 'acceptTerms' | 'processing' | 'error' | 'success'>('loading')
   const [message, setMessage] = useState('Checking your account...')
   const [step, setStep] = useState<'profile' | 'legal' | 'done'>('profile')
   const [selectedRole, setSelectedRole] = useState<'customer' | 'helper' | null>(null)
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const [privacyAccepted, setPrivacyAccepted] = useState(false)
+  const [pendingRoleForTerms, setPendingRoleForTerms] = useState<string | null>(null)
 
   useEffect(() => {
     const checkAndSetup = async () => {
@@ -31,9 +34,11 @@ export default function CompleteSignupPage() {
         // Check if user already completed role selection (flag set after explicit selection)
         const roleSelected = localStorage.getItem('roleSelected')
 
-        // If pendingRole exists (from signup page) OR roleSelected flag is set, proceed
+        // If pendingRole exists (from signup page) OR roleSelected flag is set, show terms
         if (pendingRole || roleSelected) {
-          await completeOAuthSignup(pendingRole || 'customer')
+          setPendingRoleForTerms(pendingRole || 'customer')
+          setStatus('acceptTerms')
+          setMessage('Please review and accept our terms')
         } else {
           // No pendingRole and no roleSelected flag = user came from Login page with Google
           // Show role selection UI
@@ -57,7 +62,15 @@ export default function CompleteSignupPage() {
     // Set flag to indicate user explicitly selected a role
     localStorage.setItem('roleSelected', 'true')
     localStorage.setItem('pendingSignupRole', role)
-    await completeOAuthSignup(role)
+    // Show terms acceptance UI instead of directly proceeding
+    setPendingRoleForTerms(role)
+    setStatus('acceptTerms')
+    setMessage('Please review and accept our terms')
+  }
+
+  const handleTermsAccepted = async () => {
+    if (!termsAccepted || !privacyAccepted) return
+    await completeOAuthSignup(pendingRoleForTerms || 'customer')
   }
 
   const completeOAuthSignup = async (role: string) => {
@@ -275,10 +288,68 @@ export default function CompleteSignupPage() {
                   </div>
                 </Button>
               </div>
+            </>
+          )}
+
+          {/* Terms Acceptance */}
+          {status === 'acceptTerms' && (
+            <>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Almost There!</h1>
+              <p className="text-gray-600 mb-6">Please review and accept our terms to continue</p>
               
-              <p className="text-xs text-gray-500 mt-4">
-                By continuing, you agree to our Terms & Privacy Policy
-              </p>
+              <div className="space-y-4 text-left">
+                {/* Terms Checkbox */}
+                <label className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors border-2 border-transparent has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50">
+                  <input
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    className="mt-1 h-5 w-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  />
+                  <div>
+                    <span className="text-gray-700">I agree to the </span>
+                    <Link href="/legal/terms" target="_blank" className="text-purple-600 font-semibold hover:underline">
+                      Terms of Service
+                    </Link>
+                  </div>
+                </label>
+
+                {/* Privacy Checkbox */}
+                <label className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors border-2 border-transparent has-[:checked]:border-teal-500 has-[:checked]:bg-teal-50">
+                  <input
+                    type="checkbox"
+                    checked={privacyAccepted}
+                    onChange={(e) => setPrivacyAccepted(e.target.checked)}
+                    className="mt-1 h-5 w-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                  />
+                  <div>
+                    <span className="text-gray-700">I agree to the </span>
+                    <Link href="/legal/privacy" target="_blank" className="text-teal-600 font-semibold hover:underline">
+                      Privacy Policy
+                    </Link>
+                  </div>
+                </label>
+              </div>
+
+              <Button
+                onClick={handleTermsAccepted}
+                disabled={!termsAccepted || !privacyAccepted}
+                className="w-full mt-6 py-6 rounded-xl bg-gradient-to-r from-purple-600 to-teal-600 text-white font-bold text-lg hover:from-purple-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+              >
+                Continue
+              </Button>
+
+              <button
+                onClick={() => {
+                  setStatus('selectRole')
+                  setTermsAccepted(false)
+                  setPrivacyAccepted(false)
+                  setSelectedRole(null)
+                }}
+                className="mt-4 text-sm text-gray-500 hover:text-gray-700"
+              >
+                ← Go back to role selection
+              </button>
             </>
           )}
 
