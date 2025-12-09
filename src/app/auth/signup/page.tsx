@@ -40,9 +40,11 @@ function SignUpForm() {
     setLoading(true)
 
     try {
-      // IMPORTANT: Store the selected role in localStorage BEFORE redirect
-      // This will be used after Google callback to update the profile
-      localStorage.setItem('pendingSignupRole', formData.role)
+      // DON'T set pendingSignupRole - let complete-signup page show role selection
+      // This gives users a chance to choose their role after Google OAuth
+      // Clear any existing role selection
+      localStorage.removeItem('pendingSignupRole')
+      localStorage.removeItem('roleSelected')
       
       const { error: googleError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
