@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { 
@@ -24,7 +25,18 @@ export default async function CustomerDashboard() {
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
-    return <div>Not authenticated</div>
+    redirect('/auth/login')
+  }
+
+  // Check if phone is verified - redirect to complete-profile if not
+  const { data: userProfile } = await supabase
+    .from('profiles')
+    .select('phone, phone_verified')
+    .eq('id', user.id)
+    .single()
+
+  if (!userProfile?.phone || !userProfile?.phone_verified) {
+    redirect('/auth/complete-profile')
   }
 
   // Fetch user data

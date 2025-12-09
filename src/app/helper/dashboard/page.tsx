@@ -87,6 +87,18 @@ export default function HelperDashboard() {
         return
       }
 
+      // Check if phone is verified - redirect to complete-profile if not
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('phone, phone_verified')
+        .eq('id', user.id)
+        .single()
+
+      if (!userProfile?.phone || !userProfile?.phone_verified) {
+        router.push('/auth/complete-profile')
+        return
+      }
+
       const { data: profile, error: profileError } = await supabase
         .from('helper_profiles')
         .select('address, service_categories')

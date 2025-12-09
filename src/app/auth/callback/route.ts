@@ -23,9 +23,9 @@ export async function GET(request: Request) {
         .eq('id', user.id)
         .maybeSingle()
 
-      // For OAuth users without a complete profile OR without a role, redirect to complete-signup
-      // This allows the client-side page to handle role selection if needed
-      if (isOAuthUser && (!profile || !profile.full_name || !profile.role)) {
+      // For OAuth users, check if they need to complete signup
+      // Redirect if: no profile, no full_name, OR no role (role is NULL means user hasn't selected)
+      if (isOAuthUser && (!profile || !profile.full_name || profile.role === null)) {
         return NextResponse.redirect(new URL('/auth/complete-signup', requestUrl.origin))
       }
 

@@ -28,18 +28,15 @@ export default function CompleteSignupPage() {
         // Get the pending role from localStorage (set before Google OAuth redirect on signup page)
         const pendingRole = localStorage.getItem('pendingSignupRole')
         
-        // Check if profile exists with a role
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('id, role, full_name')
-          .eq('id', user.id)
-          .maybeSingle()
+        // Check if user already completed role selection (flag set after explicit selection)
+        const roleSelected = localStorage.getItem('roleSelected')
 
-        // If profile exists with role, or pendingRole exists, proceed with setup
-        if (existingProfile?.role || pendingRole) {
-          await completeOAuthSignup(pendingRole || existingProfile?.role || 'customer')
+        // If pendingRole exists (from signup page) OR roleSelected flag is set, proceed
+        if (pendingRole || roleSelected) {
+          await completeOAuthSignup(pendingRole || 'customer')
         } else {
-          // No role found - show role selection (user came from Login page with Google)
+          // No pendingRole and no roleSelected flag = user came from Login page with Google
+          // Show role selection UI
           setStatus('selectRole')
           setMessage('Please select how you want to use Helparo')
         }
@@ -57,6 +54,9 @@ export default function CompleteSignupPage() {
 
   const handleRoleSelect = async (role: 'customer' | 'helper') => {
     setSelectedRole(role)
+    // Set flag to indicate user explicitly selected a role
+    localStorage.setItem('roleSelected', 'true')
+    localStorage.setItem('pendingSignupRole', role)
     await completeOAuthSignup(role)
   }
 
@@ -175,8 +175,9 @@ export default function CompleteSignupPage() {
         }
       }
 
-      // Clear the pending role from localStorage
+      // Clear the pending role and roleSelected flag from localStorage
       localStorage.removeItem('pendingSignupRole')
+      localStorage.removeItem('roleSelected')
 
       setStep('done')
       setStatus('success')
