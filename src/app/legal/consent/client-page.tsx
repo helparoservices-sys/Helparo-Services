@@ -115,7 +115,7 @@ export default function ConsentPage() {
   useEffect(() => {
     if (!loading && termsAccepted && privacyAccepted) {
       if (!hasPhone) {
-        router.push('/auth/complete-profile')
+        router.push('/auth/complete-signup')
       } else {
         router.push(`/${role}/dashboard`)
       }
@@ -167,7 +167,7 @@ export default function ConsentPage() {
         .maybeSingle()
 
       if (!updatedProfile?.phone || !updatedProfile?.phone_verified) {
-        router.push('/auth/complete-profile')
+        router.push('/auth/complete-signup')
       } else {
         router.push(`/${role}/dashboard`)
       }

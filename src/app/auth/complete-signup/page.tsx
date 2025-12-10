@@ -1,14 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
-import { Loader2, CheckCircle, FileText, Users, Briefcase, Shield, X, ArrowRight, Sparkles, Star, Clock, BadgeCheck } from 'lucide-react'
+import { Loader2, CheckCircle, FileText, Users, Briefcase, Shield, X, ArrowRight, Sparkles, Star, Clock, BadgeCheck, Phone, AlertCircle, RefreshCw, Lock, Zap } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { auth, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from '@/lib/firebase'
 
 interface LegalDoc {
   title: string
@@ -17,41 +20,133 @@ interface LegalDoc {
   type: string
 }
 
+// Invalid phone patterns to block
+const INVALID_PHONE_PATTERNS = [
+  /^(.)\1{9}$/,
+  /^0{10}$/,
+  /^1234567890$/,
+  /^0123456789$/,
+  /^9876543210$/,
+  /^1234512345$/,
+  /^0000000000$/,
+  /^12345678(9|0)?0?$/,
+]
+
+function validatePhone(phone: string): { valid: boolean; error?: string } {
+  const cleanPhone = phone.replace(/[\s-]/g, '')
+  if (cleanPhone.length !== 10) return { valid: false, error: 'Phone number must be exactly 10 digits' }
+  if (!/^\d{10}$/.test(cleanPhone)) return { valid: false, error: 'Phone number must contain only digits' }
+  for (const pattern of INVALID_PHONE_PATTERNS) {
+    if (pattern.test(cleanPhone)) return { valid: false, error: 'Please enter a valid phone number' }
+  }
+  if (!/^[6-9]/.test(cleanPhone)) return { valid: false, error: 'Indian phone numbers must start with 6, 7, 8, or 9' }
+  return { valid: true }
+}
+
 export default function CompleteSignupPage() {
   const router = useRouter()
-  const [status, setStatus] = useState<'loading' | 'selectRole' | 'acceptTerms' | 'processing' | 'error' | 'success'>('loading')
+  
+  // Main flow state: loading -> selectRole -> acceptTerms -> phoneInput -> otpVerify -> processing -> success -> error
+  const [step, setStep] = useState<'loading' | 'selectRole' | 'acceptTerms' | 'phoneInput' | 'otpVerify' | 'processing' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('Checking your account...')
-  const [step, setStep] = useState<'profile' | 'legal' | 'done'>('profile')
-  const [selectedRole, setSelectedRole] = useState<'customer' | 'helper' | null>(null)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  
+  // User & role state
+  const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
   const [hoveredRole, setHoveredRole] = useState<'customer' | 'helper' | null>(null)
+  const [finalRole, setFinalRole] = useState<string>('customer')
+  
+  // Terms state
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [privacyAccepted, setPrivacyAccepted] = useState(false)
-  const [pendingRoleForTerms, setPendingRoleForTerms] = useState<string | null>(null)
-  
   const [showLegalModal, setShowLegalModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'terms' | 'privacy'>('terms')
   const [terms, setTerms] = useState<LegalDoc | null>(null)
   const [privacy, setPrivacy] = useState<LegalDoc | null>(null)
   const [loadingDocs, setLoadingDocs] = useState(false)
+  
+  // Phone verification state
+  const [phone, setPhone] = useState('')
+  const [phoneError, setPhoneError] = useState('')
+  const [countryCode] = useState('+91')
+  const [otp, setOtp] = useState(['', '', '', '', '', ''])
+  const [countdown, setCountdown] = useState(0)
+  const [maskedPhone, setMaskedPhone] = useState('')
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null)
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null)
+  const [recaptchaReady, setRecaptchaReady] = useState(false)
+  const [recaptchaInitialized, setRecaptchaInitialized] = useState(false)
+  const [loading, setLoading] = useState(false)
+  
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([])
+  const recaptchaContainerRef = useRef<HTMLDivElement>(null)
 
+  // Initialize reCAPTCHA
+  const initializeRecaptcha = useCallback(() => {
+    if (typeof window === 'undefined' || recaptchaInitialized || recaptchaVerifier) return
+    setRecaptchaInitialized(true)
+    try {
+      const existingContainer = document.getElementById('recaptcha-container')
+      if (existingContainer) existingContainer.innerHTML = ''
+      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+        callback: () => setRecaptchaReady(true),
+        'expired-callback': () => {
+          setRecaptchaVerifier(null)
+          setRecaptchaReady(false)
+          setRecaptchaInitialized(false)
+        }
+      })
+      setRecaptchaVerifier(verifier)
+      setRecaptchaReady(true)
+    } catch (err) {
+      console.error('Failed to initialize reCAPTCHA:', err)
+      setRecaptchaInitialized(false)
+    }
+  }, [recaptchaVerifier, recaptchaInitialized])
+
+  // Initial check
   useEffect(() => {
     const checkAndSetup = async () => {
       try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
-        if (userError || !user) throw new Error('No authenticated user found')
+        const { data: { user: authUser }, error: userError } = await supabase.auth.getUser()
+        if (userError || !authUser) {
+          router.push('/auth/login')
+          return
+        }
+        setUser({ id: authUser.id, email: authUser.email })
 
+        // Check profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role, phone, phone_verified, full_name')
+          .eq('id', authUser.id)
+          .maybeSingle()
+
+        // If phone already verified, go to dashboard
+        if (profile?.phone && profile?.phone_verified) {
+          router.push(`/${profile.role || 'customer'}/dashboard`)
+          return
+        }
+
+        setFinalRole(profile?.role || 'customer')
+
+        // Check localStorage for pending role
         const pendingRole = localStorage.getItem('pendingSignupRole')
         const roleSelected = localStorage.getItem('roleSelected')
 
         if (pendingRole || roleSelected) {
-          setPendingRoleForTerms(pendingRole || 'customer')
-          setStatus('acceptTerms')
+          // Role already selected, go to terms
+          setFinalRole(pendingRole || profile?.role || 'customer')
+          setStep('acceptTerms')
         } else {
-          setStatus('selectRole')
+          // Need to select role
+          setStep('selectRole')
         }
-      } catch (error) {
-        console.error('Check error:', error)
-        setStatus('error')
+      } catch (err) {
+        console.error('Check error:', err)
+        setStep('error')
         setMessage('Something went wrong. Please try logging in again.')
         setTimeout(() => router.push('/auth/login'), 3000)
       }
@@ -60,14 +155,33 @@ export default function CompleteSignupPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleRoleSelect = async (role: 'customer' | 'helper') => {
-    setSelectedRole(role)
+  // Countdown timer
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [countdown])
+
+  // Validate phone as user types
+  useEffect(() => {
+    if (phone) {
+      const validation = validatePhone(phone)
+      setPhoneError(validation.valid ? '' : validation.error || '')
+    } else {
+      setPhoneError('')
+    }
+  }, [phone])
+
+  // Role selection handler
+  const handleRoleSelect = (role: 'customer' | 'helper') => {
+    setFinalRole(role)
     localStorage.setItem('roleSelected', 'true')
     localStorage.setItem('pendingSignupRole', role)
-    setPendingRoleForTerms(role)
-    setStatus('acceptTerms')
+    setStep('acceptTerms')
   }
 
+  // Open legal modal
   const openLegalModal = async (tab: 'terms' | 'privacy') => {
     setActiveTab(tab)
     setShowLegalModal(true)
@@ -83,63 +197,246 @@ export default function CompleteSignupPage() {
     }
   }
 
+  // Terms accepted - update profile and move to phone
   const handleTermsAccepted = async () => {
-    if (!termsAccepted || !privacyAccepted) return
-    await completeOAuthSignup(pendingRoleForTerms || 'customer')
-  }
-
-  const completeOAuthSignup = async (role: string) => {
-    setStatus('processing')
-    setMessage('Setting up your account...')
+    if (!termsAccepted || !privacyAccepted || !user) return
+    setLoading(true)
+    setError('')
+    
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError || !user) throw new Error('No authenticated user found')
+      // Update profile with role
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) throw new Error('No user')
 
-      setStep('profile')
-      const { data: existingProfile } = await supabase.from('profiles').select('id, role, full_name, phone').eq('id', user.id).maybeSingle()
+      const { data: existingProfile } = await supabase.from('profiles').select('id, full_name').eq('id', authUser.id).maybeSingle()
 
       if (existingProfile) {
-        await supabase.from('profiles').update({ full_name: existingProfile.full_name || user.user_metadata?.full_name || user.user_metadata?.name, role: role, avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture }).eq('id', user.id)
-      } else {
-        await supabase.from('profiles').insert({ id: user.id, email: user.email, full_name: user.user_metadata?.full_name || user.user_metadata?.name, role: role, avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture })
+        await supabase.from('profiles').update({
+          full_name: existingProfile.full_name || authUser.user_metadata?.full_name || authUser.user_metadata?.name,
+          role: finalRole,
+          avatar_url: authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture
+        }).eq('id', authUser.id)
       }
 
-      setStep('legal')
+      // Accept legal terms
       const { data: termsDoc } = await supabase.from('legal_documents').select('version').eq('type', 'terms').eq('is_active', true).order('version', { ascending: false }).limit(1).maybeSingle()
       const { data: privacyDoc } = await supabase.from('legal_documents').select('version').eq('type', 'privacy').eq('is_active', true).order('version', { ascending: false }).limit(1).maybeSingle()
 
       if (termsDoc?.version) {
-        const { data: existing } = await supabase.from('legal_acceptances').select('id').eq('user_id', user.id).eq('document_type', 'terms').eq('document_version', termsDoc.version).maybeSingle()
-        if (!existing) await supabase.from('legal_acceptances').insert({ user_id: user.id, document_type: 'terms', document_version: termsDoc.version })
+        const { data: existing } = await supabase.from('legal_acceptances').select('id').eq('user_id', authUser.id).eq('document_type', 'terms').eq('document_version', termsDoc.version).maybeSingle()
+        if (!existing) await supabase.from('legal_acceptances').insert({ user_id: authUser.id, document_type: 'terms', document_version: termsDoc.version })
       }
       if (privacyDoc?.version) {
-        const { data: existing } = await supabase.from('legal_acceptances').select('id').eq('user_id', user.id).eq('document_type', 'privacy').eq('document_version', privacyDoc.version).maybeSingle()
-        if (!existing) await supabase.from('legal_acceptances').insert({ user_id: user.id, document_type: 'privacy', document_version: privacyDoc.version })
+        const { data: existing } = await supabase.from('legal_acceptances').select('id').eq('user_id', authUser.id).eq('document_type', 'privacy').eq('document_version', privacyDoc.version).maybeSingle()
+        if (!existing) await supabase.from('legal_acceptances').insert({ user_id: authUser.id, document_type: 'privacy', document_version: privacyDoc.version })
       }
 
       localStorage.removeItem('pendingSignupRole')
       localStorage.removeItem('roleSelected')
-      setStep('done')
-      setStatus('success')
-      setMessage('Account setup complete!')
 
-      const { data: finalProfile } = await supabase.from('profiles').select('role, phone, phone_verified').eq('id', user.id).maybeSingle()
-      const finalRole = finalProfile?.role || role
-
-      setTimeout(() => {
-        if (!finalProfile?.phone || !finalProfile?.phone_verified) router.push('/auth/complete-profile')
-        else router.push(`/${finalRole}/dashboard`)
-      }, 1500)
-    } catch (error) {
-      console.error('Complete signup error:', error)
-      setStatus('error')
-      setMessage('Something went wrong. Please try logging in again.')
-      setTimeout(() => router.push('/auth/login'), 3000)
+      // Move to phone verification
+      setStep('phoneInput')
+      setTimeout(initializeRecaptcha, 500)
+    } catch (err) {
+      console.error('Error:', err)
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
+  // OTP handlers
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return
+    const newOtp = [...otp]
+    newOtp[index] = value.slice(-1)
+    setOtp(newOtp)
+    if (value && index < 5) otpInputRefs.current[index + 1]?.focus()
+  }
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault()
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+    if (pastedData.length === 6) {
+      setOtp(pastedData.split(''))
+      otpInputRefs.current[5]?.focus()
+    }
+  }
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) otpInputRefs.current[index - 1]?.focus()
+  }
+
+  // Send OTP
+  const handleSendOtp = async () => {
+    if (!user) return
+    setError('')
+    setSuccess('')
+    setLoading(true)
+
+    try {
+      const validation = validatePhone(phone)
+      if (!validation.valid) {
+        setError(validation.error || 'Invalid phone number')
+        setLoading(false)
+        return
+      }
+
+      const response = await fetch('/api/otp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, countryCode })
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        setError(data.error || 'Failed to send OTP')
+        setLoading(false)
+        return
+      }
+
+      if (!recaptchaVerifier || !recaptchaReady) {
+        initializeRecaptcha()
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+      if (!recaptchaVerifier) {
+        setError('Verification not ready. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      const cleanPhone = phone.replace(/[\s-]/g, '')
+      const fullPhone = `${countryCode}${cleanPhone}`
+      const result = await signInWithPhoneNumber(auth, fullPhone, recaptchaVerifier)
+      setConfirmationResult(result)
+      setMaskedPhone(`******${phone.slice(-4)}`)
+      setStep('otpVerify')
+      setCountdown(60)
+      setSuccess('OTP sent successfully!')
+      setTimeout(() => setSuccess(''), 3000)
+      setTimeout(() => otpInputRefs.current[0]?.focus(), 100)
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string }
+      console.error('Send OTP error:', err)
+      if (error.code === 'auth/invalid-phone-number') setError('Invalid phone number format')
+      else if (error.code === 'auth/too-many-requests') setError('Too many requests. Please try again later.')
+      else setError(error.message || 'Failed to send OTP. Please try again.')
+      
+      if (recaptchaVerifier) {
+        try { recaptchaVerifier.clear() } catch { /* ignore */ }
+        setRecaptchaVerifier(null)
+        setRecaptchaReady(false)
+        setRecaptchaInitialized(false)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Verify OTP
+  const handleVerifyOtp = async () => {
+    const otpCode = otp.join('')
+    if (otpCode.length !== 6) {
+      setError('Please enter the complete 6-digit OTP')
+      return
+    }
+    if (!confirmationResult) {
+      setError('Session expired. Please request a new OTP.')
+      setStep('phoneInput')
+      return
+    }
+
+    setError('')
+    setLoading(true)
+
+    try {
+      await confirmationResult.confirm(otpCode)
+      const cleanPhone = phone.replace(/[\s-]/g, '')
+
+      const { error: updateError } = await supabase.from('profiles').update({
+        phone: cleanPhone,
+        country_code: countryCode,
+        phone_verified: true,
+        phone_verified_at: new Date().toISOString()
+      }).eq('id', user?.id)
+
+      if (updateError) {
+        setError('Failed to update profile. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      setStep('success')
+      setSuccess('Phone verified successfully!')
+      setTimeout(() => router.push(`/${finalRole}/dashboard`), 1500)
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string }
+      if (error.code === 'auth/invalid-verification-code') setError('Invalid OTP. Please check and try again.')
+      else if (error.code === 'auth/code-expired') {
+        setError('OTP has expired. Please request a new one.')
+        setStep('phoneInput')
+      } else setError('Verification failed. Please try again.')
+      setLoading(false)
+    }
+  }
+
+  // Resend OTP
+  const handleResendOtp = () => {
+    if (countdown > 0) return
+    setOtp(['', '', '', '', '', ''])
+    setConfirmationResult(null)
+    if (recaptchaVerifier) {
+      try { recaptchaVerifier.clear() } catch { /* ignore */ }
+      setRecaptchaVerifier(null)
+    }
+    setRecaptchaInitialized(false)
+    setTimeout(() => {
+      initializeRecaptcha()
+      setTimeout(handleSendOtp, 500)
+    }, 100)
+  }
+
+  // Get step number for progress indicator
+  const getStepNumber = () => {
+    if (step === 'selectRole') return 1
+    if (step === 'acceptTerms') return 2
+    if (step === 'phoneInput' || step === 'otpVerify') return 3
+    return 4
+  }
+
+  // Left panel content based on step
+  const getLeftPanelContent = () => {
+    if (step === 'phoneInput' || step === 'otpVerify') {
+      return {
+        title: step === 'phoneInput' ? 'Almost There!' : 'Verify Your Identity',
+        subtitle: step === 'phoneInput' 
+          ? 'Just one more step to unlock your Helparo experience. Verify your phone for secure access.'
+          : 'Enter the 6-digit code we just sent to your phone. This keeps your account safe.',
+        features: [
+          { icon: Shield, title: 'Bank-Level Security', desc: 'Your data is encrypted and protected' },
+          { icon: Zap, title: 'Instant Verification', desc: 'OTP delivered in seconds' },
+          { icon: Lock, title: 'Privacy First', desc: 'We never share your phone number' }
+        ]
+      }
+    }
+    return {
+      title: 'One step away from',
+      titleHighlight: 'amazing services',
+      subtitle: 'Join thousands of users who trust Helparo for reliable, verified home services.',
+      features: [
+        { icon: BadgeCheck, title: 'Verified Professionals', desc: 'Background checked & ID verified' },
+        { icon: Clock, title: 'Quick Response', desc: 'Get help within 30 minutes' },
+        { icon: Shield, title: '100% Secure', desc: 'Your data is always protected' }
+      ]
+    }
+  }
+
+  const leftContent = getLeftPanelContent()
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 flex">
+      {/* reCAPTCHA container */}
+      <div id="recaptcha-container" ref={recaptchaContainerRef}></div>
+
       {/* Left Side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500" />
@@ -148,37 +445,43 @@ export default function CompleteSignupPage() {
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20">
           <Link href="/" className="flex items-center gap-3 mb-12">
             <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <span className="text-white font-bold text-2xl">H</span>
+              <Image src="/logo.jpg" alt="Helparo" width={36} height={36} className="rounded-lg" />
             </div>
             <span className="text-3xl font-bold text-white">Helparo</span>
           </Link>
 
           <h1 className="text-4xl xl:text-5xl font-bold text-white mb-6 leading-tight">
-            One step away from<br /><span className="text-emerald-200">amazing services</span>
+            {leftContent.title}<br />
+            {('titleHighlight' in leftContent) && <span className="text-emerald-200">{leftContent.titleHighlight}</span>}
           </h1>
-          <p className="text-xl text-emerald-100 mb-12 max-w-md">Join thousands of users who trust Helparo for reliable, verified home services.</p>
+          <p className="text-xl text-emerald-100 mb-12 max-w-md">{leftContent.subtitle}</p>
 
           <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center"><BadgeCheck className="w-6 h-6 text-white" /></div>
-              <div><p className="text-white font-semibold">Verified Professionals</p><p className="text-emerald-200 text-sm">Background checked & ID verified</p></div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center"><Clock className="w-6 h-6 text-white" /></div>
-              <div><p className="text-white font-semibold">Quick Response</p><p className="text-emerald-200 text-sm">Get help within 30 minutes</p></div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center"><Shield className="w-6 h-6 text-white" /></div>
-              <div><p className="text-white font-semibold">100% Secure</p><p className="text-emerald-200 text-sm">Your data is always protected</p></div>
-            </div>
+            {leftContent.features.map((feature, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                  <feature.icon className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-white font-semibold">{feature.title}</p>
+                  <p className="text-emerald-200 text-sm">{feature.desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="mt-16 flex items-center gap-4">
             <div className="flex -space-x-2">
-              {[1,2,3,4].map((i) => (<div key={i} className="w-10 h-10 rounded-full bg-white/30 border-2 border-white/50 flex items-center justify-center text-white text-sm font-bold">{String.fromCharCode(64+i)}</div>))}
+              {[1,2,3,4].map((i) => (
+                <div key={i} className="w-10 h-10 rounded-full bg-white/30 border-2 border-white/50 flex items-center justify-center text-white text-sm font-bold">
+                  {String.fromCharCode(64+i)}
+                </div>
+              ))}
             </div>
             <div>
-              <div className="flex items-center gap-1 text-yellow-300">{[1,2,3,4,5].map((i) => (<Star key={i} className="w-4 h-4 fill-current" />))}</div>
+              <div className="flex items-center gap-1 text-yellow-300">
+                {[1,2,3,4,5].map((i) => (<Star key={i} className="w-4 h-4 fill-current" />))}
+              </div>
               <p className="text-emerald-100 text-sm">Loved by 50,000+ users</p>
             </div>
           </div>
@@ -191,16 +494,38 @@ export default function CompleteSignupPage() {
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-8">
             <Link href="/" className="inline-flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center"><span className="text-white font-bold text-xl">H</span></div>
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                <Image src="/logo.jpg" alt="Helparo" width={28} height={28} className="rounded-lg" />
+              </div>
               <span className="text-2xl font-bold text-gray-900">Helparo</span>
             </Link>
           </div>
 
-          {/* Role Selection */}
-          {status === 'selectRole' && (
+          {/* Progress Indicator */}
+          {step !== 'loading' && step !== 'success' && step !== 'error' && step !== 'processing' && (
+            <div className="flex items-center justify-center gap-2 mb-8">
+              {[1, 2, 3].map((num) => (
+                <div key={num} className="flex items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                    getStepNumber() > num ? 'bg-emerald-500 text-white' :
+                    getStepNumber() === num ? 'bg-emerald-500 text-white ring-4 ring-emerald-100' :
+                    'bg-gray-200 text-gray-500'
+                  }`}>
+                    {getStepNumber() > num ? <CheckCircle className="w-4 h-4" /> : num}
+                  </div>
+                  {num < 3 && <div className={`w-12 h-1 mx-1 rounded ${getStepNumber() > num ? 'bg-emerald-500' : 'bg-gray-200'}`} />}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Step 1: Role Selection */}
+          {step === 'selectRole' && (
             <div className="space-y-8">
               <div className="text-center">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-600 text-sm font-medium mb-4"><Sparkles className="w-4 h-4" />Almost there!</div>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-600 text-sm font-medium mb-4">
+                  <Sparkles className="w-4 h-4" />Almost there!
+                </div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Helparo!</h1>
                 <p className="text-gray-500">How would you like to use our platform?</p>
               </div>
@@ -208,11 +533,13 @@ export default function CompleteSignupPage() {
               <div className="space-y-4">
                 <button onClick={() => handleRoleSelect('customer')} onMouseEnter={() => setHoveredRole('customer')} onMouseLeave={() => setHoveredRole(null)} className={`w-full p-6 rounded-2xl border-2 text-left transition-all duration-300 group ${hoveredRole === 'customer' ? 'border-emerald-500 bg-emerald-50 shadow-lg shadow-emerald-100' : 'border-gray-200 bg-white hover:border-emerald-300'}`}>
                   <div className="flex items-start gap-4">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 ${hoveredRole === 'customer' ? 'bg-emerald-500 text-white' : 'bg-emerald-100 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white'}`}><Users className="w-7 h-7" /></div>
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 ${hoveredRole === 'customer' ? 'bg-emerald-500 text-white' : 'bg-emerald-100 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white'}`}>
+                      <Users className="w-7 h-7" />
+                    </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <h3 className="text-lg font-bold text-gray-900">I need help</h3>
-                        <ArrowRight className={`w-5 h-5 transition-all duration-300 ${hoveredRole === 'customer' ? 'text-emerald-500 translate-x-1' : 'text-gray-300 group-hover:text-emerald-500 group-hover:translate-x-1'}`} />
+                        <ArrowRight className={`w-5 h-5 transition-all duration-300 ${hoveredRole === 'customer' ? 'text-emerald-500 translate-x-1' : 'text-gray-300'}`} />
                       </div>
                       <p className="text-gray-500 text-sm mt-1">Find verified professionals for your home services</p>
                       <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
@@ -225,11 +552,13 @@ export default function CompleteSignupPage() {
 
                 <button onClick={() => handleRoleSelect('helper')} onMouseEnter={() => setHoveredRole('helper')} onMouseLeave={() => setHoveredRole(null)} className={`w-full p-6 rounded-2xl border-2 text-left transition-all duration-300 group ${hoveredRole === 'helper' ? 'border-blue-500 bg-blue-50 shadow-lg shadow-blue-100' : 'border-gray-200 bg-white hover:border-blue-300'}`}>
                   <div className="flex items-start gap-4">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 ${hoveredRole === 'helper' ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-600 group-hover:bg-blue-500 group-hover:text-white'}`}><Briefcase className="w-7 h-7" /></div>
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 ${hoveredRole === 'helper' ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-600 group-hover:bg-blue-500 group-hover:text-white'}`}>
+                      <Briefcase className="w-7 h-7" />
+                    </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <h3 className="text-lg font-bold text-gray-900">I want to help</h3>
-                        <ArrowRight className={`w-5 h-5 transition-all duration-300 ${hoveredRole === 'helper' ? 'text-blue-500 translate-x-1' : 'text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1'}`} />
+                        <ArrowRight className={`w-5 h-5 transition-all duration-300 ${hoveredRole === 'helper' ? 'text-blue-500 translate-x-1' : 'text-gray-300'}`} />
                       </div>
                       <p className="text-gray-500 text-sm mt-1">Offer your services and earn money</p>
                       <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
@@ -244,67 +573,170 @@ export default function CompleteSignupPage() {
             </div>
           )}
 
-          {/* Terms Acceptance */}
-          {status === 'acceptTerms' && (
+          {/* Step 2: Terms Acceptance */}
+          {step === 'acceptTerms' && (
             <div className="space-y-8">
               <div className="text-center">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-600 text-sm font-medium mb-4"><Shield className="w-4 h-4" />One last step</div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Review Our Terms</h1>
-                <p className="text-gray-500">Please accept to continue</p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-600 text-sm font-medium mb-4">
+                  <Shield className="w-4 h-4" />Review terms
+                </div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Accept Our Terms</h1>
+                <p className="text-gray-500">Please review and accept to continue</p>
               </div>
 
               <div className="space-y-4">
                 <label className={`flex items-center gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${termsAccepted ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${termsAccepted ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`}>{termsAccepted && <CheckCircle className="w-4 h-4 text-white" />}</div>
+                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${termsAccepted ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`}>
+                    {termsAccepted && <CheckCircle className="w-4 h-4 text-white" />}
+                  </div>
                   <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="sr-only" />
-                  <div className="flex-1"><p className="font-medium text-gray-900">Terms of Service</p><p className="text-sm text-gray-500">I agree to the terms and conditions</p></div>
-                  <button type="button" onClick={(e) => { e.preventDefault(); openLegalModal('terms'); }} className="text-emerald-600 hover:text-emerald-700 font-medium text-sm flex items-center gap-1"><FileText className="w-4 h-4" />Read</button>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">Terms of Service</p>
+                    <p className="text-sm text-gray-500">I agree to the terms and conditions</p>
+                  </div>
+                  <button type="button" onClick={(e) => { e.preventDefault(); openLegalModal('terms'); }} className="text-emerald-600 hover:text-emerald-700 font-medium text-sm flex items-center gap-1">
+                    <FileText className="w-4 h-4" />Read
+                  </button>
                 </label>
 
                 <label className={`flex items-center gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${privacyAccepted ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${privacyAccepted ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`}>{privacyAccepted && <CheckCircle className="w-4 h-4 text-white" />}</div>
+                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${privacyAccepted ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`}>
+                    {privacyAccepted && <CheckCircle className="w-4 h-4 text-white" />}
+                  </div>
                   <input type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} className="sr-only" />
-                  <div className="flex-1"><p className="font-medium text-gray-900">Privacy Policy</p><p className="text-sm text-gray-500">I agree to the privacy policy</p></div>
-                  <button type="button" onClick={(e) => { e.preventDefault(); openLegalModal('privacy'); }} className="text-emerald-600 hover:text-emerald-700 font-medium text-sm flex items-center gap-1"><Shield className="w-4 h-4" />Read</button>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">Privacy Policy</p>
+                    <p className="text-sm text-gray-500">I agree to the privacy policy</p>
+                  </div>
+                  <button type="button" onClick={(e) => { e.preventDefault(); openLegalModal('privacy'); }} className="text-emerald-600 hover:text-emerald-700 font-medium text-sm flex items-center gap-1">
+                    <Shield className="w-4 h-4" />Read
+                  </button>
                 </label>
               </div>
 
-              <Button onClick={handleTermsAccepted} disabled={!termsAccepted || !privacyAccepted} className="w-full h-14 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold text-lg shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:shadow-none transition-all duration-300">Continue<ArrowRight className="ml-2 w-5 h-5" /></Button>
-              <button onClick={() => { setStatus('selectRole'); setTermsAccepted(false); setPrivacyAccepted(false); setSelectedRole(null); }} className="w-full text-center text-sm text-gray-500 hover:text-gray-700 transition-colors">← Back to role selection</button>
+              {error && (
+                <div className="p-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
+                  <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                  {error}
+                </div>
+              )}
+
+              <Button onClick={handleTermsAccepted} disabled={!termsAccepted || !privacyAccepted || loading} className="w-full h-14 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold text-lg shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:shadow-none transition-all duration-300">
+                {loading ? <><Loader2 className="mr-2 w-5 h-5 animate-spin" />Processing...</> : <>Continue<ArrowRight className="ml-2 w-5 h-5" /></>}
+              </Button>
+              <button onClick={() => { setStep('selectRole'); setTermsAccepted(false); setPrivacyAccepted(false); }} className="w-full text-center text-sm text-gray-500 hover:text-gray-700 transition-colors">← Back to role selection</button>
+            </div>
+          )}
+
+          {/* Step 3: Phone Input */}
+          {step === 'phoneInput' && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-5 shadow-lg bg-gradient-to-br from-emerald-500 to-teal-600">
+                  <Phone className="h-8 w-8 text-white" />
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Verify Your Phone</h1>
+                <p className="text-gray-500">We&apos;ll send you a 6-digit verification code</p>
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="phone" className="text-gray-700 font-semibold text-sm">Phone Number</Label>
+                <div className="flex gap-3">
+                  <div className="flex items-center justify-center w-20 h-14 bg-gray-100 border-2 border-gray-200 rounded-xl text-gray-700 font-semibold">+91 🇮🇳</div>
+                  <div className="relative flex-1">
+                    <Input id="phone" type="tel" placeholder="9876543210" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} className={`h-14 text-lg font-medium bg-white border-2 ${phoneError ? 'border-red-300' : phone && !phoneError ? 'border-emerald-300' : 'border-gray-200'} rounded-xl focus:ring-4 focus:ring-emerald-100 transition-all duration-300`} />
+                    {phone && !phoneError && <div className="absolute right-4 top-1/2 -translate-y-1/2"><CheckCircle className="h-6 w-6 text-emerald-500" /></div>}
+                  </div>
+                </div>
+                {phoneError && <div className="flex items-center gap-2 text-red-500 text-sm"><AlertCircle className="h-4 w-4" />{phoneError}</div>}
+              </div>
+
+              {error && (
+                <div className="p-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <Button onClick={handleSendOtp} className="w-full h-14 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300" disabled={loading || !!phoneError || !phone || phone.length !== 10}>
+                {loading ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Sending OTP...</> : <>Send OTP<ArrowRight className="ml-2 h-5 w-5" /></>}
+              </Button>
+              <p className="text-center text-xs text-gray-400">Standard SMS rates may apply</p>
+            </div>
+          )}
+
+          {/* Step 4: OTP Verify */}
+          {step === 'otpVerify' && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-5 shadow-lg bg-gradient-to-br from-teal-500 to-emerald-600">
+                  <Shield className="h-8 w-8 text-white" />
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Enter Verification Code</h1>
+                <p className="text-gray-500">Code sent to {countryCode} {maskedPhone}</p>
+              </div>
+
+              <div className="flex justify-center gap-3" onPaste={handleOtpPaste}>
+                {otp.map((digit, index) => (
+                  <input key={index} ref={(el) => { otpInputRefs.current[index] = el }} type="text" inputMode="numeric" maxLength={1} value={digit} onChange={(e) => handleOtpChange(index, e.target.value)} onKeyDown={(e) => handleOtpKeyDown(index, e)} className={`w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl font-bold border-2 rounded-xl transition-all duration-300 ${digit ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-200 bg-white hover:border-gray-300'} focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 focus:outline-none`} />
+                ))}
+              </div>
+
+              {success && <div className="p-4 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3"><CheckCircle className="h-5 w-5" />{success}</div>}
+              {error && <div className="p-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3"><AlertCircle className="h-5 w-5 mt-0.5" />{error}</div>}
+
+              <Button onClick={handleVerifyOtp} className="w-full h-14 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-lg rounded-xl shadow-lg transition-all duration-300" disabled={loading || otp.join('').length !== 6}>
+                {loading ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Verifying...</> : <><CheckCircle className="mr-2 h-5 w-5" />Verify & Continue</>}
+              </Button>
+
+              <div className="flex items-center justify-between pt-2">
+                <button onClick={() => { setStep('phoneInput'); setOtp(['', '', '', '', '', '']); setError(''); }} className="text-sm text-gray-600 hover:text-emerald-600 font-medium transition-colors">← Change Number</button>
+                <button onClick={handleResendOtp} disabled={countdown > 0 || loading} className={`flex items-center gap-2 text-sm font-medium transition-all ${countdown > 0 ? 'text-gray-400' : 'text-emerald-600 hover:text-emerald-700'}`}>
+                  <RefreshCw className={`h-4 w-4 ${loading && countdown === 0 ? 'animate-spin' : ''}`} />
+                  {countdown > 0 ? `Resend in ${countdown}s` : 'Resend OTP'}
+                </button>
+              </div>
             </div>
           )}
 
           {/* Loading */}
-          {(status === 'loading' || status === 'processing') && (
+          {step === 'loading' && (
             <div className="text-center space-y-6">
               <div className="relative inline-flex">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-200"><Loader2 className="w-10 h-10 text-white animate-spin" /></div>
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 animate-ping opacity-20" />
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-200">
+                  <Loader2 className="w-10 h-10 text-white animate-spin" />
+                </div>
               </div>
-              <div><h2 className="text-2xl font-bold text-gray-900 mb-2">Setting Up Your Account</h2><p className="text-gray-500">{message}</p></div>
-              <div className="flex items-center justify-center gap-3 pt-4">
-                <div className={`w-3 h-3 rounded-full transition-all duration-300 ${step === 'profile' || step === 'legal' || step === 'done' ? 'bg-emerald-500' : 'bg-gray-200'}`} />
-                <div className={`w-8 h-0.5 transition-all duration-300 ${step === 'legal' || step === 'done' ? 'bg-emerald-500' : 'bg-gray-200'}`} />
-                <div className={`w-3 h-3 rounded-full transition-all duration-300 ${step === 'legal' || step === 'done' ? 'bg-emerald-500' : 'bg-gray-200'}`} />
-                <div className={`w-8 h-0.5 transition-all duration-300 ${step === 'done' ? 'bg-emerald-500' : 'bg-gray-200'}`} />
-                <div className={`w-3 h-3 rounded-full transition-all duration-300 ${step === 'done' ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Loading...</h2>
+                <p className="text-gray-500">{message}</p>
               </div>
             </div>
           )}
 
           {/* Success */}
-          {status === 'success' && (
+          {step === 'success' && (
             <div className="text-center space-y-6">
-              <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-200"><CheckCircle className="w-10 h-10 text-white" /></div>
-              <div><h2 className="text-2xl font-bold text-gray-900 mb-2">You&apos;re All Set!</h2><p className="text-gray-500">Redirecting you to the next step...</p></div>
+              <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-200">
+                <CheckCircle className="w-10 h-10 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">You&apos;re All Set!</h2>
+                <p className="text-gray-500">Redirecting you to your dashboard...</p>
+              </div>
             </div>
           )}
 
           {/* Error */}
-          {status === 'error' && (
+          {step === 'error' && (
             <div className="text-center space-y-6">
-              <div className="w-20 h-20 mx-auto rounded-full bg-red-100 flex items-center justify-center"><X className="w-10 h-10 text-red-500" /></div>
-              <div><h2 className="text-2xl font-bold text-gray-900 mb-2">Oops!</h2><p className="text-gray-500">{message}</p></div>
+              <div className="w-20 h-20 mx-auto rounded-full bg-red-100 flex items-center justify-center">
+                <X className="w-10 h-10 text-red-500" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Oops!</h2>
+                <p className="text-gray-500">{message}</p>
+              </div>
             </div>
           )}
         </div>
@@ -322,9 +754,13 @@ export default function CompleteSignupPage() {
               <button onClick={() => setShowLegalModal(false)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors"><X className="w-5 h-5 text-gray-500" /></button>
             </div>
             <div className="p-6 overflow-y-auto max-h-[calc(85vh-140px)]">
-              {loadingDocs ? (<div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 text-emerald-500 animate-spin" /></div>) : (
+              {loadingDocs ? (
+                <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 text-emerald-500 animate-spin" /></div>
+              ) : (
                 <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-600">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{activeTab === 'terms' ? (terms?.content_md || 'Terms of Service content not available.') : (privacy?.content_md || 'Privacy Policy content not available.')}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {activeTab === 'terms' ? (terms?.content_md || 'Terms of Service content not available.') : (privacy?.content_md || 'Privacy Policy content not available.')}
+                  </ReactMarkdown>
                 </div>
               )}
             </div>

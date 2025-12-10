@@ -79,7 +79,7 @@ export async function GET(request: Request) {
 
       // Check if phone is missing or not verified - redirect to complete profile
       if (!profile?.phone || !(profile as any)?.phone_verified) {
-        return NextResponse.redirect(new URL('/auth/complete-profile', requestUrl.origin))
+        return NextResponse.redirect(new URL('/auth/complete-signup', requestUrl.origin))
       }
       
       // Role-based redirect

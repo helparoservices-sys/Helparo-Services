@@ -145,7 +145,7 @@ export async function loginAction(formData: FormData) {
       
       // Check if phone is missing or not verified - redirect to complete profile
       if (!phone || !phoneVerified) {
-        redirect('/auth/complete-profile')
+        redirect('/auth/complete-signup')
       }
       
       // Server-side redirect

@@ -47,7 +47,7 @@ export default async function CustomerDashboard() {
     .single()
 
   if (!userProfile?.phone || !userProfile?.phone_verified) {
-    redirect('/auth/complete-profile')
+    redirect('/auth/complete-signup')
   }
 
   // Fetch user data

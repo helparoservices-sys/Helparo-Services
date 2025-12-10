@@ -95,7 +95,7 @@ export default function HelperDashboard() {
         .single()
 
       if (!userProfile?.phone || !userProfile?.phone_verified) {
-        router.push('/auth/complete-profile')
+        router.push('/auth/complete-signup')
         return
       }
 
