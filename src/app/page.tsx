@@ -17,6 +17,16 @@ import {
   Sparkles
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import {
+  PlumbingIcon,
+  ElectricalIcon,
+  CleaningIcon,
+  CarpentryIcon,
+  ACRepairIcon,
+  PaintingIcon,
+  AppliancesIcon,
+  PestControlIcon
+} from '@/components/ui/service-icons'
 
 export default function LandingPage() {
   const [currentService, setCurrentService] = useState(0)
@@ -248,28 +258,34 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
-              { name: 'Plumbing', icon: '🔧', desc: 'Leaks, pipes, taps & more', color: 'bg-blue-50 hover:bg-blue-100', iconBg: 'bg-blue-100' },
-              { name: 'Electrical', icon: '💡', desc: 'Wiring, switches & repairs', color: 'bg-yellow-50 hover:bg-yellow-100', iconBg: 'bg-yellow-100' },
-              { name: 'Cleaning', icon: '✨', desc: 'Deep clean, sanitization', color: 'bg-emerald-50 hover:bg-emerald-100', iconBg: 'bg-emerald-100' },
-              { name: 'Carpentry', icon: '🪚', desc: 'Furniture, doors & fittings', color: 'bg-orange-50 hover:bg-orange-100', iconBg: 'bg-orange-100' },
-              { name: 'AC Repair', icon: '❄️', desc: 'Service, repair & install', color: 'bg-cyan-50 hover:bg-cyan-100', iconBg: 'bg-cyan-100' },
-              { name: 'Painting', icon: '🎨', desc: 'Interior & exterior', color: 'bg-pink-50 hover:bg-pink-100', iconBg: 'bg-pink-100' },
-              { name: 'Appliances', icon: '🔌', desc: 'Repair & maintenance', color: 'bg-purple-50 hover:bg-purple-100', iconBg: 'bg-purple-100' },
-              { name: 'Pest Control', icon: '🦟', desc: 'Fumigation & treatment', color: 'bg-red-50 hover:bg-red-100', iconBg: 'bg-red-100' },
+              { name: 'Plumbing', Icon: PlumbingIcon, desc: 'Leaks, pipes, taps & more', gradient: 'from-blue-500 to-blue-600', bg: 'bg-blue-50', iconColor: 'text-blue-600', hoverBorder: 'hover:border-blue-200' },
+              { name: 'Electrical', Icon: ElectricalIcon, desc: 'Wiring, switches & repairs', gradient: 'from-amber-400 to-amber-500', bg: 'bg-amber-50', iconColor: 'text-amber-500', hoverBorder: 'hover:border-amber-200' },
+              { name: 'Cleaning', Icon: CleaningIcon, desc: 'Deep clean, sanitization', gradient: 'from-emerald-500 to-emerald-600', bg: 'bg-emerald-50', iconColor: 'text-emerald-600', hoverBorder: 'hover:border-emerald-200' },
+              { name: 'Carpentry', Icon: CarpentryIcon, desc: 'Furniture, doors & fittings', gradient: 'from-orange-500 to-orange-600', bg: 'bg-orange-50', iconColor: 'text-orange-600', hoverBorder: 'hover:border-orange-200' },
+              { name: 'AC Repair', Icon: ACRepairIcon, desc: 'Service, repair & install', gradient: 'from-cyan-500 to-cyan-600', bg: 'bg-cyan-50', iconColor: 'text-cyan-600', hoverBorder: 'hover:border-cyan-200' },
+              { name: 'Painting', Icon: PaintingIcon, desc: 'Interior & exterior', gradient: 'from-pink-500 to-rose-500', bg: 'bg-pink-50', iconColor: 'text-pink-600', hoverBorder: 'hover:border-pink-200' },
+              { name: 'Appliances', Icon: AppliancesIcon, desc: 'Repair & maintenance', gradient: 'from-violet-500 to-purple-600', bg: 'bg-violet-50', iconColor: 'text-violet-600', hoverBorder: 'hover:border-violet-200' },
+              { name: 'Pest Control', Icon: PestControlIcon, desc: 'Fumigation & treatment', gradient: 'from-red-500 to-rose-600', bg: 'bg-red-50', iconColor: 'text-red-500', hoverBorder: 'hover:border-red-200' },
             ].map((service) => (
               <Link
                 key={service.name}
                 href={`/auth/signup?service=${encodeURIComponent(service.name.toLowerCase())}`}
-                className={`group p-6 rounded-2xl ${service.color} border-2 border-transparent hover:border-gray-200 transition-all duration-300 hover:shadow-lg`}
+                className={`group relative p-6 rounded-2xl bg-white border border-gray-100 ${service.hoverBorder} transition-all duration-300 hover:shadow-xl hover:-translate-y-1`}
               >
-                <div className={`w-14 h-14 ${service.iconBg} rounded-xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform`}>
-                  {service.icon}
+                {/* Gradient accent line */}
+                <div className={`absolute top-0 left-6 right-6 h-1 bg-gradient-to-r ${service.gradient} rounded-b-full opacity-0 group-hover:opacity-100 transition-opacity`} />
+                
+                {/* Icon container */}
+                <div className={`w-14 h-14 ${service.bg} rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                  <service.Icon size={28} className={service.iconColor} />
                 </div>
+                
                 <h3 className="text-lg font-semibold text-gray-900 mb-1">{service.name}</h3>
-                <p className="text-sm text-gray-600 mb-3">{service.desc}</p>
-                <span className="inline-flex items-center text-sm font-medium text-gray-900 group-hover:text-emerald-600 transition-colors">
+                <p className="text-sm text-gray-500 mb-4">{service.desc}</p>
+                
+                <span className="inline-flex items-center text-sm font-medium text-gray-600 group-hover:text-gray-900 transition-colors">
                   Book now
                   <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                 </span>

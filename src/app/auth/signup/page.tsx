@@ -37,8 +37,9 @@ function SignUpForm() {
     setGoogleLoading(true)
 
     try {
-      localStorage.removeItem('pendingSignupRole')
-      localStorage.removeItem('roleSelected')
+      // Save the selected role to localStorage so complete-signup can use it
+      localStorage.setItem('pendingSignupRole', formData.role)
+      localStorage.setItem('roleSelected', 'true')
       
       const { error: googleError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
