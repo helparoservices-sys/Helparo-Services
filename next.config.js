@@ -9,11 +9,19 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ['opnjibjsddwyojrerbll.supabase.co'],
+    domains: ['opnjibjsddwyojrerbll.supabase.co', 'lh3.googleusercontent.com'],
     remotePatterns: [
       {
         protocol: 'https',
         hostname: '**.supabase.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.googleusercontent.com',
       },
     ],
     formats: ['image/avif', 'image/webp'],

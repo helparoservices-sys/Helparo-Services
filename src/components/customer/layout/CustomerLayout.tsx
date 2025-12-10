@@ -20,7 +20,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
   return (
     <RoleGuard allowedRole="customer">
       <ToastProvider>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-indigo-950 dark:to-purple-950 relative overflow-hidden">
+        <div className="min-h-screen bg-gray-50">
           {/* Location Permission Modal */}
           <LocationPermissionModal />
 
@@ -35,13 +35,11 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
             
             <main 
               className={`flex-1 transition-all duration-300 ease-in-out ${
-                sidebarCollapsed ? 'ml-20' : 'ml-64'
-              } pt-16`}
+                sidebarCollapsed ? 'ml-16' : 'ml-60'
+              } pt-14`}
             >
-              <div className="p-6 space-y-6">
-                <Breadcrumb />
-                
-                {/* Page Content with Animation */}
+              <div className="">
+                {/* Page Content */}
                 <div className="animate-fade-in">
                   {children}
                 </div>

@@ -24,10 +24,10 @@ export default function LandingPage() {
   
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentService((prev) => (prev + 1) % services.length)
+      setCurrentService((prev) => (prev + 1) % 5)
     }, 2000)
     return () => clearInterval(interval)
-  }, [services.length])
+  }, [])
 
   return (
     <div className="min-h-screen bg-white">

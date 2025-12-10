@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
-import { Loader2, CheckCircle, XCircle, FileText, Users, Wrench, Shield, X, Scale } from 'lucide-react'
+import { Loader2, CheckCircle, FileText, Users, Briefcase, Shield, X, ArrowRight, Sparkles, Star, Clock, BadgeCheck } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -23,11 +23,11 @@ export default function CompleteSignupPage() {
   const [message, setMessage] = useState('Checking your account...')
   const [step, setStep] = useState<'profile' | 'legal' | 'done'>('profile')
   const [selectedRole, setSelectedRole] = useState<'customer' | 'helper' | null>(null)
+  const [hoveredRole, setHoveredRole] = useState<'customer' | 'helper' | null>(null)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [privacyAccepted, setPrivacyAccepted] = useState(false)
   const [pendingRoleForTerms, setPendingRoleForTerms] = useState<string | null>(null)
   
-  // Legal document modal state
   const [showLegalModal, setShowLegalModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'terms' | 'privacy'>('terms')
   const [terms, setTerms] = useState<LegalDoc | null>(null)
@@ -37,29 +37,17 @@ export default function CompleteSignupPage() {
   useEffect(() => {
     const checkAndSetup = async () => {
       try {
-        // Get the current user
         const { data: { user }, error: userError } = await supabase.auth.getUser()
-        
-        if (userError || !user) {
-          throw new Error('No authenticated user found')
-        }
+        if (userError || !user) throw new Error('No authenticated user found')
 
-        // Get the pending role from localStorage (set before Google OAuth redirect on signup page)
         const pendingRole = localStorage.getItem('pendingSignupRole')
-        
-        // Check if user already completed role selection (flag set after explicit selection)
         const roleSelected = localStorage.getItem('roleSelected')
 
-        // If pendingRole exists (from signup page) OR roleSelected flag is set, show terms
         if (pendingRole || roleSelected) {
           setPendingRoleForTerms(pendingRole || 'customer')
           setStatus('acceptTerms')
-          setMessage('Please review and accept our terms')
         } else {
-          // No pendingRole and no roleSelected flag = user came from Login page with Google
-          // Show role selection UI
           setStatus('selectRole')
-          setMessage('Please select how you want to use Helparo')
         }
       } catch (error) {
         console.error('Check error:', error)
@@ -68,54 +56,29 @@ export default function CompleteSignupPage() {
         setTimeout(() => router.push('/auth/login'), 3000)
       }
     }
-
     checkAndSetup()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleRoleSelect = async (role: 'customer' | 'helper') => {
     setSelectedRole(role)
-    // Set flag to indicate user explicitly selected a role
     localStorage.setItem('roleSelected', 'true')
     localStorage.setItem('pendingSignupRole', role)
-    // Show terms acceptance UI instead of directly proceeding
     setPendingRoleForTerms(role)
     setStatus('acceptTerms')
-    setMessage('Please review and accept our terms')
   }
 
-  // Load legal documents when opening modal
   const openLegalModal = async (tab: 'terms' | 'privacy') => {
     setActiveTab(tab)
     setShowLegalModal(true)
-    
-    // Only load if not already loaded
     if (!terms || !privacy) {
       setLoadingDocs(true)
       try {
-        const { data: termsData } = await supabase
-          .from('legal_documents')
-          .select('title, content_md, version, type')
-          .eq('type', 'terms')
-          .eq('is_active', true)
-          .order('version', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-
-        const { data: privacyData } = await supabase
-          .from('legal_documents')
-          .select('title, content_md, version, type')
-          .eq('type', 'privacy')
-          .eq('is_active', true)
-          .order('version', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-
+        const { data: termsData } = await supabase.from('legal_documents').select('title, content_md, version, type').eq('type', 'terms').eq('is_active', true).order('version', { ascending: false }).limit(1).maybeSingle()
+        const { data: privacyData } = await supabase.from('legal_documents').select('title, content_md, version, type').eq('type', 'privacy').eq('is_active', true).order('version', { ascending: false }).limit(1).maybeSingle()
         setTerms(termsData)
         setPrivacy(privacyData)
-      } catch (err) {
-        console.error('Error loading legal docs:', err)
-      }
+      } catch (err) { console.error('Error loading legal docs:', err) }
       setLoadingDocs(false)
     }
   }
@@ -128,497 +91,245 @@ export default function CompleteSignupPage() {
   const completeOAuthSignup = async (role: string) => {
     setStatus('processing')
     setMessage('Setting up your account...')
-    
     try {
-      // Get the current user
       const { data: { user }, error: userError } = await supabase.auth.getUser()
-      
-      if (userError || !user) {
-        throw new Error('No authenticated user found')
-      }
+      if (userError || !user) throw new Error('No authenticated user found')
 
-      // Step 1: Set up profile
       setStep('profile')
-      setMessage('Setting up your profile...')
-
-      // Check if profile exists
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id, role, full_name, phone')
-        .eq('id', user.id)
-        .maybeSingle()
+      const { data: existingProfile } = await supabase.from('profiles').select('id, role, full_name, phone').eq('id', user.id).maybeSingle()
 
       if (existingProfile) {
-        // Profile exists - update with Google data and role
-        await supabase
-          .from('profiles')
-          .update({
-            full_name: existingProfile.full_name || user.user_metadata?.full_name || user.user_metadata?.name,
-            role: role,
-            avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture,
-          })
-          .eq('id', user.id)
+        await supabase.from('profiles').update({ full_name: existingProfile.full_name || user.user_metadata?.full_name || user.user_metadata?.name, role: role, avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture }).eq('id', user.id)
       } else {
-        // Profile doesn't exist - create it
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            email: user.email,
-            full_name: user.user_metadata?.full_name || user.user_metadata?.name,
-            role: role,
-            avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture,
-          })
-
-        if (insertError) {
-          console.error('Profile insert error:', insertError)
-        }
+        await supabase.from('profiles').insert({ id: user.id, email: user.email, full_name: user.user_metadata?.full_name || user.user_metadata?.name, role: role, avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture })
       }
 
-      // Step 2: Auto-accept legal terms
       setStep('legal')
-      setMessage('Accepting terms & conditions...')
+      const { data: termsDoc } = await supabase.from('legal_documents').select('version').eq('type', 'terms').eq('is_active', true).order('version', { ascending: false }).limit(1).maybeSingle()
+      const { data: privacyDoc } = await supabase.from('legal_documents').select('version').eq('type', 'privacy').eq('is_active', true).order('version', { ascending: false }).limit(1).maybeSingle()
 
-      // Get latest legal document versions
-      const { data: terms } = await supabase
-        .from('legal_documents')
-        .select('version')
-        .eq('type', 'terms')
-        .eq('is_active', true)
-        .order('version', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      const { data: privacy } = await supabase
-        .from('legal_documents')
-        .select('version')
-        .eq('type', 'privacy')
-        .eq('is_active', true)
-        .order('version', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      // Accept terms if exists
-      if (terms?.version) {
-        const { data: existingTerms } = await supabase
-          .from('legal_acceptances')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('document_type', 'terms')
-          .eq('document_version', terms.version)
-          .maybeSingle()
-
-        if (!existingTerms) {
-          await supabase
-            .from('legal_acceptances')
-            .insert({
-              user_id: user.id,
-              document_type: 'terms',
-              document_version: terms.version,
-            })
-        }
+      if (termsDoc?.version) {
+        const { data: existing } = await supabase.from('legal_acceptances').select('id').eq('user_id', user.id).eq('document_type', 'terms').eq('document_version', termsDoc.version).maybeSingle()
+        if (!existing) await supabase.from('legal_acceptances').insert({ user_id: user.id, document_type: 'terms', document_version: termsDoc.version })
+      }
+      if (privacyDoc?.version) {
+        const { data: existing } = await supabase.from('legal_acceptances').select('id').eq('user_id', user.id).eq('document_type', 'privacy').eq('document_version', privacyDoc.version).maybeSingle()
+        if (!existing) await supabase.from('legal_acceptances').insert({ user_id: user.id, document_type: 'privacy', document_version: privacyDoc.version })
       }
 
-      // Accept privacy if exists
-      if (privacy?.version) {
-        const { data: existingPrivacy } = await supabase
-          .from('legal_acceptances')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('document_type', 'privacy')
-          .eq('document_version', privacy.version)
-          .maybeSingle()
-
-        if (!existingPrivacy) {
-          await supabase
-            .from('legal_acceptances')
-            .insert({
-              user_id: user.id,
-              document_type: 'privacy',
-              document_version: privacy.version,
-            })
-        }
-      }
-
-      // Clear the pending role and roleSelected flag from localStorage
       localStorage.removeItem('pendingSignupRole')
       localStorage.removeItem('roleSelected')
-
       setStep('done')
       setStatus('success')
       setMessage('Account setup complete!')
 
-      // Get final profile to check for phone
-      const { data: finalProfile } = await supabase
-        .from('profiles')
-        .select('role, phone, phone_verified')
-        .eq('id', user.id)
-        .maybeSingle()
-
+      const { data: finalProfile } = await supabase.from('profiles').select('role, phone, phone_verified').eq('id', user.id).maybeSingle()
       const finalRole = finalProfile?.role || role
 
-      // Small delay to show success message
       setTimeout(() => {
-        // If phone is missing or not verified, redirect to complete-profile page
-        if (!finalProfile?.phone || !finalProfile?.phone_verified) {
-          router.push('/auth/complete-profile')
-        } else {
-          router.push(`/${finalRole}/dashboard`)
-        }
+        if (!finalProfile?.phone || !finalProfile?.phone_verified) router.push('/auth/complete-profile')
+        else router.push(`/${finalRole}/dashboard`)
       }, 1500)
-
     } catch (error) {
       console.error('Complete signup error:', error)
       setStatus('error')
       setMessage('Something went wrong. Please try logging in again.')
-      
-      // Redirect to login after error
-      setTimeout(() => {
-        router.push('/auth/login')
-      }, 3000)
+      setTimeout(() => router.push('/auth/login'), 3000)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-teal-50 p-4 relative overflow-hidden">
-      {/* Animated Background Blobs */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-teal-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 flex">
+      {/* Left Side - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500" />
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} />
+
+        <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20">
+          <Link href="/" className="flex items-center gap-3 mb-12">
+            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <span className="text-white font-bold text-2xl">H</span>
+            </div>
+            <span className="text-3xl font-bold text-white">Helparo</span>
+          </Link>
+
+          <h1 className="text-4xl xl:text-5xl font-bold text-white mb-6 leading-tight">
+            One step away from<br /><span className="text-emerald-200">amazing services</span>
+          </h1>
+          <p className="text-xl text-emerald-100 mb-12 max-w-md">Join thousands of users who trust Helparo for reliable, verified home services.</p>
+
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center"><BadgeCheck className="w-6 h-6 text-white" /></div>
+              <div><p className="text-white font-semibold">Verified Professionals</p><p className="text-emerald-200 text-sm">Background checked & ID verified</p></div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center"><Clock className="w-6 h-6 text-white" /></div>
+              <div><p className="text-white font-semibold">Quick Response</p><p className="text-emerald-200 text-sm">Get help within 30 minutes</p></div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center"><Shield className="w-6 h-6 text-white" /></div>
+              <div><p className="text-white font-semibold">100% Secure</p><p className="text-emerald-200 text-sm">Your data is always protected</p></div>
+            </div>
+          </div>
+
+          <div className="mt-16 flex items-center gap-4">
+            <div className="flex -space-x-2">
+              {[1,2,3,4].map((i) => (<div key={i} className="w-10 h-10 rounded-full bg-white/30 border-2 border-white/50 flex items-center justify-center text-white text-sm font-bold">{String.fromCharCode(64+i)}</div>))}
+            </div>
+            <div>
+              <div className="flex items-center gap-1 text-yellow-300">{[1,2,3,4,5].map((i) => (<Star key={i} className="w-4 h-4 fill-current" />))}</div>
+              <p className="text-emerald-100 text-sm">Loved by 50,000+ users</p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="w-full max-w-md relative z-10">
-        <div className="bg-white/90 backdrop-blur-2xl border-2 border-purple-100 shadow-2xl rounded-3xl p-8 text-center">
-          {/* Logo */}
-          <Link href="/" className="inline-flex items-center justify-center gap-3 mb-8 group">
-            <div className="relative h-14 w-14 overflow-hidden rounded-2xl p-0.5 group-hover:scale-110 transition-transform duration-300">
-              <div className="h-full w-full bg-white rounded-2xl flex items-center justify-center p-2">
-                <Image src="/logo.jpg" alt="Helparo" width={48} height={48} className="object-contain" />
-              </div>
-            </div>
-            <span className="text-3xl font-black bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent">Helparo</span>
-          </Link>
+      {/* Right Side - Form */}
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
+        <div className="w-full max-w-md">
+          {/* Mobile Logo */}
+          <div className="lg:hidden text-center mb-8">
+            <Link href="/" className="inline-flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center"><span className="text-white font-bold text-xl">H</span></div>
+              <span className="text-2xl font-bold text-gray-900">Helparo</span>
+            </Link>
+          </div>
 
           {/* Role Selection */}
           {status === 'selectRole' && (
-            <>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Helparo!</h1>
-              <p className="text-gray-600 mb-6">{message}</p>
-              
-              <div className="space-y-3">
-                <Button
-                  onClick={() => handleRoleSelect('customer')}
-                  disabled={selectedRole !== null}
-                  className={`w-full py-6 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 ${
-                    selectedRole === 'customer' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-purple-400 hover:bg-purple-50'
-                  }`}
-                  variant="outline"
-                >
-                  <Users className="h-6 w-6" />
-                  <div className="text-left">
-                    <div className="font-bold">I need help</div>
-                    <div className="text-xs opacity-70">Find helpers for your tasks</div>
-                  </div>
-                </Button>
-                
-                <Button
-                  onClick={() => handleRoleSelect('helper')}
-                  disabled={selectedRole !== null}
-                  className={`w-full py-6 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 ${
-                    selectedRole === 'helper' 
-                      ? 'bg-teal-600 text-white' 
-                      : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-teal-400 hover:bg-teal-50'
-                  }`}
-                  variant="outline"
-                >
-                  <Wrench className="h-6 w-6" />
-                  <div className="text-left">
-                    <div className="font-bold">I want to help</div>
-                    <div className="text-xs opacity-70">Offer your services & earn</div>
-                  </div>
-                </Button>
+            <div className="space-y-8">
+              <div className="text-center">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-600 text-sm font-medium mb-4"><Sparkles className="w-4 h-4" />Almost there!</div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Helparo!</h1>
+                <p className="text-gray-500">How would you like to use our platform?</p>
               </div>
-            </>
+
+              <div className="space-y-4">
+                <button onClick={() => handleRoleSelect('customer')} onMouseEnter={() => setHoveredRole('customer')} onMouseLeave={() => setHoveredRole(null)} className={`w-full p-6 rounded-2xl border-2 text-left transition-all duration-300 group ${hoveredRole === 'customer' ? 'border-emerald-500 bg-emerald-50 shadow-lg shadow-emerald-100' : 'border-gray-200 bg-white hover:border-emerald-300'}`}>
+                  <div className="flex items-start gap-4">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 ${hoveredRole === 'customer' ? 'bg-emerald-500 text-white' : 'bg-emerald-100 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white'}`}><Users className="w-7 h-7" /></div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-gray-900">I need help</h3>
+                        <ArrowRight className={`w-5 h-5 transition-all duration-300 ${hoveredRole === 'customer' ? 'text-emerald-500 translate-x-1' : 'text-gray-300 group-hover:text-emerald-500 group-hover:translate-x-1'}`} />
+                      </div>
+                      <p className="text-gray-500 text-sm mt-1">Find verified professionals for your home services</p>
+                      <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
+                        <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" />Instant booking</span>
+                        <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" />Verified helpers</span>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+
+                <button onClick={() => handleRoleSelect('helper')} onMouseEnter={() => setHoveredRole('helper')} onMouseLeave={() => setHoveredRole(null)} className={`w-full p-6 rounded-2xl border-2 text-left transition-all duration-300 group ${hoveredRole === 'helper' ? 'border-blue-500 bg-blue-50 shadow-lg shadow-blue-100' : 'border-gray-200 bg-white hover:border-blue-300'}`}>
+                  <div className="flex items-start gap-4">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 ${hoveredRole === 'helper' ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-600 group-hover:bg-blue-500 group-hover:text-white'}`}><Briefcase className="w-7 h-7" /></div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-gray-900">I want to help</h3>
+                        <ArrowRight className={`w-5 h-5 transition-all duration-300 ${hoveredRole === 'helper' ? 'text-blue-500 translate-x-1' : 'text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1'}`} />
+                      </div>
+                      <p className="text-gray-500 text-sm mt-1">Offer your services and earn money</p>
+                      <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
+                        <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-blue-500" />Flexible hours</span>
+                        <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-blue-500" />Great earnings</span>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              </div>
+              <p className="text-center text-xs text-gray-400">You can always change your role later in settings</p>
+            </div>
           )}
 
           {/* Terms Acceptance */}
           {status === 'acceptTerms' && (
-            <>
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <Scale className="h-6 w-6 text-purple-600" />
-                <h1 className="text-2xl font-bold text-gray-900">Almost There!</h1>
-              </div>
-              <p className="text-gray-600 mb-6">Please review and accept our terms to continue</p>
-              
-              <div className="space-y-3 text-left">
-                {/* Terms Button */}
-                <div className={`p-4 rounded-xl border-2 transition-all duration-300 ${
-                  termsAccepted 
-                    ? 'border-purple-500 bg-purple-50' 
-                    : 'border-gray-200 bg-gray-50 hover:border-purple-300'
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={termsAccepted}
-                        onChange={(e) => setTermsAccepted(e.target.checked)}
-                        className="h-5 w-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <div>
-                        <span className="text-gray-700">I agree to the </span>
-                        <span className="text-purple-600 font-semibold">Terms of Service</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => openLegalModal('terms')}
-                      className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-800 font-medium"
-                    >
-                      <FileText className="h-4 w-4" />
-                      Read
-                    </button>
-                  </div>
-                </div>
-
-                {/* Privacy Button */}
-                <div className={`p-4 rounded-xl border-2 transition-all duration-300 ${
-                  privacyAccepted 
-                    ? 'border-teal-500 bg-teal-50' 
-                    : 'border-gray-200 bg-gray-50 hover:border-teal-300'
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={privacyAccepted}
-                        onChange={(e) => setPrivacyAccepted(e.target.checked)}
-                        className="h-5 w-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                      />
-                      <div>
-                        <span className="text-gray-700">I agree to the </span>
-                        <span className="text-teal-600 font-semibold">Privacy Policy</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => openLegalModal('privacy')}
-                      className="flex items-center gap-1 text-sm text-teal-600 hover:text-teal-800 font-medium"
-                    >
-                      <Shield className="h-4 w-4" />
-                      Read
-                    </button>
-                  </div>
-                </div>
+            <div className="space-y-8">
+              <div className="text-center">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-600 text-sm font-medium mb-4"><Shield className="w-4 h-4" />One last step</div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Review Our Terms</h1>
+                <p className="text-gray-500">Please accept to continue</p>
               </div>
 
-              <Button
-                onClick={handleTermsAccepted}
-                disabled={!termsAccepted || !privacyAccepted}
-                className="w-full mt-6 py-6 rounded-xl bg-gradient-to-r from-purple-600 to-teal-600 text-white font-bold text-lg hover:from-purple-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
-              >
-                <CheckCircle className="mr-2 h-5 w-5" />
-                Accept & Continue
-              </Button>
+              <div className="space-y-4">
+                <label className={`flex items-center gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${termsAccepted ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${termsAccepted ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`}>{termsAccepted && <CheckCircle className="w-4 h-4 text-white" />}</div>
+                  <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="sr-only" />
+                  <div className="flex-1"><p className="font-medium text-gray-900">Terms of Service</p><p className="text-sm text-gray-500">I agree to the terms and conditions</p></div>
+                  <button type="button" onClick={(e) => { e.preventDefault(); openLegalModal('terms'); }} className="text-emerald-600 hover:text-emerald-700 font-medium text-sm flex items-center gap-1"><FileText className="w-4 h-4" />Read</button>
+                </label>
 
-              <button
-                onClick={() => {
-                  setStatus('selectRole')
-                  setTermsAccepted(false)
-                  setPrivacyAccepted(false)
-                  setSelectedRole(null)
-                }}
-                className="mt-4 text-sm text-gray-500 hover:text-gray-700"
-              >
-                ← Go back to role selection
-              </button>
-            </>
+                <label className={`flex items-center gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${privacyAccepted ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${privacyAccepted ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`}>{privacyAccepted && <CheckCircle className="w-4 h-4 text-white" />}</div>
+                  <input type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} className="sr-only" />
+                  <div className="flex-1"><p className="font-medium text-gray-900">Privacy Policy</p><p className="text-sm text-gray-500">I agree to the privacy policy</p></div>
+                  <button type="button" onClick={(e) => { e.preventDefault(); openLegalModal('privacy'); }} className="text-emerald-600 hover:text-emerald-700 font-medium text-sm flex items-center gap-1"><Shield className="w-4 h-4" />Read</button>
+                </label>
+              </div>
+
+              <Button onClick={handleTermsAccepted} disabled={!termsAccepted || !privacyAccepted} className="w-full h-14 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold text-lg shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:shadow-none transition-all duration-300">Continue<ArrowRight className="ml-2 w-5 h-5" /></Button>
+              <button onClick={() => { setStatus('selectRole'); setTermsAccepted(false); setPrivacyAccepted(false); setSelectedRole(null); }} className="w-full text-center text-sm text-gray-500 hover:text-gray-700 transition-colors">← Back to role selection</button>
+            </div>
           )}
 
-          {/* Loading/Processing Status */}
+          {/* Loading */}
           {(status === 'loading' || status === 'processing') && (
-            <>
-              <div className="flex justify-center mb-6">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-teal-500 text-white shadow-2xl shadow-purple-500/50">
-                  <Loader2 className="h-10 w-10 animate-spin" />
-                </div>
+            <div className="text-center space-y-6">
+              <div className="relative inline-flex">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-200"><Loader2 className="w-10 h-10 text-white animate-spin" /></div>
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 animate-ping opacity-20" />
               </div>
-              
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Setting Up Your Account</h1>
-              <p className="text-gray-600 mb-6">{message}</p>
-
-              {/* Progress Steps */}
-              <div className="flex items-center justify-center gap-2 text-sm">
-                <div className={`flex items-center gap-1 ${step === 'profile' ? 'text-purple-600 font-semibold' : 'text-gray-400'}`}>
-                  <div className={`w-2 h-2 rounded-full ${step === 'profile' ? 'bg-purple-600 animate-pulse' : step === 'legal' || step === 'done' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                  Profile
-                </div>
-                <div className="w-8 h-px bg-gray-300"></div>
-                <div className={`flex items-center gap-1 ${step === 'legal' ? 'text-purple-600 font-semibold' : step === 'done' ? 'text-green-600' : 'text-gray-400'}`}>
-                  <div className={`w-2 h-2 rounded-full ${step === 'legal' ? 'bg-purple-600 animate-pulse' : step === 'done' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                  Legal
-                </div>
-                <div className="w-8 h-px bg-gray-300"></div>
-                <div className={`flex items-center gap-1 ${step === 'done' ? 'text-green-600 font-semibold' : 'text-gray-400'}`}>
-                  <div className={`w-2 h-2 rounded-full ${step === 'done' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                  Done
-                </div>
+              <div><h2 className="text-2xl font-bold text-gray-900 mb-2">Setting Up Your Account</h2><p className="text-gray-500">{message}</p></div>
+              <div className="flex items-center justify-center gap-3 pt-4">
+                <div className={`w-3 h-3 rounded-full transition-all duration-300 ${step === 'profile' || step === 'legal' || step === 'done' ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+                <div className={`w-8 h-0.5 transition-all duration-300 ${step === 'legal' || step === 'done' ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+                <div className={`w-3 h-3 rounded-full transition-all duration-300 ${step === 'legal' || step === 'done' ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+                <div className={`w-8 h-0.5 transition-all duration-300 ${step === 'done' ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+                <div className={`w-3 h-3 rounded-full transition-all duration-300 ${step === 'done' ? 'bg-emerald-500' : 'bg-gray-200'}`} />
               </div>
-
-              {/* Legal Notice */}
-              {step === 'legal' && (
-                <div className="mt-6 p-4 bg-purple-50 rounded-xl border border-purple-100">
-                  <div className="flex items-center gap-2 text-purple-700 text-sm">
-                    <FileText className="h-4 w-4" />
-                    <span>By continuing, you agree to our Terms & Privacy Policy</span>
-                  </div>
-                </div>
-              )}
-            </>
+            </div>
           )}
 
-          {/* Success Status */}
+          {/* Success */}
           {status === 'success' && (
-            <>
-              <div className="flex justify-center mb-6">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-2xl shadow-green-500/50 animate-bounce">
-                  <CheckCircle className="h-10 w-10" />
-                </div>
-              </div>
-              
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Helparo!</h1>
-              <p className="text-gray-600 mb-6">{message}</p>
-            </>
+            <div className="text-center space-y-6">
+              <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-200"><CheckCircle className="w-10 h-10 text-white" /></div>
+              <div><h2 className="text-2xl font-bold text-gray-900 mb-2">You&apos;re All Set!</h2><p className="text-gray-500">Redirecting you to the next step...</p></div>
+            </div>
           )}
 
-          {/* Error Status */}
+          {/* Error */}
           {status === 'error' && (
-            <>
-              <div className="flex justify-center mb-6">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-rose-500 text-white shadow-2xl shadow-red-500/50">
-                  <XCircle className="h-10 w-10" />
-                </div>
-              </div>
-              
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Oops!</h1>
-              <p className="text-gray-600 mb-6">{message}</p>
-            </>
+            <div className="text-center space-y-6">
+              <div className="w-20 h-20 mx-auto rounded-full bg-red-100 flex items-center justify-center"><X className="w-10 h-10 text-red-500" /></div>
+              <div><h2 className="text-2xl font-bold text-gray-900 mb-2">Oops!</h2><p className="text-gray-500">{message}</p></div>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Legal Document Modal */}
+      {/* Legal Modal */}
       {showLegalModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300">
-            {/* Modal Header */}
-            <div className="bg-gradient-to-r from-purple-600 to-teal-600 text-white p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Scale className="h-6 w-6" />
-                <h2 className="text-xl font-bold">Legal Agreement</h2>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <div className="flex gap-2">
+                <button onClick={() => setActiveTab('terms')} className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === 'terms' ? 'bg-emerald-100 text-emerald-700' : 'text-gray-500 hover:bg-gray-100'}`}>Terms of Service</button>
+                <button onClick={() => setActiveTab('privacy')} className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === 'privacy' ? 'bg-emerald-100 text-emerald-700' : 'text-gray-500 hover:bg-gray-100'}`}>Privacy Policy</button>
               </div>
-              <button
-                onClick={() => setShowLegalModal(false)}
-                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <button onClick={() => setShowLegalModal(false)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors"><X className="w-5 h-5 text-gray-500" /></button>
             </div>
-
-            {/* Tabs */}
-            <div className="flex gap-2 p-4 border-b bg-gray-50">
-              <button
-                onClick={() => setActiveTab('terms')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                  activeTab === 'terms'
-                    ? 'bg-purple-600 text-white shadow-lg'
-                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                }`}
-              >
-                <FileText className="h-4 w-4" />
-                Terms & Conditions
-                {termsAccepted && <CheckCircle className="h-4 w-4 text-green-300" />}
-              </button>
-              <button
-                onClick={() => setActiveTab('privacy')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                  activeTab === 'privacy'
-                    ? 'bg-teal-600 text-white shadow-lg'
-                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                }`}
-              >
-                <Shield className="h-4 w-4" />
-                Privacy Policy
-                {privacyAccepted && <CheckCircle className="h-4 w-4 text-green-300" />}
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {loadingDocs ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+            <div className="p-6 overflow-y-auto max-h-[calc(85vh-140px)]">
+              {loadingDocs ? (<div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 text-emerald-500 animate-spin" /></div>) : (
+                <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-600">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{activeTab === 'terms' ? (terms?.content_md || 'Terms of Service content not available.') : (privacy?.content_md || 'Privacy Policy content not available.')}</ReactMarkdown>
                 </div>
-              ) : (
-                <>
-                  {activeTab === 'terms' && terms && (
-                    <div className="prose prose-slate max-w-none">
-                      <div className="flex items-center gap-2 mb-4 pb-4 border-b">
-                        <FileText className="h-5 w-5 text-purple-600" />
-                        <h3 className="text-xl font-bold text-gray-900 m-0">{terms.title}</h3>
-                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">v{terms.version}</span>
-                      </div>
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {terms.content_md}
-                      </ReactMarkdown>
-                    </div>
-                  )}
-                  {activeTab === 'privacy' && privacy && (
-                    <div className="prose prose-slate max-w-none">
-                      <div className="flex items-center gap-2 mb-4 pb-4 border-b">
-                        <Shield className="h-5 w-5 text-teal-600" />
-                        <h3 className="text-xl font-bold text-gray-900 m-0">{privacy.title}</h3>
-                        <span className="text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded-full">v{privacy.version}</span>
-                      </div>
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {privacy.content_md}
-                      </ReactMarkdown>
-                    </div>
-                  )}
-                  {!terms && !privacy && (
-                    <p className="text-gray-500 text-center py-8">No legal documents available.</p>
-                  )}
-                </>
               )}
             </div>
-
-            {/* Modal Footer */}
-            <div className="border-t p-4 bg-gray-50 flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={activeTab === 'terms' ? termsAccepted : privacyAccepted}
-                  onChange={(e) => {
-                    if (activeTab === 'terms') {
-                      setTermsAccepted(e.target.checked)
-                    } else {
-                      setPrivacyAccepted(e.target.checked)
-                    }
-                  }}
-                  className="h-5 w-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                />
-                <span className="text-sm text-gray-700">
-                  I have read and agree to the {activeTab === 'terms' ? 'Terms of Service' : 'Privacy Policy'}
-                </span>
-              </label>
-              <Button
-                onClick={() => setShowLegalModal(false)}
-                className="bg-gradient-to-r from-purple-600 to-teal-600 hover:from-purple-700 hover:to-teal-700 text-white"
-              >
-                Done
-              </Button>
+            <div className="px-6 py-4 border-t bg-gray-50">
+              <Button onClick={() => setShowLegalModal(false)} className="w-full h-12 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-medium">I understand</Button>
             </div>
           </div>
         </div>

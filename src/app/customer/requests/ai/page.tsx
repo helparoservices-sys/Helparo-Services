@@ -3,19 +3,16 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import AddressInteractiveMap from '@/components/address-interactive-map'
 import { 
-  Upload, 
-  Brain, 
   IndianRupee, 
   Clock, 
   AlertTriangle, 
-  CheckCircle2,
   Loader2,
   Sparkles,
   X,
@@ -271,80 +268,64 @@ export default function AIRequestPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-3 bg-gradient-to-br from-purple-500 via-pink-500 to-teal-500 rounded-2xl shadow-lg animate-pulse">
-          <Brain className="h-8 w-8 text-white" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-teal-600 bg-clip-text text-transparent">AI-Powered Service Request</h1>
-          <p className="text-gray-600 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-yellow-500" />
-            Upload photos, get instant pricing, notify all helpers
-          </p>
+    <div className="max-w-2xl mx-auto py-6 px-4">
+      {/* Header - Clean & Minimal */}
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="h-10 w-10 bg-emerald-500 rounded-xl flex items-center justify-center">
+            <Sparkles className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">AI Smart Request</h1>
+            <p className="text-gray-500 text-sm">Get instant pricing from AI</p>
+          </div>
         </div>
       </div>
 
-      {/* Progress Steps - Enhanced */}
-      <div className="bg-gradient-to-r from-purple-50 via-white to-teal-50 rounded-2xl p-6 shadow-md border border-purple-100">
-        <div className="flex items-center justify-center gap-4">
-          <div className={`flex items-center gap-2 ${step === 'upload' ? 'text-purple-600' : 'text-gray-400'}`}>
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ${
-              step === 'upload' ? 'bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg scale-110' : 'bg-gray-200'
+      {/* Progress Steps - Clean */}
+      <div className="bg-white rounded-xl p-4 mb-6 border border-gray-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${
+              step === 'upload' ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-400'
             }`}>
-              {step === 'upload' ? <Upload className="h-5 w-5" /> : '1'}
+              1
             </div>
-            <span className="font-semibold hidden sm:inline">Upload</span>
+            <span className={`text-sm font-medium ${step === 'upload' ? 'text-gray-900' : 'text-gray-400'}`}>Upload</span>
           </div>
-          <div className={`w-20 h-1.5 rounded-full ${step !== 'upload' ? 'bg-gradient-to-r from-purple-400 to-teal-400' : 'bg-gray-200'}`} />
-          <div className={`flex items-center gap-2 ${step === 'analysis' ? 'text-teal-600' : 'text-gray-400'}`}>
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ${
-              step === 'analysis' ? 'bg-gradient-to-br from-teal-500 to-cyan-500 text-white shadow-lg scale-110' : 'bg-gray-200'
+          <div className={`flex-1 h-0.5 mx-3 ${step !== 'upload' ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+          <div className="flex items-center gap-2">
+            <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${
+              step === 'analysis' ? 'bg-emerald-500 text-white' : step === 'review' ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-400'
             }`}>
-              {step === 'analysis' ? <Brain className="h-5 w-5" /> : '2'}
+              2
             </div>
-            <span className="font-semibold hidden sm:inline">AI Analysis</span>
+            <span className={`text-sm font-medium ${step === 'analysis' || step === 'review' ? 'text-gray-900' : 'text-gray-400'}`}>Review</span>
           </div>
-          <div className={`w-20 h-1.5 rounded-full ${step === 'review' ? 'bg-gradient-to-r from-teal-400 to-green-400' : 'bg-gray-200'}`} />
-          <div className={`flex items-center gap-2 ${step === 'review' ? 'text-green-600' : 'text-gray-400'}`}>
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ${
-              step === 'review' ? 'bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg scale-110' : 'bg-gray-200'
+          <div className={`flex-1 h-0.5 mx-3 ${step === 'review' ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+          <div className="flex items-center gap-2">
+            <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${
+              step === 'review' ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-400'
             }`}>
-              {step === 'review' ? <CheckCircle2 className="h-5 w-5" /> : '3'}
+              3
             </div>
-            <span className="font-semibold hidden sm:inline">Broadcast</span>
+            <span className={`text-sm font-medium ${step === 'review' ? 'text-gray-900' : 'text-gray-400'}`}>Done</span>
           </div>
         </div>
       </div>
 
       {/* Step 1: Upload */}
       {step === 'upload' && (
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-purple-50/30 to-teal-50/30">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-3 text-xl">
-              <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-md">
-                <Upload className="h-5 w-5 text-white" />
-              </div>
-              <span className="bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-transparent font-bold">
-                Upload Problem Details
-              </span>
-            </CardTitle>
-            <p className="text-sm text-gray-600 mt-1 ml-12">
-              ✨ Provide detailed information for accurate AI-powered pricing
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-8 pt-4">
-            {/* Image Upload - Enhanced */}
-            <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl p-6 border-2 border-purple-200">
-              <Label className="text-lg font-bold flex items-center gap-3 mb-4">
-                <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl shadow-md">
-                  <ImageIcon className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-gray-800">Photos</span>
-                <span className="text-sm font-normal text-purple-600 bg-purple-100 px-3 py-1 rounded-full">3-5 images required</span>
+        <Card className="border border-gray-100 shadow-sm bg-white">
+          <CardContent className="space-y-5 pt-6">
+            {/* Image Upload */}
+            <div>
+              <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
+                <ImageIcon className="h-4 w-4 text-emerald-600" />
+                Photos
+                <span className="text-xs font-normal text-gray-400">3-5 required</span>
               </Label>
-              <div className="border-3 border-dashed border-purple-300 rounded-2xl p-8 text-center hover:border-purple-500 hover:bg-purple-100/50 transition-all cursor-pointer group bg-white/80">
+              <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-emerald-400 hover:bg-emerald-50/30 transition-all cursor-pointer group bg-gray-50">
                 <input
                   type="file"
                   accept="image/*"
@@ -355,65 +336,55 @@ export default function AIRequestPage() {
                   disabled={images.length >= 5}
                 />
                 <label htmlFor="image-upload" className={`cursor-pointer block ${images.length >= 5 ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                  <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
-                    <ImageIcon className="h-12 w-12 text-white" />
+                  <div className="w-14 h-14 mx-auto mb-3 bg-emerald-100 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <ImageIcon className="h-7 w-7 text-emerald-600" />
                   </div>
-                  <p className="text-xl font-bold text-gray-800 mb-2">
-                    {images.length === 0 ? '📸 Click to Upload Photos' : `📸 ${images.length}/5 Photos Uploaded`}
+                  <p className="text-base font-semibold text-gray-800 mb-1">
+                    {images.length === 0 ? 'Upload Photos' : `${images.length}/5 Uploaded`}
                   </p>
-                  <p className="text-gray-600">
-                    Drag & drop or click to select multiple images
+                  <p className="text-gray-500 text-sm">
+                    Tap to select or drag & drop
                   </p>
-                  <div className="mt-4 flex items-center justify-center gap-2 text-sm text-purple-600">
-                    <Sparkles className="h-4 w-4" />
-                    <span>Clear photos = Better AI analysis = Accurate pricing!</span>
-                  </div>
                 </label>
               </div>
 
-              {/* Image Preview - Enhanced */}
+              {/* Image Preview */}
               {images.length > 0 && (
-                <div className="mt-6 grid grid-cols-5 gap-3">
+                <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
                   {images.map((img, idx) => (
-                    <div key={idx} className="relative group">
+                    <div key={idx} className="relative flex-shrink-0 group">
                       <img 
                         src={img} 
                         alt={`Upload ${idx + 1}`}
-                        className="w-full h-28 object-cover rounded-xl border-3 border-purple-200 shadow-md group-hover:border-purple-400 transition-all"
+                        className="w-20 h-20 object-cover rounded-lg border border-gray-200"
                       />
                       <button
                         onClick={() => removeImage(idx)}
-                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-lg"
+                        className="absolute -top-1.5 -right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center shadow"
                         type="button"
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-3 w-3" />
                       </button>
-                      <div className="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
-                        {idx + 1}
-                      </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Service Category - Enhanced */}
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border-2 border-orange-200">
-              <Label htmlFor="category" className="text-lg font-bold flex items-center gap-3 mb-4">
-                <div className="p-2 bg-gradient-to-br from-orange-500 to-pink-500 rounded-xl shadow-md">
-                  <Sparkles className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-gray-800">Service Category</span>
-                <span className="text-red-500">*</span>
+            {/* Service Category */}
+            <div>
+              <Label htmlFor="category" className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-2">
+                <Sparkles className="h-4 w-4 text-emerald-600" />
+                Service Category <span className="text-red-500">*</span>
               </Label>
               <select
                 id="category"
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full px-5 py-4 border-2 border-orange-200 rounded-xl shadow-sm focus:outline-none focus:ring-4 focus:ring-orange-200 focus:border-orange-400 bg-white text-gray-800 font-semibold text-lg transition-all"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-gray-800 font-medium"
                 required
               >
-                <option value="">🔍 Select a category...</option>
+                <option value="">Select a category...</option>
                 <option value="electrical">⚡ Electrical</option>
                 <option value="plumbing">🚰 Plumbing</option>
                 <option value="ac_repair">❄️ AC & Appliance Repair</option>
@@ -421,25 +392,19 @@ export default function AIRequestPage() {
                 <option value="painting">🎨 Painting</option>
                 <option value="cleaning">🧹 Cleaning</option>
                 <option value="pest_control">🐛 Pest Control</option>
-                <option value="home_repair">🏠 Home Repair & Maintenance</option>
+                <option value="home_repair">🏠 Home Repair</option>
                 <option value="locksmith">🔑 Locksmith</option>
-                <option value="gardening">🌱 Gardening & Landscaping</option>
+                <option value="gardening">🌱 Gardening</option>
                 <option value="moving">📦 Moving & Packing</option>
                 <option value="other">🔧 Other</option>
               </select>
-              <p className="text-sm text-orange-600 mt-2 flex items-center gap-1">
-                <span>💡</span> Helps AI match you with the right professional
-              </p>
             </div>
 
-            {/* Service Location - Enhanced */}
-            <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-6 border-2 border-teal-200">
-              <Label className="text-lg font-bold flex items-center gap-3 mb-4">
-                <div className="p-2 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl shadow-md">
-                  <MapPin className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-gray-800">Service Location</span>
-                <span className="text-red-500">*</span>
+            {/* Service Location */}
+            <div>
+              <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-2">
+                <MapPin className="h-4 w-4 text-emerald-600" />
+                Service Location <span className="text-red-500">*</span>
               </Label>
               <AddressInteractiveMap
                 value={address}
@@ -449,492 +414,306 @@ export default function AIRequestPage() {
                   setLocationLat(selected.lat)
                   setLocationLng(selected.lng)
                 }}
-                placeholder="🔍 Search your location (area, city, landmark)"
+                placeholder="Search your location..."
                 required
                 showMap={true}
-                mapHeight="350px"
+                mapHeight="200px"
               />
             </div>
 
-            {/* Detailed Address - Enhanced */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl shadow-md">
-                  <MapPin className="h-5 w-5 text-white" />
-                </div>
-                <h4 className="font-bold text-lg text-gray-800">Complete Address Details</h4>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="flatNumber" className="font-semibold text-gray-700 flex items-center gap-1">
-                    🏠 Flat/House No. <span className="text-red-500">*</span>
-                  </Label>
+            {/* Address Details */}
+            <div className="bg-gray-50 rounded-xl p-4">
+              <h4 className="font-semibold text-gray-700 text-sm mb-3">Complete Address</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="flatNumber" className="text-xs text-gray-600 mb-1 block">Flat/House No. *</Label>
                   <Input 
                     id="flatNumber" 
                     value={flatNumber} 
                     onChange={(e) => setFlatNumber(e.target.value)} 
-                    placeholder="e.g., A-101, 2nd Floor"
-                    className="bg-white border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 py-3 text-base"
+                    placeholder="e.g., A-101"
+                    className="bg-white border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="floor" className="font-semibold text-gray-700">
-                    🏢 Floor
-                  </Label>
+                <div>
+                  <Label htmlFor="floor" className="text-xs text-gray-600 mb-1 block">Floor</Label>
                   <Input 
                     id="floor" 
                     value={floor} 
                     onChange={(e) => setFloor(e.target.value)} 
-                    placeholder="e.g., Ground, 1st, 2nd"
-                    className="bg-white border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 py-3 text-base"
+                    placeholder="e.g., 2nd"
+                    className="bg-white border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                   />
                 </div>
               </div>
-              
-              <div className="space-y-2 mt-4">
-                <Label htmlFor="landmark" className="font-semibold text-gray-700">
-                  📍 Nearby Landmark <span className="text-gray-400 font-normal">(Optional but helpful)</span>
-                </Label>
+              <div className="mt-3">
+                <Label htmlFor="landmark" className="text-xs text-gray-600 mb-1 block">Landmark (optional)</Label>
                 <Input 
                   id="landmark" 
                   value={landmark} 
                   onChange={(e) => setLandmark(e.target.value)} 
-                  placeholder="e.g., Near Apollo Pharmacy, Opposite SBI Bank"
-                  className="bg-white border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 py-3 text-base"
+                  placeholder="e.g., Near SBI Bank"
+                  className="bg-white border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                 />
               </div>
-              
-              <p className="text-sm text-blue-600 mt-4 bg-blue-100 p-3 rounded-xl flex items-start gap-2">
-                <span className="text-lg">💡</span>
-                <span><strong>Pro Tip:</strong> Accurate address details help the helper reach you faster without confusion!</span>
-              </p>
             </div>
 
-            {/* Description - Enhanced */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border-2 border-green-200">
-              <Label htmlFor="description" className="text-lg font-bold flex items-center gap-3 mb-4">
-                <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl shadow-md">
-                  <AlertTriangle className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-gray-800">Problem Description</span>
-                <span className="text-red-500">*</span>
+            {/* Description */}
+            <div>
+              <Label htmlFor="description" className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-2">
+                <AlertTriangle className="h-4 w-4 text-emerald-600" />
+                Describe the Problem <span className="text-red-500">*</span>
               </Label>
               <Textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="📝 Describe the issue in detail...&#10;&#10;Examples:&#10;• AC not cooling properly, making noise&#10;• Water leaking from pipe under sink&#10;• Switch giving electric shock"
-                className="min-h-[150px] bg-white border-2 border-green-200 focus:border-green-500 focus:ring-4 focus:ring-green-100 text-base"
+                placeholder="Describe the issue in detail...&#10;&#10;E.g., AC not cooling, water leaking from pipe, switch giving shock"
+                className="min-h-[100px] bg-white border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                 required
               />
-              <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
-                <span>✨</span> More details = More accurate AI pricing!
-              </p>
             </div>
 
-            {/* Additional Info Grid - Enhanced */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Error Code */}
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <Label htmlFor="errorCode" className="font-semibold text-gray-700 flex items-center gap-2">
-                  🔢 Error Code <span className="text-gray-400 font-normal">(if any)</span>
-                </Label>
+            {/* Additional Info Row */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="errorCode" className="text-xs text-gray-600 mb-1 block">Error Code (if any)</Label>
                 <Input
                   id="errorCode"
                   value={errorCode}
                   onChange={(e) => setErrorCode(e.target.value)}
-                  placeholder="E.g., E1, F03, or 'N/A'"
-                  className="mt-2 bg-white border-2 border-gray-200 focus:border-purple-400 py-3"
+                  placeholder="E.g., E1, F03, NA"
+                  className="bg-white border-gray-200 focus:border-emerald-500"
                 />
               </div>
-
-              {/* Problem Duration */}
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <Label htmlFor="problemDuration" className="font-semibold text-gray-700 flex items-center gap-2">
-                  ⏰ How long has this existed?
-                </Label>
+              <div>
+                <Label htmlFor="problemDuration" className="text-xs text-gray-600 mb-1 block">How long?</Label>
                 <select
                   id="problemDuration"
                   value={problemDuration}
                   onChange={(e) => setProblemDuration(e.target.value)}
-                  className="mt-2 w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-4 focus:ring-purple-100 focus:border-purple-400 bg-white font-medium"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-sm"
                 >
-                  <option value="">Select duration</option>
-                  <option value="just_now">🆕 Just started (today)</option>
-                  <option value="few_days">📅 Few days ago</option>
-                  <option value="week">📆 About a week</option>
-                  <option value="weeks">🗓️ Few weeks</option>
-                  <option value="month_plus">📆 More than a month</option>
+                  <option value="">Select...</option>
+                  <option value="just_now">Just started (today)</option>
+                  <option value="few_days">Few days</option>
+                  <option value="week">About a week</option>
+                  <option value="weeks">Few weeks</option>
+                  <option value="month_plus">More than a month</option>
                 </select>
               </div>
             </div>
 
             {/* Previous Attempts */}
-            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-              <Label htmlFor="previousAttempts" className="font-semibold text-gray-700 flex items-center gap-2">
-                🔧 Have you tried fixing it yourself?
-              </Label>
+            <div>
+              <Label htmlFor="previousAttempts" className="text-xs text-gray-600 mb-1 block">Tried fixing yourself?</Label>
               <Textarea
                 id="previousAttempts"
                 value={previousAttempts}
                 onChange={(e) => setPreviousAttempts(e.target.value)}
-                placeholder="What you've tried: restarted, checked connections, cleaned, etc. Type 'N/A' if nothing"
-                className="mt-2 bg-white border-2 border-gray-200 focus:border-purple-400"
+                placeholder="What you've tried, or type 'NA'"
+                className="bg-white border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                 rows={2}
               />
             </div>
 
-            {/* Urgency - Enhanced */}
-            <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl p-6 border-2 border-red-200">
-              <Label htmlFor="preferredTime" className="text-lg font-bold flex items-center gap-3 mb-4">
-                <div className="p-2 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl shadow-md">
-                  <Clock className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-gray-800">When do you need help?</span>
+            {/* Urgency */}
+            <div>
+              <Label htmlFor="preferredTime" className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-2">
+                <Clock className="h-4 w-4 text-emerald-600" />
+                When do you need help?
               </Label>
               <select
                 id="preferredTime"
                 value={preferredTime}
                 onChange={(e) => setPreferredTime(e.target.value)}
-                className="w-full px-5 py-4 border-2 border-red-200 rounded-xl focus:ring-4 focus:ring-red-100 focus:border-red-400 bg-white font-semibold text-lg"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white font-medium"
               >
-                <option value="">⏰ Select urgency level</option>
-                <option value="asap">🚨 EMERGENCY - As soon as possible</option>
-                <option value="today">☀️ Within today</option>
-                <option value="tomorrow">📅 Tomorrow</option>
-                <option value="this_week">📆 This week</option>
-                <option value="flexible">🙂 Flexible timing</option>
+                <option value="">Select urgency...</option>
+                <option value="asap">🚨 EMERGENCY - ASAP</option>
+                <option value="today">Today</option>
+                <option value="tomorrow">Tomorrow</option>
+                <option value="this_week">This week</option>
+                <option value="flexible">Flexible</option>
               </select>
             </div>
 
-            {/* Submit Button - Super Enhanced */}
-            <div className="pt-4">
-              <Button
-                onClick={analyzeWithAI}
-                disabled={analyzing || images.length < 3 || !description.trim() || !categoryId || !address.trim()}
-                className="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-teal-600 hover:from-purple-700 hover:via-pink-700 hover:to-teal-700 text-white py-8 text-xl font-bold rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {analyzing ? (
-                  <div className="flex items-center justify-center gap-3">
-                    <Loader2 className="h-7 w-7 animate-spin" />
-                    <span>🤖 AI is analyzing your request...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-3">
-                    <Sparkles className="h-7 w-7" />
-                    <span>✨ Analyze with AI & Get Instant Price</span>
-                    <Brain className="h-7 w-7" />
-                  </div>
-                )}
-              </Button>
-            </div>
+            {/* Submit Button */}
+            <Button
+              onClick={analyzeWithAI}
+              disabled={analyzing || images.length < 3 || !description.trim() || !categoryId || !address.trim()}
+              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 text-base font-bold rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {analyzing ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Analyzing...</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <Sparkles className="h-5 w-5" />
+                  <span>Analyze with AI & Get Price</span>
+                </div>
+              )}
+            </Button>
 
-            {/* Validation Messages - Enhanced */}
-            <div className="space-y-2">
-              {images.length < 3 && (
-                <div className="text-center text-sm bg-amber-100 text-amber-700 p-3 rounded-xl border border-amber-200 flex items-center justify-center gap-2">
-                  <ImageIcon className="h-4 w-4" />
-                  <span>📸 Please upload at least <strong>3 photos</strong> for accurate AI analysis</span>
-                </div>
-              )}
-              {!description.trim() && images.length >= 3 && (
-                <div className="text-center text-sm bg-amber-100 text-amber-700 p-3 rounded-xl border border-amber-200">
-                  📝 Please describe the problem in the <strong>"Problem Description"</strong> field
-                </div>
-              )}
-              {!categoryId && images.length >= 3 && description.trim() && (
-                <div className="text-center text-sm bg-amber-100 text-amber-700 p-3 rounded-xl border border-amber-200">
-                  🔍 Please select a <strong>service category</strong>
-                </div>
-              )}
-              {!address.trim() && images.length >= 3 && description.trim() && categoryId && (
-                <div className="text-center text-sm bg-amber-100 text-amber-700 p-3 rounded-xl border border-amber-200">
-                  📍 Please enter your <strong>service location</strong>
-                </div>
-              )}
-            </div>
+            {/* Validation Hints */}
+            {(images.length < 3 || !description.trim() || !categoryId || !address.trim()) && (
+              <p className="text-center text-sm text-gray-500">
+                {images.length < 3 ? `Upload ${3 - images.length} more photo(s)` :
+                 !categoryId ? 'Select a category' :
+                 !description.trim() ? 'Add problem description' :
+                 'Add your location'}
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
 
       {/* Step 2: AI Analysis Results */}
       {step === 'analysis' && aiAnalysis && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-teal-600" />
-              AI Analysis Results
-              <Badge variant="outline" className="ml-auto">
-                {aiAnalysis.confidence}% Confidence
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Pricing */}
-            <div className="bg-gradient-to-r from-purple-50 to-teal-50 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">AI Estimated Price</h3>
-                <div className="flex items-center gap-2 text-3xl font-bold text-teal-600">
-                  <IndianRupee className="h-8 w-8" />
-                  {aiAnalysis.estimatedPrice}
-                </div>
+        <Card className="border border-gray-100 shadow-sm bg-white">
+          <CardContent className="space-y-5 pt-6">
+            {/* Price Card */}
+            <div className="bg-emerald-50 rounded-xl p-5 border border-emerald-100">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-600">AI Estimated Price</span>
+                <Badge className="bg-emerald-100 text-emerald-700 text-xs">
+                  {aiAnalysis.confidence}% Confidence
+                </Badge>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center gap-1 text-3xl font-bold text-emerald-600">
+                <IndianRupee className="h-7 w-7" />
+                {aiAnalysis.estimatedPrice}
+              </div>
+              <p className="text-sm text-gray-500 mt-2 flex items-center gap-1">
                 <Clock className="h-4 w-4" />
-                Estimated Duration: {aiAnalysis.estimatedDuration} minutes
-              </div>
+                ~{aiAnalysis.estimatedDuration} minutes
+              </p>
             </div>
 
-            {/* Tiered Pricing Selection */}
+            {/* Pricing Tiers */}
             <div>
-              <Label className="text-base font-semibold mb-3 block">Choose Your Pricing Tier</Label>
-              <div className="grid grid-cols-3 gap-4">
-                {/* Budget Tier */}
+              <Label className="text-sm font-semibold text-gray-700 mb-3 block">Select Pricing</Label>
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => setSelectedTier('budget')}
-                  className={`p-4 rounded-lg border-2 transition-all ${
+                  className={`p-3 rounded-xl border-2 transition-all text-center ${
                     selectedTier === 'budget'
-                      ? 'border-blue-600 bg-blue-50'
+                      ? 'border-emerald-500 bg-emerald-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <div className="text-center">
-                    <div className="text-xs font-semibold text-blue-600 mb-2">BUDGET</div>
-                    <div className="text-2xl font-bold text-gray-900 flex items-center justify-center">
-                      <IndianRupee className="h-5 w-5" />
-                      {getPriceForTier(aiAnalysis.estimatedPrice, 'budget')}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-2">-15%</div>
-                    <div className="text-xs text-gray-600 mt-3">
-                      Fewer helpers may respond
-                    </div>
+                  <div className="text-xs font-medium text-gray-500 mb-1">Budget</div>
+                  <div className="text-lg font-bold text-gray-900 flex items-center justify-center">
+                    ₹{getPriceForTier(aiAnalysis.estimatedPrice, 'budget')}
                   </div>
+                  <div className="text-xs text-gray-400">-15%</div>
                 </button>
 
-                {/* Standard Tier */}
                 <button
                   onClick={() => setSelectedTier('standard')}
-                  className={`p-4 rounded-lg border-2 transition-all ${
+                  className={`p-3 rounded-xl border-2 transition-all text-center ${
                     selectedTier === 'standard'
-                      ? 'border-teal-600 bg-teal-50'
+                      ? 'border-emerald-500 bg-emerald-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <div className="text-center">
-                    <div className="text-xs font-semibold text-teal-600 mb-2 flex items-center justify-center gap-1">
-                      STANDARD <CheckCircle2 className="h-3 w-3" />
-                    </div>
-                    <div className="text-2xl font-bold text-gray-900 flex items-center justify-center">
-                      <IndianRupee className="h-5 w-5" />
-                      {getPriceForTier(aiAnalysis.estimatedPrice, 'standard')}
-                    </div>
-                    <div className="text-xs text-teal-600 font-semibold mt-2">AI Price</div>
-                    <div className="text-xs text-gray-600 mt-3">
-                      Recommended pricing
-                    </div>
+                  <div className="text-xs font-medium text-emerald-600 mb-1">Recommended</div>
+                  <div className="text-lg font-bold text-gray-900 flex items-center justify-center">
+                    ₹{getPriceForTier(aiAnalysis.estimatedPrice, 'standard')}
                   </div>
+                  <div className="text-xs text-emerald-600">AI Price</div>
                 </button>
 
-                {/* Priority Tier */}
                 <button
                   onClick={() => setSelectedTier('priority')}
-                  className={`p-4 rounded-lg border-2 transition-all ${
+                  className={`p-3 rounded-xl border-2 transition-all text-center ${
                     selectedTier === 'priority'
-                      ? 'border-purple-600 bg-purple-50'
+                      ? 'border-emerald-500 bg-emerald-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <div className="text-center">
-                    <div className="text-xs font-semibold text-purple-600 mb-2 flex items-center justify-center gap-1">
-                      PRIORITY <Sparkles className="h-3 w-3" />
-                    </div>
-                    <div className="text-2xl font-bold text-gray-900 flex items-center justify-center">
-                      <IndianRupee className="h-5 w-5" />
-                      {getPriceForTier(aiAnalysis.estimatedPrice, 'priority')}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-2">+15%</div>
-                    <div className="text-xs text-gray-600 mt-3">
-                      Faster response guaranteed
-                    </div>
+                  <div className="text-xs font-medium text-gray-500 mb-1">Priority</div>
+                  <div className="text-lg font-bold text-gray-900 flex items-center justify-center">
+                    ₹{getPriceForTier(aiAnalysis.estimatedPrice, 'priority')}
                   </div>
+                  <div className="text-xs text-gray-400">+15%</div>
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-3 text-center">
-                💡 Tip: Priority pricing attracts more helpers for urgent jobs
-              </p>
             </div>
 
-            {/* Severity & Urgency */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm text-gray-600">Severity</Label>
-                <Badge className={`${getSeverityColor(aiAnalysis.severity)} mt-2 text-sm px-3 py-1`}>
-                  <AlertTriangle className="h-4 w-4 mr-1" />
-                  {aiAnalysis.severity.toUpperCase()}
-                </Badge>
-              </div>
-              <div>
-                <Label className="text-sm text-gray-600">Urgency</Label>
-                <Badge className={`${getUrgencyColor(aiAnalysis.urgency)} mt-2 text-sm px-3 py-1`}>
-                  <Clock className="h-4 w-4 mr-1" />
-                  {aiAnalysis.urgency.toUpperCase()}
-                </Badge>
-              </div>
+            {/* Status Badges */}
+            <div className="flex gap-2">
+              <Badge className={`${getSeverityColor(aiAnalysis.severity)} text-xs`}>
+                {aiAnalysis.severity.toUpperCase()}
+              </Badge>
+              <Badge className={`${getUrgencyColor(aiAnalysis.urgency)} text-xs`}>
+                {aiAnalysis.urgency.toUpperCase()}
+              </Badge>
             </div>
 
-            {/* AI Description */}
-            <div>
-              <Label>Professional Assessment</Label>
-              <p className="mt-2 text-sm text-gray-700 bg-gray-50 p-4 rounded-lg">
-                {aiAnalysis.description}
-              </p>
+            {/* Assessment */}
+            <div className="bg-gray-50 rounded-xl p-4">
+              <Label className="text-xs text-gray-500 mb-1 block">AI Assessment</Label>
+              <p className="text-sm text-gray-700">{aiAnalysis.description}</p>
             </div>
 
-            {/* What's Included Section */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-5 border-2 border-green-200 dark:border-green-700">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 bg-green-600 rounded-lg">
-                  <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 className="font-bold text-green-900 dark:text-green-100 text-lg">What's Included in the Price</h3>
-              </div>
-              <ul className="space-y-2 text-sm text-green-800 dark:text-green-200">
-                <li className="flex items-start gap-2">
-                  <span className="text-green-600 mt-0.5">✓</span>
-                  <span><strong>Professional Labor:</strong> Expert service by verified helper</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-600 mt-0.5">✓</span>
-                  <span><strong>Basic Tools:</strong> Helper brings standard tools needed for the job</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-600 mt-0.5">✓</span>
-                  <span><strong>Professional Inspection:</strong> Complete diagnosis and assessment</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-600 mt-0.5">✓</span>
-                  <span><strong>Service Guarantee:</strong> Quality workmanship assured</span>
-                </li>
+            {/* What's Included */}
+            <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+              <h4 className="font-semibold text-emerald-800 text-sm mb-2">✓ What's Included</h4>
+              <ul className="space-y-1 text-xs text-emerald-700">
+                <li>• Professional labor by verified helper</li>
+                <li>• Basic tools & equipment</li>
+                <li>• Complete diagnosis</li>
+                <li>• Service guarantee</li>
               </ul>
             </div>
 
-            {/* Not Included Section */}
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-xl p-5 border-2 border-orange-200 dark:border-orange-700">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 bg-orange-600 rounded-lg">
-                  <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                  </svg>
-                </div>
-                <h3 className="font-bold text-orange-900 dark:text-orange-100 text-lg">Not Included (Billed Separately)</h3>
-              </div>
-              <ul className="space-y-2 text-sm text-orange-800 dark:text-orange-200">
-                <li className="flex items-start gap-2">
-                  <span className="text-orange-600 mt-0.5">✗</span>
-                  <span><strong>Replacement Parts:</strong> Filters, cartridges, valves, or components</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-orange-600 mt-0.5">✗</span>
-                  <span><strong>Materials & Consumables:</strong> Spare parts, adhesives, sealants</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-orange-600 mt-0.5">✗</span>
-                  <span><strong>Specialized Equipment:</strong> Heavy machinery or special tools if needed</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-orange-600 mt-0.5">✗</span>
-                  <span><strong>Transportation:</strong> Parts delivery or emergency call-out fees (if any)</span>
-                </li>
+            {/* Not Included */}
+            <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
+              <h4 className="font-semibold text-amber-800 text-sm mb-2">✗ Not Included</h4>
+              <ul className="space-y-1 text-xs text-amber-700">
+                <li>• Replacement parts (billed separately)</li>
+                <li>• Special materials or consumables</li>
               </ul>
+              <p className="text-xs text-amber-600 mt-2">Helper will inform you before any extra charges</p>
             </div>
 
-            {/* Additional Costs Disclaimer */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-5 border-2 border-blue-200 dark:border-blue-700">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-blue-600 rounded-lg flex-shrink-0">
-                  <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-blue-900 dark:text-blue-100 text-base mb-2">💰 Additional Costs Policy</h3>
-                  <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
-                    The estimated price covers <strong>labor and standard tools only</strong>. If replacement parts or special materials are needed, 
-                    the helper will inform you before proceeding. You can either:
-                  </p>
-                  <ul className="mt-2 space-y-1 text-sm text-blue-700 dark:text-blue-300">
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5">•</span>
-                      <span>Provide the parts yourself (helper will install)</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5">•</span>
-                      <span>Ask the helper to source parts (you'll be charged separately at cost + convenience fee)</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5">•</span>
-                      <span>Review and approve any additional costs before work begins</span>
-                    </li>
-                  </ul>
-                  <p className="mt-3 text-xs text-blue-600 dark:text-blue-400 font-medium bg-blue-100 dark:bg-blue-900/40 px-3 py-2 rounded-lg">
-                    ⚡ No surprises! All additional costs require your approval before proceeding.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Required Skills */}
-            <div>
-              <Label>Required Skills</Label>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {aiAnalysis.requiredSkills.map((skill, idx) => (
-                  <Badge key={idx} variant="outline" className="bg-blue-50">
-                    {skill}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            {/* Materials Needed */}
-            <div>
-              <Label>Materials Needed</Label>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {aiAnalysis.materialsNeeded.map((material, idx) => (
-                  <Badge key={idx} variant="outline" className="bg-green-50">
-                    {material}
-                  </Badge>
-                ))}
-              </div>
+            {/* Skills & Materials */}
+            <div className="flex flex-wrap gap-2">
+              {aiAnalysis.requiredSkills.slice(0, 3).map((skill, idx) => (
+                <Badge key={idx} variant="outline" className="bg-gray-50 text-xs">
+                  {skill}
+                </Badge>
+              ))}
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
+            <div className="flex gap-3 pt-2">
               <Button
                 variant="outline"
                 onClick={() => setStep('upload')}
                 className="flex-1"
                 disabled={broadcasting}
               >
-                Back to Edit
+                Back
               </Button>
               <Button
                 onClick={broadcastToHelpers}
                 disabled={broadcasting}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-teal-600 hover:from-purple-700 hover:to-teal-700 text-lg py-6 disabled:opacity-50"
+                className="flex-[2] bg-emerald-500 hover:bg-emerald-600 text-white py-5 font-bold"
               >
                 {broadcasting ? (
                   <>
                     <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    Notifying Helpers...
+                    Notifying...
                   </>
                 ) : (
                   <>
                     <Sparkles className="h-5 w-5 mr-2" />
-                    Broadcast to All Helpers (₹{getPriceForTier(aiAnalysis.estimatedPrice, selectedTier)})
+                    Broadcast ₹{getPriceForTier(aiAnalysis.estimatedPrice, selectedTier)}
                   </>
                 )}
               </Button>

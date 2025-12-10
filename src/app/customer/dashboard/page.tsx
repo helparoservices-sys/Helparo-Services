@@ -2,20 +2,31 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import Image from 'next/image'
 import { 
   Search, 
   Plus, 
-  Wallet, 
-  Star, 
-  Gift, 
-  TrendingUp,
   CheckCircle,
   Clock,
   ArrowRight,
   MapPin,
   MessageSquare,
   Eye,
-  StarOff
+  Sparkles,
+  Zap,
+  Shield,
+  Star,
+  Calendar,
+  ChevronRight,
+  Wrench,
+  Paintbrush,
+  Truck,
+  Plug,
+  Home,
+  Droplets,
+  Wind,
+  Camera,
+  Gift
 } from 'lucide-react'
 
 const EmergencySOSButton = dynamic(() => import('@/components/emergency-sos-button'), { ssr: false })
@@ -28,7 +39,7 @@ export default async function CustomerDashboard() {
     redirect('/auth/login')
   }
 
-  // Check if phone is verified - redirect to complete-profile if not
+  // Check if phone is verified
   const { data: userProfile } = await supabase
     .from('profiles')
     .select('phone, phone_verified')
@@ -42,7 +53,7 @@ export default async function CustomerDashboard() {
   // Fetch user data
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name')
+    .select('full_name, avatar_url')
     .eq('id', user.id)
     .single()
 
@@ -61,9 +72,9 @@ export default async function CustomerDashboard() {
     .single()
 
   // Fetch recent requests
-  const { data: requests, count: totalRequests } = await supabase
+  const { data: requests } = await supabase
     .from('service_requests')
-    .select('id, title, status, created_at', { count: 'exact' })
+    .select('id, title, status, created_at, city')
     .eq('customer_id', user.id)
     .order('created_at', { ascending: false })
     .limit(5)
@@ -81,316 +92,316 @@ export default async function CustomerDashboard() {
     .eq('customer_id', user.id)
     .eq('status', 'completed')
 
-  const firstName = profile?.full_name?.split(' ')[0] || 'Customer'
-  const availableBalance = Number(wallet?.available_balance || 0)
-  const escrowBalance = Number(wallet?.escrow_balance || 0)
-  const loyaltyPoints = loyalty?.points_balance || 0
-  const tier = loyalty?.tier_level || 'bronze'
+  const firstName = profile?.full_name?.split(' ')[0] || 'there'
+  const greeting = getGreeting()
+
+  function getGreeting() {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 17) return 'Good afternoon'
+    return 'Good evening'
+  }
+
+  const services = [
+    { name: 'Plumber', icon: Droplets, color: 'bg-blue-500', href: '/services/plumber' },
+    { name: 'Electrician', icon: Plug, color: 'bg-amber-500', href: '/services/electrician' },
+    { name: 'Carpenter', icon: Wrench, color: 'bg-orange-600', href: '/services/carpenter' },
+    { name: 'Painter', icon: Paintbrush, color: 'bg-pink-500', href: '/services/painter' },
+    { name: 'AC Repair', icon: Wind, color: 'bg-cyan-500', href: '/services/ac-repair' },
+    { name: 'Cleaning', icon: Home, color: 'bg-emerald-500', href: '/services/cleaning' },
+    { name: 'Movers', icon: Truck, color: 'bg-purple-500', href: '/services/movers' },
+    { name: 'More', icon: Plus, color: 'bg-gray-600', href: '/services' },
+  ]
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white shadow-lg">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2">Welcome back, {firstName}!</h1>
-            <p className="text-blue-100">Manage your service requests and track your rewards</p>
+    <div className="min-h-screen bg-white">
+      {/* Clean Header */}
+      <div className="bg-white border-b border-gray-100 sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            {/* Logo & Greeting */}
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-emerald-500 rounded-xl flex items-center justify-center">
+                <span className="text-white font-bold text-lg">H</span>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 font-medium">{greeting}</p>
+                <h1 className="text-lg font-bold text-gray-900">{firstName}</h1>
+              </div>
+            </div>
+            
+            {/* Right Actions */}
+            <div className="flex items-center gap-3">
+              <Link 
+                href="/customer/wallet" 
+                className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl hover:bg-emerald-100 transition-colors"
+              >
+                <Gift className="h-4 w-4" />
+                <span className="font-semibold text-sm">₹{wallet?.available_balance || 0}</span>
+              </Link>
+              <Link href="/customer/profile" className="relative">
+                <div className="h-10 w-10 rounded-full bg-gray-100 overflow-hidden border-2 border-gray-200">
+                  {profile?.avatar_url ? (
+                    <Image 
+                      src={profile.avatar_url} 
+                      alt={firstName} 
+                      width={40} 
+                      height={40}
+                      className="object-cover w-full h-full"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-emerald-500 text-white font-bold">
+                      {firstName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
+                  <CheckCircle className="h-2.5 w-2.5 text-white" />
+                </div>
+              </Link>
+            </div>
           </div>
-          <EmergencySOSButton className="bg-red-500 hover:bg-red-600 text-white" />
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* === HIDDEN FOR PLAY STORE DEPLOYMENT - WALLET BALANCE CARD ===
-        * TODO: Uncomment when payment integration is complete
-        <Link 
-          href="/customer/wallet"
-          className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-green-300 dark:hover:border-green-600 transition-all cursor-pointer group"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-600 dark:text-slate-400 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">Wallet Balance</span>
-            <Wallet className="h-5 w-5 text-green-600 group-hover:scale-110 transition-transform" />
-          </div>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">₹{availableBalance.toFixed(2)}</p>
-          <p className="text-xs text-slate-500 mt-1">Escrow: ₹{escrowBalance.toFixed(2)}</p>
-        </Link>
-        === END HIDDEN WALLET CARD === */}
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        {/* Main Heading */}
+        <div className="mb-5">
+          <h2 className="text-xl font-bold text-gray-900">What do you need help with?</h2>
+          <p className="text-gray-500 text-sm">Choose how you want to find help</p>
+        </div>
 
-        <Link 
-          href="/customer/bookings?tab=active"
-          className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600 transition-all cursor-pointer group"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-600 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Active Requests</span>
-            <Clock className="h-5 w-5 text-blue-600 group-hover:scale-110 transition-transform" />
-          </div>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">{activeRequests || 0}</p>
-          <p className="text-xs text-slate-500 mt-1">In progress</p>
-        </Link>
-
-        <Link 
-          href="/customer/bookings?tab=completed"
-          className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-green-300 dark:hover:border-green-600 transition-all cursor-pointer group"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-600 dark:text-slate-400 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">Completed</span>
-            <CheckCircle className="h-5 w-5 text-green-600 group-hover:scale-110 transition-transform" />
-          </div>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">{completedRequests || 0}</p>
-          <p className="text-xs text-slate-500 mt-1">Total jobs done</p>
-        </Link>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-        <Link 
-          href="/customer/requests/ai"
-          className="block bg-gradient-to-br from-purple-600 via-violet-600 to-fuchsia-600 text-white rounded-2xl p-6 shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 group relative overflow-hidden hover:scale-[1.02] transform"
-        >
-          {/* Animated gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-pink-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-          
-          {/* Sparkle effects */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-300/10 rounded-full blur-3xl group-hover:bg-yellow-300/20 transition-all duration-500"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-teal-300/10 rounded-full blur-2xl group-hover:bg-teal-300/20 transition-all duration-500"></div>
-          
-          <div className="relative z-10">
-            <div className="absolute top-0 right-0 flex items-center gap-1">
-              <span className="bg-gradient-to-r from-yellow-300 to-yellow-400 text-yellow-900 text-xs font-extrabold px-3 py-1.5 rounded-full shadow-lg animate-pulse flex items-center gap-1">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-                AI MAGIC
-              </span>
-            </div>
-            
-            <div className="flex items-start gap-4 mb-4 mt-2">
-              <div className="p-3 bg-white/25 backdrop-blur-sm rounded-2xl shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300">
-                <svg className="h-8 w-8 text-white drop-shadow-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-2xl font-bold mb-1 drop-shadow-md">AI Smart Request</h3>
-                <div className="flex items-center gap-2 text-xs font-medium text-purple-100">
-                  <span className="bg-white/20 px-2 py-0.5 rounded-full">⚡ Instant</span>
-                  <span className="bg-white/20 px-2 py-0.5 rounded-full">🎯 Accurate</span>
-                  <span className="bg-white/20 px-2 py-0.5 rounded-full">🚀 Fast</span>
-                </div>
-              </div>
-            </div>
-            
-            <p className="text-sm text-white/95 mb-4 leading-relaxed font-medium">
-              📸 <span className="font-bold">Snap photos</span> → Get <span className="font-bold text-yellow-300">AI-powered pricing</span> in seconds → <span className="font-bold">Notify all helpers</span> instantly! 
-            </p>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-purple-100 font-medium">🤖 Powered by Advanced AI</span>
-                <span className="text-xs text-purple-100 font-medium">⏱️ Save 10+ minutes per request</span>
-              </div>
-              <div className="flex items-center gap-2 text-base font-bold bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full group-hover:bg-white/30 group-hover:gap-3 transition-all shadow-lg">
-                Try Now <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-          </div>
-        </Link>
-
-        <Link 
-          href="/customer/requests/new"
-          className="block bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 text-white rounded-2xl p-6 shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 group relative overflow-hidden hover:scale-[1.02] transform"
-        >
-          {/* Animated gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-indigo-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-          
-          {/* Glow effects */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-300/10 rounded-full blur-3xl group-hover:bg-cyan-300/20 transition-all duration-500"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-indigo-300/10 rounded-full blur-2xl group-hover:bg-indigo-300/20 transition-all duration-500"></div>
-          
-          <div className="relative z-10">
-            <div className="absolute top-0 right-0">
-              <span className="bg-gradient-to-r from-green-300 to-emerald-400 text-green-900 text-xs font-extrabold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                VERIFIED
-              </span>
-            </div>
-            
-            <div className="flex items-start gap-4 mb-4 mt-2">
-              <div className="p-3 bg-white/25 backdrop-blur-sm rounded-2xl shadow-lg group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300">
-                <Search className="h-8 w-8 text-white drop-shadow-lg" strokeWidth={2.5} />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-2xl font-bold mb-1 drop-shadow-md">Get Quotes</h3>
-                <div className="flex items-center gap-2 text-xs font-medium text-blue-100">
-                  <span className="bg-white/20 px-2 py-0.5 rounded-full">💰 Best Prices</span>
-                  <span className="bg-white/20 px-2 py-0.5 rounded-full">👥 Multiple Bids</span>
-                  <span className="bg-white/20 px-2 py-0.5 rounded-full">✅ Verified</span>
-                </div>
-              </div>
-            </div>
-            
-            <p className="text-sm text-white/95 mb-4 leading-relaxed font-medium">
-              📝 <span className="font-bold">Post your needs</span> → Receive <span className="font-bold text-cyan-300">competitive quotes</span> from verified helpers → <span className="font-bold">Choose the best!</span>
-            </p>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-blue-100 font-medium">🎯 Compare prices instantly</span>
-                <span className="text-xs text-blue-100 font-medium">💯 100% verified helpers</span>
-              </div>
-              <div className="flex items-center gap-2 text-base font-bold bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full group-hover:bg-white/30 group-hover:gap-3 transition-all shadow-lg">
-                Get Started <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-          </div>
-        </Link>
-      </div>
-
-      {/* Recent Requests */}
-      <div className="bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 rounded-2xl p-6 shadow-lg border border-slate-200 dark:border-slate-700">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Clock className="h-6 w-6 text-purple-600" />
-              Recent Activity
-            </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Your latest service requests</p>
-          </div>
+        {/* Two Main Options - 60/40 Priority */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* AI Smart Request - 60% Priority (slightly more prominent) */}
           <Link 
-            href="/customer/requests" 
-            className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-semibold flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all"
+            href="/customer/requests/ai"
+            className="relative bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 rounded-2xl p-5 overflow-hidden group hover:shadow-xl hover:shadow-emerald-500/20 transition-all"
           >
-            View All <ArrowRight className="h-4 w-4" />
+            {/* Decorative */}
+            <div className="absolute right-0 top-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4"></div>
+            <div className="absolute right-8 bottom-0 w-16 h-16 bg-white/10 rounded-full translate-y-1/2"></div>
+            
+            <div className="relative z-10">
+              {/* Badge */}
+              <div className="inline-flex items-center gap-1.5 bg-amber-400 text-amber-900 text-xs font-bold px-2.5 py-1 rounded-full mb-3">
+                <Zap className="h-3 w-3" />
+                RECOMMENDED
+              </div>
+              
+              <div className="flex items-start gap-3 mb-3">
+                <div className="h-12 w-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Camera className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-white">AI Smart Request</h3>
+                  <p className="text-emerald-100 text-xs mt-0.5">Instant pricing • Auto-match helpers</p>
+                </div>
+              </div>
+              
+              <p className="text-emerald-50 text-sm mb-4">
+                Snap a photo, describe your issue, and get <span className="font-semibold text-amber-300">instant AI quotes</span> in seconds!
+              </p>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4 text-xs text-emerald-100">
+                  <span className="flex items-center gap-1"><Sparkles className="h-3 w-3" /> AI Pricing</span>
+                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> 30 sec</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white text-emerald-600 font-bold px-4 py-2 rounded-xl shadow-lg group-hover:gap-3 transition-all text-sm">
+                  Try Now
+                  <ArrowRight className="h-4 w-4" />
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          {/* Get Quotes / Bidding - 40% Priority (still prominent!) */}
+          <Link 
+            href="/customer/requests/new"
+            className="relative bg-white border-2 border-gray-200 hover:border-emerald-300 rounded-2xl p-5 overflow-hidden group hover:shadow-xl transition-all"
+          >
+            {/* Decorative */}
+            <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-full -translate-y-1/2 translate-x-1/4"></div>
+            
+            <div className="relative z-10">
+              {/* Badge */}
+              <div className="inline-flex items-center gap-1.5 bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full mb-3">
+                <Star className="h-3 w-3" />
+                BEST PRICES
+              </div>
+              
+              <div className="flex items-start gap-3 mb-3">
+                <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <Search className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-gray-900">Get Multiple Quotes</h3>
+                  <p className="text-gray-500 text-xs mt-0.5">Compare bids • Choose your pro</p>
+                </div>
+              </div>
+              
+              <p className="text-gray-600 text-sm mb-4">
+                Post your request and receive <span className="font-semibold text-blue-600">competitive bids</span> from verified helpers. You choose the best!
+              </p>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <span className="flex items-center gap-1"><Shield className="h-3 w-3" /> Verified</span>
+                  <span className="flex items-center gap-1"><CheckCircle className="h-3 w-3" /> 5+ Bids</span>
+                </div>
+                <div className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold px-4 py-2 rounded-xl shadow-lg group-hover:gap-3 transition-all text-sm">
+                  Post Request
+                  <ArrowRight className="h-4 w-4" />
+                </div>
+              </div>
+            </div>
           </Link>
         </div>
 
-        {requests && requests.length > 0 ? (
-          <div className="space-y-3">
-            {requests.slice(0, 3).map((req: any) => (
-              <div
-                key={req.id}
-                className="group relative bg-white dark:bg-slate-800 rounded-xl p-5 border-2 border-slate-100 dark:border-slate-700 hover:border-purple-200 dark:hover:border-purple-700 hover:shadow-xl transition-all duration-300"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-start gap-3 mb-2">
-                      <div className={`p-2 rounded-lg ${
-                        req.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30' :
-                        req.status === 'in_progress' ? 'bg-blue-100 dark:bg-blue-900/30' :
-                        req.status === 'assigned' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
-                        'bg-slate-100 dark:bg-slate-700'
-                      }`}>
-                        {req.status === 'completed' ? (
-                          <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-                        ) : req.status === 'in_progress' ? (
-                          <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                        ) : (
-                          <Star className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-bold text-slate-900 dark:text-white text-lg group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                          {req.title}
-                        </h3>
-                        <div className="flex items-center gap-3 mt-1">
-                          <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                            <Clock className="h-3.5 w-3.5" />
-                            {new Date(req.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          </p>
-                          {req.service_address && (
-                            <p className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {req.city || 'Location'}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+        {/* Quick Stats */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <Link 
+            href="/customer/bookings?tab=active"
+            className="bg-gray-50 hover:bg-gray-100 rounded-xl p-4 transition-colors group text-center"
+          >
+            <p className="text-2xl font-bold text-gray-900">{activeRequests || 0}</p>
+            <p className="text-xs text-gray-500">Active</p>
+          </Link>
+          
+          <Link 
+            href="/customer/bookings?tab=completed"
+            className="bg-gray-50 hover:bg-gray-100 rounded-xl p-4 transition-colors group text-center"
+          >
+            <p className="text-2xl font-bold text-gray-900">{completedRequests || 0}</p>
+            <p className="text-xs text-gray-500">Completed</p>
+          </Link>
 
-                  <div className="flex flex-col items-end gap-2">
-                    <span className={`px-3 py-1.5 text-xs font-bold rounded-full shadow-sm ${
-                      req.status === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' :
-                      req.status === 'in_progress' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' :
-                      req.status === 'assigned' ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-white' :
-                      'bg-gradient-to-r from-slate-400 to-slate-500 text-white'
-                    }`}>
-                      {req.status === 'completed' ? '✓ Completed' :
-                       req.status === 'in_progress' ? '⚡ In Progress' :
-                       req.status === 'assigned' ? '👤 Assigned' :
-                       req.status.replace('_', ' ')}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                  {req.status === 'completed' ? (
-                    <>
-                      <Link
-                        href={`/customer/requests/${req.id}/review`}
-                        className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-bold py-2.5 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 group/btn"
-                      >
-                        <Star className="h-4 w-4 group-hover/btn:scale-110 transition-transform" />
-                        Rate Helper
-                      </Link>
-                      <Link
-                        href={`/customer/requests/${req.id}`}
-                        className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-semibold py-2.5 px-4 rounded-lg transition-all"
-                      >
-                        <Eye className="h-4 w-4" />
-                        View
-                      </Link>
-                    </>
-                  ) : req.status === 'in_progress' || req.status === 'assigned' ? (
-                    <>
-                      <Link
-                        href={`/customer/requests/${req.id}/chat`}
-                        className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold py-2.5 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                        Chat with Helper
-                      </Link>
-                      <Link
-                        href={`/customer/requests/${req.id}`}
-                        className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-semibold py-2.5 px-4 rounded-lg transition-all"
-                      >
-                        <Eye className="h-4 w-4" />
-                        Track
-                      </Link>
-                    </>
-                  ) : (
-                    <Link
-                      href={`/customer/requests/${req.id}`}
-                      className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-bold py-2.5 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
-                    >
-                      <Eye className="h-4 w-4" />
-                      View Details
-                    </Link>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full mb-4">
-              <StarOff className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+          <div className="bg-red-50 hover:bg-red-100 rounded-xl p-4 transition-colors text-center">
+            <div className="flex items-center justify-center mb-1">
+              <Shield className="h-5 w-5 text-red-500" />
             </div>
-            <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">No service requests yet</p>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Start by creating your first request!</p>
-            <Link 
-              href="/customer/requests/new" 
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all"
-            >
-              <Plus className="h-5 w-5" />
-              Create Request
+            <EmergencySOSButton className="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg font-semibold" />
+          </div>
+        </div>
+
+        {/* Services Grid */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-900">Popular Services</h2>
+            <Link href="/services" className="text-emerald-600 text-sm font-semibold flex items-center gap-1 hover:text-emerald-700">
+              See all <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
-        )}
+          
+          <div className="grid grid-cols-4 gap-3">
+            {services.map((service) => (
+              <Link 
+                key={service.name}
+                href={service.href}
+                className="flex flex-col items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all hover:scale-105 group"
+              >
+                <div className={`h-12 w-12 ${service.color} rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow`}>
+                  <service.icon className="h-6 w-6 text-white" />
+                </div>
+                <span className="text-xs font-medium text-gray-700 text-center">{service.name}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent Activity - Clean List */}
+        <div className="bg-white rounded-xl border border-gray-100">
+          <div className="flex items-center justify-between p-4 border-b border-gray-100">
+            <h2 className="font-bold text-gray-900">Recent Activity</h2>
+            <Link href="/customer/requests" className="text-emerald-600 text-sm font-semibold flex items-center gap-1 hover:text-emerald-700">
+              View all <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          {requests && requests.length > 0 ? (
+            <div className="divide-y divide-gray-50">
+              {requests.slice(0, 4).map((req: any) => (
+                <Link
+                  key={req.id}
+                  href={`/customer/requests/${req.id}`}
+                  className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                      req.status === 'completed' 
+                        ? 'bg-emerald-100' 
+                        : req.status === 'in_progress' 
+                          ? 'bg-blue-100' 
+                          : 'bg-amber-100'
+                    }`}>
+                      {req.status === 'completed' ? (
+                        <CheckCircle className="h-5 w-5 text-emerald-600" />
+                      ) : req.status === 'in_progress' ? (
+                        <Clock className="h-5 w-5 text-blue-600" />
+                      ) : (
+                        <Sparkles className="h-5 w-5 text-amber-600" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 text-sm">{req.title}</p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(req.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {req.city && ` · ${req.city}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                      req.status === 'completed' 
+                        ? 'bg-emerald-100 text-emerald-700' 
+                        : req.status === 'in_progress' 
+                          ? 'bg-blue-100 text-blue-700' 
+                          : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {req.status === 'completed' ? 'Done' :
+                       req.status === 'in_progress' ? 'Active' : 'Open'}
+                    </span>
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center">
+              <div className="h-16 w-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Sparkles className="h-8 w-8 text-gray-400" />
+              </div>
+              <p className="text-gray-900 font-medium mb-1">No requests yet</p>
+              <p className="text-gray-500 text-sm mb-4">Create your first request to get started</p>
+              <Link 
+                href="/customer/requests/new" 
+                className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                Create Request
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Trust Badges - Bottom */}
+        <div className="mt-6 flex items-center justify-center gap-6 py-4">
+          <div className="flex items-center gap-2 text-gray-400">
+            <Shield className="h-4 w-4" />
+            <span className="text-xs font-medium">100% Verified</span>
+          </div>
+          <div className="w-px h-4 bg-gray-200"></div>
+          <div className="flex items-center gap-2 text-gray-400">
+            <Star className="h-4 w-4" />
+            <span className="text-xs font-medium">4.8★ Rated</span>
+          </div>
+          <div className="w-px h-4 bg-gray-200"></div>
+          <div className="flex items-center gap-2 text-gray-400">
+            <Zap className="h-4 w-4" />
+            <span className="text-xs font-medium">Fast Response</span>
+          </div>
+        </div>
       </div>
     </div>
   )
