@@ -134,6 +134,20 @@ export async function POST(request: NextRequest) {
     // Generate unique order ID
     const orderId = `HLP_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`
 
+    // Get base URL - Cashfree requires HTTPS in production
+    const getBaseUrl = () => {
+      // In production or when CASHFREE_ENVIRONMENT is PRODUCTION, always use HTTPS
+      if (CASHFREE_ENV === 'PRODUCTION') {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helparo.in'
+        // Force HTTPS if APP_URL is configured with http://
+        return appUrl.replace(/^http:/, 'https:')
+      }
+      // In test mode, allow HTTP (for local development)
+      return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    }
+
+    const baseUrl = getBaseUrl()
+
     // Create Cashfree order
     const cashfreeOrderData = {
       order_id: orderId,
@@ -146,8 +160,8 @@ export async function POST(request: NextRequest) {
         customer_phone: customer_phone.replace(/\D/g, '').slice(-10), // Last 10 digits
       },
       order_meta: {
-        return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://helparo.in'}/customer/bookings?payment=success&order_id=${orderId}`,
-        notify_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://helparo.in'}/api/payments/webhook`,
+        return_url: `${baseUrl}/customer/bookings?payment=success&order_id=${orderId}`,
+        notify_url: `${baseUrl}/api/payments/webhook`,
         payment_methods: null, // Allow all methods
       },
       order_note: order_note || `Payment for: ${serviceRequest.title || 'Service Request'}`,
@@ -240,8 +254,9 @@ export async function POST(request: NextRequest) {
       environment: CASHFREE_ENV,
     })
 
-  } catch (error: any) {
-    logger.error('Create order error', { error: error.message })
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    logger.error('Create order error', { error: errorMessage })
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
