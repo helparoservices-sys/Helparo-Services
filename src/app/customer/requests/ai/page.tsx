@@ -31,6 +31,52 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
+// CRITICAL: Compress image for mobile - reduces 10MB phone photos to ~100KB
+const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.6): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+        
+        // Scale down if needed
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width
+          width = maxWidth
+        }
+        
+        canvas.width = width
+        canvas.height = height
+        
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'))
+          return
+        }
+        
+        ctx.drawImage(img, 0, 0, width, height)
+        
+        // Convert to JPEG with compression
+        const compressedBase64 = canvas.toDataURL('image/jpeg', quality)
+        
+        // Log compression stats
+        const originalSize = (file.size / 1024).toFixed(0)
+        const compressedSize = (compressedBase64.length * 0.75 / 1024).toFixed(0)
+        console.log(`📸 Image compressed: ${originalSize}KB → ${compressedSize}KB`)
+        
+        resolve(compressedBase64)
+      }
+      img.onerror = () => reject(new Error('Failed to load image'))
+      img.src = e.target?.result as string
+    }
+    reader.onerror = () => reject(new Error('Failed to read file'))
+    reader.readAsDataURL(file)
+  })
+}
+
 interface AIAnalysis {
   estimatedPrice: number
   estimatedDuration: number
@@ -70,8 +116,8 @@ export default function AIRequestPage() {
 
   const [broadcasting, setBroadcasting] = useState(false)
 
-  // Handle image upload from gallery
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle image upload from gallery - WITH COMPRESSION
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
 
@@ -80,27 +126,35 @@ export default function AIRequestPage() {
       return
     }
 
-    const readers: Promise<string>[] = []
+    // Compress all images - CRITICAL for mobile
+    toast.info('Compressing images...')
     
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader()
-      const promise = new Promise<string>((resolve) => {
-        reader.onloadend = () => {
-          resolve(reader.result as string)
-        }
-        reader.readAsDataURL(file)
-      })
-      readers.push(promise)
+    const compressionPromises = Array.from(files).map(async (file) => {
+      try {
+        return await compressImage(file, 800, 0.6)
+      } catch (err) {
+        console.error('Compression failed for file:', file.name, err)
+        // Fallback to original if compression fails
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.readAsDataURL(file)
+        })
+      }
     })
 
-    Promise.all(readers).then((results) => {
+    try {
+      const results = await Promise.all(compressionPromises)
       setImages((prev) => [...prev, ...results].slice(0, 5)) // Max 5 images
       toast.success(`${results.length} image(s) uploaded`)
-    })
+    } catch (err) {
+      console.error('Image upload error:', err)
+      toast.error('Failed to upload images')
+    }
   }
 
-  // Handle camera capture
-  const handleCameraCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle camera capture - WITH COMPRESSION
+  const handleCameraCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || !files[0]) return
 
@@ -110,12 +164,22 @@ export default function AIRequestPage() {
     }
 
     const file = files[0]
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setImages((prev) => [...prev, reader.result as string].slice(0, 5))
+    toast.info('Processing photo...')
+    
+    try {
+      const compressed = await compressImage(file, 800, 0.6)
+      setImages((prev) => [...prev, compressed].slice(0, 5))
       toast.success('Photo captured!')
+    } catch (err) {
+      console.error('Camera capture compression failed:', err)
+      // Fallback to original
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImages((prev) => [...prev, reader.result as string].slice(0, 5))
+        toast.success('Photo captured!')
+      }
+      reader.readAsDataURL(file)
     }
-    reader.readAsDataURL(file)
   }
 
   // Handle video upload
