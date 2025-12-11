@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { analyzeJobWithAI } from '@/lib/ai-service'
 
+// Increase timeout for AI analysis (Vercel Pro: 60s, Hobby: 10s)
+export const maxDuration = 30 // 30 seconds max
+
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+  
   try {
     const supabase = await createClient()
     
@@ -54,16 +59,28 @@ export async function POST(request: NextRequest) {
       location
     )
 
-    console.log('✅ AI Analysis completed:', analysis)
+    const duration = Date.now() - startTime
+    console.log(`✅ AI Analysis completed in ${duration}ms:`, analysis)
 
     return NextResponse.json({
       success: true,
       analysis,
+      duration,
     })
   } catch (error: any) {
-    console.error('❌ AI Analysis API Error:', error)
+    const duration = Date.now() - startTime
+    console.error(`❌ AI Analysis API Error after ${duration}ms:`, error)
+    
+    // Return a more helpful error message
+    let errorMessage = 'AI analysis failed'
+    if (error.message?.includes('timeout')) {
+      errorMessage = 'AI analysis took too long. Please try again.'
+    } else if (error.message?.includes('quota') || error.message?.includes('rate')) {
+      errorMessage = 'AI service is busy. Please try again in a moment.'
+    }
+    
     return NextResponse.json(
-      { error: error.message || 'AI analysis failed' },
+      { error: errorMessage, details: error.message },
       { status: 500 }
     )
   }

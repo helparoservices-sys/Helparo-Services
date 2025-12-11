@@ -4,6 +4,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 const apiKey = process.env.GEMINI_API_KEY || ''
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null
 
+// Track API calls for rate limiting
+let lastApiCall = 0
+const MIN_API_INTERVAL = 1000 // 1 second between calls
+
 interface AIAnalysisResult {
   estimatedPrice: number
   estimatedDuration: number
@@ -107,19 +111,63 @@ export async function analyzeJobWithAI(
     return estimatePriceFromDescription(description, categoryName)
   }
 
-  try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
+  // Rate limiting check
+  const now = Date.now()
+  const timeSinceLastCall = now - lastApiCall
+  if (timeSinceLastCall < MIN_API_INTERVAL) {
+    console.log(`⏳ Rate limiting: waiting ${MIN_API_INTERVAL - timeSinceLastCall}ms`)
+    await new Promise(resolve => setTimeout(resolve, MIN_API_INTERVAL - timeSinceLastCall))
+  }
+  lastApiCall = Date.now()
 
-    // Prepare image parts for Gemini
-    const imageParts = images.map((base64Image) => ({
-      inlineData: {
-        data: base64Image.split(',')[1] || base64Image, // Remove data:image/jpeg;base64, prefix if present
-        mimeType: 'image/jpeg',
-      },
-    }))
+  // Retry logic
+  const maxRetries = 2
+  let lastError: Error | null = null
 
-    // Create comprehensive prompt for job analysis
-    const prompt = `You are an expert in home services and repair estimation. Analyze the following job request:
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      if (attempt > 0) {
+        console.log(`🔄 Retry attempt ${attempt}/${maxRetries}`)
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt)) // Exponential backoff
+      }
+
+      const model = genAI.getGenerativeModel({ 
+        model: 'gemini-1.5-flash', // More stable than gemini-2.0-flash-exp
+        generationConfig: {
+          temperature: 0.3, // Lower temperature for more consistent results
+          maxOutputTokens: 1024,
+        }
+      })
+
+      // Limit to first 2 images to reduce payload size
+      const limitedImages = images.slice(0, 2)
+      
+      // Prepare image parts for Gemini with size check
+      const imageParts = limitedImages.map((base64Image) => {
+        let imageData = base64Image.split(',')[1] || base64Image
+        
+        // If image is too large (> 1MB base64 ~ 750KB actual), skip it
+        if (imageData.length > 1000000) {
+          console.log('⚠️ Image too large, skipping')
+          return null
+        }
+        
+        return {
+          inlineData: {
+            data: imageData,
+            mimeType: 'image/jpeg',
+          },
+        }
+      }).filter(Boolean)
+
+      // If no valid images, use fallback
+      if (imageParts.length === 0) {
+        console.log('⚠️ No valid images for AI, using smart estimation')
+        return estimatePriceFromDescription(description, categoryName)
+      }
+
+      // Create comprehensive prompt for job analysis
+      const prompt = `You are an expert in home services and repair estimation. Analyze the following job request:
 
 **Service Category:** ${categoryName}
 **Customer Description:** ${description}
@@ -167,40 +215,54 @@ Based on the images and description provided, analyze and provide:
 
 Respond with ONLY valid JSON, no additional text.`
 
-    // Generate content with images
-    const result = await model.generateContent([prompt, ...imageParts])
-    const response = await result.response
-    const text = response.text()
+      // Generate content with images - add timeout
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('AI request timeout')), 25000) // 25 second timeout
+      })
 
-    console.log('🤖 AI Raw Response:', text)
+      const resultPromise = model.generateContent([prompt, ...imageParts])
+      const result = await Promise.race([resultPromise, timeoutPromise])
+      
+      const response = await result.response
+      const text = response.text()
 
-    // Parse JSON response
-    let jsonText = text.trim()
-    
-    // Remove markdown code blocks if present
-    if (jsonText.startsWith('```json')) {
-      jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '')
-    } else if (jsonText.startsWith('```')) {
-      jsonText = jsonText.replace(/```\n?/g, '')
+      console.log('🤖 AI Raw Response:', text.substring(0, 200) + '...')
+
+      // Parse JSON response
+      let jsonText = text.trim()
+      
+      // Remove markdown code blocks if present
+      if (jsonText.startsWith('```json')) {
+        jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '')
+      } else if (jsonText.startsWith('```')) {
+        jsonText = jsonText.replace(/```\n?/g, '')
+      }
+
+      const analysis: AIAnalysisResult = JSON.parse(jsonText)
+
+      // Validate and apply constraints
+      analysis.estimatedPrice = Math.max(100, Math.min(50000, analysis.estimatedPrice)) // Min ₹100, Max ₹50,000
+      analysis.estimatedDuration = Math.max(15, Math.min(480, analysis.estimatedDuration)) // Min 15min, Max 8hrs
+      analysis.confidence = Math.max(0, Math.min(100, analysis.confidence))
+
+      console.log('✅ AI Analysis Result:', analysis)
+
+      return analysis
+    } catch (error: any) {
+      lastError = error
+      console.error(`❌ AI Analysis Error (attempt ${attempt + 1}):`, error.message || error)
+      
+      // Don't retry on certain errors
+      if (error.message?.includes('quota') || error.message?.includes('rate limit')) {
+        console.log('🚫 Rate limit hit, using fallback immediately')
+        break
+      }
     }
-
-    const analysis: AIAnalysisResult = JSON.parse(jsonText)
-
-    // Validate and apply constraints
-    analysis.estimatedPrice = Math.max(100, Math.min(50000, analysis.estimatedPrice)) // Min ₹100, Max ₹50,000
-    analysis.estimatedDuration = Math.max(15, Math.min(480, analysis.estimatedDuration)) // Min 15min, Max 8hrs
-    analysis.confidence = Math.max(0, Math.min(100, analysis.confidence))
-
-    console.log('✅ AI Analysis Result:', analysis)
-
-    return analysis
-  } catch (error) {
-    console.error('❌ AI Analysis Error:', error)
-    
-    // Fallback to smart estimation based on category and description
-    console.log('📊 Using smart estimation fallback')
-    return estimatePriceFromDescription(description, categoryName)
   }
+
+  // All retries failed, use fallback
+  console.log('📊 All retries failed, using smart estimation fallback')
+  return estimatePriceFromDescription(description, categoryName)
 }
 
 /**
