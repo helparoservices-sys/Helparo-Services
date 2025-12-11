@@ -37,9 +37,9 @@ function SignUpForm() {
     setGoogleLoading(true)
 
     try {
-      // Clear any existing role data - role will be selected on complete-signup page
-      localStorage.removeItem('pendingSignupRole')
-      localStorage.removeItem('roleSelected')
+      // Save the selected role to localStorage so complete-signup can use it
+      localStorage.setItem('pendingSignupRole', formData.role)
+      localStorage.setItem('roleSelected', 'true')
       
       const { error: googleError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -156,7 +156,7 @@ function SignUpForm() {
         <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
           <div className="w-full max-w-md">
             {/* Welcome Text */}
-            <div className="mb-8">
+            <div className="mb-6">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 Create your account
               </h1>
@@ -165,6 +165,34 @@ function SignUpForm() {
                   ? `Book ${serviceParam} service in minutes`
                   : 'Join thousands of happy customers'}
               </p>
+            </div>
+
+            {/* Role Selection */}
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, role: 'customer' })}
+                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  formData.role === 'customer'
+                    ? 'border-emerald-500 bg-emerald-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <p className="font-semibold text-gray-900">Find Services</p>
+                <p className="text-sm text-gray-500">I need help</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, role: 'helper' })}
+                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  formData.role === 'helper'
+                    ? 'border-emerald-500 bg-emerald-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <p className="font-semibold text-gray-900">Offer Services</p>
+                <p className="text-sm text-gray-500">I want to earn</p>
+              </button>
             </div>
 
             {/* Google Sign Up */}

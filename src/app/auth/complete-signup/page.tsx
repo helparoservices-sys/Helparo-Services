@@ -130,20 +130,10 @@ export default function CompleteSignupPage() {
           return
         }
 
-        // Clear any stale localStorage data
-        localStorage.removeItem('pendingSignupRole')
-        localStorage.removeItem('roleSelected')
-
-        // Check if profile already has a valid role set in DB
-        if (profile?.role && profile.role !== '') {
-          // Role already in DB - skip role selection, go to verification
-          setFinalRole(profile.role)
-          setStep('verify')
-          setTimeout(initializeRecaptcha, 500)
-        } else {
-          // No role yet - show role selection first
-          setStep('selectRole')
-        }
+        // For complete-signup, always show role selection first
+        // This is the user's first time setting up their account
+        // They should explicitly choose if they want to be a customer or helper
+        setStep('selectRole')
       } catch (err) {
         console.error('Check error:', err)
         setStep('error')
@@ -176,6 +166,8 @@ export default function CompleteSignupPage() {
   // Role selection handler
   const handleRoleSelect = (role: 'customer' | 'helper') => {
     setFinalRole(role)
+    localStorage.setItem('roleSelected', 'true')
+    localStorage.setItem('pendingSignupRole', role)
     setStep('verify')
     setTimeout(initializeRecaptcha, 500)
   }
@@ -290,6 +282,9 @@ export default function CompleteSignupPage() {
       const result = await signInWithPhoneNumber(auth, fullPhone, recaptchaVerifier)
       setConfirmationResult(result)
       setMaskedPhone(`******${phone.slice(-4)}`)
+      
+      localStorage.removeItem('pendingSignupRole')
+      localStorage.removeItem('roleSelected')
 
       // Move to OTP verification
       setStep('otpVerify')
