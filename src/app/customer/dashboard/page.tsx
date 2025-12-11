@@ -103,14 +103,14 @@ export default async function CustomerDashboard() {
   }
 
   const services = [
-    { name: 'Plumber', icon: Droplets, color: 'bg-blue-500', href: '/services/plumber' },
-    { name: 'Electrician', icon: Plug, color: 'bg-amber-500', href: '/services/electrician' },
-    { name: 'Carpenter', icon: Wrench, color: 'bg-orange-600', href: '/services/carpenter' },
-    { name: 'Painter', icon: Paintbrush, color: 'bg-pink-500', href: '/services/painter' },
-    { name: 'AC Repair', icon: Wind, color: 'bg-cyan-500', href: '/services/ac-repair' },
-    { name: 'Cleaning', icon: Home, color: 'bg-emerald-500', href: '/services/cleaning' },
-    { name: 'Movers', icon: Truck, color: 'bg-purple-500', href: '/services/movers' },
-    { name: 'More', icon: Plus, color: 'bg-gray-600', href: '/services' },
+    { name: 'Plumber', emoji: '🔧', icon: Droplets, color: 'bg-blue-500', lightBg: 'bg-blue-50', href: '/services/plumber' },
+    { name: 'Electrician', emoji: '⚡', icon: Plug, color: 'bg-amber-500', lightBg: 'bg-amber-50', href: '/services/electrician' },
+    { name: 'Carpenter', emoji: '🪚', icon: Wrench, color: 'bg-orange-600', lightBg: 'bg-orange-50', href: '/services/carpenter' },
+    { name: 'Painter', emoji: '🎨', icon: Paintbrush, color: 'bg-pink-500', lightBg: 'bg-pink-50', href: '/services/painter' },
+    { name: 'AC Repair', emoji: '❄️', icon: Wind, color: 'bg-cyan-500', lightBg: 'bg-cyan-50', href: '/services/ac-repair' },
+    { name: 'Cleaning', emoji: '🧹', icon: Home, color: 'bg-emerald-500', lightBg: 'bg-emerald-50', href: '/services/cleaning' },
+    { name: 'Movers', emoji: '🚚', icon: Truck, color: 'bg-purple-500', lightBg: 'bg-purple-50', href: '/services/movers' },
+    { name: 'More', emoji: '➕', icon: Plus, color: 'bg-gray-600', lightBg: 'bg-gray-50', href: '/services' },
   ]
 
   return (
@@ -285,7 +285,7 @@ export default async function CustomerDashboard() {
           </div>
         </div>
 
-        {/* Services Grid */}
+        {/* Services Grid - Swiggy/Zepto Style */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-900">Popular Services</h2>
@@ -294,17 +294,19 @@ export default async function CustomerDashboard() {
             </Link>
           </div>
           
-          <div className="grid grid-cols-4 gap-3">
+          {/* Horizontal scrollable on mobile, grid on desktop */}
+          <div className="flex md:grid md:grid-cols-4 gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
             {services.map((service) => (
               <Link 
                 key={service.name}
                 href={service.href}
-                className="flex flex-col items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all hover:scale-105 group"
+                className="flex-shrink-0 w-[72px] md:w-auto flex flex-col items-center gap-2 p-3 bg-white hover:bg-gray-50 rounded-2xl transition-all hover:scale-105 group border border-gray-100 hover:border-gray-200 hover:shadow-md"
               >
-                <div className={`h-12 w-12 ${service.color} rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow`}>
-                  <service.icon className="h-6 w-6 text-white" />
+                {/* Emoji Circle - Clean & Modern */}
+                <div className={`h-14 w-14 ${service.lightBg} rounded-2xl flex items-center justify-center transition-all group-hover:scale-110`}>
+                  <span className="text-2xl">{service.emoji}</span>
                 </div>
-                <span className="text-xs font-medium text-gray-700 text-center">{service.name}</span>
+                <span className="text-xs font-medium text-gray-700 text-center whitespace-nowrap">{service.name}</span>
               </Link>
             ))}
           </div>

@@ -46,8 +46,8 @@ function validatePhone(phone: string): { valid: boolean; error?: string } {
 export default function CompleteSignupPage() {
   const router = useRouter()
   
-  // Main flow state: loading -> selectRole -> acceptTerms -> phoneInput -> otpVerify -> processing -> success -> error
-  const [step, setStep] = useState<'loading' | 'selectRole' | 'acceptTerms' | 'phoneInput' | 'otpVerify' | 'processing' | 'success' | 'error'>('loading')
+  // Simplified flow: loading -> selectRole (only if needed) -> verify (T&C + OTP combined) -> otpVerify -> success
+  const [step, setStep] = useState<'loading' | 'selectRole' | 'verify' | 'otpVerify' | 'processing' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('Checking your account...')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -130,18 +130,17 @@ export default function CompleteSignupPage() {
           return
         }
 
-        setFinalRole(profile?.role || 'customer')
-
-        // Check localStorage for pending role
+        // Check localStorage for role (set during signup page)
         const pendingRole = localStorage.getItem('pendingSignupRole')
         const roleSelected = localStorage.getItem('roleSelected')
 
-        if (pendingRole || roleSelected) {
-          // Role already selected, go to terms
+        if (pendingRole || roleSelected || profile?.role) {
+          // Role already selected - skip role selection, go to verification
           setFinalRole(pendingRole || profile?.role || 'customer')
-          setStep('acceptTerms')
+          setStep('verify')
+          setTimeout(initializeRecaptcha, 500)
         } else {
-          // Need to select role
+          // Need to select role (fallback for direct navigation)
           setStep('selectRole')
         }
       } catch (err) {
@@ -178,7 +177,8 @@ export default function CompleteSignupPage() {
     setFinalRole(role)
     localStorage.setItem('roleSelected', 'true')
     localStorage.setItem('pendingSignupRole', role)
-    setStep('acceptTerms')
+    setStep('verify')
+    setTimeout(initializeRecaptcha, 500)
   }
 
   // Open legal modal
@@ -197,13 +197,43 @@ export default function CompleteSignupPage() {
     }
   }
 
-  // Terms accepted - update profile and move to phone
-  const handleTermsAccepted = async () => {
+  // OTP handlers
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return
+    const newOtp = [...otp]
+    newOtp[index] = value.slice(-1)
+    setOtp(newOtp)
+    if (value && index < 5) otpInputRefs.current[index + 1]?.focus()
+  }
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault()
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+    if (pastedData.length === 6) {
+      setOtp(pastedData.split(''))
+      otpInputRefs.current[5]?.focus()
+    }
+  }
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) otpInputRefs.current[index - 1]?.focus()
+  }
+
+  // Combined: Accept terms + Send OTP
+  const handleVerifyAndSendOtp = async () => {
     if (!termsAccepted || !privacyAccepted || !user) return
     setLoading(true)
     setError('')
-    
+
     try {
+      // Validate phone first
+      const validation = validatePhone(phone)
+      if (!validation.valid) {
+        setError(validation.error || 'Invalid phone number')
+        setLoading(false)
+        return
+      }
+
       // Update profile with role
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (!authUser) throw new Error('No user')
@@ -231,57 +261,7 @@ export default function CompleteSignupPage() {
         if (!existing) await supabase.from('legal_acceptances').insert({ user_id: authUser.id, document_type: 'privacy', document_version: privacyDoc.version })
       }
 
-      localStorage.removeItem('pendingSignupRole')
-      localStorage.removeItem('roleSelected')
-
-      // Move to phone verification
-      setStep('phoneInput')
-      setTimeout(initializeRecaptcha, 500)
-    } catch (err) {
-      console.error('Error:', err)
-      setError('Something went wrong. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // OTP handlers
-  const handleOtpChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return
-    const newOtp = [...otp]
-    newOtp[index] = value.slice(-1)
-    setOtp(newOtp)
-    if (value && index < 5) otpInputRefs.current[index + 1]?.focus()
-  }
-
-  const handleOtpPaste = (e: React.ClipboardEvent) => {
-    e.preventDefault()
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
-    if (pastedData.length === 6) {
-      setOtp(pastedData.split(''))
-      otpInputRefs.current[5]?.focus()
-    }
-  }
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) otpInputRefs.current[index - 1]?.focus()
-  }
-
-  // Send OTP
-  const handleSendOtp = async () => {
-    if (!user) return
-    setError('')
-    setSuccess('')
-    setLoading(true)
-
-    try {
-      const validation = validatePhone(phone)
-      if (!validation.valid) {
-        setError(validation.error || 'Invalid phone number')
-        setLoading(false)
-        return
-      }
-
+      // Send OTP via API
       const response = await fetch('/api/otp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -294,6 +274,7 @@ export default function CompleteSignupPage() {
         return
       }
 
+      // Initialize reCAPTCHA if not ready
       if (!recaptchaVerifier || !recaptchaReady) {
         initializeRecaptcha()
         await new Promise(resolve => setTimeout(resolve, 1000))
@@ -304,11 +285,17 @@ export default function CompleteSignupPage() {
         return
       }
 
+      // Send Firebase OTP
       const cleanPhone = phone.replace(/[\s-]/g, '')
       const fullPhone = `${countryCode}${cleanPhone}`
       const result = await signInWithPhoneNumber(auth, fullPhone, recaptchaVerifier)
       setConfirmationResult(result)
       setMaskedPhone(`******${phone.slice(-4)}`)
+      
+      localStorage.removeItem('pendingSignupRole')
+      localStorage.removeItem('roleSelected')
+
+      // Move to OTP verification
       setStep('otpVerify')
       setCountdown(60)
       setSuccess('OTP sent successfully!')
@@ -316,10 +303,10 @@ export default function CompleteSignupPage() {
       setTimeout(() => otpInputRefs.current[0]?.focus(), 100)
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string }
-      console.error('Send OTP error:', err)
+      console.error('Error:', err)
       if (error.code === 'auth/invalid-phone-number') setError('Invalid phone number format')
       else if (error.code === 'auth/too-many-requests') setError('Too many requests. Please try again later.')
-      else setError(error.message || 'Failed to send OTP. Please try again.')
+      else setError(error.message || 'Something went wrong. Please try again.')
       
       if (recaptchaVerifier) {
         try { recaptchaVerifier.clear() } catch { /* ignore */ }
@@ -341,7 +328,7 @@ export default function CompleteSignupPage() {
     }
     if (!confirmationResult) {
       setError('Session expired. Please request a new OTP.')
-      setStep('phoneInput')
+      setStep('verify')
       return
     }
 
@@ -373,44 +360,81 @@ export default function CompleteSignupPage() {
       if (error.code === 'auth/invalid-verification-code') setError('Invalid OTP. Please check and try again.')
       else if (error.code === 'auth/code-expired') {
         setError('OTP has expired. Please request a new one.')
-        setStep('phoneInput')
+        setStep('verify')
       } else setError('Verification failed. Please try again.')
       setLoading(false)
     }
   }
 
   // Resend OTP
-  const handleResendOtp = () => {
+  const handleResendOtp = async () => {
     if (countdown > 0) return
     setOtp(['', '', '', '', '', ''])
     setConfirmationResult(null)
+    setError('')
+    setLoading(true)
+    
     if (recaptchaVerifier) {
       try { recaptchaVerifier.clear() } catch { /* ignore */ }
       setRecaptchaVerifier(null)
     }
     setRecaptchaInitialized(false)
-    setTimeout(() => {
+    
+    try {
+      // Re-initialize reCAPTCHA
+      await new Promise(resolve => setTimeout(resolve, 100))
       initializeRecaptcha()
-      setTimeout(handleSendOtp, 500)
-    }, 100)
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      // Send OTP via API
+      const response = await fetch('/api/otp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, countryCode })
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        setError(data.error || 'Failed to send OTP')
+        setLoading(false)
+        return
+      }
+
+      if (!recaptchaVerifier) {
+        setError('Verification not ready. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      const cleanPhone = phone.replace(/[\s-]/g, '')
+      const fullPhone = `${countryCode}${cleanPhone}`
+      const result = await signInWithPhoneNumber(auth, fullPhone, recaptchaVerifier)
+      setConfirmationResult(result)
+      setCountdown(60)
+      setSuccess('OTP sent successfully!')
+      setTimeout(() => setSuccess(''), 3000)
+      setTimeout(() => otpInputRefs.current[0]?.focus(), 100)
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string }
+      console.error('Resend error:', err)
+      setError(error.message || 'Failed to resend OTP. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // Get step number for progress indicator
+  // Get step number for progress indicator (now only 2 steps)
   const getStepNumber = () => {
-    if (step === 'selectRole') return 1
-    if (step === 'acceptTerms') return 2
-    if (step === 'phoneInput' || step === 'otpVerify') return 3
-    return 4
+    if (step === 'selectRole' || step === 'verify') return 1
+    if (step === 'otpVerify') return 2
+    return 2
   }
 
   // Left panel content based on step
   const getLeftPanelContent = () => {
-    if (step === 'phoneInput' || step === 'otpVerify') {
+    if (step === 'otpVerify') {
       return {
-        title: step === 'phoneInput' ? 'Almost There!' : 'Verify Your Identity',
-        subtitle: step === 'phoneInput' 
-          ? 'Just one more step to unlock your Helparo experience. Verify your phone for secure access.'
-          : 'Enter the 6-digit code we just sent to your phone. This keeps your account safe.',
+        title: 'Almost Done!',
+        subtitle: 'Enter the 6-digit code we just sent to your phone. This keeps your account safe.',
         features: [
           { icon: Shield, title: 'Bank-Level Security', desc: 'Your data is encrypted and protected' },
           { icon: Zap, title: 'Instant Verification', desc: 'OTP delivered in seconds' },
@@ -431,6 +455,9 @@ export default function CompleteSignupPage() {
   }
 
   const leftContent = getLeftPanelContent()
+  const bothTermsAccepted = termsAccepted && privacyAccepted
+  const phoneValid = phone.length === 10 && !phoneError
+  const canContinue = bothTermsAccepted && phoneValid
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 flex">
@@ -501,10 +528,10 @@ export default function CompleteSignupPage() {
             </Link>
           </div>
 
-          {/* Progress Indicator */}
-          {step !== 'loading' && step !== 'success' && step !== 'error' && step !== 'processing' && (
+          {/* Progress Indicator - Only 2 steps now */}
+          {step !== 'loading' && step !== 'success' && step !== 'error' && step !== 'processing' && step !== 'selectRole' && (
             <div className="flex items-center justify-center gap-2 mb-8">
-              {[1, 2, 3].map((num) => (
+              {[1, 2].map((num) => (
                 <div key={num} className="flex items-center">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
                     getStepNumber() > num ? 'bg-emerald-500 text-white' :
@@ -513,13 +540,13 @@ export default function CompleteSignupPage() {
                   }`}>
                     {getStepNumber() > num ? <CheckCircle className="w-4 h-4" /> : num}
                   </div>
-                  {num < 3 && <div className={`w-12 h-1 mx-1 rounded ${getStepNumber() > num ? 'bg-emerald-500' : 'bg-gray-200'}`} />}
+                  {num < 2 && <div className={`w-16 h-1 mx-2 rounded ${getStepNumber() > num ? 'bg-emerald-500' : 'bg-gray-200'}`} />}
                 </div>
               ))}
             </div>
           )}
 
-          {/* Step 1: Role Selection */}
+          {/* Fallback Role Selection (only if no role was selected on signup page) */}
           {step === 'selectRole' && (
             <div className="space-y-8">
               <div className="text-center">
@@ -573,104 +600,80 @@ export default function CompleteSignupPage() {
             </div>
           )}
 
-          {/* Step 2: Terms Acceptance */}
-          {step === 'acceptTerms' && (
-            <div className="space-y-8">
-              <div className="text-center">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-600 text-sm font-medium mb-4">
-                  <Shield className="w-4 h-4" />Review terms
-                </div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Accept Our Terms</h1>
-                <p className="text-gray-500">Please review and accept to continue</p>
-              </div>
-
-              <div className="space-y-4">
-                <label className={`flex items-center gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${termsAccepted ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${termsAccepted ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`}>
-                    {termsAccepted && <CheckCircle className="w-4 h-4 text-white" />}
-                  </div>
-                  <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="sr-only" />
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">Terms of Service</p>
-                    <p className="text-sm text-gray-500">I agree to the terms and conditions</p>
-                  </div>
-                  <button type="button" onClick={(e) => { e.preventDefault(); openLegalModal('terms'); }} className="text-emerald-600 hover:text-emerald-700 font-medium text-sm flex items-center gap-1">
-                    <FileText className="w-4 h-4" />Read
-                  </button>
-                </label>
-
-                <label className={`flex items-center gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${privacyAccepted ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${privacyAccepted ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`}>
-                    {privacyAccepted && <CheckCircle className="w-4 h-4 text-white" />}
-                  </div>
-                  <input type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} className="sr-only" />
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">Privacy Policy</p>
-                    <p className="text-sm text-gray-500">I agree to the privacy policy</p>
-                  </div>
-                  <button type="button" onClick={(e) => { e.preventDefault(); openLegalModal('privacy'); }} className="text-emerald-600 hover:text-emerald-700 font-medium text-sm flex items-center gap-1">
-                    <Shield className="w-4 h-4" />Read
-                  </button>
-                </label>
-              </div>
-
-              {error && (
-                <div className="p-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
-                  <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                  {error}
-                </div>
-              )}
-
-              <Button onClick={handleTermsAccepted} disabled={!termsAccepted || !privacyAccepted || loading} className="w-full h-14 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold text-lg shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:shadow-none transition-all duration-300">
-                {loading ? <><Loader2 className="mr-2 w-5 h-5 animate-spin" />Processing...</> : <>Continue<ArrowRight className="ml-2 w-5 h-5" /></>}
-              </Button>
-              <button onClick={() => { setStep('selectRole'); setTermsAccepted(false); setPrivacyAccepted(false); }} className="w-full text-center text-sm text-gray-500 hover:text-gray-700 transition-colors">← Back to role selection</button>
-            </div>
-          )}
-
-          {/* Step 3: Phone Input */}
-          {step === 'phoneInput' && (
+          {/* Combined Step: T&C + Phone Verification */}
+          {step === 'verify' && (
             <div className="space-y-6">
               <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-5 shadow-lg bg-gradient-to-br from-emerald-500 to-teal-600">
-                  <Phone className="h-8 w-8 text-white" />
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-600 text-sm font-medium mb-4">
+                  <Shield className="w-4 h-4" />Final Step
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Verify Your Phone</h1>
-                <p className="text-gray-500">We&apos;ll send you a 6-digit verification code</p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Verify & Get Started</h1>
+                <p className="text-gray-500">Accept our terms and verify your phone number</p>
               </div>
 
+              {/* Terms Acceptance - Compact */}
               <div className="space-y-3">
-                <Label htmlFor="phone" className="text-gray-700 font-semibold text-sm">Phone Number</Label>
+                <label className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${termsAccepted ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200 ${termsAccepted ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`}>
+                    {termsAccepted && <CheckCircle className="w-3 h-3 text-white" />}
+                  </div>
+                  <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="sr-only" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 text-sm">I agree to the Terms of Service</p>
+                  </div>
+                  <button type="button" onClick={(e) => { e.preventDefault(); openLegalModal('terms'); }} className="text-emerald-600 hover:text-emerald-700 font-medium text-xs flex items-center gap-1 flex-shrink-0">
+                    <FileText className="w-3.5 h-3.5" />Read
+                  </button>
+                </label>
+
+                <label className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${privacyAccepted ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200 ${privacyAccepted ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`}>
+                    {privacyAccepted && <CheckCircle className="w-3 h-3 text-white" />}
+                  </div>
+                  <input type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} className="sr-only" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 text-sm">I agree to the Privacy Policy</p>
+                  </div>
+                  <button type="button" onClick={(e) => { e.preventDefault(); openLegalModal('privacy'); }} className="text-emerald-600 hover:text-emerald-700 font-medium text-xs flex items-center gap-1 flex-shrink-0">
+                    <Shield className="w-3.5 h-3.5" />Read
+                  </button>
+                </label>
+              </div>
+
+              {/* Phone Input */}
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="phone" className="text-gray-700 font-semibold text-sm">Phone Number for Verification</Label>
                 <div className="flex gap-3">
-                  <div className="flex items-center justify-center w-20 h-14 bg-gray-100 border-2 border-gray-200 rounded-xl text-gray-700 font-semibold">+91 🇮🇳</div>
+                  <div className="flex items-center justify-center w-20 h-12 bg-gray-100 border-2 border-gray-200 rounded-xl text-gray-700 font-semibold text-sm">+91 🇮🇳</div>
                   <div className="relative flex-1">
-                    <Input id="phone" type="tel" placeholder="9876543210" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} className={`h-14 text-lg font-medium bg-white border-2 ${phoneError ? 'border-red-300' : phone && !phoneError ? 'border-emerald-300' : 'border-gray-200'} rounded-xl focus:ring-4 focus:ring-emerald-100 transition-all duration-300`} />
-                    {phone && !phoneError && <div className="absolute right-4 top-1/2 -translate-y-1/2"><CheckCircle className="h-6 w-6 text-emerald-500" /></div>}
+                    <Input id="phone" type="tel" placeholder="9876543210" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} className={`h-12 text-base font-medium bg-white border-2 ${phoneError ? 'border-red-300' : phone && !phoneError ? 'border-emerald-300' : 'border-gray-200'} rounded-xl focus:ring-4 focus:ring-emerald-100 transition-all duration-300`} />
+                    {phone && !phoneError && phone.length === 10 && <div className="absolute right-3 top-1/2 -translate-y-1/2"><CheckCircle className="h-5 w-5 text-emerald-500" /></div>}
                   </div>
                 </div>
-                {phoneError && <div className="flex items-center gap-2 text-red-500 text-sm"><AlertCircle className="h-4 w-4" />{phoneError}</div>}
+                {phoneError && <div className="flex items-center gap-2 text-red-500 text-xs"><AlertCircle className="h-3.5 w-3.5" />{phoneError}</div>}
               </div>
 
               {error && (
-                <div className="p-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+                <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
                   <span>{error}</span>
                 </div>
               )}
 
-              <Button onClick={handleSendOtp} className="w-full h-14 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300" disabled={loading || !!phoneError || !phone || phone.length !== 10}>
-                {loading ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Sending OTP...</> : <>Send OTP<ArrowRight className="ml-2 h-5 w-5" /></>}
+              <Button onClick={handleVerifyAndSendOtp} disabled={!canContinue || loading} className="w-full h-14 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold text-lg shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:shadow-none transition-all duration-300">
+                {loading ? <><Loader2 className="mr-2 w-5 h-5 animate-spin" />Processing...</> : <>Continue & Send OTP<ArrowRight className="ml-2 w-5 h-5" /></>}
               </Button>
+              
               <p className="text-center text-xs text-gray-400">Standard SMS rates may apply</p>
             </div>
           )}
 
-          {/* Step 4: OTP Verify */}
+          {/* OTP Verification */}
           {step === 'otpVerify' && (
             <div className="space-y-6">
               <div className="text-center">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-5 shadow-lg bg-gradient-to-br from-teal-500 to-emerald-600">
-                  <Shield className="h-8 w-8 text-white" />
+                  <Phone className="h-8 w-8 text-white" />
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Enter Verification Code</h1>
                 <p className="text-gray-500">Code sent to {countryCode} {maskedPhone}</p>
@@ -690,7 +693,7 @@ export default function CompleteSignupPage() {
               </Button>
 
               <div className="flex items-center justify-between pt-2">
-                <button onClick={() => { setStep('phoneInput'); setOtp(['', '', '', '', '', '']); setError(''); }} className="text-sm text-gray-600 hover:text-emerald-600 font-medium transition-colors">← Change Number</button>
+                <button onClick={() => { setStep('verify'); setOtp(['', '', '', '', '', '']); setError(''); }} className="text-sm text-gray-600 hover:text-emerald-600 font-medium transition-colors">← Change Number</button>
                 <button onClick={handleResendOtp} disabled={countdown > 0 || loading} className={`flex items-center gap-2 text-sm font-medium transition-all ${countdown > 0 ? 'text-gray-400' : 'text-emerald-600 hover:text-emerald-700'}`}>
                   <RefreshCw className={`h-4 w-4 ${loading && countdown === 0 ? 'animate-spin' : ''}`} />
                   {countdown > 0 ? `Resend in ${countdown}s` : 'Resend OTP'}

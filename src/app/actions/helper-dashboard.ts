@@ -54,64 +54,141 @@ export async function getHelperDashboardStats() {
     const monthAgo = new Date()
     monthAgo.setMonth(monthAgo.getMonth() - 1)
 
-    // Today's earnings
-    const { data: todayEarnings } = await supabase
-      .from('transactions')
-      .select('amount')
-      .eq('helper_id', helperId)
-      .eq('transaction_type', 'earning')
-      .eq('status', 'completed')
-      .gte('created_at', today.toISOString())
+    // Today's earnings - Try helper_earnings table first, fallback to completed service_requests
+    let todayTotal = 0
+    let weekTotal = 0
+    let monthTotal = 0
+    let pendingTotal = 0
 
-    // This week's earnings
-    const { data: weekEarnings } = await supabase
-      .from('transactions')
+    // Try helper_earnings table (new system)
+    const { data: helperEarningsToday } = await supabase
+      .from('helper_earnings')
       .select('amount')
-      .eq('helper_id', helperId)
-      .eq('transaction_type', 'earning')
-      .eq('status', 'completed')
-      .gte('created_at', weekAgo.toISOString())
+      .eq('helper_id', user.id)
+      .gte('earned_at', today.toISOString())
 
-    // This month's earnings
-    const { data: monthEarnings } = await supabase
-      .from('transactions')
+    const { data: helperEarningsWeek } = await supabase
+      .from('helper_earnings')
       .select('amount')
-      .eq('helper_id', helperId)
-      .eq('transaction_type', 'earning')
-      .eq('status', 'completed')
-      .gte('created_at', monthAgo.toISOString())
+      .eq('helper_id', user.id)
+      .gte('earned_at', weekAgo.toISOString())
 
-    // Pending earnings
-    const { data: pendingEarnings } = await supabase
-      .from('transactions')
+    const { data: helperEarningsMonth } = await supabase
+      .from('helper_earnings')
       .select('amount')
-      .eq('helper_id', helperId)
-      .eq('transaction_type', 'earning')
+      .eq('helper_id', user.id)
+      .gte('earned_at', monthAgo.toISOString())
+
+    const { data: helperEarningsPending } = await supabase
+      .from('helper_earnings')
+      .select('amount')
+      .eq('helper_id', user.id)
       .eq('status', 'pending')
 
-    // Jobs statistics
+    if (helperEarningsToday && helperEarningsToday.length > 0) {
+      // Use helper_earnings table
+      todayTotal = helperEarningsToday.reduce((sum, t) => sum + Number(t.amount || 0), 0)
+      weekTotal = helperEarningsWeek?.reduce((sum, t) => sum + Number(t.amount || 0), 0) || 0
+      monthTotal = helperEarningsMonth?.reduce((sum, t) => sum + Number(t.amount || 0), 0) || 0
+      pendingTotal = helperEarningsPending?.reduce((sum, t) => sum + Number(t.amount || 0), 0) || 0
+    } else {
+      // Fallback: Try transactions table
+      const { data: todayEarnings } = await supabase
+        .from('transactions')
+        .select('amount')
+        .eq('helper_id', helperId)
+        .eq('transaction_type', 'earning')
+        .eq('status', 'completed')
+        .gte('created_at', today.toISOString())
+
+      const { data: weekEarnings } = await supabase
+        .from('transactions')
+        .select('amount')
+        .eq('helper_id', helperId)
+        .eq('transaction_type', 'earning')
+        .eq('status', 'completed')
+        .gte('created_at', weekAgo.toISOString())
+
+      const { data: monthEarnings } = await supabase
+        .from('transactions')
+        .select('amount')
+        .eq('helper_id', helperId)
+        .eq('transaction_type', 'earning')
+        .eq('status', 'completed')
+        .gte('created_at', monthAgo.toISOString())
+
+      const { data: pendingEarnings } = await supabase
+        .from('transactions')
+        .select('amount')
+        .eq('helper_id', helperId)
+        .eq('transaction_type', 'earning')
+        .eq('status', 'pending')
+
+      todayTotal = todayEarnings?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0
+      weekTotal = weekEarnings?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0
+      monthTotal = monthEarnings?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0
+      pendingTotal = pendingEarnings?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0
+
+      // If still no earnings, check completed service_requests
+      if (todayTotal === 0) {
+        const { data: completedToday } = await supabase
+          .from('service_requests')
+          .select('estimated_price')
+          .eq('assigned_helper_id', user.id)
+          .eq('status', 'completed')
+          .gte('work_completed_at', today.toISOString())
+
+        todayTotal = completedToday?.reduce((sum, r) => sum + (r.estimated_price || 0), 0) || 0
+      }
+
+      if (weekTotal === 0) {
+        const { data: completedWeek } = await supabase
+          .from('service_requests')
+          .select('estimated_price')
+          .eq('assigned_helper_id', user.id)
+          .eq('status', 'completed')
+          .gte('work_completed_at', weekAgo.toISOString())
+
+        weekTotal = completedWeek?.reduce((sum, r) => sum + (r.estimated_price || 0), 0) || 0
+      }
+
+      if (monthTotal === 0) {
+        const { data: completedMonth } = await supabase
+          .from('service_requests')
+          .select('estimated_price')
+          .eq('assigned_helper_id', user.id)
+          .eq('status', 'completed')
+          .gte('work_completed_at', monthAgo.toISOString())
+
+        monthTotal = completedMonth?.reduce((sum, r) => sum + (r.estimated_price || 0), 0) || 0
+      }
+    }
+
+    // Jobs statistics - use assigned_helper_id (stores user.id)
     const { data: activeJobs } = await supabase
       .from('service_requests')
       .select('id')
-      .eq('helper_id', helperId)
-      .in('status', ['accepted', 'in_progress'])
+      .eq('assigned_helper_id', user.id)
+      .in('status', ['assigned', 'open'])
+      .not('broadcast_status', 'eq', 'completed')
 
     const { data: completedJobs } = await supabase
       .from('service_requests')
       .select('id')
-      .eq('helper_id', helperId)
+      .eq('assigned_helper_id', user.id)
       .eq('status', 'completed')
 
     const { data: pendingJobs } = await supabase
       .from('service_requests')
       .select('id')
-      .eq('helper_id', helperId)
-      .eq('status', 'pending')
+      .eq('assigned_helper_id', user.id)
+      .eq('broadcast_status', 'accepted')
+      .is('work_started_at', null)
 
     const { data: totalJobs } = await supabase
       .from('service_requests')
       .select('id')
-      .eq('helper_id', helperId)
+      .eq('assigned_helper_id', user.id)
 
     // Rating statistics
     const { data: ratingData } = await supabase
@@ -120,60 +197,54 @@ export async function getHelperDashboardStats() {
       .eq('helper_id', helperId)
       .maybeSingle()
 
-    // Recent jobs (last 5)
+    // Recent jobs (last 5) - use assigned_helper_id
     const { data: recentJobs } = await supabase
       .from('service_requests')
       .select(`
         id,
         title,
         status,
-        scheduled_time,
-        pricing_option,
-        profiles!customer_id(full_name)
+        work_completed_at,
+        estimated_price,
+        customer:customer_id(full_name)
       `)
-      .eq('helper_id', helperId)
+      .eq('assigned_helper_id', user.id)
       .in('status', ['completed', 'cancelled'])
-      .order('updated_at', { ascending: false })
+      .order('work_completed_at', { ascending: false })
       .limit(5)
 
-    // Upcoming jobs (next 5)
+    // Upcoming/Active jobs (next 5) - use assigned_helper_id
     const { data: upcomingJobs } = await supabase
       .from('service_requests')
       .select(`
         id,
         title,
-        scheduled_time,
-        location_address,
-        profiles!customer_id(full_name)
+        created_at,
+        service_address,
+        customer:customer_id(full_name)
       `)
-      .eq('helper_id', helperId)
-      .in('status', ['accepted', 'pending'])
-      .gte('scheduled_time', new Date().toISOString())
-      .order('scheduled_time', { ascending: true })
+      .eq('assigned_helper_id', user.id)
+      .in('broadcast_status', ['accepted'])
+      .eq('status', 'assigned')
+      .order('created_at', { ascending: false })
       .limit(5)
 
     type JobData = {
       id: string
       title: string | null
       status: string
-      scheduled_time: string | null
-      pricing_option: Record<string, unknown> | null
-      profiles: { full_name: string | null } | null
+      work_completed_at: string | null
+      estimated_price: number | null
+      customer: { full_name: string | null } | { full_name: string | null }[] | null
     }
 
     type UpcomingJobData = {
       id: string
       title: string | null
-      scheduled_time: string | null
-      location_address: string | null
-      profiles: { full_name: string | null } | null
+      created_at: string | null
+      service_address: string | null
+      customer: { full_name: string | null } | { full_name: string | null }[] | null
     }
-
-    // Calculate totals
-    const todayTotal = todayEarnings?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0
-    const weekTotal = weekEarnings?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0
-    const monthTotal = monthEarnings?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0
-    const pendingTotal = pendingEarnings?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0
 
     return {
       stats: {
@@ -197,21 +268,31 @@ export async function getHelperDashboardStats() {
           isApproved: helperProfile.is_approved || false,
           status: helperProfile.verification_status || 'pending',
         },
-        recentJobs: recentJobs?.map((job: JobData) => ({
-          id: job.id,
-          title: job.title || 'Untitled Job',
-          customer_name: job.profiles?.full_name || 'Unknown Customer',
-          status: job.status,
-          amount: (job.pricing_option as { quoted_price?: number })?.quoted_price || 0,
-          scheduled_time: job.scheduled_time || new Date().toISOString(),
-        })) || [],
-        upcomingJobs: upcomingJobs?.map((job: UpcomingJobData) => ({
-          id: job.id,
-          title: job.title || 'Untitled Job',
-          customer_name: job.profiles?.full_name || 'Unknown Customer',
-          scheduled_time: job.scheduled_time || new Date().toISOString(),
-          location: job.location_address || 'Location not specified',
-        })) || [],
+        recentJobs: recentJobs?.map((job: JobData) => {
+          const customerName = Array.isArray(job.customer) 
+            ? job.customer[0]?.full_name 
+            : job.customer?.full_name
+          return {
+            id: job.id,
+            title: job.title || 'Service Request',
+            customer_name: customerName || 'Customer',
+            status: job.status,
+            amount: job.estimated_price || 0,
+            scheduled_time: job.work_completed_at || new Date().toISOString(),
+          }
+        }) || [],
+        upcomingJobs: upcomingJobs?.map((job: UpcomingJobData) => {
+          const customerName = Array.isArray(job.customer) 
+            ? job.customer[0]?.full_name 
+            : job.customer?.full_name
+          return {
+            id: job.id,
+            title: job.title || 'Service Request',
+            customer_name: customerName || 'Customer',
+            scheduled_time: job.created_at || new Date().toISOString(),
+            location: job.service_address || 'Location not specified',
+          }
+        }) || [],
       },
     }
   } catch (error) {

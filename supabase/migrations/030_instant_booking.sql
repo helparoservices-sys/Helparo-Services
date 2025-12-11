@@ -43,6 +43,7 @@ CREATE INDEX IF NOT EXISTS idx_service_requests_assigned_helper
 ON service_requests(assigned_helper_id);
 
 -- RLS Policy: Customers can view instant booking enabled helpers
+DROP POLICY IF EXISTS "Customers can view instant booking helpers" ON helper_profiles;
 CREATE POLICY "Customers can view instant booking helpers"
   ON helper_profiles FOR SELECT
   USING (
