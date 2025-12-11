@@ -1,400 +1,544 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { PaymentProtectionBadge, MoneyBackGuarantee } from '@/components/trust-badges'
-import AddressMapSelector from '@/components/address-map-selector'
-import { createServiceRequest, getServiceCategories } from '@/app/actions/service-requests'
-import { AlertCircle, CheckCircle2, MapPin, Calendar, DollarSign, Phone, Clock, Zap } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { toast } from 'sonner'
+import AddressInteractiveMap from '@/components/address-interactive-map'
+import { 
+  ArrowLeft, 
+  MapPin, 
+  Clock, 
+  IndianRupee,
+  Sparkles,
+  Send,
+  Shield,
+  Star,
+  Users,
+  CheckCircle2,
+  Camera,
+  Image as ImageIcon,
+  Video,
+  X,
+  Loader2
+} from 'lucide-react'
 
-interface Category { id: string; name: string }
+const categories = [
+  { id: 'cleaning', name: 'Cleaning', emoji: '🧹' },
+  { id: 'plumbing', name: 'Plumbing', emoji: '🔧' },
+  { id: 'electrical', name: 'Electrical', emoji: '⚡' },
+  { id: 'automotive', name: 'Automotive', emoji: '🚗' },
+  { id: 'tech', name: 'Tech', emoji: '💻' },
+  { id: 'delivery', name: 'Delivery', emoji: '📦' },
+  { id: 'personal', name: 'Care', emoji: '💆' },
+  { id: 'other', name: 'Other', emoji: '✨' },
+]
+
+const urgencyOptions = [
+  { id: 'low', label: 'Flexible', color: 'border-green-300 bg-green-50 text-green-700', selected: 'border-green-500 bg-green-500 text-white' },
+  { id: 'medium', label: 'Normal', color: 'border-amber-300 bg-amber-50 text-amber-700', selected: 'border-amber-500 bg-amber-500 text-white' },
+  { id: 'high', label: 'Urgent', color: 'border-orange-300 bg-orange-50 text-orange-700', selected: 'border-orange-500 bg-orange-500 text-white' },
+  { id: 'emergency', label: 'ASAP', color: 'border-red-300 bg-red-50 text-red-700', selected: 'border-red-500 bg-red-500 text-white' },
+]
 
 export default function NewRequestPage() {
   const router = useRouter()
-  const [categories, setCategories] = useState<Category[]>([])
-  const [form, setForm] = useState({
-    category_id: '',
+  const supabase = createClient()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const videoInputRef = useRef<HTMLInputElement>(null)
+  
+  const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [images, setImages] = useState<string[]>([])
+  const [videos, setVideos] = useState<string[]>([])
+  const [formData, setFormData] = useState({
+    category: '',
     title: '',
     description: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
-    location_lat: null as number | null,
-    location_lng: null as number | null,
-    country: 'India',
-    phone: '',
-    budget_min: '',
-    budget_max: '',
-    preferred_date: '',
-    preferred_time: '',
-    urgency: 'normal' as 'instant' | 'normal' | 'flexible',
+    location: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
+    budget: '',
+    urgency: 'medium',
   })
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true)
-      const result = await getServiceCategories()
-      if ('error' in result && result.error) {
-        setError('Failed to load categories')
-      } else if (result.data) {
-        setCategories(result.data)
+  const handleAddressSelect = (addressData: { 
+    display_name: string; 
+    city: string;
+    state: string;
+    pincode: string;
+    lat: number; 
+    lng: number 
+  }) => {
+    setFormData(prev => ({
+      ...prev,
+      location: addressData.display_name,
+      latitude: addressData.lat,
+      longitude: addressData.lng,
+    }))
+  }
+
+  // Convert file to base64 data URL (works without storage buckets)
+  const fileToDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+  }
+
+  // Compress image before storing
+  const compressImage = async (file: File, maxWidth = 800): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let { width, height } = img
+        
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width
+          width = maxWidth
+        }
+        
+        canvas.width = width
+        canvas.height = height
+        
+        const ctx = canvas.getContext('2d')
+        ctx?.drawImage(img, 0, 0, width, height)
+        
+        resolve(canvas.toDataURL('image/jpeg', 0.7))
       }
-      setLoading(false)
+      img.onerror = reject
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
+  // Handle image selection
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    if (images.length + files.length > 5) {
+      toast.error('Maximum 5 photos allowed')
+      return
     }
-    load()
-  }, [])
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setSaving(true)
-    setSuccess('')
-    
+    setUploading(true)
     try {
-      if (!form.category_id || !form.title || !form.description) {
-        throw new Error('Please fill in all required fields')
+      for (const file of Array.from(files)) {
+        if (file.size > 10 * 1024 * 1024) {
+          toast.error('Image too large (max 10MB)')
+          continue
+        }
+        // Compress and convert to base64
+        const dataUrl = await compressImage(file)
+        setImages(prev => [...prev, dataUrl])
       }
-
-      const result = await createServiceRequest({
-        category_id: form.category_id,
-        title: form.title,
-        description: form.description,
-        service_address: form.address || undefined,
-        city: form.city || undefined,
-        state: form.state || undefined,
-        pincode: form.pincode || undefined,
-        country: form.country || 'India',
-        budget_min: form.budget_min ? Number(form.budget_min) : undefined,
-        budget_max: form.budget_max ? Number(form.budget_max) : undefined,
-        latitude: form.location_lat || undefined,
-        longitude: form.location_lng || undefined,
-      })
-
-      if ('error' in result && result.error) {
-        throw new Error(result.error)
-      }
-
-      setSuccess('✅ Request created successfully! Matching helpers will be notified.')
-      
-      setTimeout(() => {
-        router.push('/customer/requests')
-      }, 2000)
-    } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : 'Failed to create request'
-      setError(errorMessage)
+      toast.success('Photos added!')
+    } catch (error) {
+      console.error('Image error:', error)
+      toast.error('Failed to add photos')
     } finally {
-      setSaving(false)
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  // Handle video selection
+  const handleVideoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    if (videos.length >= 2) {
+      toast.error('Maximum 2 videos allowed')
+      return
+    }
+
+    setUploading(true)
+    try {
+      const file = files[0]
+      if (file.size > 20 * 1024 * 1024) {
+        toast.error('Video too large (max 20MB)')
+        return
+      }
+      // Convert to base64 data URL
+      const dataUrl = await fileToDataUrl(file)
+      setVideos(prev => [...prev, dataUrl])
+      toast.success('Video added!')
+    } catch (error) {
+      console.error('Video error:', error)
+      toast.error('Failed to add video')
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  const removeImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const removeVideo = (index: number) => {
+    setVideos(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleSubmit = async () => {
+    // Validation
+    if (!formData.category) {
+      toast.error('Please select a category')
+      return
+    }
+    if (!formData.title.trim()) {
+      toast.error('Please enter a title')
+      return
+    }
+    if (!formData.budget || parseFloat(formData.budget) <= 0) {
+      toast.error('Please enter your budget')
+      return
+    }
+    if (!formData.location || !formData.latitude) {
+      toast.error('Please select your location on the map')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/auth/signin')
+        return
+      }
+
+      // Call broadcast API - it creates the request AND notifies helpers
+      const broadcastResponse = await fetch('/api/requests/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          categoryId: formData.category,
+          categoryName: categories.find(c => c.id === formData.category)?.name,
+          description: formData.description || formData.title,
+          address: formData.location,
+          locationLat: formData.latitude,
+          locationLng: formData.longitude,
+          images: images,
+          videos: videos,
+          estimatedPrice: parseFloat(formData.budget),
+          urgency: formData.urgency,
+        })
+      })
+      
+      const broadcastData = await broadcastResponse.json()
+      console.log('Broadcast result:', broadcastData)
+      
+      if (!broadcastResponse.ok) {
+        throw new Error(broadcastData.error || 'Failed to post request')
+      }
+      
+      if (broadcastData.helpersNotified > 0) {
+        toast.success(`🎉 Request posted! Notified ${broadcastData.helpersNotified} helpers nearby`)
+      } else {
+        toast.success('Request Posted! 🎉 Finding helpers...')
+      }
+
+      router.push(`/customer/requests/${broadcastData.requestId}/track`)
+    } catch (error: any) {
+      console.error('Submit error:', error)
+      toast.error(error.message || 'Failed to create request')
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 py-10 px-4">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-6">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            Post a Service Request
-          </h1>
-          <p className="mt-2 text-slate-600 dark:text-slate-400">
-            Describe your needs and receive competitive quotes from qualified helpers
-          </p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+          <button 
+            onClick={() => router.back()}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-700" />
+          </button>
+          <h1 className="text-lg font-semibold text-gray-900">Post a Request</h1>
+        </div>
+      </div>
+
+      {/* Form Content */}
+      <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
+        
+        {/* Category Selection */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <label className="text-sm font-semibold text-gray-800 mb-3 block">
+            What do you need? <span className="text-red-500">*</span>
+          </label>
+          <div className="grid grid-cols-4 gap-2">
+            {categories.map((cat) => {
+              const isSelected = formData.category === cat.id
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setFormData(prev => ({ ...prev, category: cat.id }))}
+                  className={`p-2.5 rounded-xl border-2 transition-all text-center ${
+                    isSelected 
+                      ? 'border-emerald-500 bg-emerald-50' 
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  <div className="text-xl">{cat.emoji}</div>
+                  <div className={`text-[10px] font-medium mt-0.5 ${isSelected ? 'text-emerald-700' : 'text-gray-600'}`}>
+                    {cat.name}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
         </div>
 
-        {/* Service Request Form */}
-        <Card className="max-w-4xl mx-auto border-slate-200 dark:border-slate-700">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-purple-600" />
-              Service Request Details
-            </CardTitle>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-              Fill in the details and helpers will send you competitive quotes
-            </p>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <div className="mb-4 rounded-lg border border-red-300 bg-red-50 dark:bg-red-900/20 p-4 flex gap-2">
-                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0" />
-                <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
-              </div>
-            )}
-            {success && (
-              <div className="mb-4 rounded-lg border border-green-300 bg-green-50 dark:bg-green-900/20 p-4">
-                <div className="flex gap-2 mb-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
-                  <p className="text-sm font-medium text-green-900 dark:text-green-400">{success}</p>
-                </div>
-              </div>
-            )}
-            {loading ? (
-              <p className="text-sm text-slate-500">Loading categories...</p>
-            ) : (
-              <form onSubmit={submit} className="space-y-6">
-                {/* Category Selection */}
-                <div className="space-y-2">
-                  <Label htmlFor="category" className="text-sm font-medium">
-                    Service Category *
-                  </Label>
-                  <select
-                    id="category"
-                    className="h-11 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    value={form.category_id}
-                    onChange={(e) => setForm({ ...form, category_id: e.target.value })}
-                    required
+        {/* Title & Description */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
+          <div>
+            <label className="text-sm font-semibold text-gray-800 mb-1.5 block">
+              What's the problem? <span className="text-red-500">*</span>
+            </label>
+            <Input
+              placeholder="e.g., Fix leaking kitchen tap"
+              value={formData.title}
+              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+              className="h-11 text-base border-gray-200 focus:border-emerald-500 rounded-xl"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold text-gray-800 mb-1.5 block">
+              More details <span className="text-gray-400 font-normal text-xs">(optional)</span>
+            </label>
+            <Textarea
+              placeholder="Describe the issue..."
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              rows={2}
+              className="text-base border-gray-200 focus:border-emerald-500 rounded-xl resize-none"
+            />
+          </div>
+        </div>
+
+        {/* Photos & Videos */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <label className="text-sm font-semibold text-gray-800 mb-3 block">
+            Add Photos/Videos <span className="text-gray-400 font-normal text-xs">(helps helpers understand)</span>
+          </label>
+          
+          {/* Upload Buttons */}
+          <div className="flex gap-2 mb-3">
+            <button
+              onClick={() => cameraInputRef.current?.click()}
+              disabled={uploading || images.length >= 5}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200 hover:bg-emerald-100 disabled:opacity-50 transition-colors"
+            >
+              <Camera className="w-4 h-4" />
+              <span className="text-sm font-medium">Camera</span>
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading || images.length >= 5}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 bg-blue-50 text-blue-700 rounded-xl border border-blue-200 hover:bg-blue-100 disabled:opacity-50 transition-colors"
+            >
+              <ImageIcon className="w-4 h-4" />
+              <span className="text-sm font-medium">Gallery</span>
+            </button>
+            <button
+              onClick={() => videoInputRef.current?.click()}
+              disabled={uploading || videos.length >= 2}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 bg-purple-50 text-purple-700 rounded-xl border border-purple-200 hover:bg-purple-100 disabled:opacity-50 transition-colors"
+            >
+              <Video className="w-4 h-4" />
+              <span className="text-sm font-medium">Video</span>
+            </button>
+          </div>
+
+          {/* Hidden Inputs */}
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleImageSelect}
+            className="hidden"
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleImageSelect}
+            className="hidden"
+          />
+          <input
+            ref={videoInputRef}
+            type="file"
+            accept="video/*"
+            onChange={handleVideoSelect}
+            className="hidden"
+          />
+
+          {/* Uploading indicator */}
+          {uploading && (
+            <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Uploading...
+            </div>
+          )}
+
+          {/* Preview Images */}
+          {images.length > 0 && (
+            <div className="flex gap-2 flex-wrap mb-2">
+              {images.map((url, idx) => (
+                <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200">
+                  <img src={url} alt="" className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => removeImage(idx)}
+                    className="absolute top-0.5 right-0.5 p-0.5 bg-red-500 text-white rounded-full"
                   >
-                    <option value="">Select a category</option>
-                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                    <X className="w-3 h-3" />
+                  </button>
                 </div>
+              ))}
+            </div>
+          )}
 
-                {/* Title */}
-                <div className="space-y-2">
-                  <Label htmlFor="title" className="text-sm font-medium">
-                    Service Title *
-                  </Label>
-                  <Input 
-                    id="title" 
-                    placeholder="e.g., Fix leaking kitchen faucet"
-                    value={form.title} 
-                    onChange={(e) => setForm({ ...form, title: e.target.value })} 
-                    required
-                    className="h-11"
-                  />
-                </div>
-
-                {/* Description */}
-                  <div className="space-y-2">
-                    <Label htmlFor="description" className="text-sm font-medium">
-                      Description *
-                    </Label>
-                  <textarea
-                    id="description"
-                    placeholder="Describe what you need help with in detail..."
-                    className="min-h-[120px] w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    required
-                  />
-                  </div>
-
-                  {/* Location - Map First */}
-                  <div className="space-y-4">
-                    <Label className="text-sm font-medium flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-purple-600" />
-                      Service Location *
-                    </Label>
-                    <div className="space-y-3">
-                      <AddressMapSelector
-                        value={form.address}
-                        onChange={(value) => setForm({ ...form, address: value })}
-                        onAddressSelect={(selected) => {
-                          const addressParts = selected.display_name.split(',').map(p => p.trim())
-                          const formattedAddress = addressParts.slice(1, 3).join(', ')
-                          
-                          setForm({
-                            ...form,
-                            address: formattedAddress || selected.display_name,
-                            city: selected.city || '',
-                            state: selected.state || '',
-                            pincode: selected.pincode || '',
-                            location_lat: selected.lat,
-                            location_lng: selected.lng,
-                          })
-                        }}
-                        placeholder="Search address or click on map to select location"
-                      />
-                      
-                      {form.location_lat && form.location_lng && (
-                        <div className="flex items-center gap-2 text-xs text-gray-600 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2">
-                          <MapPin className="h-3 w-3 text-purple-600" />
-                          <span>Location: {form.location_lat.toFixed(6)}, {form.location_lng.toFixed(6)}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* City, State, Pincode - Auto-filled but editable */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="city" className="text-sm font-medium">City</Label>
-                      <Input 
-                        id="city" 
-                        value={form.city} 
-                        onChange={(e) => setForm({ ...form, city: e.target.value })} 
-                        placeholder="City"
-                        className="bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-100"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="state" className="text-sm font-medium">State</Label>
-                      <Input 
-                        id="state" 
-                        value={form.state} 
-                        onChange={(e) => setForm({ ...form, state: e.target.value })} 
-                        placeholder="State"
-                        className="bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-100"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="pincode" className="text-sm font-medium">Pincode</Label>
-                      <Input 
-                        id="pincode" 
-                        value={form.pincode} 
-                        onChange={(e) => setForm({ ...form, pincode: e.target.value })} 
-                        placeholder="Pincode"
-                        className="bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-100"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Phone Number */}
-                  <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-sm font-medium flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-purple-600" />
-                      Contact Phone Number *
-                    </Label>
-                    <Input 
-                      id="phone"
-                      type="tel"
-                      placeholder="+91 1234567890"
-                      value={form.phone} 
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })} 
-                      required
-                      className="h-11 bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-100"
-                    />
-                    <p className="text-xs text-gray-500">Helpers will contact you on this number</p>
-                  </div>
-
-                  {/* Budget Range */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-purple-600" />
-                      Budget Range (₹) <span className="text-gray-400 text-xs font-normal">(Optional)</span>
-                    </Label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input 
-                        id="budget_min" 
-                        type="number" 
-                        min={0} 
-                        placeholder="Min ₹"
-                        value={form.budget_min} 
-                        onChange={(e) => setForm({ ...form, budget_min: e.target.value })} 
-                        className="bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-100"
-                      />
-                      <Input 
-                        id="budget_max" 
-                        type="number" 
-                        min={0} 
-                        placeholder="Max ₹"
-                        value={form.budget_max} 
-                        onChange={(e) => setForm({ ...form, budget_max: e.target.value })} 
-                        className="bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-100"
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500">Leave empty if you want helpers to quote their rates</p>
-                  </div>
-
-                  {/* Urgency Level */}
-                  <div className="space-y-2">
-                        <Label className="text-sm font-medium flex items-center gap-2">
-                          <Zap className="h-4 w-4 text-purple-600" />
-                          When do you need this? *
-                        </Label>
-                        <div className="grid grid-cols-3 gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setForm({ ...form, urgency: 'instant' })}
-                            className={`p-4 rounded-xl border-2 transition-all ${
-                              form.urgency === 'instant'
-                                ? 'border-red-500 bg-red-50 shadow-lg shadow-red-100'
-                                : 'border-gray-200 hover:border-red-300'
-                            }`}
-                          >
-                            <Zap className={`h-6 w-6 mx-auto mb-2 ${form.urgency === 'instant' ? 'text-red-600' : 'text-gray-400'}`} />
-                            <div className="text-sm font-bold">Urgent</div>
-                            <div className="text-xs text-gray-500">ASAP / Today</div>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setForm({ ...form, urgency: 'normal' })}
-                            className={`p-4 rounded-xl border-2 transition-all ${
-                              form.urgency === 'normal'
-                                ? 'border-purple-500 bg-purple-50 shadow-lg shadow-purple-100'
-                                : 'border-gray-200 hover:border-purple-300'
-                            }`}
-                          >
-                            <Calendar className={`h-6 w-6 mx-auto mb-2 ${form.urgency === 'normal' ? 'text-purple-600' : 'text-gray-400'}`} />
-                            <div className="text-sm font-bold">Normal</div>
-                            <div className="text-xs text-gray-500">This week</div>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setForm({ ...form, urgency: 'flexible' })}
-                            className={`p-4 rounded-xl border-2 transition-all ${
-                              form.urgency === 'flexible'
-                                ? 'border-green-500 bg-green-50 shadow-lg shadow-green-100'
-                                : 'border-gray-200 hover:border-green-300'
-                            }`}
-                          >
-                            <Calendar className={`h-6 w-6 mx-auto mb-2 ${form.urgency === 'flexible' ? 'text-green-600' : 'text-gray-400'}`} />
-                            <div className="text-sm font-bold">Flexible</div>
-                            <div className="text-xs text-gray-500">Anytime</div>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Preferred Schedule - Only show if not instant */}
-                      {form.urgency !== 'instant' && (
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-purple-600" />
-                            Preferred Schedule <span className="text-gray-400 text-xs font-normal">(Optional)</span>
-                          </Label>
-                          <div className="grid grid-cols-2 gap-4">
-                            <Input 
-                              type="date" 
-                              value={form.preferred_date} 
-                              onChange={(e) => setForm({ ...form, preferred_date: e.target.value })} 
-                              min={new Date().toISOString().split('T')[0]}
-                              className="bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-100"
-                            />
-                            <Input 
-                              type="time" 
-                              value={form.preferred_time} 
-                              onChange={(e) => setForm({ ...form, preferred_time: e.target.value })} 
-                              className="bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-100"
-                            />
-                        </div>
-                      </div>
-                      )}
-
-                  {/* Submit Button */}
-                  <Button 
-                    type="submit" 
-                    disabled={saving}
-                    className="w-full h-12 text-base bg-gradient-to-r from-purple-600 to-teal-600 hover:from-purple-700 hover:to-teal-700 font-bold shadow-lg shadow-purple-500/30"
+          {/* Preview Videos */}
+          {videos.length > 0 && (
+            <div className="flex gap-2 flex-wrap">
+              {videos.map((url, idx) => (
+                <div key={idx} className="relative w-24 h-16 rounded-lg overflow-hidden border border-gray-200 bg-gray-900">
+                  <video src={url} className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => removeVideo(idx)}
+                    className="absolute top-0.5 right-0.5 p-0.5 bg-red-500 text-white rounded-full"
                   >
-                    {saving ? 'Processing...' : 'Post Request & Get Quotes'}
-                  </Button>
-                </form>
-              )}
+                    <X className="w-3 h-3" />
+                  </button>
+                  <div className="absolute bottom-0.5 left-0.5 px-1 py-0.5 bg-black/60 rounded text-[8px] text-white">
+                    Video
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-              {/* Trust Badges */}
-              <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700 space-y-4">
-                <PaymentProtectionBadge />
-                <MoneyBackGuarantee />
-              </div>
-            </CardContent>
-          </Card>
+        {/* Location */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <label className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-emerald-600" />
+            Where? <span className="text-red-500">*</span>
+          </label>
+          <div className="rounded-xl overflow-hidden border border-gray-200">
+            <AddressInteractiveMap
+              value={formData.location}
+              onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
+              onAddressSelect={handleAddressSelect}
+              showMap={true}
+              mapHeight="180px"
+            />
+          </div>
+        </div>
+
+        {/* Budget & Urgency */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <label className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1">
+              <IndianRupee className="w-4 h-4 text-emerald-600" />
+              Your Price <span className="text-red-500">*</span>
+            </label>
+            <Input
+              type="number"
+              placeholder="₹ Amount"
+              value={formData.budget}
+              onChange={(e) => setFormData(prev => ({ ...prev, budget: e.target.value }))}
+              className="h-11 text-lg font-semibold border-gray-200 focus:border-emerald-500 rounded-xl"
+            />
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <label className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1">
+              <Clock className="w-4 h-4 text-emerald-600" />
+              When?
+            </label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {urgencyOptions.map((opt) => {
+                const isSelected = formData.urgency === opt.id
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => setFormData(prev => ({ ...prev, urgency: opt.id }))}
+                    className={`py-1.5 px-2 rounded-lg border text-xs font-medium transition-all ${
+                      isSelected ? opt.selected : opt.color
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <Button
+          onClick={handleSubmit}
+          disabled={loading || uploading}
+          className="w-full h-14 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 rounded-xl disabled:opacity-50 shadow-lg shadow-emerald-200"
+        >
+          {loading ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Finding Helpers...
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Send className="w-5 h-5" />
+              Post Request - ₹{formData.budget || '0'}
+            </div>
+          )}
+        </Button>
+
+        {/* Trust Badges */}
+        <div className="flex items-center justify-center gap-6 py-3">
+          <div className="flex items-center gap-1.5 text-gray-500">
+            <Shield className="w-4 h-4 text-emerald-600" />
+            <span className="text-xs">Verified</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-gray-500">
+            <Star className="w-4 h-4 text-emerald-600" />
+            <span className="text-xs">4.8★</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-gray-500">
+            <Users className="w-4 h-4 text-emerald-600" />
+            <span className="text-xs">10K+</span>
+          </div>
+        </div>
+
+        {/* AI Smart Request Promo */}
+        <button
+          onClick={() => router.push('/customer/requests/ai')}
+          className="w-full p-3 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl text-white shadow-lg"
+        >
+          <div className="flex items-center gap-3">
+            <Sparkles className="w-5 h-5" />
+            <div className="text-left flex-1">
+              <div className="font-semibold text-sm">Try AI Smart Request</div>
+              <div className="text-[10px] text-white/80">AI detects issue from photo!</div>
+            </div>
+            <ArrowLeft className="w-4 h-4 rotate-180" />
+          </div>
+        </button>
       </div>
     </div>
   )

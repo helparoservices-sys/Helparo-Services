@@ -22,9 +22,119 @@ import {
   Star,
   Shield,
   Copy,
-  RefreshCw
+  RefreshCw,
+  PartyPopper,
+  Banknote,
+  CreditCard,
+  ThumbsUp
 } from 'lucide-react'
 import { toast } from 'sonner'
+
+// Job Completion Popup for Customer
+function JobCompletionPopup({
+  isOpen,
+  job,
+  onRate,
+  onClose
+}: {
+  isOpen: boolean
+  job: JobDetails
+  onRate: () => void
+  onClose: () => void
+}) {
+  if (!isOpen) return null
+
+  const isCash = job.payment_method === 'cash'
+  const helperName = job.assigned_helper?.profile?.full_name || 'Helper'
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+      {/* Popup Card */}
+      <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+        {/* Success Header */}
+        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-8 text-center">
+          <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+            <PartyPopper className="h-10 w-10 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Job Completed! 🎉</h2>
+          <p className="text-emerald-100">
+            Hope you got the help you needed!
+          </p>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-5">
+          {/* Helper Info */}
+          <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
+            <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+              <User className="h-6 w-6 text-emerald-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-800">{helperName}</p>
+              <p className="text-sm text-gray-500">completed your service</p>
+            </div>
+            <ThumbsUp className="h-6 w-6 text-emerald-500 ml-auto" />
+          </div>
+
+          {/* Payment Info */}
+          <div className={`rounded-xl p-4 ${isCash ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'}`}>
+            <div className="flex items-center gap-2 mb-3">
+              {isCash ? (
+                <Banknote className="h-5 w-5 text-amber-600" />
+              ) : (
+                <CreditCard className="h-5 w-5 text-blue-600" />
+              )}
+              <span className={`text-sm font-medium ${isCash ? 'text-amber-700' : 'text-blue-700'}`}>
+                {isCash ? 'Cash Payment' : 'Online Payment'}
+              </span>
+            </div>
+            
+            <div className="text-center">
+              <p className={`text-sm ${isCash ? 'text-amber-600' : 'text-blue-600'} mb-1`}>
+                {isCash ? 'Please pay cash to the helper' : 'Payment will be processed'}
+              </p>
+              <div className={`flex items-center justify-center gap-1 ${isCash ? 'text-amber-700' : 'text-blue-700'}`}>
+                <IndianRupee className="h-8 w-8" />
+                <span className="text-4xl font-bold">{job.estimated_price}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Rating Prompt */}
+          <div className="text-center bg-emerald-50 rounded-xl p-4">
+            <div className="flex justify-center gap-1 mb-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star key={star} className="h-6 w-6 fill-yellow-400 text-yellow-400" />
+              ))}
+            </div>
+            <p className="text-sm text-gray-600 mb-1">How was your experience?</p>
+            <p className="text-xs text-gray-500">Your feedback helps us improve</p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            <Button 
+              onClick={onRate}
+              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 text-lg font-semibold rounded-xl"
+            >
+              <Star className="h-5 w-5 mr-2" />
+              Rate {helperName}
+            </Button>
+            <button
+              onClick={onClose}
+              className="w-full text-gray-500 hover:text-gray-700 text-sm py-2"
+            >
+              Skip for now
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // Google Maps Live Tracking Component
 function LiveTrackingMap({ 
@@ -294,6 +404,8 @@ export default function JobTrackingPage() {
   const [job, setJob] = useState<JobDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
+  const [showCompletionPopup, setShowCompletionPopup] = useState(false)
+  const [completionPopupShown, setCompletionPopupShown] = useState(false)
 
   useEffect(() => {
     loadJobDetails()
@@ -371,6 +483,12 @@ export default function JobTrackingPage() {
       }
 
       setJob(transformedData)
+
+      // Show completion popup when job is completed (only once)
+      if (transformedData.status === 'completed' && !completionPopupShown) {
+        setShowCompletionPopup(true)
+        setCompletionPopupShown(true)
+      }
     } catch (error) {
       console.error('Failed to load job:', error)
     } finally {
@@ -570,10 +688,14 @@ export default function JobTrackingPage() {
                       <div className="flex items-center gap-2 text-sm text-gray-500">
                         <div className="flex items-center gap-1">
                           <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                          <span>{job.assigned_helper.avg_rating?.toFixed(1) || '4.5'}</span>
+                          <span>{job.assigned_helper.avg_rating > 0 ? job.assigned_helper.avg_rating.toFixed(1) : 'New'}</span>
                         </div>
                         <span>•</span>
-                        <span>{job.assigned_helper.total_jobs_completed || 0} jobs</span>
+                        <span>
+                          {job.assigned_helper.total_jobs_completed > 0 
+                            ? `${job.assigned_helper.total_jobs_completed} jobs` 
+                            : 'New Helper'}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -756,6 +878,19 @@ export default function JobTrackingPage() {
           </Button>
         )}
       </div>
+
+      {/* Job Completion Popup */}
+      {job && (
+        <JobCompletionPopup
+          isOpen={showCompletionPopup}
+          job={job}
+          onRate={() => {
+            setShowCompletionPopup(false)
+            router.push(`/customer/requests/${requestId}/rate`)
+          }}
+          onClose={() => setShowCompletionPopup(false)}
+        />
+      )}
     </div>
   )
 }

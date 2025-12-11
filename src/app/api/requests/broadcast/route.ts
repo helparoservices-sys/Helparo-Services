@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
       locationLat,
       locationLng,
       images,
+      videos, // Customer uploaded videos with audio
       aiAnalysis,
       selectedTier,
       estimatedPrice,
@@ -174,7 +175,8 @@ export async function POST(request: NextRequest) {
           pricing_tier: selectedTier,
           problem_duration: problemDuration,
           error_code: errorCode,
-          preferred_time: preferredTime
+          preferred_time: preferredTime,
+          videos: videos || [] // Store videos with audio for helper to view
         }
       })
       .select()

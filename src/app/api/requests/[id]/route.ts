@@ -79,7 +79,8 @@ export async function GET(
         .select(`
           id,
           user_id,
-          avg_rating,
+          rating_sum,
+          rating_count,
           total_jobs_completed,
           current_location_lat,
           current_location_lng
@@ -99,8 +100,34 @@ export async function GET(
 
         console.log('👤 Profile lookup result:', { profile, profileError })
 
+        // Count actual completed jobs for this helper
+        const { count: completedJobsCount } = await supabase
+          .from('service_requests')
+          .select('id', { count: 'exact', head: true })
+          .eq('assigned_helper_id', helper.user_id)
+          .eq('status', 'completed')
+
+        // Get average rating from reviews table
+        const { data: reviewStats } = await supabase
+          .from('reviews')
+          .select('rating')
+          .eq('helper_id', helper.id)
+
+        let avg_rating = 0
+        if (reviewStats && reviewStats.length > 0) {
+          const totalRating = reviewStats.reduce((sum, r) => sum + r.rating, 0)
+          avg_rating = Math.round((totalRating / reviewStats.length) * 10) / 10
+        } else if (helper.rating_count > 0) {
+          // Fallback to rating_sum/rating_count
+          avg_rating = Math.round((helper.rating_sum / helper.rating_count) * 10) / 10
+        }
+
+        const total_jobs = completedJobsCount || helper.total_jobs_completed || 0
+
         assignedHelper = {
           ...helper,
+          avg_rating,
+          total_jobs_completed: total_jobs,
           profile: profile || { full_name: 'Helper', phone: '', avatar_url: null }
         }
         
@@ -116,20 +143,26 @@ export async function GET(
           .single()
         
         if (directProfile) {
-          // Try to find or note that helper_profiles.id is missing
-          // For ratings to work, we MUST have helper_profiles.id
+          // Try to find helper_profiles.id
           const { data: helperProfileByUser } = await supabase
             .from('helper_profiles')
             .select('id')
             .eq('user_id', serviceRequest.assigned_helper_id)
             .single()
 
+          // Count completed jobs even without helper_profiles entry
+          const { count: completedJobsCount } = await supabase
+            .from('service_requests')
+            .select('id', { count: 'exact', head: true })
+            .eq('assigned_helper_id', serviceRequest.assigned_helper_id)
+            .eq('status', 'completed')
+
           assignedHelper = {
-            id: helperProfileByUser?.id || serviceRequest.assigned_helper_id, // Prefer helper_profiles.id
+            id: helperProfileByUser?.id || serviceRequest.assigned_helper_id,
             user_id: serviceRequest.assigned_helper_id,
             avg_rating: 0,
-            total_jobs_completed: 0,
-            helper_profile_id: helperProfileByUser?.id || null, // Explicitly include this
+            total_jobs_completed: completedJobsCount || 0,
+            helper_profile_id: helperProfileByUser?.id || null,
             profile: {
               full_name: directProfile.full_name || 'Helper',
               phone: directProfile.phone || '',

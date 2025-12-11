@@ -22,7 +22,12 @@ import {
   Banknote,
   CreditCard,
   ChevronRight,
-  Percent
+  Percent,
+  Camera,
+  Video,
+  Mic,
+  Play,
+  Pause
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -44,6 +49,7 @@ export default function AIRequestPage() {
   const router = useRouter()
   const [step, setStep] = useState<'upload' | 'analysis' | 'review'>('upload')
   const [images, setImages] = useState<string[]>([])
+  const [videos, setVideos] = useState<{ url: string; name: string; type: string }[]>([])
   const [description, setDescription] = useState('')
   const [errorCode, setErrorCode] = useState('')
   const [problemDuration, setProblemDuration] = useState('')
@@ -64,6 +70,7 @@ export default function AIRequestPage() {
 
   const [broadcasting, setBroadcasting] = useState(false)
 
+  // Handle image upload from gallery
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
@@ -92,9 +99,93 @@ export default function AIRequestPage() {
     })
   }
 
+  // Handle camera capture
+  const handleCameraCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || !files[0]) return
+
+    if (images.length >= 5) {
+      toast.error('Maximum 5 images allowed')
+      return
+    }
+
+    const file = files[0]
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setImages((prev) => [...prev, reader.result as string].slice(0, 5))
+      toast.success('Photo captured!')
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Handle video upload
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || !files[0]) return
+
+    if (videos.length >= 2) {
+      toast.error('Maximum 2 videos allowed')
+      return
+    }
+
+    const file = files[0]
+    
+    // Check file size (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('Video must be under 50MB')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setVideos((prev) => [...prev, {
+        url: reader.result as string,
+        name: file.name,
+        type: file.type
+      }].slice(0, 2))
+      toast.success('Video uploaded!')
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Handle video recording from camera
+  const handleVideoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || !files[0]) return
+
+    if (videos.length >= 2) {
+      toast.error('Maximum 2 videos allowed')
+      return
+    }
+
+    const file = files[0]
+    
+    // Check file size (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('Video must be under 50MB')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setVideos((prev) => [...prev, {
+        url: reader.result as string,
+        name: file.name || 'Recorded Video',
+        type: file.type
+      }].slice(0, 2))
+      toast.success('Video recorded!')
+    }
+    reader.readAsDataURL(file)
+  }
+
   const removeImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index))
     toast.success('Image removed')
+  }
+
+  const removeVideo = (index: number) => {
+    setVideos((prev) => prev.filter((_, i) => i !== index))
+    toast.success('Video removed')
   }
 
   const getPriceForTier = (basePrice: number, tier: PriceTier): number => {
@@ -213,6 +304,7 @@ export default function AIRequestPage() {
           locationLat,
           locationLng,
           images,
+          videos: videos.map(v => v.url), // Include video URLs
           aiAnalysis,
           selectedTier,
           estimatedPrice: getPriceForTier(aiAnalysis.estimatedPrice, selectedTier),
@@ -327,53 +419,169 @@ export default function AIRequestPage() {
             <div>
               <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
                 <ImageIcon className="h-4 w-4 text-emerald-600" />
-                Photos
-                <span className="text-xs font-normal text-gray-400">3-5 required</span>
+                Photos & Videos
+                <span className="text-xs font-normal text-gray-400">3-5 photos required</span>
               </Label>
-              <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-emerald-400 hover:bg-emerald-50/30 transition-all cursor-pointer group bg-gray-50">
+              
+              {/* Upload Options - Gallery, Camera, Video */}
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                {/* Gallery Upload */}
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="gallery-upload"
+                    disabled={images.length >= 5}
+                  />
+                  <label 
+                    htmlFor="gallery-upload" 
+                    className={`flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/30 transition-all ${images.length >= 5 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                      <ImageIcon className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-700">Gallery</span>
+                  </label>
+                </div>
+
+                {/* Camera Capture */}
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleCameraCapture}
+                    className="hidden"
+                    id="camera-capture"
+                    disabled={images.length >= 5}
+                  />
+                  <label 
+                    htmlFor="camera-capture" 
+                    className={`flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/30 transition-all ${images.length >= 5 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center mb-2">
+                      <Camera className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-700">Camera</span>
+                  </label>
+                </div>
+
+                {/* Video Upload/Record */}
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="video/*"
+                    capture="environment"
+                    onChange={handleVideoCapture}
+                    className="hidden"
+                    id="video-capture"
+                    disabled={videos.length >= 2}
+                  />
+                  <label 
+                    htmlFor="video-capture" 
+                    className={`flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/30 transition-all ${videos.length >= 2 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mb-2">
+                      <Video className="h-5 w-5 text-red-600" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-700">Video</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Upload from Gallery for Video */}
+              <div className="mb-4">
                 <input
                   type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageUpload}
+                  accept="video/*"
+                  onChange={handleVideoUpload}
                   className="hidden"
-                  id="image-upload"
-                  disabled={images.length >= 5}
+                  id="video-gallery-upload"
+                  disabled={videos.length >= 2}
                 />
-                <label htmlFor="image-upload" className={`cursor-pointer block ${images.length >= 5 ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                  <div className="w-14 h-14 mx-auto mb-3 bg-emerald-100 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
-                    <ImageIcon className="h-7 w-7 text-emerald-600" />
-                  </div>
-                  <p className="text-base font-semibold text-gray-800 mb-1">
-                    {images.length === 0 ? 'Upload Photos' : `${images.length}/5 Uploaded`}
-                  </p>
-                  <p className="text-gray-500 text-sm">
-                    Tap to select or drag & drop
-                  </p>
+                <label 
+                  htmlFor="video-gallery-upload"
+                  className={`flex items-center justify-center gap-2 w-full p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all text-sm text-gray-600 ${videos.length >= 2 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <Video className="h-4 w-4" />
+                  <span>Upload Video from Gallery (max 50MB)</span>
                 </label>
+              </div>
+
+              {/* Status */}
+              <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
+                <span className={images.length >= 3 ? 'text-emerald-600 font-medium' : ''}>
+                  📷 {images.length}/5 photos
+                </span>
+                <span className={videos.length > 0 ? 'text-emerald-600 font-medium' : ''}>
+                  🎥 {videos.length}/2 videos
+                </span>
               </div>
 
               {/* Image Preview */}
               {images.length > 0 && (
-                <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
-                  {images.map((img, idx) => (
-                    <div key={idx} className="relative flex-shrink-0 group">
-                      <img 
-                        src={img} 
-                        alt={`Upload ${idx + 1}`}
-                        className="w-20 h-20 object-cover rounded-lg border border-gray-200"
-                      />
-                      <button
-                        onClick={() => removeImage(idx)}
-                        className="absolute -top-1.5 -right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center shadow"
-                        type="button"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
+                <div className="mb-4">
+                  <p className="text-xs text-gray-500 mb-2">Photos:</p>
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {images.map((img, idx) => (
+                      <div key={idx} className="relative flex-shrink-0 group">
+                        <img 
+                          src={img} 
+                          alt={`Upload ${idx + 1}`}
+                          className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                        />
+                        <button
+                          onClick={() => removeImage(idx)}
+                          className="absolute -top-1.5 -right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center shadow"
+                          type="button"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
+
+              {/* Video Preview */}
+              {videos.length > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-2">Videos (with audio):</p>
+                  <div className="flex flex-col gap-3">
+                    {videos.map((video, idx) => (
+                      <div key={idx} className="relative bg-gray-100 rounded-xl overflow-hidden">
+                        <video 
+                          src={video.url}
+                          controls
+                          className="w-full h-40 object-cover"
+                        />
+                        <button
+                          onClick={() => removeVideo(idx)}
+                          className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow"
+                          type="button"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                        <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                          <Mic className="h-3 w-3" />
+                          <span>With Audio</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tip for better uploads */}
+              <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <p className="text-xs text-amber-800">
+                  💡 <strong>Tip:</strong> Record a short video explaining the problem with your voice. 
+                  This helps the helper understand the issue better before arriving.
+                </p>
+              </div>
             </div>
 
             {/* Service Category */}

@@ -17,7 +17,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ZoomIn,
-  Phone
+  Phone,
+  Video,
+  Play
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -35,6 +37,7 @@ interface JobNotification {
   expires_in: number // seconds
   sent_at: string
   photos?: string[] // Customer uploaded photos
+  videos?: string[] // Customer uploaded videos with audio
   expected_time?: string // When customer expects resolution
 }
 
@@ -270,6 +273,35 @@ export function JobNotificationPopup({
               </div>
             )}
 
+            {/* Customer Videos with Audio */}
+            {notification.videos && notification.videos.length > 0 && (
+              <div className="bg-blue-50 rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Video className="h-4 w-4 text-blue-600" />
+                  <p className="text-xs text-blue-600 font-medium">Videos from Customer (with audio)</p>
+                </div>
+                <div className="space-y-2">
+                  {notification.videos.map((video, idx) => (
+                    <div key={idx} className="relative rounded-lg overflow-hidden bg-black">
+                      <video 
+                        src={video}
+                        controls
+                        className="w-full h-32 object-contain"
+                        preload="metadata"
+                      />
+                      <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Play className="h-3 w-3" />
+                        <span>Video {idx + 1}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-blue-500 mt-2">
+                  🔊 Customer explains the problem in the video
+                </p>
+              </div>
+            )}
+
             {/* Details Row */}
             <div className="grid grid-cols-3 gap-3">
               {/* Price */}
@@ -467,6 +499,10 @@ export function useJobNotifications() {
             else if (expectedTime === 'tomorrow') expectedTime = 'Tomorrow'
             else if (expectedTime === 'this_week') expectedTime = 'This week'
             
+            // Get images and videos from service_type_details (or fallback to req.images)
+            const images = serviceDetails.images || req.images || []
+            const videos = serviceDetails.videos || []
+            
             setNotification({
               id: data.id,
               request_id: data.request_id,
@@ -480,7 +516,8 @@ export function useJobNotifications() {
               distance_km: parseFloat(data.distance_km) || 0,
               expires_in: 30,
               sent_at: data.sent_at,
-              photos: req.images || [],
+              photos: images,
+              videos: videos,
               expected_time: expectedTime || undefined
             })
 
