@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { releaseEscrow } from '@/app/actions/payments'
 import { PaymentSafetyInfo } from '@/components/trust-badges'
+import { PaymentButton } from '@/components/payment-button'
 import ChatWindow from '@/components/chat-window'
 import { 
   MapPin, Clock, DollarSign, CheckCircle2, XCircle, 
   Phone, MessageSquare, Star, AlertCircle, Loader2,
-  Calendar, User, Award
+  Calendar, User, Award, CreditCard
 } from 'lucide-react'
 
 interface RequestRow { 
@@ -51,6 +52,14 @@ interface HelperProfile {
   phone: string | null
 }
 
+interface PaymentOrder {
+  id: string
+  order_id: string
+  amount: number
+  payment_status: string
+  created_at: string
+}
+
 const statusConfig = {
   draft: { label: 'Draft', color: 'bg-gray-500', icon: Clock },
   open: { label: 'Open', color: 'bg-blue-500', icon: AlertCircle },
@@ -74,6 +83,8 @@ export default function RequestDetailPage() {
   const [error, setError] = useState('')
   const [reviewed, setReviewed] = useState(false)
   const [activeTab, setActiveTab] = useState<'details' | 'applications' | 'chat'>('details')
+  const [paymentOrder, setPaymentOrder] = useState<PaymentOrder | null>(null)
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -165,6 +176,19 @@ export default function RequestDetailPage() {
       }
     }
 
+    // Check for existing payment order
+    const { data: payment } = await supabase
+      .from('payment_orders')
+      .select('id, order_id, amount, payment_status, created_at')
+      .eq('request_id', requestId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    
+    if (payment) {
+      setPaymentOrder(payment as PaymentOrder)
+    }
+
     setLoading(false)
   }
 
@@ -254,6 +278,20 @@ export default function RequestDetailPage() {
     
     loadData()
   }
+
+  function handlePaymentSuccess() {
+    setShowPaymentSuccess(true)
+    loadData() // Reload to get updated payment status
+    setTimeout(() => setShowPaymentSuccess(false), 5000)
+  }
+
+  function handlePaymentError(error: string) {
+    setError(`Payment failed: ${error}`)
+  }
+
+  // Get accepted application's proposed rate for payment amount
+  const acceptedApplication = applications.find(app => app.status === 'accepted')
+  const paymentAmount = acceptedApplication?.proposed_rate || request?.budget_max || 500
 
   if (loading) {
     return (
@@ -524,6 +562,75 @@ export default function RequestDetailPage() {
                       </a>
                     )}
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Payment Section */}
+            {assignedHelper && request.status === 'assigned' && (
+              <Card className="border-2 border-blue-200 dark:border-blue-800">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5 text-blue-600" />
+                    Payment
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {showPaymentSuccess && (
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                      <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                        <CheckCircle2 className="h-5 w-5" />
+                        <span className="font-medium">Payment Successful!</span>
+                      </div>
+                      <p className="text-sm text-green-600 dark:text-green-500 mt-1">
+                        Funds are now held in escrow until work is completed.
+                      </p>
+                    </div>
+                  )}
+
+                  {!paymentOrder || paymentOrder.payment_status === 'pending' || paymentOrder.payment_status === 'failed' ? (
+                    <>
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                          ₹{paymentAmount.toLocaleString()}
+                        </div>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                          {acceptedApplication?.proposed_rate 
+                            ? "Helper's quoted rate"
+                            : "Based on budget maximum"}
+                        </p>
+                      </div>
+                      
+                      <PaymentButton
+                        amount={paymentAmount}
+                        requestId={requestId}
+                        description={`Payment for: ${request.title}`}
+                        onSuccess={handlePaymentSuccess}
+                        onError={handlePaymentError}
+                        className="w-full"
+                      />
+                      
+                      <div className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                        <p>💰 Funds held securely in escrow</p>
+                        <p>✅ Released only when you mark complete</p>
+                      </div>
+                    </>
+                  ) : paymentOrder.payment_status === 'paid' ? (
+                    <div className="text-center">
+                      <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                        <CheckCircle2 className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                        <p className="font-medium text-green-700 dark:text-green-400">
+                          Payment Complete
+                        </p>
+                        <p className="text-2xl font-bold text-green-600 mt-1">
+                          ₹{paymentOrder.amount.toLocaleString()}
+                        </p>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+                          Funds held in escrow
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
                 </CardContent>
               </Card>
             )}
