@@ -28,15 +28,56 @@ import {
   PestControlIcon
 } from '@/components/ui/service-icons'
 
+// Avatar sets that will rotate every 5 seconds
+const avatarSets = [
+  [
+    'https://randomuser.me/api/portraits/men/32.jpg',
+    'https://randomuser.me/api/portraits/women/44.jpg',
+    'https://randomuser.me/api/portraits/men/67.jpg',
+    'https://randomuser.me/api/portraits/women/28.jpg',
+    'https://randomuser.me/api/portraits/men/55.jpg',
+  ],
+  [
+    'https://randomuser.me/api/portraits/women/63.jpg',
+    'https://randomuser.me/api/portraits/men/86.jpg',
+    'https://randomuser.me/api/portraits/women/79.jpg',
+    'https://randomuser.me/api/portraits/men/46.jpg',
+    'https://randomuser.me/api/portraits/women/65.jpg',
+  ],
+  [
+    'https://randomuser.me/api/portraits/men/75.jpg',
+    'https://randomuser.me/api/portraits/women/91.jpg',
+    'https://randomuser.me/api/portraits/men/22.jpg',
+    'https://randomuser.me/api/portraits/women/37.jpg',
+    'https://randomuser.me/api/portraits/men/41.jpg',
+  ],
+  [
+    'https://randomuser.me/api/portraits/women/52.jpg',
+    'https://randomuser.me/api/portraits/men/18.jpg',
+    'https://randomuser.me/api/portraits/women/12.jpg',
+    'https://randomuser.me/api/portraits/men/94.jpg',
+    'https://randomuser.me/api/portraits/women/83.jpg',
+  ],
+]
+
 export default function LandingPage() {
   const [currentService, setCurrentService] = useState(0)
+  const [currentAvatarSet, setCurrentAvatarSet] = useState(0)
   const services = ['Plumber', 'Electrician', 'Cleaner', 'Carpenter', 'AC Repair']
   
   useEffect(() => {
-    const interval = setInterval(() => {
+    const serviceInterval = setInterval(() => {
       setCurrentService((prev) => (prev + 1) % 5)
     }, 2000)
-    return () => clearInterval(interval)
+    return () => clearInterval(serviceInterval)
+  }, [])
+
+  // Rotate avatars every 5 seconds
+  useEffect(() => {
+    const avatarInterval = setInterval(() => {
+      setCurrentAvatarSet((prev) => (prev + 1) % avatarSets.length)
+    }, 5000)
+    return () => clearInterval(avatarInterval)
   }, [])
 
   return (
@@ -129,14 +170,21 @@ export default function LandingPage() {
                 </Button>
               </div>
 
-              {/* Social Proof */}
-              <div className="flex items-center gap-8 pt-4">
-                <div className="flex -space-x-3">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 border-2 border-white flex items-center justify-center text-xs font-medium text-gray-600">
-                      {String.fromCharCode(64 + i)}
-                    </div>
+              {/* Social Proof - Happy Customers */}
+              <div className="flex items-center gap-6 pt-4">
+                <div className="flex -space-x-2">
+                  {avatarSets[currentAvatarSet].map((avatar, index) => (
+                    <img 
+                      key={`${currentAvatarSet}-${index}`}
+                      src={avatar} 
+                      alt="" 
+                      className="w-10 h-10 rounded-full border-2 border-white object-cover shadow-lg animate-avatar-swap"
+                      style={{ animationDelay: `${index * 0.1}s` }}
+                    />
                   ))}
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center shadow-lg">
+                    <span className="text-emerald-600 text-[9px] font-bold">50K+</span>
+                  </div>
                 </div>
                 <div>
                   <div className="flex items-center gap-1">
@@ -339,7 +387,7 @@ export default function LandingPage() {
                 <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
                   <div className="flex items-center gap-4 mb-6">
                     <span className="text-5xl">{item.icon}</span>
-                    <span className="text-5xl font-bold text-gray-100">{item.step}</span>
+                    <span className="text-5xl font-bold text-emerald-200">{item.step}</span>
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-3">{item.title}</h3>
                   <p className="text-gray-600 leading-relaxed">{item.desc}</p>

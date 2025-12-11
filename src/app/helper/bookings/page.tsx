@@ -42,8 +42,8 @@ interface Booking {
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof Clock }> = {
-  assigned: { label: 'Assigned', color: 'bg-yellow-500', icon: Clock },
-  in_progress: { label: 'In Progress', color: 'bg-purple-500', icon: Clock },
+  open: { label: 'Open', color: 'bg-blue-500', icon: Clock },
+  assigned: { label: 'In Progress', color: 'bg-yellow-500', icon: Clock },
   completed: { label: 'Completed', color: 'bg-green-500', icon: CheckCircle2 },
   cancelled: { label: 'Cancelled', color: 'bg-red-500', icon: XCircle },
 }
@@ -88,8 +88,13 @@ export default function HelperBookingsPage() {
         )
       `)
       .eq('assigned_helper_id', user.id)
-      .in('status', ['assigned', 'in_progress', 'completed', 'cancelled'])
+      .in('status', ['open', 'assigned', 'completed', 'cancelled'])
       .order('created_at', { ascending: false })
+
+    console.log('📋 Loaded bookings:', assignedBookings?.length, 'for user:', user.id)
+    if (error) {
+      console.error('❌ Error loading bookings:', error)
+    }
 
     if (!error && assignedBookings) {
       // Transform the data to match the Booking interface
@@ -106,14 +111,14 @@ export default function HelperBookingsPage() {
 
   const filteredBookings = bookings.filter(booking => {
     if (filter === 'all') return true
-    if (filter === 'active') return ['assigned', 'in_progress'].includes(booking.status)
+    if (filter === 'active') return ['open', 'assigned'].includes(booking.status)
     if (filter === 'completed') return booking.status === 'completed'
     return true
   })
 
   const stats = {
     total: bookings.length,
-    active: bookings.filter(b => ['assigned', 'in_progress'].includes(b.status)).length,
+    active: bookings.filter(b => ['open', 'assigned'].includes(b.status)).length,
     completed: bookings.filter(b => b.status === 'completed').length,
   }
 
@@ -278,10 +283,10 @@ export default function HelperBookingsPage() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <Link href={`/helper/assigned/${booking.id}`}>
+                        <Link href={`/helper/jobs/${booking.id}`}>
                           <Button variant="outline" size="sm">
                             <Eye className="w-4 h-4 mr-1" />
-                            View Details
+                            View Job
                           </Button>
                         </Link>
                         
@@ -293,10 +298,10 @@ export default function HelperBookingsPage() {
                         </Link>
 
                         {booking.status === 'assigned' && (
-                          <Link href={`/helper/time-tracking?job=${booking.id}`}>
+                          <Link href={`/helper/jobs/${booking.id}`}>
                             <Button variant="outline" size="sm" className="text-green-600 border-green-600">
                               <Play className="w-4 h-4 mr-1" />
-                              Start Job
+                              Continue Job
                             </Button>
                           </Link>
                         )}

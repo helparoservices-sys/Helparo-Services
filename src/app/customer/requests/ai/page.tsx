@@ -17,7 +17,12 @@ import {
   Sparkles,
   X,
   Image as ImageIcon,
-  MapPin
+  MapPin,
+  Wallet,
+  Banknote,
+  CreditCard,
+  ChevronRight,
+  Percent
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -33,6 +38,7 @@ interface AIAnalysis {
 }
 
 type PriceTier = 'budget' | 'standard' | 'priority'
+type PaymentMethod = 'cash' | 'upi' | 'wallet'
 
 export default function AIRequestPage() {
   const router = useRouter()
@@ -53,6 +59,8 @@ export default function AIRequestPage() {
   const [analyzing, setAnalyzing] = useState(false)
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null)
   const [selectedTier, setSelectedTier] = useState<PriceTier>('standard')
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash')
+  const [showPaymentOptions, setShowPaymentOptions] = useState(false)
 
   const [broadcasting, setBroadcasting] = useState(false)
 
@@ -211,7 +219,8 @@ export default function AIRequestPage() {
           urgency: aiAnalysis.urgency,
           problemDuration,
           errorCode,
-          preferredTime
+          preferredTime,
+          paymentMethod, // Added payment method
         }),
       })
 
@@ -233,12 +242,8 @@ export default function AIRequestPage() {
         { duration: 5000 }
       )
 
-      setStep('review')
-      
-      // Redirect after showing success
-      setTimeout(() => {
-        router.push('/customer/requests')
-      }, 3000)
+      // Redirect to job tracking page
+      router.push(`/customer/requests/${data.requestId}/track`)
 
     } catch (error: any) {
       console.error('Broadcast error:', error)
@@ -689,6 +694,94 @@ export default function AIRequestPage() {
                 </Badge>
               ))}
             </div>
+
+            {/* Payment Method Selection - Rapido Style */}
+            <div className="border-t border-gray-100 pt-4">
+              <button
+                onClick={() => setShowPaymentOptions(!showPaymentOptions)}
+                className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  {paymentMethod === 'cash' && <Banknote className="h-5 w-5 text-green-600" />}
+                  {paymentMethod === 'upi' && <Wallet className="h-5 w-5 text-purple-600" />}
+                  {paymentMethod === 'wallet' && <CreditCard className="h-5 w-5 text-blue-600" />}
+                  <span className="font-medium text-gray-900">
+                    {paymentMethod === 'cash' && 'Cash'}
+                    {paymentMethod === 'upi' && 'UPI'}
+                    {paymentMethod === 'wallet' && 'Helparo Wallet'}
+                  </span>
+                </div>
+                <ChevronRight className={`h-5 w-5 text-gray-400 transition-transform ${showPaymentOptions ? 'rotate-90' : ''}`} />
+              </button>
+
+              {/* Payment Options Dropdown */}
+              {showPaymentOptions && (
+                <div className="mt-2 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-lg">
+                  <button
+                    onClick={() => { setPaymentMethod('cash'); setShowPaymentOptions(false); }}
+                    className={`w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors border-b border-gray-100 ${paymentMethod === 'cash' ? 'bg-emerald-50' : ''}`}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                      <Banknote className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold text-gray-900">Cash</p>
+                      <p className="text-xs text-gray-500">Pay directly to helper</p>
+                    </div>
+                    {paymentMethod === 'cash' && (
+                      <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
+                        <span className="text-white text-xs">✓</span>
+                      </div>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => { setPaymentMethod('upi'); setShowPaymentOptions(false); }}
+                    className={`w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors border-b border-gray-100 ${paymentMethod === 'upi' ? 'bg-emerald-50' : ''}`}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                      <Wallet className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold text-gray-900">UPI</p>
+                      <p className="text-xs text-gray-500">Pay via UPI (1-2 days settlement)</p>
+                    </div>
+                    {paymentMethod === 'upi' && (
+                      <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
+                        <span className="text-white text-xs">✓</span>
+                      </div>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => { setPaymentMethod('wallet'); setShowPaymentOptions(false); }}
+                    className={`w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors ${paymentMethod === 'wallet' ? 'bg-emerald-50' : ''}`}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                      <CreditCard className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold text-gray-900">Helparo Wallet</p>
+                      <p className="text-xs text-gray-500">Use wallet balance</p>
+                    </div>
+                    {paymentMethod === 'wallet' && (
+                      <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
+                        <span className="text-white text-xs">✓</span>
+                      </div>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Offers Section - Like Rapido */}
+            <button className="w-full flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded-xl">
+              <div className="flex items-center gap-2">
+                <Percent className="h-5 w-5 text-orange-600" />
+                <span className="font-medium text-orange-700">Offers</span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-orange-400" />
+            </button>
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-2">
