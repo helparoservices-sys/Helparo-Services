@@ -142,6 +142,7 @@ export function PaymentButton({
       const response = await fetch('/api/payments/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Important: Include cookies for auth
         body: JSON.stringify({
           request_id: requestId,
           amount: amount,
