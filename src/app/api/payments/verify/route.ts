@@ -3,9 +3,9 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { logger } from '@/lib/logger'
 
-// Cashfree API configuration - support both variable names
-const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID || process.env.NEXT_PUBLIC_PAYMENT_API_KEY!
-const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY || process.env.PAYMENT_SECRET_KEY!
+// Cashfree API configuration
+const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID!
+const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY!
 const CASHFREE_ENV = process.env.CASHFREE_ENVIRONMENT || 'PRODUCTION'
 
 const CASHFREE_API_URL = CASHFREE_ENV === 'PRODUCTION' 
@@ -39,7 +39,7 @@ async function createRouteClient() {
  */
 export async function GET(request: NextRequest) {
   try {
-    // Verify authentication using route-specific client
+    // Verify authentication
     const supabase = await createRouteClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
         success: true,
         order_id: orderId,
         status: paymentOrder.payment_status,
-        amount: paymentOrder.order_amount / 100, // Convert paise to rupees
+        amount: paymentOrder.order_amount / 100,
         payment_method: paymentOrder.payment_method,
         payment_time: paymentOrder.payment_time,
         from_cache: true,
@@ -110,12 +110,7 @@ export async function GET(request: NextRequest) {
     )
 
     if (!cashfreeResponse.ok) {
-      logger.error('Cashfree verify failed', { 
-        status: cashfreeResponse.status,
-        orderId 
-      })
-      
-      // Return cached status if Cashfree call fails
+      logger.error('Cashfree verify failed', { status: cashfreeResponse.status, orderId })
       return NextResponse.json({
         success: true,
         order_id: orderId,
@@ -134,8 +129,6 @@ export async function GET(request: NextRequest) {
       status = 'success'
     } else if (cashfreeData.order_status === 'EXPIRED' || cashfreeData.order_status === 'TERMINATED') {
       status = 'failed'
-    } else if (cashfreeData.order_status === 'ACTIVE') {
-      status = 'pending'
     }
 
     // Update database if status changed

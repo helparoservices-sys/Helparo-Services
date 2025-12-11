@@ -118,8 +118,6 @@ export function PaymentButton({
   }, [])
 
   const initiatePayment = async () => {
-    console.log('🔵 Payment initiated')
-    
     if (!sdkLoaded) {
       toast.error('Payment service is loading. Please try again.')
       return
@@ -130,7 +128,6 @@ export function PaymentButton({
       return
     }
 
-    console.log('🔵 User details:', userDetails)
     setStatus('creating')
     setError('')
 
@@ -141,24 +138,15 @@ export function PaymentButton({
     }
 
     try {
-      // Check if user is authenticated (session check only, no refresh needed)
-      console.log('🔵 Checking session...')
+      // Check if user is authenticated
       const supabase = createClient()
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
       
-      console.log('🔵 Session check result:', { 
-        hasSession: !!session, 
-        userId: session?.user?.id,
-        error: sessionError?.message 
-      })
-      
       if (sessionError || !session) {
-        console.error('❌ Session check failed:', sessionError)
         toast.error('Session expired. Please login again.')
         setStatus('failed')
         setError('Session expired')
         handleError('Session expired - please login again')
-        // Redirect to login after a short delay
         setTimeout(() => {
           window.location.href = '/auth/login?redirect=' + encodeURIComponent(window.location.pathname)
         }, 2000)
@@ -166,16 +154,10 @@ export function PaymentButton({
       }
 
       // 1. Create order on backend
-      console.log('🔵 Creating payment order...', {
-        requestId,
-        amount,
-        userName: userDetails.name
-      })
-      
       const response = await fetch('/api/payments/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Important: Include cookies for auth
+        credentials: 'include',
         body: JSON.stringify({
           request_id: requestId,
           amount: amount,
@@ -186,9 +168,7 @@ export function PaymentButton({
         }),
       })
 
-      console.log('🔵 Payment API response status:', response.status)
       const orderData = await response.json()
-      console.log('🔵 Payment API response data:', orderData)
 
       if (!response.ok) {
         // Handle auth errors specifically
@@ -211,15 +191,13 @@ export function PaymentButton({
 
       const checkoutOptions = {
         paymentSessionId: orderData.payment_session_id,
-        redirectTarget: '_modal', // Open in modal
+        redirectTarget: '_modal',
       }
 
       // 3. Open payment modal
       const result = await cashfree.checkout(checkoutOptions)
 
       if (result.error) {
-        // Payment failed or cancelled
-        console.error('Payment error:', result.error)
         setStatus('failed')
         setError(result.error.message || 'Payment failed')
         handleError(result.error.message)

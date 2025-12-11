@@ -4,10 +4,10 @@ import { cookies } from 'next/headers'
 import { logger } from '@/lib/logger'
 import crypto from 'crypto'
 
-// Cashfree API configuration - support both old and new variable names
-const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID || process.env.NEXT_PUBLIC_PAYMENT_API_KEY!
-const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY || process.env.PAYMENT_SECRET_KEY!
-const CASHFREE_ENV = process.env.CASHFREE_ENVIRONMENT || 'PRODUCTION' // TEST or PRODUCTION
+// Cashfree API configuration
+const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID!
+const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY!
+const CASHFREE_ENV = process.env.CASHFREE_ENVIRONMENT || 'PRODUCTION'
 
 const CASHFREE_API_URL = CASHFREE_ENV === 'PRODUCTION' 
   ? 'https://api.cashfree.com/pg'
@@ -15,7 +15,7 @@ const CASHFREE_API_URL = CASHFREE_ENV === 'PRODUCTION'
 
 interface CreateOrderRequest {
   request_id: string
-  amount: number // In rupees
+  amount: number
   customer_name: string
   customer_email: string
   customer_phone: string
@@ -54,55 +54,17 @@ async function createRouteClient() {
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔵 API: Payment order creation started', {
-      url: request.url,
-      method: request.method,
-      origin: request.headers.get('origin'),
-      referer: request.headers.get('referer'),
-      userAgent: request.headers.get('user-agent')?.substring(0, 50)
-    })
-    
-    // Verify authentication using route-specific client
-    const cookieStore = await cookies()
-    const allCookies = cookieStore.getAll()
-    
-    console.log('🔵 API: Total cookies received:', allCookies.length)
-    
-    // Log ALL cookies for debugging
-    console.log('🔵 API: All cookie names:', allCookies.map(c => c.name))
-    
-    // Log auth-related cookies for debugging
-    const authCookies = allCookies.filter(c => 
-      c.name.includes('auth') || c.name.includes('supabase') || c.name.includes('sb-')
-    )
-    console.log('🔵 API: Auth cookies found:', authCookies.length)
-    console.log('🔵 API: Auth cookie details:', authCookies.map(c => ({ 
-      name: c.name, 
-      hasValue: !!c.value,
-      valueLength: c.value?.length || 0,
-      valueStart: c.value?.substring(0, 20) + '...'
-    })))
-    
+    // Verify authentication
     const supabase = await createRouteClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
-    console.log('🔵 API: Auth check result:', { 
-      hasUser: !!user, 
-      userId: user?.id,
-      authError: authError?.message,
-      cookieCount: allCookies.length
-    })
-    
     if (authError || !user) {
-      console.error('❌ API: Payment auth failed', { authError: authError?.message })
-      logger.error('Payment auth failed', { authError: authError?.message })
+      logger.warn('Payment auth failed', { error: authError?.message })
       return NextResponse.json(
-        { error: 'Unauthorized - Please login again', details: authError?.message },
+        { error: 'Unauthorized - Please login again' },
         { status: 401 }
       )
     }
-    
-    console.log('✅ API: User authenticated:', user.id)
 
     // Check if Cashfree credentials are configured
     if (!CASHFREE_APP_ID || !CASHFREE_SECRET_KEY) {
@@ -113,11 +75,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse request body
+    // Parse and validate request body
     const body: CreateOrderRequest = await request.json()
     const { request_id, amount, customer_name, customer_email, customer_phone, order_note } = body
 
-    // Validate required fields
     if (!request_id || !amount || !customer_phone) {
       return NextResponse.json(
         { error: 'Missing required fields: request_id, amount, customer_phone' },
@@ -125,7 +86,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate amount (minimum ₹1)
     if (amount < 1) {
       return NextResponse.json(
         { error: 'Minimum amount is ₹1' },
@@ -158,53 +118,28 @@ export async function POST(request: NextRequest) {
     const orderId = `HLP_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`
 
     // Get base URL - Cashfree requires HTTPS in production
-    const getBaseUrl = () => {
-      // In production or when CASHFREE_ENVIRONMENT is PRODUCTION, always use HTTPS
-      if (CASHFREE_ENV === 'PRODUCTION') {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helparo.in'
-        // Force HTTPS if APP_URL is configured with http://
-        return appUrl.replace(/^http:/, 'https:')
-      }
-      // In test mode, allow HTTP (for local development)
-      return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    }
+    const baseUrl = CASHFREE_ENV === 'PRODUCTION'
+      ? (process.env.NEXT_PUBLIC_APP_URL || 'https://helparo.in').replace(/^http:/, 'https:')
+      : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000')
 
-    const baseUrl = getBaseUrl()
-
-    // Create Cashfree order
+    // Create Cashfree order payload
     const cashfreeOrderData = {
       order_id: orderId,
       order_amount: amount,
       order_currency: 'INR',
       customer_details: {
-        customer_id: user.id.replace(/-/g, '').substring(0, 20), // Cashfree max 20 chars
+        customer_id: user.id.replace(/-/g, '').substring(0, 20),
         customer_name: customer_name || 'Customer',
         customer_email: customer_email || user.email || 'customer@helparo.in',
-        customer_phone: customer_phone.replace(/\D/g, '').slice(-10), // Last 10 digits
+        customer_phone: customer_phone.replace(/\D/g, '').slice(-10),
       },
       order_meta: {
         return_url: `${baseUrl}/customer/bookings?payment=success&order_id=${orderId}`,
         notify_url: `${baseUrl}/api/payments/webhook`,
-        payment_methods: null, // Allow all methods
+        payment_methods: null,
       },
       order_note: order_note || `Payment for: ${serviceRequest.title || 'Service Request'}`,
     }
-
-    console.log('🔵 API: Cashfree Config:', {
-      env: CASHFREE_ENV,
-      url: CASHFREE_API_URL,
-      hasAppId: !!CASHFREE_APP_ID,
-      hasSecret: !!CASHFREE_SECRET_KEY,
-      appIdPrefix: CASHFREE_APP_ID?.substring(0, 8) + '...'
-    })
-    
-    logger.info('Creating Cashfree order', { 
-      orderId, 
-      amount, 
-      requestId: request_id,
-      userId: user.id,
-      env: CASHFREE_ENV
-    })
 
     // Call Cashfree Create Order API
     const cashfreeResponse = await fetch(`${CASHFREE_API_URL}/orders`, {
@@ -222,7 +157,7 @@ export async function POST(request: NextRequest) {
 
     if (!cashfreeResponse.ok) {
       logger.error('Cashfree order creation failed', { 
-        error: cashfreeResult,
+        error: cashfreeResult.message,
         orderId,
         status: cashfreeResponse.status
       })
@@ -240,7 +175,7 @@ export async function POST(request: NextRequest) {
         cf_order_id: cashfreeResult.cf_order_id,
         request_id: request_id,
         customer_id: user.id,
-        order_amount: Math.round(amount * 100), // Store in paise
+        order_amount: Math.round(amount * 100),
         order_currency: 'INR',
         payment_status: 'pending',
         customer_name: customer_name,
@@ -252,20 +187,11 @@ export async function POST(request: NextRequest) {
       })
 
     if (dbError) {
-      logger.error('Failed to store payment order in database', { 
-        error: dbError, 
-        orderId 
-      })
-      // Don't fail the request - the Cashfree order is already created
+      logger.error('Failed to store payment order', { error: dbError.message, orderId })
     }
 
-    logger.info('Cashfree order created successfully', { 
-      orderId,
-      cfOrderId: cashfreeResult.cf_order_id,
-      paymentSessionId: cashfreeResult.payment_session_id
-    })
+    logger.info('Payment order created', { orderId, amount, userId: user.id })
 
-    // Return order details for frontend
     return NextResponse.json({
       success: true,
       order_id: orderId,
@@ -273,7 +199,6 @@ export async function POST(request: NextRequest) {
       payment_session_id: cashfreeResult.payment_session_id,
       order_amount: amount,
       order_currency: 'INR',
-      // For Cashfree JS SDK
       environment: CASHFREE_ENV,
     })
 
