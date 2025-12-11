@@ -8,247 +8,508 @@ import {
   Clock,
   Star,
   MapPin,
-  CheckCircle,
-  Phone,
   Zap,
   BadgeCheck,
-  Play,
   ChevronRight,
-  Sparkles
+  Award,
+  Headphones,
+  Sparkles,
+  ArrowUpRight,
+  Menu,
+  X,
+  Play,
+  Heart,
+  Users,
+  Timer,
+  Phone,
+  MessageCircle,
+  IndianRupee,
+  Bot,
+  Rocket,
+  Crown
 } from 'lucide-react'
-import { useState, useEffect } from 'react'
-import {
-  PlumbingIcon,
-  ElectricalIcon,
-  CleaningIcon,
-  CarpentryIcon,
-  ACRepairIcon,
-  PaintingIcon,
-  AppliancesIcon,
-  PestControlIcon
-} from '@/components/ui/service-icons'
+import { useState, useEffect, useRef } from 'react'
 
-// Avatar sets that will rotate every 5 seconds
-const avatarSets = [
-  [
-    'https://randomuser.me/api/portraits/men/32.jpg',
-    'https://randomuser.me/api/portraits/women/44.jpg',
-    'https://randomuser.me/api/portraits/men/67.jpg',
-    'https://randomuser.me/api/portraits/women/28.jpg',
-    'https://randomuser.me/api/portraits/men/55.jpg',
-  ],
-  [
-    'https://randomuser.me/api/portraits/women/63.jpg',
-    'https://randomuser.me/api/portraits/men/86.jpg',
-    'https://randomuser.me/api/portraits/women/79.jpg',
-    'https://randomuser.me/api/portraits/men/46.jpg',
-    'https://randomuser.me/api/portraits/women/65.jpg',
-  ],
-  [
-    'https://randomuser.me/api/portraits/men/75.jpg',
-    'https://randomuser.me/api/portraits/women/91.jpg',
-    'https://randomuser.me/api/portraits/men/22.jpg',
-    'https://randomuser.me/api/portraits/women/37.jpg',
-    'https://randomuser.me/api/portraits/men/41.jpg',
-  ],
-  [
-    'https://randomuser.me/api/portraits/women/52.jpg',
-    'https://randomuser.me/api/portraits/men/18.jpg',
-    'https://randomuser.me/api/portraits/women/12.jpg',
-    'https://randomuser.me/api/portraits/men/94.jpg',
-    'https://randomuser.me/api/portraits/women/83.jpg',
-  ],
-]
+// Animated Counter with intersection observer
+function AnimatedCounter({ end, duration = 2000, suffix = '', prefix = '' }: { end: number; duration?: number; suffix?: string; prefix?: string }) {
+  const [count, setCount] = useState(0)
+  const [isVisible, setIsVisible] = useState(false)
+  const ref = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setIsVisible(true)
+      },
+      { threshold: 0.1 }
+    )
+    if (ref.current) observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!isVisible) return
+    let startTime: number
+    const step = (timestamp: number) => {
+      if (!startTime) startTime = timestamp
+      const progress = Math.min((timestamp - startTime) / duration, 1)
+      setCount(Math.floor(progress * end))
+      if (progress < 1) requestAnimationFrame(step)
+    }
+    requestAnimationFrame(step)
+  }, [isVisible, end, duration])
+
+  return <span ref={ref}>{prefix}{count.toLocaleString()}{suffix}</span>
+}
 
 export default function LandingPage() {
   const [currentService, setCurrentService] = useState(0)
-  const [currentAvatarSet, setCurrentAvatarSet] = useState(0)
-  const services = ['Plumber', 'Electrician', 'Cleaner', 'Carpenter', 'AC Repair']
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [activeTestimonial, setActiveTestimonial] = useState(0)
+  const [showHowItWorks, setShowHowItWorks] = useState(false)
+  
+  const services = ['Plumber', 'Electrician', 'Cleaner', 'Carpenter', 'AC Expert']
   
   useEffect(() => {
-    const serviceInterval = setInterval(() => {
-      setCurrentService((prev) => (prev + 1) % 5)
-    }, 2000)
-    return () => clearInterval(serviceInterval)
+    const interval = setInterval(() => setCurrentService((p) => (p + 1) % services.length), 2500)
+    return () => clearInterval(interval)
+  }, [services.length])
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 20)
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Rotate avatars every 5 seconds
   useEffect(() => {
-    const avatarInterval = setInterval(() => {
-      setCurrentAvatarSet((prev) => (prev + 1) % avatarSets.length)
-    }, 5000)
-    return () => clearInterval(avatarInterval)
+    const interval = setInterval(() => setActiveTestimonial((p) => (p + 1) % 3), 5000)
+    return () => clearInterval(interval)
   }, [])
+
+  const testimonials = [
+    { name: 'Priya Sharma', location: 'Mumbai', text: 'Absolutely incredible service! The plumber arrived in 15 minutes and fixed everything perfectly. This is the future of home services.', rating: 5, avatar: 'PS' },
+    { name: 'Rahul Verma', location: 'Bangalore', text: 'I\'ve tried many apps but Helparo is on another level. Professional, punctual, and the app experience is so smooth!', rating: 5, avatar: 'RV' },
+    { name: 'Anita Desai', location: 'Delhi', text: 'The AC technician was so professional and knowledgeable. Fair pricing, no hidden charges. Highly recommend!', rating: 5, avatar: 'AD' },
+  ]
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header - Clean & Minimal like Zomato */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                <span className="text-white font-bold text-lg">H</span>
+    <div className="min-h-screen bg-white overflow-hidden">
+      {/* ═══════════════════════════════════════════════════════════════════
+          HOW IT WORKS MODAL - FULL FLOW EXPLANATION
+      ═══════════════════════════════════════════════════════════════════ */}
+      {showHowItWorks && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowHowItWorks(false)} />
+          
+          {/* Modal */}
+          <div className="relative bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fade-in">
+            {/* Close Button */}
+            <button 
+              onClick={() => setShowHowItWorks(false)}
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors z-10"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Modal Content */}
+            <div className="p-8 lg:p-12">
+              {/* Header */}
+              <div className="text-center mb-10">
+                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-2 rounded-full text-sm font-bold mb-4">
+                  <Play className="w-4 h-4" />
+                  How Helparo Works
+                </div>
+                <h2 className="text-3xl lg:text-4xl font-black text-gray-900 mb-3">
+                  Book in 60 seconds,<br /><span className="text-emerald-600">get help in minutes</span>
+                </h2>
+                <p className="text-gray-500 text-lg">Revolutionary AI-powered booking with self-pricing</p>
               </div>
-              <span className="text-xl font-bold text-gray-900">Helparo</span>
+
+              {/* Flow Steps */}
+              <div className="space-y-6">
+                {/* Step 1 */}
+                <div className="flex gap-6 items-start p-6 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl border border-blue-100">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/30">
+                    <span className="text-2xl">📱</span>
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-blue-600 mb-1">STEP 1</div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Select Your Service</h3>
+                    <p className="text-gray-600">Choose from 50+ professional services - plumbing, electrical, cleaning, AC repair, carpentry & more. Our AI understands exactly what you need.</p>
+                  </div>
+                </div>
+
+                {/* Step 2 - THE GAME CHANGER */}
+                <div className="flex gap-6 items-start p-6 bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 rounded-2xl border-2 border-amber-300 relative overflow-hidden">
+                  <div className="absolute top-2 right-2">
+                    <span className="bg-gradient-to-r from-orange-500 to-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full">🔥 REVOLUTIONARY</span>
+                  </div>
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-500/30">
+                    <IndianRupee className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-amber-600 mb-1">STEP 2 • INDIA&apos;S FIRST</div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">YOU Decide Your Price! 💰</h3>
+                    <p className="text-gray-600 mb-3">No fixed rates, no surprises! Tell us your budget and our AI matches you with pros willing to work at YOUR price. Fair for customers, fair for helpers.</p>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="bg-white px-3 py-1 rounded-full text-xs font-semibold text-amber-700 border border-amber-200">✓ No Hidden Charges</span>
+                      <span className="bg-white px-3 py-1 rounded-full text-xs font-semibold text-amber-700 border border-amber-200">✓ Transparent Pricing</span>
+                      <span className="bg-white px-3 py-1 rounded-full text-xs font-semibold text-amber-700 border border-amber-200">✓ Win-Win for All</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="flex gap-6 items-start p-6 bg-gradient-to-r from-violet-50 to-purple-50 rounded-2xl border border-violet-100">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-violet-500/30">
+                    <Bot className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-violet-600 mb-1">STEP 3 • AI MAGIC</div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">AI Finds Your Perfect Match</h3>
+                    <p className="text-gray-600">Our smart AI instantly matches you with verified professionals near you who accept your price, have great ratings, and are available NOW.</p>
+                  </div>
+                </div>
+
+                {/* Step 4 */}
+                <div className="flex gap-6 items-start p-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-emerald-500/30">
+                    <span className="text-2xl">🎯</span>
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-emerald-600 mb-1">STEP 4</div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Pro Arrives in Minutes</h3>
+                    <p className="text-gray-600">Track your professional in real-time. They arrive at your doorstep within 30 minutes on average. You can chat or call them directly.</p>
+                  </div>
+                </div>
+
+                {/* Step 5 */}
+                <div className="flex gap-6 items-start p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-100">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-green-500/30">
+                    <span className="text-2xl">✅</span>
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-green-600 mb-1">STEP 5</div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Job Done, Pay Securely</h3>
+                    <p className="text-gray-600">Only pay after you&apos;re satisfied. Secure payment options. Rate your experience. 100% satisfaction guaranteed or money back!</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* CTA */}
+              <div className="mt-10 text-center">
+                <Button 
+                  size="lg" 
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl px-10 h-14 text-base font-bold shadow-xl shadow-emerald-500/30 hover:scale-105 transition-all" 
+                  asChild
+                >
+                  <Link href="/auth/signup">
+                    Try It Now - It&apos;s Free!
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Link>
+                </Button>
+                <p className="text-sm text-gray-500 mt-3">No credit card required • Book in 60 seconds</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stunning Gradient Background */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(16,185,129,0.12),transparent)]" />
+        <div className="absolute bottom-0 right-0 w-[800px] h-[800px] bg-[radial-gradient(circle,rgba(16,185,129,0.06),transparent_70%)]" />
+      </div>
+
+      {/* Premium Glass Header */}
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        isScrolled 
+          ? 'bg-white/80 backdrop-blur-2xl shadow-[0_2px_40px_-12px_rgba(0,0,0,0.1)] border-b border-gray-100' 
+          : 'bg-transparent'
+      }`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-18 lg:h-20">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="relative">
+                <div className="w-11 h-11 rounded-[14px] bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/40 group-hover:scale-105 transition-all duration-300">
+                  <span className="text-white font-black text-xl">H</span>
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[22px] font-extrabold tracking-tight text-gray-900">helparo</span>
+                <span className="text-[10px] font-semibold text-emerald-600 tracking-[0.15em] uppercase -mt-1">Home Services</span>
+              </div>
             </Link>
 
-            {/* Navigation */}
-            <nav className="hidden md:flex items-center gap-8">
-              <Link href="#services" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+            {/* Desktop Nav */}
+            <nav className="hidden md:flex items-center gap-1">
+              <Link href="/services" className="px-4 py-2 text-[15px] font-medium text-gray-600 hover:text-emerald-600 rounded-xl hover:bg-emerald-50 transition-all">
                 Services
               </Link>
-              <Link href="#how-it-works" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
-                How it works
+              <Link href="/about" className="px-4 py-2 text-[15px] font-medium text-gray-600 hover:text-emerald-600 rounded-xl hover:bg-emerald-50 transition-all">
+                About
               </Link>
-              <Link href="#safety" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
-                Safety
-              </Link>
-              <Link href="/helper/register" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
-                Become a Helper
+              <Link href="/helper/register" className="px-4 py-2 text-[15px] font-medium text-gray-600 hover:text-emerald-600 rounded-xl hover:bg-emerald-50 transition-all flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4" />
+                Partner with us
               </Link>
             </nav>
 
             {/* CTA Buttons */}
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" className="hidden sm:flex" asChild>
+            <div className="hidden md:flex items-center gap-3">
+              <Button variant="ghost" className="text-gray-700 hover:text-emerald-600 font-semibold rounded-xl hover:bg-emerald-50" asChild>
                 <Link href="/auth/login">Log in</Link>
               </Button>
-              <Button size="sm" className="bg-gray-900 hover:bg-gray-800 text-white rounded-full px-5" asChild>
-                <Link href="/auth/signup">Sign up</Link>
+              <Button className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-5 font-semibold shadow-lg shadow-gray-900/10 hover:shadow-gray-900/20 hover:scale-[1.02] transition-all" asChild>
+                <Link href="/auth/signup">Get Started</Link>
+              </Button>
+            </div>
+
+            {/* Mobile Menu */}
+            <button 
+              className="md:hidden p-2.5 rounded-xl hover:bg-gray-100 transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu Panel */}
+        {mobileMenuOpen && (
+          <div className="md:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-2xl border-b border-gray-100 py-6 px-4">
+            <div className="flex flex-col gap-2">
+              <Link href="/services" className="px-4 py-3 text-gray-700 font-medium rounded-xl hover:bg-gray-50">Services</Link>
+              <Link href="/about" className="px-4 py-3 text-gray-700 font-medium rounded-xl hover:bg-gray-50">About</Link>
+              <Link href="/helper/register" className="px-4 py-3 text-gray-700 font-medium rounded-xl hover:bg-gray-50">Partner with us</Link>
+              <hr className="my-2 border-gray-100" />
+              <Link href="/auth/login" className="px-4 py-3 text-gray-700 font-medium rounded-xl hover:bg-gray-50">Log in</Link>
+              <Button className="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold" asChild>
+                <Link href="/auth/signup">Get Started Free</Link>
               </Button>
             </div>
           </div>
-        </div>
+        )}
       </header>
 
-      {/* Hero Section - Modern & Bold */}
-      <section className="pt-24 pb-16 lg:pt-32 lg:pb-24 overflow-hidden">
+      {/* ═══════════════════════════════════════════════════════════════════
+          HERO SECTION - THE WOW FACTOR
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="relative pt-32 lg:pt-40 pb-20 lg:pb-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Left Content */}
-            <div className="space-y-8">
-              {/* Trust Badge */}
-              <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium">
-                <BadgeCheck className="w-4 h-4" />
-                <span>100% Verified Professionals</span>
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            
+            {/* Left: Content */}
+            <div className="relative z-10">
+              {/* 🚀 INDIA'S FIRST - Revolutionary Badge */}
+              <div className="flex flex-wrap items-center gap-3 mb-6 animate-fade-in">
+                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-pink-500 text-white px-4 py-2 rounded-full shadow-lg shadow-orange-500/25">
+                  <Rocket className="w-4 h-4" />
+                  <span className="text-sm font-bold">🇮🇳 India&apos;s First</span>
+                </div>
+                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white px-4 py-2 rounded-full shadow-lg shadow-purple-500/25">
+                  <Bot className="w-4 h-4" />
+                  <span className="text-sm font-bold">AI-Powered</span>
+                </div>
               </div>
 
-              {/* Main Heading */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
-                Get a trusted{' '}
-                <span className="relative">
-                  <span className="text-emerald-600 transition-all duration-500">
-                    {services[currentService]}
-                  </span>
-                  <span className="absolute bottom-0 left-0 w-full h-1 bg-emerald-200 rounded-full"></span>
+              {/* Trust Badge */}
+              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 px-4 py-2 rounded-full mb-4 animate-fade-in">
+                <div className="flex -space-x-1.5">
+                  {['😊', '🙂', '😄'].map((e, i) => (
+                    <span key={i} className="w-6 h-6 rounded-full bg-white border-2 border-emerald-50 flex items-center justify-center text-xs">{e}</span>
+                  ))}
+                </div>
+                <span className="text-sm font-semibold text-emerald-800">50,000+ happy customers</span>
+                <span className="flex items-center text-sm font-bold text-amber-600">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 mr-0.5" />
+                  4.9
                 </span>
+              </div>
+
+              {/* Main Headline */}
+              <h1 className="text-[3.25rem] sm:text-6xl lg:text-[4.25rem] font-black text-gray-900 leading-[1.05] tracking-tight mb-4">
+                Home services
                 <br />
-                at your doorstep
+                <span className="relative">
+                  <span className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 bg-clip-text text-transparent">
+                    made magical
+                  </span>
+                  <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none">
+                    <path d="M2 10C50 4 100 4 150 7C200 10 250 6 298 3" stroke="url(#underline)" strokeWidth="4" strokeLinecap="round"/>
+                    <defs>
+                      <linearGradient id="underline" x1="0" y1="0" x2="300" y2="0">
+                        <stop stopColor="#10b981"/>
+                        <stop offset="1" stopColor="#14b8a6"/>
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </span>
               </h1>
 
-              {/* Subtitle */}
-              <p className="text-lg sm:text-xl text-gray-600 max-w-lg">
-                Book verified professionals for home services. Fast, reliable, and affordable. 
-                Get help in minutes, not days.
+              {/* Subheadline with rotating service + YOU DECIDE PRICE */}
+              <p className="text-xl sm:text-2xl text-gray-500 mb-4 leading-relaxed">
+                Get a verified <span className="font-bold text-gray-900 transition-all duration-300">{services[currentService]}</span> at your
+                <br className="hidden sm:block" />
+                doorstep in <span className="text-emerald-600 font-bold">under 30 minutes</span>
               </p>
 
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-8 h-14 text-base font-semibold shadow-lg shadow-emerald-200" asChild>
+              {/* 💰 YOU DECIDE YOUR PRICE - THE GAME CHANGER */}
+              <div className="bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-3 mb-6 animate-fade-in">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                    <IndianRupee className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-amber-800 flex items-center gap-2">
+                      <Crown className="w-4 h-4 text-amber-600" />
+                      YOU Decide Your Price!
+                    </p>
+                    <p className="text-xs text-amber-700">India&apos;s first self-price-deciding platform • No fixed rates • Fair for everyone</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* CTA Group */}
+              <div className="flex flex-col sm:flex-row gap-4 mb-12">
+                <Button 
+                  size="lg" 
+                  className="group bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl px-8 h-14 text-base font-bold shadow-xl shadow-emerald-600/25 hover:shadow-emerald-600/40 hover:scale-[1.02] transition-all duration-300" 
+                  asChild
+                >
                   <Link href="/auth/signup">
-                    Book a Service
-                    <ArrowRight className="ml-2 w-5 h-5" />
+                    Book a Pro Now
+                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" className="rounded-xl px-8 h-14 text-base font-semibold border-2" asChild>
-                  <Link href="#how-it-works">
-                    <Play className="mr-2 w-5 h-5" />
-                    See how it works
-                  </Link>
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="group rounded-2xl px-8 h-14 text-base font-semibold border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all" 
+                  onClick={() => setShowHowItWorks(true)}
+                >
+                  <Play className="w-5 h-5 mr-2 text-emerald-600" />
+                  See how it works
                 </Button>
               </div>
 
-              {/* Social Proof - Happy Customers */}
-              <div className="flex items-center gap-6 pt-4">
-                <div className="flex -space-x-2">
-                  {avatarSets[currentAvatarSet].map((avatar, index) => (
-                    <img 
-                      key={`${currentAvatarSet}-${index}`}
-                      src={avatar} 
-                      alt="" 
-                      className="w-10 h-10 rounded-full border-2 border-white object-cover shadow-lg animate-avatar-swap"
-                      style={{ animationDelay: `${index * 0.1}s` }}
-                    />
-                  ))}
-                  <div className="w-10 h-10 rounded-full bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center shadow-lg">
-                    <span className="text-emerald-600 text-[9px] font-bold">50K+</span>
+              {/* Trust Indicators */}
+              <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                    <Shield className="w-4 h-4 text-emerald-600" />
                   </div>
+                  <span className="font-medium">Background verified</span>
                 </div>
-                <div>
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    ))}
-                    <span className="ml-1 text-sm font-semibold text-gray-900">4.8</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <Clock className="w-4 h-4 text-blue-600" />
                   </div>
-                  <p className="text-sm text-gray-500">from 50,000+ reviews</p>
+                  <span className="font-medium">On-time guarantee</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <Award className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <span className="font-medium">Satisfaction assured</span>
                 </div>
               </div>
             </div>
 
-            {/* Right Content - Hero Image/Cards */}
+            {/* Right: Hero Visual */}
             <div className="relative hidden lg:block">
+              {/* Main Hero Image/Illustration Area */}
               <div className="relative">
+                {/* Decorative Background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-100 via-emerald-50 to-teal-50 rounded-[3rem] transform rotate-3 scale-105" />
+                
                 {/* Main Card */}
-                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-6 pt-16 pb-16 shadow-2xl shadow-emerald-200/50">
-                  <div className="bg-white rounded-2xl p-6 space-y-4 shadow-lg">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-500">Live booking</span>
-                      <span className="flex items-center gap-2 text-sm font-medium text-emerald-600">
-                        <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                        Just now
-                      </span>
+                <div className="relative bg-white rounded-[2.5rem] p-8 shadow-2xl shadow-gray-200/50 border border-gray-100">
+                  {/* Live Booking Header */}
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
+                        <div className="absolute inset-0 w-3 h-3 bg-emerald-500 rounded-full animate-ping" />
+                      </div>
+                      <span className="text-sm font-bold text-emerald-700">Live Booking</span>
                     </div>
+                    <span className="text-xs font-medium text-gray-400 bg-gray-100 px-3 py-1 rounded-full">Just now</span>
+                  </div>
+
+                  {/* Professional Card */}
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl p-5 mb-5">
                     <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center">
-                        <span className="text-2xl">🔧</span>
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-emerald-500/30">
+                        RK
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-gray-900 text-lg">Rajesh Kumar</h3>
+                        <p className="text-gray-500 text-sm">Expert Plumber • 8 yrs exp</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex">
+                            {[1,2,3,4,5].map(i => (
+                              <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                            ))}
+                          </div>
+                          <span className="text-xs font-semibold text-gray-600">4.9 (2,847)</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">
+                          <BadgeCheck className="w-3.5 h-3.5" />
+                          Verified
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Arrival Time */}
+                  <div className="flex items-center justify-between bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center">
+                        <Timer className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900">Plumber Booked</h3>
-                        <p className="text-sm text-gray-500">Koramangala, Bangalore</p>
+                        <p className="text-xs font-medium text-emerald-600">Arriving in</p>
+                        <p className="text-2xl font-black text-emerald-700">12 min</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Clock className="w-4 h-4" />
-                      <span>Arriving in 25 mins</span>
+                    <div className="flex items-center gap-2">
+                      <button className="w-10 h-10 rounded-xl bg-white border border-emerald-200 flex items-center justify-center hover:bg-emerald-50 transition-colors">
+                        <Phone className="w-4 h-4 text-emerald-600" />
+                      </button>
+                      <button className="w-10 h-10 rounded-xl bg-white border border-emerald-200 flex items-center justify-center hover:bg-emerald-50 transition-colors">
+                        <MessageCircle className="w-4 h-4 text-emerald-600" />
+                      </button>
                     </div>
                   </div>
                 </div>
 
-                {/* Floating Stats Card */}
-                <div className="absolute top-0 -right-4 bg-white rounded-2xl p-4 shadow-xl border border-gray-100">
+                {/* Floating Elements */}
+                <div className="absolute -top-6 -right-6 bg-white rounded-2xl p-4 shadow-xl shadow-gray-200/50 border border-gray-100 animate-float">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
-                      <Star className="w-6 h-6 text-yellow-500 fill-yellow-500" />
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                      <Star className="w-6 h-6 text-white fill-white" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">4.8</p>
-                      <p className="text-xs text-gray-500">Avg. Rating</p>
+                      <p className="text-2xl font-black text-gray-900">4.9</p>
+                      <p className="text-xs text-gray-500 font-medium">50K+ ratings</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Floating Badge */}
-                <div className="absolute bottom-0 -left-4 bg-white rounded-2xl p-4 shadow-xl border border-gray-100">
+                <div className="absolute -bottom-4 -left-8 bg-white rounded-2xl p-4 shadow-xl shadow-gray-200/50 border border-gray-100 animate-float-delayed">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
-                      <Shield className="w-6 h-6 text-emerald-600" />
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                      <Users className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">100% Safe</p>
-                      <p className="text-xs text-gray-500">Verified helpers</p>
+                      <p className="text-2xl font-black text-gray-900">10K+</p>
+                      <p className="text-xs text-gray-500 font-medium">Expert pros</p>
                     </div>
                   </div>
                 </div>
@@ -258,139 +519,230 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trusted By Section */}
-      <section className="py-12 bg-gray-50 border-y border-gray-100">
+      {/* ═══════════════════════════════════════════════════════════════════
+          SOCIAL PROOF BAR
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-8 bg-gray-50 border-y border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-              Trusted by thousands across India
-            </p>
-            <div className="flex items-center gap-12 flex-wrap justify-center">
-              <div className="text-center">
-                <p className="text-3xl font-bold text-gray-900">10K+</p>
-                <p className="text-sm text-gray-500">Active Helpers</p>
-              </div>
-              <div className="w-px h-12 bg-gray-200 hidden sm:block"></div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-gray-900">50K+</p>
-                <p className="text-sm text-gray-500">Jobs Completed</p>
-              </div>
-              <div className="w-px h-12 bg-gray-200 hidden sm:block"></div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-gray-900">25+</p>
-                <p className="text-sm text-gray-500">Cities</p>
-              </div>
-              <div className="w-px h-12 bg-gray-200 hidden sm:block"></div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-gray-900">4.8★</p>
-                <p className="text-sm text-gray-500">Customer Rating</p>
-              </div>
+          <div className="flex flex-wrap items-center justify-center gap-8 lg:gap-16">
+            <div className="text-center">
+              <p className="text-3xl lg:text-4xl font-black text-gray-900">
+                <AnimatedCounter end={50000} suffix="+" />
+              </p>
+              <p className="text-sm text-gray-500 font-medium mt-1">Happy Customers</p>
+            </div>
+            <div className="hidden sm:block w-px h-12 bg-gray-200" />
+            <div className="text-center">
+              <p className="text-3xl lg:text-4xl font-black text-gray-900">
+                <AnimatedCounter end={10000} suffix="+" />
+              </p>
+              <p className="text-sm text-gray-500 font-medium mt-1">Verified Pros</p>
+            </div>
+            <div className="hidden sm:block w-px h-12 bg-gray-200" />
+            <div className="text-center">
+              <p className="text-3xl lg:text-4xl font-black text-gray-900">
+                <AnimatedCounter end={25} suffix="+" />
+              </p>
+              <p className="text-sm text-gray-500 font-medium mt-1">Cities</p>
+            </div>
+            <div className="hidden sm:block w-px h-12 bg-gray-200" />
+            <div className="text-center">
+              <p className="text-3xl lg:text-4xl font-black text-emerald-600">
+                <AnimatedCounter end={98} suffix="%" />
+              </p>
+              <p className="text-sm text-gray-500 font-medium mt-1">Satisfaction</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Services Section */}
-      <section id="services" className="py-20 lg:py-28">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <span className="inline-flex items-center gap-2 bg-purple-50 text-purple-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
-              <Sparkles className="w-4 h-4" />
-              Our Services
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              What do you need help with?
+      {/* ═══════════════════════════════════════════════════════════════════
+          🔥 REVOLUTIONARY SECTION - AI + YOU DECIDE PRICE
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-20 lg:py-28 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.15),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.02%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')] opacity-50" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-3 mb-6">
+              <span className="bg-gradient-to-r from-orange-500 to-pink-500 text-white text-xs font-bold px-4 py-2 rounded-full animate-pulse">🇮🇳 INDIA&apos;S FIRST</span>
+              <span className="bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold px-4 py-2 rounded-full">REVOLUTIONARY</span>
+            </div>
+            <h2 className="text-4xl lg:text-6xl font-black mb-6 leading-tight">
+              AI-Powered Platform Where
+              <br />
+              <span className="bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-400 bg-clip-text text-transparent">YOU Decide Your Price</span>
             </h2>
-            <p className="text-lg text-gray-600">
-              Choose from a wide range of home services. All professionals are verified and rated.
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+              No more fixed rates. No more overcharging. Tell us your budget, and our AI matches you with professionals who accept YOUR price. Revolutionary, fair, and transparent.
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            {/* Feature 1 */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-8 border border-white/10 hover:border-amber-500/50 hover:bg-white/10 transition-all group">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mb-6 shadow-xl shadow-amber-500/30 group-hover:scale-110 transition-transform">
+                <IndianRupee className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3">Name Your Price</h3>
+              <p className="text-gray-400 leading-relaxed">You set the budget. Plumber needed? Tell us ₹300. Cleaning? Maybe ₹500. YOU are in control. No bargaining, no stress.</p>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-8 border border-white/10 hover:border-violet-500/50 hover:bg-white/10 transition-all group">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-6 shadow-xl shadow-violet-500/30 group-hover:scale-110 transition-transform">
+                <Bot className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3">AI Smart Matching</h3>
+              <p className="text-gray-400 leading-relaxed">Our AI instantly finds verified pros near you who are willing to work at your price. Smart algorithms ensure best match every time.</p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-8 border border-white/10 hover:border-emerald-500/50 hover:bg-white/10 transition-all group md:col-span-2 lg:col-span-1">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mb-6 shadow-xl shadow-emerald-500/30 group-hover:scale-110 transition-transform">
+                <Crown className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3">Win-Win for Everyone</h3>
+              <p className="text-gray-400 leading-relaxed">Customers get fair prices. Helpers get fair work. No middleman markup. This is how home services should be!</p>
+            </div>
+          </div>
+
+          {/* Trust Indicators */}
+          <div className="mt-16 flex flex-wrap items-center justify-center gap-8 text-center">
+            <div>
+              <p className="text-4xl font-black text-amber-400">₹0</p>
+              <p className="text-sm text-gray-500 mt-1">Hidden Charges</p>
+            </div>
+            <div className="w-px h-12 bg-white/10" />
+            <div>
+              <p className="text-4xl font-black text-emerald-400">100%</p>
+              <p className="text-sm text-gray-500 mt-1">Transparent</p>
+            </div>
+            <div className="w-px h-12 bg-white/10" />
+            <div>
+              <p className="text-4xl font-black text-violet-400">AI</p>
+              <p className="text-sm text-gray-500 mt-1">Powered Matching</p>
+            </div>
+            <div className="w-px h-12 bg-white/10" />
+            <div>
+              <p className="text-4xl font-black text-pink-400">#1</p>
+              <p className="text-sm text-gray-500 mt-1">In India</p>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="mt-12 text-center">
+            <Button 
+              size="lg" 
+              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-2xl px-10 h-14 text-base font-bold shadow-xl shadow-amber-500/30 hover:scale-105 transition-all" 
+              asChild
+            >
+              <Link href="/auth/signup">
+                Try Self-Pricing Now
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          SERVICES SECTION - STUNNING GRID
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-24 lg:py-32 bg-white relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Section Header */}
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+              <Sparkles className="w-4 h-4" />
+              Popular Services
+            </div>
+            <h2 className="text-4xl lg:text-5xl font-black text-gray-900 mb-4">
+              What do you need <span className="text-emerald-600">help</span> with?
+            </h2>
+            <p className="text-xl text-gray-500 max-w-2xl mx-auto">
+              Professional services delivered by verified experts. Book in seconds.
+            </p>
+          </div>
+
+          {/* Services Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
             {[
-              { name: 'Plumbing', Icon: PlumbingIcon, desc: 'Leaks, pipes, taps & more', gradient: 'from-blue-500 to-blue-600', bg: 'bg-blue-50', iconColor: 'text-blue-600', hoverBorder: 'hover:border-blue-200' },
-              { name: 'Electrical', Icon: ElectricalIcon, desc: 'Wiring, switches & repairs', gradient: 'from-amber-400 to-amber-500', bg: 'bg-amber-50', iconColor: 'text-amber-500', hoverBorder: 'hover:border-amber-200' },
-              { name: 'Cleaning', Icon: CleaningIcon, desc: 'Deep clean, sanitization', gradient: 'from-emerald-500 to-emerald-600', bg: 'bg-emerald-50', iconColor: 'text-emerald-600', hoverBorder: 'hover:border-emerald-200' },
-              { name: 'Carpentry', Icon: CarpentryIcon, desc: 'Furniture, doors & fittings', gradient: 'from-orange-500 to-orange-600', bg: 'bg-orange-50', iconColor: 'text-orange-600', hoverBorder: 'hover:border-orange-200' },
-              { name: 'AC Repair', Icon: ACRepairIcon, desc: 'Service, repair & install', gradient: 'from-cyan-500 to-cyan-600', bg: 'bg-cyan-50', iconColor: 'text-cyan-600', hoverBorder: 'hover:border-cyan-200' },
-              { name: 'Painting', Icon: PaintingIcon, desc: 'Interior & exterior', gradient: 'from-pink-500 to-rose-500', bg: 'bg-pink-50', iconColor: 'text-pink-600', hoverBorder: 'hover:border-pink-200' },
-              { name: 'Appliances', Icon: AppliancesIcon, desc: 'Repair & maintenance', gradient: 'from-violet-500 to-purple-600', bg: 'bg-violet-50', iconColor: 'text-violet-600', hoverBorder: 'hover:border-violet-200' },
-              { name: 'Pest Control', Icon: PestControlIcon, desc: 'Fumigation & treatment', gradient: 'from-red-500 to-rose-600', bg: 'bg-red-50', iconColor: 'text-red-500', hoverBorder: 'hover:border-red-200' },
+              { name: 'Plumbing', icon: '🔧', desc: 'Leaks, pipes & taps', bg: 'bg-blue-50', hover: 'hover:border-blue-200 hover:shadow-blue-100' },
+              { name: 'Electrical', icon: '⚡', desc: 'Wiring & repairs', bg: 'bg-amber-50', hover: 'hover:border-amber-200 hover:shadow-amber-100' },
+              { name: 'Cleaning', icon: '✨', desc: 'Deep clean homes', bg: 'bg-emerald-50', hover: 'hover:border-emerald-200 hover:shadow-emerald-100' },
+              { name: 'Carpentry', icon: '🪵', desc: 'Furniture & wood', bg: 'bg-orange-50', hover: 'hover:border-orange-200 hover:shadow-orange-100' },
+              { name: 'AC Service', icon: '❄️', desc: 'Repair & install', bg: 'bg-cyan-50', hover: 'hover:border-cyan-200 hover:shadow-cyan-100' },
+              { name: 'Painting', icon: '🎨', desc: 'Interior & exterior', bg: 'bg-pink-50', hover: 'hover:border-pink-200 hover:shadow-pink-100' },
+              { name: 'Appliances', icon: '🔌', desc: 'Repair all brands', bg: 'bg-violet-50', hover: 'hover:border-violet-200 hover:shadow-violet-100' },
+              { name: 'Pest Control', icon: '🛡️', desc: 'Safe treatment', bg: 'bg-red-50', hover: 'hover:border-red-200 hover:shadow-red-100' },
             ].map((service) => (
               <Link
                 key={service.name}
                 href={`/auth/signup?service=${encodeURIComponent(service.name.toLowerCase())}`}
-                className={`group relative p-6 rounded-2xl bg-white border border-gray-100 ${service.hoverBorder} transition-all duration-300 hover:shadow-xl hover:-translate-y-1`}
+                className={`group relative p-6 rounded-3xl bg-white border-2 border-gray-100 ${service.hover} hover:shadow-xl hover:-translate-y-2 transition-all duration-300`}
               >
-                {/* Gradient accent line */}
-                <div className={`absolute top-0 left-6 right-6 h-1 bg-gradient-to-r ${service.gradient} rounded-b-full opacity-0 group-hover:opacity-100 transition-opacity`} />
-                
-                {/* Icon container */}
-                <div className={`w-14 h-14 ${service.bg} rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                  <service.Icon size={28} className={service.iconColor} />
+                <div className={`w-14 h-14 rounded-2xl ${service.bg} flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                  {service.icon}
                 </div>
-                
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">{service.name}</h3>
-                <p className="text-sm text-gray-500 mb-4">{service.desc}</p>
-                
-                <span className="inline-flex items-center text-sm font-medium text-gray-600 group-hover:text-gray-900 transition-colors">
-                  Book now
-                  <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                <h3 className="text-lg font-bold text-gray-900 mb-1">{service.name}</h3>
+                <p className="text-sm text-gray-500 mb-3">{service.desc}</p>
+                <span className="inline-flex items-center text-sm font-semibold text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                  Book now <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                 </span>
               </Link>
             ))}
           </div>
+
+          <div className="text-center mt-12">
+            <Button variant="outline" className="rounded-full px-8 h-12 text-base font-semibold border-2 hover:bg-gray-50 group" asChild>
+              <Link href="/services">
+                View all 50+ services
+                <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </Button>
+          </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="py-20 lg:py-28 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <span className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
+      {/* ═══════════════════════════════════════════════════════════════════
+          HOW IT WORKS - VISUAL TIMELINE
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-24 lg:py-32 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.05),transparent_70%)]" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
               <Zap className="w-4 h-4" />
-              Simple Process
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Book in 3 easy steps
+              Super Easy
+            </div>
+            <h2 className="text-4xl lg:text-5xl font-black text-gray-900 mb-4">
+              Book in <span className="text-emerald-600">3 simple</span> steps
             </h2>
-            <p className="text-lg text-gray-600">
-              Getting help has never been this easy. No calls, no hassle.
+            <p className="text-xl text-gray-500 max-w-2xl mx-auto">
+              No phone calls. No waiting. Just instant help.
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
             {[
-              {
-                step: '01',
-                title: 'Choose Service',
-                desc: 'Select what you need. Browse through our wide range of services and pick what suits you.',
-                icon: '📱'
-              },
-              {
-                step: '02',
-                title: 'Get Matched',
-                desc: 'We instantly match you with verified professionals near you. Compare ratings and prices.',
-                icon: '🎯'
-              },
-              {
-                step: '03',
-                title: 'Sit Back & Relax',
-                desc: 'Your helper arrives on time. Pay securely after the job is done. Rate your experience.',
-                icon: '✅'
-              }
-            ].map((item, index) => (
-              <div key={item.step} className="relative">
-                {index < 2 && (
-                  <div className="hidden md:block absolute top-12 left-full w-full h-0.5 bg-gradient-to-r from-emerald-200 to-transparent -translate-x-1/2"></div>
+              { step: '01', title: 'Choose Service', desc: 'Pick from 50+ professional services', icon: '📱', color: 'from-blue-500 to-cyan-500' },
+              { step: '02', title: 'Get Matched', desc: 'We find the best pro near you instantly', icon: '🎯', color: 'from-emerald-500 to-teal-500' },
+              { step: '03', title: 'Job Done!', desc: 'Sit back & relax. Pay after service.', icon: '✅', color: 'from-amber-500 to-orange-500' }
+            ].map((item, idx) => (
+              <div key={item.step} className="relative group">
+                {idx < 2 && (
+                  <div className="hidden md:block absolute top-16 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-gray-200 to-transparent" />
                 )}
-                <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
-                  <div className="flex items-center gap-4 mb-6">
-                    <span className="text-5xl">{item.icon}</span>
-                    <span className="text-5xl font-bold text-emerald-200">{item.step}</span>
+                <div className="bg-white rounded-3xl p-8 shadow-lg shadow-gray-100 border border-gray-100 hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                  <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center text-4xl mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    {item.icon}
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{item.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{item.desc}</p>
+                  <div className="text-sm font-bold text-emerald-600 mb-2">STEP {item.step}</div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3">{item.title}</h3>
+                  <p className="text-gray-500 leading-relaxed">{item.desc}</p>
                 </div>
               </div>
             ))}
@@ -398,71 +750,102 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Why Choose Us */}
-      <section className="py-20 lg:py-28">
+      {/* ═══════════════════════════════════════════════════════════════════
+          WHY CHOOSE US - TRUST SECTION
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-24 lg:py-32 bg-white relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+            {/* Left Content */}
             <div>
-              <span className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
                 <Shield className="w-4 h-4" />
                 Why Helparo
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">
-                Built for trust, designed for speed
+              </div>
+              <h2 className="text-4xl lg:text-5xl font-black text-gray-900 mb-6 leading-tight">
+                Built for <span className="text-emerald-600">trust</span>,
+                <br />designed for <span className="text-blue-600">you</span>
               </h2>
-              <p className="text-lg text-gray-600 mb-8">
-                We&apos;re not just another service app. We&apos;re building the most trusted network of home service professionals in India.
+              <p className="text-xl text-gray-500 mb-10 leading-relaxed">
+                We&apos;re building India&apos;s most trusted home services platform. Every professional goes through rigorous verification.
               </p>
 
               <div className="space-y-6">
                 {[
-                  { icon: BadgeCheck, title: 'Verified Professionals', desc: 'Every helper goes through background checks and skill verification.' },
-                  { icon: Clock, title: 'On-time Guarantee', desc: 'We respect your time. Get compensated if helper is late.' },
-                  { icon: Shield, title: 'Safe & Secure', desc: 'Real-time tracking, SOS button, and 24/7 support.' },
-                  { icon: Star, title: 'Quality Assured', desc: 'Not happy? Get a free re-service or full refund.' },
+                  { icon: BadgeCheck, title: '100% Verified Professionals', desc: 'ID checked, background verified, skill tested', color: 'bg-emerald-100 text-emerald-600' },
+                  { icon: Clock, title: 'On-Time Guarantee', desc: 'We compensate if the pro is late', color: 'bg-blue-100 text-blue-600' },
+                  { icon: Award, title: 'Satisfaction Promise', desc: 'Not happy? Free re-service or full refund', color: 'bg-purple-100 text-purple-600' },
+                  { icon: Headphones, title: '24/7 Support', desc: 'Real humans ready to help anytime', color: 'bg-amber-100 text-amber-600' },
                 ].map((item) => (
-                  <div key={item.title} className="flex gap-4">
-                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-                      <item.icon className="w-6 h-6 text-emerald-600" />
+                  <div key={item.title} className="flex gap-4 group">
+                    <div className={`flex-shrink-0 w-12 h-12 rounded-2xl ${item.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                      <item.icon className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-1">{item.title}</h3>
-                      <p className="text-gray-600 text-sm">{item.desc}</p>
+                      <h3 className="text-lg font-bold text-gray-900 mb-1">{item.title}</h3>
+                      <p className="text-gray-500">{item.desc}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
+            {/* Right: Testimonial */}
             <div className="relative">
-              <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 lg:p-12">
-                <div className="space-y-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center text-white text-2xl font-bold">
-                      RS
-                    </div>
-                    <div>
-                      <h4 className="text-white font-semibold text-lg">Rajesh S.</h4>
-                      <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map((i) => (
-                          <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        ))}
-                      </div>
-                    </div>
+              <div className="bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 rounded-[2.5rem] p-8 lg:p-10 shadow-2xl">
+                <div className="flex gap-1 mb-6">
+                  {[1,2,3,4,5].map(i => (
+                    <Star key={i} className="w-6 h-6 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+                
+                <div className="relative h-[120px] overflow-hidden">
+                  {testimonials.map((t, idx) => (
+                    <p 
+                      key={idx}
+                      className={`absolute inset-0 text-xl lg:text-2xl text-white/90 font-light leading-relaxed transition-all duration-500 ${
+                        idx === activeTestimonial ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                      }`}
+                    >
+                      &ldquo;{t.text}&rdquo;
+                    </p>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-4 mt-8 pt-6 border-t border-white/10">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-xl font-bold">
+                    {testimonials[activeTestimonial].avatar}
                   </div>
-                  <p className="text-gray-300 text-lg leading-relaxed">
-                    &quot;Best service I&apos;ve ever used! The plumber came within 30 minutes and fixed my leaking pipe. 
-                    Professional, affordable, and the app makes everything so easy. Highly recommend!&quot;
-                  </p>
-                  <p className="text-gray-500 text-sm">Bangalore • 2 days ago</p>
+                  <div>
+                    <p className="text-white font-bold text-lg">{testimonials[activeTestimonial].name}</p>
+                    <p className="text-gray-400">{testimonials[activeTestimonial].location} • Verified Customer</p>
+                  </div>
+                </div>
+
+                {/* Dots */}
+                <div className="flex gap-2 mt-6">
+                  {testimonials.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveTestimonial(idx)}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        idx === activeTestimonial ? 'w-6 bg-emerald-500' : 'bg-white/20 hover:bg-white/40'
+                      }`}
+                    />
+                  ))}
                 </div>
               </div>
 
-              {/* Floating Elements */}
-              <div className="absolute -top-4 -right-4 bg-white rounded-xl p-4 shadow-xl">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-emerald-500" />
-                  <span className="text-sm font-medium text-gray-900">50K+ Happy Customers</span>
+              {/* Floating Badge */}
+              <div className="absolute -top-6 -right-6 bg-white rounded-2xl p-4 shadow-xl border border-gray-100 animate-float">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                    <Heart className="w-5 h-5 text-emerald-600 fill-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-black text-gray-900">50K+</p>
+                    <p className="text-xs text-gray-500">5-star reviews</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -470,137 +853,153 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Safety Section */}
-      <section id="safety" className="py-20 lg:py-28 bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <span className="inline-flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full text-sm font-medium mb-4">
+      {/* ═══════════════════════════════════════════════════════════════════
+          SAFETY SECTION - GREEN GRADIENT
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-24 lg:py-32 bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')] opacity-30" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 bg-white/20 text-white px-4 py-2 rounded-full text-sm font-semibold mb-6 backdrop-blur-sm">
               <Shield className="w-4 h-4" />
-              Your Safety First
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              We take safety seriously
+              Safety First
+            </div>
+            <h2 className="text-4xl lg:text-5xl font-black mb-4">
+              Your safety is our <span className="text-emerald-200">priority</span>
             </h2>
-            <p className="text-lg text-gray-400">
-              Your trust is our priority. Here&apos;s how we keep you safe.
+            <p className="text-xl text-white/80 max-w-2xl mx-auto">
+              Every professional undergoes rigorous verification
             </p>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: BadgeCheck, title: 'ID Verified', desc: 'Aadhaar & PAN verified' },
+              { icon: BadgeCheck, title: 'ID Verified', desc: 'Aadhaar & PAN checked' },
               { icon: Shield, title: 'Background Check', desc: 'Police verification done' },
-              { icon: MapPin, title: 'Live Tracking', desc: 'Track helper in real-time' },
-              { icon: Phone, title: 'SOS Button', desc: '24/7 emergency support' },
+              { icon: MapPin, title: 'Live Tracking', desc: 'Track pro in real-time' },
+              { icon: Headphones, title: 'SOS Support', desc: '24/7 emergency help' },
             ].map((item) => (
-              <div key={item.title} className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-colors">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-4">
-                  <item.icon className="w-6 h-6 text-emerald-400" />
+              <div key={item.title} className="group bg-white/10 backdrop-blur-sm rounded-3xl p-6 border border-white/20 hover:bg-white/20 transition-all text-center hover:-translate-y-2 duration-300">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-white/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <item.icon className="w-7 h-7" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
-                <p className="text-gray-400 text-sm">{item.desc}</p>
+                <h3 className="text-lg font-bold mb-2">{item.title}</h3>
+                <p className="text-white/70 text-sm">{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 lg:py-28 bg-gradient-to-br from-emerald-500 to-teal-600">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
-            Ready to get started?
+      {/* ═══════════════════════════════════════════════════════════════════
+          FINAL CTA - DARK PREMIUM
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-24 lg:py-32 bg-gray-950 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.15),transparent_60%)]" />
+        
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black mb-6 leading-tight">
+            Ready to experience
+            <br />
+            <span className="bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent">the magic?</span>
           </h2>
-          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Join thousands of happy customers. Book your first service today and experience the difference.
+          <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
+            Join 50,000+ customers who trust Helparo for reliable, professional home services.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white text-emerald-600 hover:bg-gray-100 rounded-xl px-8 h-14 text-base font-semibold shadow-lg" asChild>
+            <Button 
+              size="lg" 
+              className="group bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl px-10 h-14 text-lg font-bold shadow-xl shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:scale-105 transition-all duration-300" 
+              asChild
+            >
               <Link href="/auth/signup">
-                Book a Service
-                <ArrowRight className="ml-2 w-5 h-5" />
+                Get Started Free
+                <ArrowUpRight className="ml-2 w-5 h-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </Link>
             </Button>
-            <Button size="lg" className="bg-white/20 backdrop-blur-sm text-white border-2 border-white hover:bg-white hover:text-emerald-600 rounded-xl px-8 h-14 text-base font-semibold transition-all" asChild>
+            <Button 
+              size="lg" 
+              className="bg-white/10 hover:bg-white hover:text-gray-900 text-white border border-white/20 rounded-2xl px-10 h-14 text-lg font-semibold transition-all duration-300 hover:scale-105" 
+              asChild
+            >
               <Link href="/helper/register">
-                Become a Helper
+                Become a Partner
               </Link>
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-16">
+      {/* ═══════════════════════════════════════════════════════════════════
+          FOOTER - CLEAN & PREMIUM
+      ═══════════════════════════════════════════════════════════════════ */}
+      <footer className="bg-gray-950 text-gray-400 pt-20 pb-10 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
-            <div>
-              <Link href="/" className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">H</span>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-12 mb-16">
+            <div className="col-span-2 lg:col-span-1">
+              <Link href="/" className="flex items-center gap-2.5 mb-6 group">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+                  <span className="text-white font-black text-lg">H</span>
                 </div>
-                <span className="text-xl font-bold text-white">Helparo</span>
+                <span className="text-xl font-bold text-white">helparo</span>
               </Link>
-              <p className="text-sm mb-4">
-                India&apos;s most trusted home services platform. Connecting you with verified professionals.
+              <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+                India&apos;s most trusted home services platform. Verified professionals at your doorstep.
               </p>
-              <div className="flex gap-4">
-                <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-                  <span className="sr-only">Twitter</span>
-                  𝕏
-                </a>
-                <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-                  <span className="sr-only">Instagram</span>
-                  📷
-                </a>
-                <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-                  <span className="sr-only">LinkedIn</span>
-                  in
-                </a>
+              <div className="flex gap-3">
+                {['𝕏', '📷', 'in', 'f'].map((icon, i) => (
+                  <a key={i} href="#" className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all text-sm">
+                    {icon}
+                  </a>
+                ))}
               </div>
             </div>
 
-            <div>
-              <h3 className="text-white font-semibold mb-4">For Customers</h3>
-              <ul className="space-y-3 text-sm">
-                <li><Link href="#" className="hover:text-white transition-colors">All Services</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">How it works</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Pricing</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">FAQs</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-white font-semibold mb-4">For Helpers</h3>
-              <ul className="space-y-3 text-sm">
-                <li><Link href="/helper/register" className="hover:text-white transition-colors">Become a Helper</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Helper App</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Earnings</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Resources</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-white font-semibold mb-4">Company</h3>
-              <ul className="space-y-3 text-sm">
-                <li><Link href="#" className="hover:text-white transition-colors">About Us</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Careers</Link></li>
-                <li><Link href="/legal/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
-                <li><Link href="/legal/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-              </ul>
-            </div>
+            {[
+              { title: 'Services', links: [['All Services', '/services'], ['Book Now', '/auth/signup'], ['Pricing', '/pricing']] },
+              { title: 'Partner', links: [['Become a Pro', '/helper/register'], ['Partner Login', '/helper/login'], ['Resources', '/about']] },
+              { title: 'Company', links: [['About Us', '/about'], ['Contact', '/contact'], ['Careers', '/about']] },
+              { title: 'Legal', links: [['Terms', '/legal/terms'], ['Privacy', '/legal/privacy'], ['Refunds', '/legal/refunds']] },
+            ].map((col) => (
+              <div key={col.title}>
+                <h3 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">{col.title}</h3>
+                <ul className="space-y-3">
+                  {col.links.map(([label, href]) => (
+                    <li key={label}>
+                      <Link href={href} className="text-sm hover:text-white transition-colors">{label}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
 
-          <div className="border-t border-gray-800 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-sm">
-              © {new Date().getFullYear()} Helparo. All rights reserved.
-            </p>
-            <p className="text-sm">
-              Made with ❤️ in India
-            </p>
+          <div className="border-t border-white/5 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p className="text-sm text-gray-500">© {new Date().getFullYear()} Helparo. All rights reserved.</p>
+            <p className="text-sm text-gray-500 flex items-center gap-1">Made with <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" /> in India</p>
           </div>
         </div>
       </footer>
+
+      {/* Premium Animations */}
+      <style jsx global>{`
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+        }
+        @keyframes float-delayed {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
+        }
+        .animate-fade-in { animation: fade-in 0.6s ease-out forwards; }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        .animate-float-delayed { animation: float-delayed 5s ease-in-out infinite 1s; }
+      `}</style>
     </div>
   )
 }
