@@ -10,8 +10,8 @@ const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY || process.env.PAYME
 const CASHFREE_ENV = process.env.CASHFREE_ENVIRONMENT || 'PRODUCTION' // TEST or PRODUCTION
 
 const CASHFREE_API_URL = CASHFREE_ENV === 'PRODUCTION' 
-  ? 'https://sandbox.cashfree.com/pg'
-  : 'https://api.cashfree.com/pg'
+  ? 'https://api.cashfree.com/pg'
+  : 'https://sandbox.cashfree.com/pg'
 
 interface CreateOrderRequest {
   request_id: string
@@ -153,6 +153,14 @@ export async function POST(request: NextRequest) {
       order_note: order_note || `Payment for: ${serviceRequest.title || 'Service Request'}`,
     }
 
+    console.log('🔵 API: Cashfree Config:', {
+      env: CASHFREE_ENV,
+      url: CASHFREE_API_URL,
+      hasAppId: !!CASHFREE_APP_ID,
+      hasSecret: !!CASHFREE_SECRET_KEY,
+      appIdPrefix: CASHFREE_APP_ID?.substring(0, 8) + '...'
+    })
+    
     logger.info('Creating Cashfree order', { 
       orderId, 
       amount, 
