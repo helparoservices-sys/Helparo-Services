@@ -1,250 +1,727 @@
-import type { Metadata } from 'next'
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Mail, Phone, MapPin, Clock, MessageCircle } from 'lucide-react'
+import { 
+  Mail, 
+  Phone, 
+  MapPin, 
+  Clock, 
+  MessageCircle,
+  Send,
+  Headphones,
+  Heart,
+  Sparkles,
+  Zap,
+  Shield,
+  CheckCircle,
+  ArrowRight,
+  Star,
+  Users,
+  BadgeCheck
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export const metadata: Metadata = {
-  title: 'Contact Helparo - Get Help & Support | Customer Service',
-  description: 'Contact Helparo for support, feedback, or business inquiries. We\'re available 6 AM - 11 PM, 7 days a week. Email, phone, or chat with us.',
-  keywords: [
-    'contact helparo', 'helparo customer service', 'helparo support',
-    'home services help', 'helparo phone number', 'helparo email'
-  ],
-  openGraph: {
-    title: 'Contact Helparo - Get Help & Support',
-    description: 'Need help? Contact our support team via email, phone, or chat. Available 6 AM - 11 PM, 7 days a week.',
-    url: 'https://helparo.in/contact',
-    type: 'website',
-  },
-  alternates: {
-    canonical: 'https://helparo.in/contact',
-  },
+// Animated Counter Component
+function AnimatedCounter({ end, duration = 2000, suffix = '' }: { end: number; duration?: number; suffix?: string }) {
+  const [count, setCount] = useState(0)
+  const [isVisible, setIsVisible] = useState(false)
+  const ref = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setIsVisible(true) },
+      { threshold: 0.1 }
+    )
+    if (ref.current) observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!isVisible) return
+    let startTime: number
+    const step = (timestamp: number) => {
+      if (!startTime) startTime = timestamp
+      const progress = Math.min((timestamp - startTime) / duration, 1)
+      setCount(Math.floor(progress * end))
+      if (progress < 1) requestAnimationFrame(step)
+    }
+    requestAnimationFrame(step)
+  }, [isVisible, end, duration])
+
+  return <span ref={ref}>{count.toLocaleString()}{suffix}</span>
 }
 
 export default function ContactPage() {
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    subject: '',
+    message: ''
+  })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 20)
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Get current hour to show if live chat is available
+  const currentHour = new Date().getHours()
+  const isChatAvailable = currentHour >= 9 && currentHour < 18
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    // Simulate form submission
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    setSubmitted(true)
+    setIsSubmitting(false)
+  }
+
   const contactMethods = [
     {
       icon: Phone,
-      title: 'Phone Support',
-      description: 'Talk to our support team',
-      value: '+91-XXXXXXXXXX',
-      action: 'tel:+91XXXXXXXXXX',
+      title: 'Call Us',
+      description: 'Talk to our friendly team',
+      value: '+91 9154781126',
+      subValue: 'Mon-Sun: 9 AM - 6 PM',
+      action: 'tel:+919154781126',
       actionText: 'Call Now',
+      gradient: 'from-blue-500 to-cyan-500',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200',
+      hoverBorder: 'hover:border-blue-400',
+      emoji: '📞'
     },
     {
       icon: Mail,
-      title: 'Email',
-      description: 'Send us an email',
+      title: 'Email Us',
+      description: 'We reply within 24 hours',
       value: 'support@helparo.in',
+      subValue: 'We love hearing from you!',
       action: 'mailto:support@helparo.in',
       actionText: 'Send Email',
+      gradient: 'from-emerald-500 to-teal-500',
+      bgColor: 'bg-emerald-50',
+      borderColor: 'border-emerald-200',
+      hoverBorder: 'hover:border-emerald-400',
+      emoji: '✉️'
     },
     {
       icon: MessageCircle,
       title: 'Live Chat',
-      description: 'Chat with us instantly',
-      value: 'Available 6 AM - 11 PM',
+      description: isChatAvailable ? 'We\'re online now!' : 'Back at 9 AM',
+      value: isChatAvailable ? '🟢 Online' : '🔴 Offline',
+      subValue: 'Available 9 AM - 6 PM',
       action: '#chat',
-      actionText: 'Start Chat',
+      actionText: isChatAvailable ? 'Start Chat' : 'Leave Message',
+      gradient: 'from-violet-500 to-purple-600',
+      bgColor: 'bg-violet-50',
+      borderColor: 'border-violet-200',
+      hoverBorder: 'hover:border-violet-400',
+      emoji: '💬'
     },
   ]
 
   const faqs = [
     {
-      question: 'How do I book a service?',
-      answer: 'Simply browse our services, select what you need, choose a time slot, and confirm your booking. A verified helper will arrive at your doorstep.',
+      question: 'How quickly can I get a helper?',
+      answer: 'Most services are available within 30 minutes! Our AI instantly matches you with the nearest available verified professional.',
+      icon: Zap,
+      color: 'text-amber-500'
     },
     {
-      question: 'What if the helper doesn\'t show up?',
-      answer: 'We have a strict no-show policy. If a helper doesn\'t arrive, we\'ll immediately assign a replacement and compensate you for any inconvenience.',
+      question: 'What if I\'m not satisfied with the service?',
+      answer: '100% satisfaction guaranteed! Not happy? We\'ll send another professional for free or give you a full refund. No questions asked.',
+      icon: Shield,
+      color: 'text-emerald-500'
     },
     {
-      question: 'Can I cancel my booking?',
-      answer: 'Yes, you can cancel for free up to 2 hours before the scheduled time. Cancellations after that may incur a small fee.',
+      question: 'How does the pricing work?',
+      answer: 'YOU decide your price! Tell us your budget, and our AI finds verified professionals willing to work at your rate. Revolutionary, right?',
+      icon: Sparkles,
+      color: 'text-violet-500'
     },
     {
-      question: 'How do I become a helper on Helparo?',
-      answer: 'Visit our registration page, complete your profile, submit your ID and skill documents, and pass our verification process. We\'ll contact you within 48 hours.',
+      question: 'Are the helpers verified?',
+      answer: 'Absolutely! Every helper undergoes Aadhaar verification, background checks, skill assessments, and training before joining Helparo.',
+      icon: BadgeCheck,
+      color: 'text-blue-500'
     },
+  ]
+
+  const supportHours = [
+    { day: 'Phone Support', time: '9:00 AM - 6:00 PM', icon: Phone, available: currentHour >= 9 && currentHour < 18 },
+    { day: 'Live Chat', time: '9:00 AM - 6:00 PM', icon: MessageCircle, available: currentHour >= 9 && currentHour < 18 },
+    { day: 'Email Support', time: '24/7', icon: Mail, available: true },
+    { day: 'Emergency Help', time: '24/7', icon: Headphones, available: true },
   ]
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4">
+      {/* Premium Glass Header */}
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        isScrolled 
+          ? 'bg-white/80 backdrop-blur-2xl shadow-[0_2px_40px_-12px_rgba(0,0,0,0.1)] border-b border-gray-100' 
+          : 'bg-white/50 backdrop-blur-xl'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                <span className="text-white font-bold text-lg">H</span>
+          <div className="flex items-center justify-between h-16 lg:h-20">
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="w-10 h-10 rounded-[12px] bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+                <span className="text-white font-black text-lg">H</span>
               </div>
-              <span className="text-xl font-bold">Helparo</span>
+              <span className="text-xl font-extrabold text-gray-900 hidden sm:block">helparo</span>
             </Link>
-            <nav className="hidden md:flex items-center gap-6">
-              <Link href="/services" className="text-sm hover:text-white/80 transition-colors">Services</Link>
-              <Link href="/about" className="text-sm hover:text-white/80 transition-colors">About</Link>
-              <Link href="/contact" className="text-sm font-medium">Contact</Link>
+
+            <nav className="hidden md:flex items-center gap-1">
+              <Link href="/services" className="px-4 py-2 text-[15px] font-medium text-gray-600 hover:text-emerald-600 rounded-xl hover:bg-emerald-50 transition-all">Services</Link>
+              <Link href="/about" className="px-4 py-2 text-[15px] font-medium text-gray-600 hover:text-emerald-600 rounded-xl hover:bg-emerald-50 transition-all">About</Link>
+              <Link href="/contact" className="px-4 py-2 text-[15px] font-semibold text-emerald-600 bg-emerald-50 rounded-xl">Contact</Link>
             </nav>
+
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" className="hidden sm:flex text-gray-700 hover:text-emerald-600 font-semibold rounded-xl" asChild>
+                <Link href="/auth/login">Log in</Link>
+              </Button>
+              <Button className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-5 font-semibold shadow-lg" asChild>
+                <Link href="/auth/signup">Get Started</Link>
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-emerald-50 to-teal-50 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Contact <span className="text-emerald-600">Us</span>
+      {/* ═══════════════════════════════════════════════════════════════════
+          HERO SECTION - FUN & FRIENDLY
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="pt-28 lg:pt-36 pb-16 lg:pb-20 bg-gradient-to-b from-violet-50/80 via-white to-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(139,92,246,0.12),transparent)]" />
+        <div className="absolute top-40 right-0 w-96 h-96 bg-gradient-to-br from-violet-200/30 to-purple-200/30 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-emerald-200/20 to-teal-200/20 rounded-full blur-3xl" />
+        
+        {/* Floating Elements */}
+        <div className="absolute top-32 left-10 text-4xl animate-bounce hidden lg:block" style={{ animationDelay: '0s' }}>👋</div>
+        <div className="absolute top-48 right-20 text-3xl animate-bounce hidden lg:block" style={{ animationDelay: '0.5s' }}>💬</div>
+        <div className="absolute bottom-20 left-1/4 text-3xl animate-bounce hidden lg:block" style={{ animationDelay: '1s' }}>❤️</div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center max-w-4xl mx-auto">
+            {/* Status Badge */}
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-2 rounded-full shadow-lg shadow-emerald-500/25 mb-6">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+              </span>
+              <span className="text-sm font-bold">We&apos;re Here to Help!</span>
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black text-gray-900 mb-6 leading-tight">
+              Let&apos;s <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">Talk</span>
+              <br />
+              <span className="text-3xl sm:text-4xl lg:text-5xl text-gray-500">We&apos;re All Ears 👂</span>
             </h1>
-            <p className="text-xl text-gray-600">
-              Have a question or need help? We&apos;re here for you 7 days a week.
+            
+            <p className="text-xl sm:text-2xl text-gray-500 mb-8 max-w-3xl mx-auto leading-relaxed">
+              Got questions? Feedback? Just want to say hi? 
+              <br className="hidden sm:block" />
+              <span className="font-bold text-gray-900">Our team is always happy to hear from you!</span>
             </p>
+
+            {/* Quick Contact Stats */}
+            <div className="flex flex-wrap justify-center gap-6 mb-8">
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg border border-gray-100">
+                <Zap className="w-5 h-5 text-amber-500" />
+                <span className="text-sm font-medium text-gray-700">Avg. Response: <span className="font-bold text-gray-900">2 mins</span></span>
+              </div>
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg border border-gray-100">
+                <Heart className="w-5 h-5 text-rose-500" />
+                <span className="text-sm font-medium text-gray-700">Satisfaction: <span className="font-bold text-gray-900">98%</span></span>
+              </div>
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg border border-gray-100">
+                <Users className="w-5 h-5 text-violet-500" />
+                <span className="text-sm font-medium text-gray-700">Helped: <span className="font-bold text-gray-900">50,000+</span></span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Contact Methods */}
-      <section className="py-16 bg-white">
+      {/* ═══════════════════════════════════════════════════════════════════
+          CONTACT CARDS - ENGAGING
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-16 bg-white relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl lg:text-4xl font-black text-gray-900 mb-4">
+              Choose Your Way to <span className="text-violet-600">Connect</span>
+            </h2>
+            <p className="text-gray-500 text-lg">Pick whatever feels comfortable - we&apos;re flexible!</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
             {contactMethods.map((method) => (
-              <div key={method.title} className="bg-gray-50 rounded-2xl p-6 text-center">
-                <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <method.icon className="w-8 h-8 text-emerald-600" />
+              <div key={method.title} className="group relative">
+                <div className={`absolute -inset-1 bg-gradient-to-r ${method.gradient} rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-500`} />
+                <div className={`relative ${method.bgColor} rounded-3xl p-8 border-2 ${method.borderColor} ${method.hoverBorder} transition-all duration-300 h-full`}>
+                  {/* Emoji Badge */}
+                  <div className="absolute -top-4 -right-2 text-4xl">{method.emoji}</div>
+                  
+                  <div className={`w-16 h-16 bg-gradient-to-br ${method.gradient} rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <method.icon className="w-8 h-8 text-white" />
+                  </div>
+                  
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{method.title}</h3>
+                  <p className="text-gray-500 text-sm mb-4">{method.description}</p>
+                  
+                  <div className="mb-2">
+                    <p className="text-xl font-bold text-gray-900">{method.value}</p>
+                    <p className="text-sm text-gray-500">{method.subValue}</p>
+                  </div>
+                  
+                  <a href={method.action} className="block mt-6">
+                    <Button className={`w-full bg-gradient-to-r ${method.gradient} hover:opacity-90 text-white font-semibold rounded-xl h-12 shadow-lg transition-all`}>
+                      {method.actionText}
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </a>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{method.title}</h3>
-                <p className="text-gray-500 text-sm mb-2">{method.description}</p>
-                <p className="text-gray-900 font-medium mb-4">{method.value}</p>
-                <a href={method.action}>
-                  <Button className="w-full">{method.actionText}</Button>
-                </a>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Office Hours & Location */}
-      <section className="py-16 bg-gray-50">
+      {/* ═══════════════════════════════════════════════════════════════════
+          SUPPORT HOURS & LOCATION - MODERN
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-16 bg-gradient-to-br from-gray-50 to-violet-50/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-12">
+          <div className="grid lg:grid-cols-2 gap-12">
+            {/* Support Hours */}
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <Clock className="w-6 h-6 text-emerald-500" />
+              <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+                <Clock className="w-4 h-4" />
                 Support Hours
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                When Can You <span className="text-amber-600">Reach Us?</span>
               </h2>
-              <div className="bg-white rounded-xl p-6 shadow-sm">
+              
+              <div className="bg-white rounded-3xl p-6 shadow-xl border border-gray-100">
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center py-2 border-b">
-                    <span className="text-gray-600">Monday - Sunday</span>
-                    <span className="font-medium text-gray-900">6:00 AM - 11:00 PM</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-gray-600">Emergency Services</span>
-                    <span className="font-medium text-emerald-600">24/7 Available</span>
+                  {supportHours.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${item.available ? 'bg-emerald-100' : 'bg-gray-200'}`}>
+                          <item.icon className={`w-6 h-6 ${item.available ? 'text-emerald-600' : 'text-gray-500'}`} />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">{item.day}</p>
+                          <p className="text-sm text-gray-500">{item.time}</p>
+                        </div>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-xs font-bold ${item.available ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'}`}>
+                        {item.available ? '🟢 Available' : '🔴 Offline'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Fun note */}
+                <div className="mt-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-100">
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl">☕</div>
+                    <div>
+                      <p className="font-semibold text-gray-900">Fun Fact!</p>
+                      <p className="text-sm text-gray-600">Our support team has consumed 10,000+ cups of chai while helping customers! 🍵</p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Our Office */}
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <MapPin className="w-6 h-6 text-emerald-500" />
-                Our Office
+              <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+                <MapPin className="w-4 h-4" />
+                Our Location
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                Come Say <span className="text-emerald-600">Hello!</span>
               </h2>
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <address className="not-italic text-gray-600 space-y-2">
-                  <p className="font-medium text-gray-900">Helparo Services Pvt. Ltd.</p>
-                  <p>Vijayawada, Andhra Pradesh</p>
-                  <p>India - 520001</p>
-                </address>
+              
+              <div className="bg-white rounded-3xl p-6 shadow-xl border border-gray-100 h-fit">
+                {/* Office Info */}
+                <div className="mb-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                      <MapPin className="w-6 h-6 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-900">Helparo HQ</p>
+                      <p className="text-sm text-gray-500">Where the magic happens ✨</p>
+                    </div>
+                  </div>
+                  <address className="not-italic text-gray-600 space-y-1 pl-15 ml-15">
+                    <p className="font-medium text-gray-900">Helparo Services Pvt. Ltd.</p>
+                    <p>Vijayawada, Andhra Pradesh</p>
+                    <p>India - 520001</p>
+                  </address>
+                </div>
+
+                {/* Map Placeholder */}
+                <div className="relative w-full h-48 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-2xl overflow-hidden">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <MapPin className="w-10 h-10 text-emerald-600 mx-auto mb-2 animate-bounce" />
+                      <p className="font-semibold text-emerald-800">Vijayawada, AP</p>
+                      <p className="text-sm text-emerald-600">📍 We&apos;re here!</p>
+                    </div>
+                  </div>
+                  {/* Decorative circles */}
+                  <div className="absolute top-4 right-4 w-16 h-16 bg-emerald-200/50 rounded-full"></div>
+                  <div className="absolute bottom-4 left-4 w-20 h-20 bg-teal-200/50 rounded-full"></div>
+                </div>
+
+                {/* Social Links */}
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                  <p className="text-sm font-semibold text-gray-700 mb-3">Follow Us</p>
+                  <div className="flex gap-3">
+                    {['Twitter', 'Instagram', 'LinkedIn', 'Facebook'].map((social) => (
+                      <div key={social} className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-emerald-100 cursor-pointer transition-colors">
+                        <span className="text-sm font-bold text-gray-600">{social[0]}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-            Frequently Asked Questions
-          </h2>
+      {/* ═══════════════════════════════════════════════════════════════════
+          CONTACT FORM - BEAUTIFUL
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            {/* Left - Why Contact Us */}
+            <div>
+              <div className="inline-flex items-center gap-2 bg-violet-100 text-violet-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+                <Send className="w-4 h-4" />
+                Send a Message
+              </div>
+              <h2 className="text-4xl lg:text-5xl font-black text-gray-900 mb-6 leading-tight">
+                Drop Us a <span className="text-violet-600">Line</span> 💌
+              </h2>
+              <p className="text-xl text-gray-500 mb-8 leading-relaxed">
+                Whether it&apos;s a question, feedback, partnership inquiry, or just to tell us how awesome we are (we love those!) — we&apos;re here for it all.
+              </p>
+
+              {/* Trust Points */}
+              <div className="space-y-4">
+                {[
+                  { icon: Zap, text: 'Lightning-fast responses (avg. 2 mins!)', color: 'text-amber-500' },
+                  { icon: Heart, text: 'Genuinely helpful humans, not robots', color: 'text-rose-500' },
+                  { icon: Shield, text: 'Your data is 100% safe with us', color: 'text-emerald-500' },
+                  { icon: Star, text: '98% customer satisfaction rate', color: 'text-violet-500' },
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-3">
+                    <div className={`w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center`}>
+                      <item.icon className={`w-5 h-5 ${item.color}`} />
+                    </div>
+                    <span className="text-gray-700 font-medium">{item.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right - Form */}
+            <div className="relative">
+              <div className="absolute -inset-4 bg-gradient-to-r from-violet-500/20 via-purple-500/20 to-pink-500/20 rounded-[2rem] blur-2xl" />
+              <div className="relative bg-white rounded-3xl p-8 shadow-2xl border border-gray-100">
+                {submitted ? (
+                  <div className="text-center py-12">
+                    <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <CheckCircle className="w-10 h-10 text-emerald-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Message Sent! 🎉</h3>
+                    <p className="text-gray-500 mb-6">Thanks for reaching out! We&apos;ll get back to you within 24 hours.</p>
+                    <Button onClick={() => setSubmitted(false)} variant="outline" className="rounded-xl">
+                      Send Another Message
+                    </Button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    <div className="grid sm:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Your Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-violet-500 focus:ring-0 outline-none transition-colors"
+                          placeholder="John Doe"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
+                        <input
+                          type="tel"
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-violet-500 focus:ring-0 outline-none transition-colors"
+                          placeholder="+91 XXXXX XXXXX"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
+                      <input
+                        type="email"
+                        required
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-violet-500 focus:ring-0 outline-none transition-colors"
+                        placeholder="john@example.com"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Subject</label>
+                      <select
+                        value={formData.subject}
+                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-violet-500 focus:ring-0 outline-none transition-colors bg-white"
+                      >
+                        <option value="">Select a topic</option>
+                        <option value="general">General Inquiry</option>
+                        <option value="support">Customer Support</option>
+                        <option value="booking">Booking Issues</option>
+                        <option value="feedback">Feedback & Suggestions</option>
+                        <option value="partnership">Partnership Opportunities</option>
+                        <option value="helper">Become a Helper</option>
+                        <option value="other">Something Else</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Your Message</label>
+                      <textarea
+                        required
+                        rows={4}
+                        value={formData.message}
+                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-violet-500 focus:ring-0 outline-none transition-colors resize-none"
+                        placeholder="Tell us what's on your mind..."
+                      />
+                    </div>
+                    
+                    <Button 
+                      type="submit" 
+                      disabled={isSubmitting}
+                      className="w-full h-14 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold text-lg rounded-xl shadow-lg shadow-violet-500/30 transition-all disabled:opacity-50"
+                    >
+                      {isSubmitting ? (
+                        <span className="flex items-center gap-2">
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Sending...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          Send Message
+                          <Send className="w-5 h-5" />
+                        </span>
+                      )}
+                    </Button>
+                  </form>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          FAQ SECTION - HELPFUL
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-20 bg-gradient-to-br from-gray-50 via-white to-emerald-50/30">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+              <Sparkles className="w-4 h-4" />
+              Quick Answers
+            </div>
+            <h2 className="text-4xl font-black text-gray-900 mb-4">
+              Got <span className="text-emerald-600">Questions?</span> 🤔
+            </h2>
+            <p className="text-xl text-gray-500">Here are answers to what most people ask us!</p>
+          </div>
+
           <div className="space-y-4">
             {faqs.map((faq, index) => (
-              <div key={index} className="bg-gray-50 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{faq.question}</h3>
-                <p className="text-gray-600">{faq.answer}</p>
+              <div key={index} className="group bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:border-emerald-200 hover:shadow-xl transition-all duration-300">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <faq.icon className={`w-6 h-6 ${faq.color}`} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">{faq.question}</h3>
+                    <p className="text-gray-600 leading-relaxed">{faq.answer}</p>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
-          <div className="text-center mt-8">
-            <p className="text-gray-500">
-              Can&apos;t find what you&apos;re looking for?{' '}
-              <a href="mailto:support@helparo.in" className="text-emerald-600 hover:underline">
-                Email us directly
-              </a>
+
+          <div className="text-center mt-10">
+            <p className="text-gray-500 mb-4">
+              Still have questions? We&apos;re just a message away!
             </p>
+            <a href="mailto:support@helparo.in">
+              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-8 font-semibold shadow-lg">
+                Email Us Directly
+                <Mail className="w-4 h-4 ml-2" />
+              </Button>
+            </a>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-emerald-600 to-teal-600">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">Need a Service Right Now?</h2>
-          <p className="text-emerald-100 mb-8">
-            Browse our services and book a verified helper in minutes.
-          </p>
-          <Link href="/services">
-            <Button size="lg" variant="secondary">
-              Browse Services
-            </Button>
-          </Link>
+      {/* ═══════════════════════════════════════════════════════════════════
+          STATS SECTION - TRUST
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-16 bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-black text-white mb-2">Why People Love Talking to Us</h2>
+            <p className="text-violet-200">Our support team is pretty awesome 😎</p>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              { value: 50000, suffix: '+', label: 'Happy Conversations', emoji: '💬' },
+              { value: 2, suffix: ' min', label: 'Avg. Response Time', emoji: '⚡' },
+              { value: 98, suffix: '%', label: 'Satisfaction Rate', emoji: '❤️' },
+              { value: 24, suffix: '/7', label: 'Email Support', emoji: '📧' },
+            ].map((stat) => (
+              <div key={stat.label} className="text-center group">
+                <div className="text-4xl mb-2">{stat.emoji}</div>
+                <p className="text-3xl lg:text-4xl font-black text-white mb-1">
+                  <AnimatedCounter end={stat.value} suffix={stat.suffix} />
+                </p>
+                <p className="text-sm text-violet-200 font-medium">{stat.label}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      {/* ═══════════════════════════════════════════════════════════════════
+          CTA SECTION - FINAL
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-20 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="text-6xl mb-6">🚀</div>
+          <h2 className="text-4xl font-black text-gray-900 mb-4">
+            Ready to Get Started?
+          </h2>
+          <p className="text-xl text-gray-500 mb-8 max-w-2xl mx-auto">
+            Join 50,000+ happy customers who trust Helparo for their home service needs. 
+            Book your first service today!
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/services">
+              <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl px-10 h-14 text-lg font-bold shadow-xl shadow-emerald-500/25">
+                Browse Services
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            </Link>
+            <Link href="/auth/signup">
+              <Button size="lg" variant="outline" className="rounded-2xl px-10 h-14 text-lg font-semibold border-2">
+                Create Account
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          FOOTER
+      ═══════════════════════════════════════════════════════════════════ */}
+      <footer className="bg-gray-900 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+            {/* Brand */}
+            <div className="lg:col-span-1">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
                   <span className="text-white font-bold text-lg">H</span>
                 </div>
-                <span className="text-xl font-bold">Helparo</span>
+                <span className="text-xl font-bold">helparo</span>
               </div>
-              <p className="text-gray-400 text-sm">
-                Your trusted partner for all home service needs.
+              <p className="text-gray-400 text-sm mb-6">
+                India&apos;s most trusted home services platform. Verified professionals at your doorstep.
               </p>
+              {/* Social Links */}
+              <div className="flex gap-3">
+                {['X', '📸', 'in', 'f'].map((icon, idx) => (
+                  <div key={idx} className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center hover:bg-emerald-600 cursor-pointer transition-colors">
+                    <span className="text-sm">{icon}</span>
+                  </div>
+                ))}
+              </div>
             </div>
+
+            {/* Services */}
             <div>
-              <h4 className="font-semibold mb-4">Services</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><Link href="/services/plumbing" className="hover:text-white">Plumbing</Link></li>
-                <li><Link href="/services/electrical" className="hover:text-white">Electrical</Link></li>
-                <li><Link href="/services/cleaning" className="hover:text-white">Cleaning</Link></li>
-                <li><Link href="/services/ac-repair" className="hover:text-white">AC Repair</Link></li>
+              <h4 className="font-bold text-white mb-4">SERVICES</h4>
+              <ul className="space-y-3 text-sm text-gray-400">
+                <li><Link href="/services" className="hover:text-white transition-colors">All Services</Link></li>
+                <li><Link href="/customer/book" className="hover:text-white transition-colors">Book Now</Link></li>
+                <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
               </ul>
             </div>
+
+            {/* Partner */}
             <div>
-              <h4 className="font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><Link href="/about" className="hover:text-white">About Us</Link></li>
-                <li><Link href="/contact" className="hover:text-white">Contact</Link></li>
-                <li><Link href="/auth/register?role=helper" className="hover:text-white">Become a Helper</Link></li>
+              <h4 className="font-bold text-white mb-4">PARTNER</h4>
+              <ul className="space-y-3 text-sm text-gray-400">
+                <li><Link href="/helper/register" className="hover:text-white transition-colors">Become a Pro</Link></li>
+                <li><Link href="/auth/login" className="hover:text-white transition-colors">Partner Login</Link></li>
+                <li><Link href="/helper" className="hover:text-white transition-colors">Resources</Link></li>
               </ul>
             </div>
+
+            {/* Company & Legal */}
             <div>
-              <h4 className="font-semibold mb-4">Legal</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><Link href="/legal/privacy" className="hover:text-white">Privacy Policy</Link></li>
-                <li><Link href="/legal/terms" className="hover:text-white">Terms of Service</Link></li>
+              <h4 className="font-bold text-white mb-4">COMPANY</h4>
+              <ul className="space-y-3 text-sm text-gray-400">
+                <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
+                <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
+                <li><Link href="/legal/terms" className="hover:text-white transition-colors">Terms</Link></li>
+                <li><Link href="/legal/privacy" className="hover:text-white transition-colors">Privacy</Link></li>
+                <li><Link href="/legal/refunds" className="hover:text-white transition-colors">Refunds</Link></li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-            © {new Date().getFullYear()} Helparo. All rights reserved.
+
+          {/* Bottom Bar */}
+          <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-sm text-gray-400">
+              © {new Date().getFullYear()} Helparo Services Pvt. Ltd. All rights reserved.
+            </p>
+            <p className="text-sm text-gray-400 flex items-center gap-2">
+              Made with <Heart className="w-4 h-4 text-red-500" /> in India 🇮🇳
+            </p>
           </div>
         </div>
       </footer>
