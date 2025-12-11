@@ -71,29 +71,72 @@ export async function GET(
     // Fetch assigned helper details if exists
     let assignedHelper = null
     if (serviceRequest.assigned_helper_id) {
+      console.log('🔍 Looking up helper for assigned_helper_id:', serviceRequest.assigned_helper_id)
+      
       // assigned_helper_id is now user_id (from profiles), so look up helper profile by user_id
-      const { data: helper } = await supabase
+      const { data: helper, error: helperError } = await supabase
         .from('helper_profiles')
         .select(`
           id,
           user_id,
           avg_rating,
-          total_jobs_completed
+          total_jobs_completed,
+          current_location_lat,
+          current_location_lng
         `)
         .eq('user_id', serviceRequest.assigned_helper_id)
         .single()
 
+      console.log('📋 Helper profile lookup result:', { helper, helperError })
+
       if (helper) {
         // Get profile info
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('full_name, phone, avatar_url')
           .eq('id', helper.user_id)
           .single()
 
+        console.log('👤 Profile lookup result:', { profile, profileError })
+
         assignedHelper = {
           ...helper,
           profile: profile || { full_name: 'Helper', phone: '', avatar_url: null }
+        }
+        
+        console.log('✅ Final assignedHelper:', assignedHelper)
+      } else {
+        console.log('⚠️ No helper profile found, trying direct profile lookup...')
+        
+        // Fallback: Get profile directly from assigned_helper_id
+        const { data: directProfile } = await supabase
+          .from('profiles')
+          .select('id, full_name, phone, avatar_url')
+          .eq('id', serviceRequest.assigned_helper_id)
+          .single()
+        
+        if (directProfile) {
+          // Try to find or note that helper_profiles.id is missing
+          // For ratings to work, we MUST have helper_profiles.id
+          const { data: helperProfileByUser } = await supabase
+            .from('helper_profiles')
+            .select('id')
+            .eq('user_id', serviceRequest.assigned_helper_id)
+            .single()
+
+          assignedHelper = {
+            id: helperProfileByUser?.id || serviceRequest.assigned_helper_id, // Prefer helper_profiles.id
+            user_id: serviceRequest.assigned_helper_id,
+            avg_rating: 0,
+            total_jobs_completed: 0,
+            helper_profile_id: helperProfileByUser?.id || null, // Explicitly include this
+            profile: {
+              full_name: directProfile.full_name || 'Helper',
+              phone: directProfile.phone || '',
+              avatar_url: directProfile.avatar_url
+            }
+          }
+          console.log('✅ Created helper from direct profile:', assignedHelper)
         }
       }
     }
@@ -110,9 +153,16 @@ export async function GET(
       customer = customerProfile
     }
 
-    // Build response
+    // Build response - use helper profile location as fallback if service_request doesn't have it
+    const helperLocationLat = serviceRequest.helper_location_lat || 
+      (assignedHelper?.current_location_lat) || null
+    const helperLocationLng = serviceRequest.helper_location_lng || 
+      (assignedHelper?.current_location_lng) || null
+
     const response = {
       ...serviceRequest,
+      helper_location_lat: helperLocationLat,
+      helper_location_lng: helperLocationLng,
       assigned_helper: assignedHelper,
       customer: customer,
       category: Array.isArray(serviceRequest.category) 

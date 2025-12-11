@@ -314,13 +314,20 @@ export default function HelperJobPage() {
   }
 
   function startLocationTracking() {
-    if (!navigator.geolocation) return
+    if (!navigator.geolocation) {
+      console.log('Geolocation not supported')
+      return
+    }
+
+    console.log('🚀 Starting location tracking...')
 
     const watchId = navigator.geolocation.watchPosition(
       async (position) => {
         try {
-          // Update helper location in database
-          await supabase
+          console.log('📍 Location update:', position.coords.latitude, position.coords.longitude)
+          
+          // Update helper location in service_requests for this job
+          const { error: reqError } = await supabase
             .from('service_requests')
             .update({
               helper_location_lat: position.coords.latitude,
@@ -329,9 +336,26 @@ export default function HelperJobPage() {
             })
             .eq('id', requestId)
 
-          // Also log to location history
+          if (reqError) {
+            console.error('Error updating service_requests location:', reqError)
+          }
+
+          // Also update helper_profiles current location (for future jobs/fallback)
           const { data: { user } } = await supabase.auth.getUser()
           if (user) {
+            const { error: profileError } = await supabase
+              .from('helper_profiles')
+              .update({
+                current_location_lat: position.coords.latitude,
+                current_location_lng: position.coords.longitude
+              })
+              .eq('user_id', user.id)
+
+            if (profileError) {
+              console.error('Error updating helper_profiles location:', profileError)
+            }
+
+            // Also log to location history
             const { data: helperProfile } = await supabase
               .from('helper_profiles')
               .select('id')
@@ -354,7 +378,10 @@ export default function HelperJobPage() {
           console.error('Failed to update location:', error)
         }
       },
-      (error) => console.error('Location error:', error),
+      (error) => {
+        console.error('Location error:', error.message)
+        toast.error('Please enable location access for live tracking')
+      },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     )
 

@@ -96,24 +96,27 @@ function LiveTrackingMap({
 
     mapInstanceRef.current = map
 
-    // Customer marker (red - destination)
+    // Customer marker - Home icon (destination)
     customerMarkerRef.current = new google.maps.Marker({
       position: { lat: customerLat, lng: customerLng },
       map: map,
       icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 12,
-        fillColor: '#EF4444',
-        fillOpacity: 1,
-        strokeColor: '#FFFFFF',
-        strokeWeight: 3,
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48">
+            <path d="M20 0C9 0 0 9 0 20c0 15 20 28 20 28s20-13 20-28C40 9 31 0 20 0z" fill="#EF4444"/>
+            <circle cx="20" cy="20" r="16" fill="white"/>
+            <path d="M20 10l-8 7v9h5v-5h6v5h5v-9l-8-7z" fill="#EF4444"/>
+          </svg>
+        `),
+        scaledSize: new google.maps.Size(40, 48),
+        anchor: new google.maps.Point(20, 48),
       },
       title: 'Your Location'
     })
 
     // Add info window for customer location
     const customerInfo = new google.maps.InfoWindow({
-      content: '<div style="padding:4px;font-weight:bold;color:#EF4444">📍 Service Location</div>'
+      content: '<div style="padding:4px;font-weight:bold;color:#EF4444">🏠 Service Location</div>'
     })
     customerMarkerRef.current.addListener('click', () => {
       customerInfo.open(map, customerMarkerRef.current)
@@ -132,25 +135,32 @@ function LiveTrackingMap({
       // Animate marker to new position
       helperMarkerRef.current.setPosition({ lat: helperLat, lng: helperLng })
     } else {
-      // Create helper marker (green - moving)
+      // Create helper marker - Bike icon (moving)
       helperMarkerRef.current = new google.maps.Marker({
         position: { lat: helperLat, lng: helperLng },
         map: mapInstanceRef.current,
         icon: {
-          path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-          scale: 6,
-          fillColor: '#10B981',
-          fillOpacity: 1,
-          strokeColor: '#FFFFFF',
-          strokeWeight: 2,
-          rotation: 0,
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
+              <circle cx="22" cy="22" r="20" fill="#10B981" stroke="white" stroke-width="3"/>
+              <g fill="white" transform="translate(10, 12)">
+                <circle cx="4" cy="14" r="3.5" fill="none" stroke="white" stroke-width="2"/>
+                <circle cx="20" cy="14" r="3.5" fill="none" stroke="white" stroke-width="2"/>
+                <path d="M4 14l4-8h5l2 4h5l-2 4" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M13 10l3 4h4" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="9" cy="4" r="2" fill="white"/>
+              </g>
+            </svg>
+          `),
+          scaledSize: new google.maps.Size(44, 44),
+          anchor: new google.maps.Point(22, 22),
         },
         title: helperName || 'Helper'
       })
 
       // Add info window for helper
       const helperInfo = new google.maps.InfoWindow({
-        content: `<div style="padding:4px;font-weight:bold;color:#10B981">🚗 ${helperName || 'Helper'}</div>`
+        content: `<div style="padding:4px;font-weight:bold;color:#10B981">🏍️ ${helperName || 'Helper'}</div>`
       })
       helperMarkerRef.current.addListener('click', () => {
         helperInfo.open(mapInstanceRef.current, helperMarkerRef.current)
@@ -217,11 +227,11 @@ function LiveTrackingMap({
       <div className="absolute top-4 right-4 bg-white/95 rounded-lg p-2 shadow-lg z-10">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-red-500" />
+            <span className="text-base">🏠</span>
             <span className="text-xs text-gray-600">Your Location</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-emerald-500" />
+            <span className="text-base">🏍️</span>
             <span className="text-xs text-gray-600">Helper</span>
           </div>
         </div>

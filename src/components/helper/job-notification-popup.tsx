@@ -13,7 +13,11 @@ import {
   Zap,
   User,
   Camera,
-  Calendar
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn,
+  Phone
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -21,6 +25,7 @@ interface JobNotification {
   id: string
   request_id: string
   customer_name: string
+  customer_phone?: string // Customer phone for calling
   category: string
   description: string
   address: string
@@ -47,6 +52,7 @@ export function JobNotificationPopup({
   onClose 
 }: JobNotificationPopupProps) {
   const [accepting, setAccepting] = useState(false)
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null)
 
   // No timer - helper can take their time to decide
   if (!notification) return null
@@ -113,9 +119,21 @@ export function JobNotificationPopup({
                   <p className="text-sm text-gray-500">needs your help</p>
                 </div>
               </div>
-              <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${urgency.color}`}>
-                {urgency.text}
-              </span>
+              <div className="flex items-center gap-2">
+                {/* Call Customer Button */}
+                {notification.customer_phone && (
+                  <a
+                    href={`tel:${notification.customer_phone}`}
+                    className="p-2 bg-blue-100 hover:bg-blue-200 rounded-full transition-colors group"
+                    title="Call customer to clarify doubts"
+                  >
+                    <Phone className="h-5 w-5 text-blue-600 group-hover:animate-pulse" />
+                  </a>
+                )}
+                <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${urgency.color}`}>
+                  {urgency.text}
+                </span>
+              </div>
             </div>
 
             {/* Service Type & Full Description */}
@@ -129,20 +147,126 @@ export function JobNotificationPopup({
               <div className="bg-gray-50 rounded-xl p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Camera className="h-4 w-4 text-gray-600" />
-                  <p className="text-xs text-gray-600 font-medium">Photos from Customer</p>
+                  <p className="text-xs text-gray-600 font-medium">Photos from Customer (tap to view)</p>
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-2">
                   {notification.photos.map((photo, idx) => (
-                    <div key={idx} className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200">
+                    <button 
+                      key={idx} 
+                      onClick={() => setSelectedPhotoIndex(idx)}
+                      className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 hover:border-emerald-500 transition-colors group"
+                    >
                       <Image 
                         src={photo} 
                         alt={`Problem photo ${idx + 1}`}
                         fill
                         className="object-cover"
                       />
-                    </div>
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                        <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Photo Lightbox Modal */}
+            {selectedPhotoIndex !== null && notification.photos && (
+              <div 
+                className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center"
+                onClick={() => setSelectedPhotoIndex(null)}
+              >
+                {/* Close button */}
+                <button 
+                  onClick={() => setSelectedPhotoIndex(null)}
+                  className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
+                >
+                  <X className="h-6 w-6 text-white" />
+                </button>
+
+                {/* Photo counter */}
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-white/10 rounded-full">
+                  <span className="text-white text-sm font-medium">
+                    {selectedPhotoIndex + 1} / {notification.photos.length}
+                  </span>
+                </div>
+
+                {/* Previous button */}
+                {notification.photos.length > 1 && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedPhotoIndex(prev => 
+                        prev !== null 
+                          ? (prev - 1 + notification.photos!.length) % notification.photos!.length 
+                          : 0
+                      )
+                    }}
+                    className="absolute left-4 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
+                  >
+                    <ChevronLeft className="h-6 w-6 text-white" />
+                  </button>
+                )}
+
+                {/* Image */}
+                <div 
+                  className="relative w-full h-full max-w-4xl max-h-[80vh] mx-4"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Image
+                    src={notification.photos[selectedPhotoIndex]}
+                    alt={`Problem photo ${selectedPhotoIndex + 1}`}
+                    fill
+                    className="object-contain"
+                    sizes="(max-width: 768px) 100vw, 80vw"
+                    priority
+                  />
+                </div>
+
+                {/* Next button */}
+                {notification.photos.length > 1 && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedPhotoIndex(prev => 
+                        prev !== null 
+                          ? (prev + 1) % notification.photos!.length 
+                          : 0
+                      )
+                    }}
+                    className="absolute right-4 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
+                  >
+                    <ChevronRight className="h-6 w-6 text-white" />
+                  </button>
+                )}
+
+                {/* Thumbnail strip */}
+                {notification.photos.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 p-2 bg-white/10 rounded-xl">
+                    {notification.photos.map((photo, idx) => (
+                      <button
+                        key={idx}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedPhotoIndex(idx)
+                        }}
+                        className={`relative w-12 h-12 rounded-lg overflow-hidden transition-all ${
+                          idx === selectedPhotoIndex 
+                            ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-black/50' 
+                            : 'opacity-60 hover:opacity-100'
+                        }`}
+                      >
+                        <Image
+                          src={photo}
+                          alt={`Thumbnail ${idx + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -320,7 +444,7 @@ export function useJobNotifications() {
                 images,
                 service_type_details,
                 category:category_id (name),
-                customer:customer_id (full_name)
+                customer:customer_id (full_name, phone)
               )
             `)
             .eq('id', payload.new.id)
@@ -347,6 +471,7 @@ export function useJobNotifications() {
               id: data.id,
               request_id: data.request_id,
               customer_name: req.customer?.full_name || 'Customer',
+              customer_phone: req.customer?.phone || undefined,
               category: req.category?.name || 'Service',
               description: req.description || req.title,
               address: req.service_address || req.address_line1 || 'Address not provided',

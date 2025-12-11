@@ -61,22 +61,14 @@ export default function RateHelperPage() {
 
   const loadJobDetails = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('service_requests')
-        .select(`
-          id,
-          estimated_price,
-          category:category_id (name),
-          assigned_helper:assigned_helper_id (
-            id,
-            user_id,
-            profile:user_id (full_name, avatar_url)
-          )
-        `)
-        .eq('id', requestId)
-        .single()
+      // Use API to get job details with helper info
+      const response = await fetch(`/api/requests/${requestId}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to load job')
+      }
 
-      if (error) throw error
+      const data = await response.json()
 
       // Check if already rated
       const { data: existingRating } = await supabase
@@ -89,25 +81,27 @@ export default function RateHelperPage() {
         setSubmitted(true)
       }
 
-      // Transform the data - handle both array and object responses from Supabase
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const helperData = data.assigned_helper as any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const categoryData = data.category as any
+      // Transform the data from API response
+      const helperName = data.assigned_helper?.profile?.full_name || 
+                         data.assigned_helper?.full_name ||
+                         'Helper'
       
       const transformedData: JobDetails = {
         id: data.id,
         estimated_price: data.estimated_price,
-        category: Array.isArray(categoryData) ? categoryData[0] : categoryData,
-        assigned_helper: helperData ? {
-          id: Array.isArray(helperData) ? helperData[0]?.id : helperData.id,
-          user_id: Array.isArray(helperData) ? helperData[0]?.user_id : helperData.user_id,
-          profile: Array.isArray(helperData) 
-            ? (Array.isArray(helperData[0]?.profile) ? helperData[0]?.profile[0] : helperData[0]?.profile)
-            : (Array.isArray(helperData.profile) ? helperData.profile[0] : helperData.profile)
+        category: data.category,
+        assigned_helper: data.assigned_helper ? {
+          id: data.assigned_helper.id,
+          user_id: data.assigned_helper.user_id,
+          profile: {
+            full_name: helperName,
+            avatar_url: data.assigned_helper.profile?.avatar_url || data.assigned_helper.avatar_url || null
+          }
         } : null
       }
 
+      console.log('📋 Rating page - Job loaded:', transformedData)
+      console.log('📋 Raw API response assigned_helper:', data.assigned_helper)
       setJob(transformedData)
     } catch (error) {
       console.error('Failed to load job:', error)
@@ -131,13 +125,36 @@ export default function RateHelperPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
+      // Get the helper_profiles.id (not user_id)
+      // The assigned_helper.id from API should be helper_profiles.id
+      // But we need to verify - if it's actually user_id, we need to look up helper_profiles
+      let helperProfileId = job.assigned_helper.id
+      
+      // Check if we need to look up the helper_profiles.id
+      if (job.assigned_helper.user_id && job.assigned_helper.id === job.assigned_helper.user_id) {
+        // The id is actually user_id, we need to get helper_profiles.id
+        const { data: helperProfile } = await supabase
+          .from('helper_profiles')
+          .select('id')
+          .eq('user_id', job.assigned_helper.user_id)
+          .single()
+        
+        if (helperProfile) {
+          helperProfileId = helperProfile.id
+        } else {
+          throw new Error('Helper profile not found')
+        }
+      }
+
+      console.log('📝 Submitting rating with helper_profile_id:', helperProfileId)
+
       // Insert rating
       const { error } = await supabase
         .from('job_ratings')
         .insert({
           request_id: requestId,
           customer_id: user.id,
-          helper_id: job.assigned_helper.id,
+          helper_id: helperProfileId,
           rating: overallRating,
           review: review.trim() || null,
           punctuality_rating: punctualityRating,
@@ -147,11 +164,14 @@ export default function RateHelperPage() {
           tip_amount: tipAmount
         })
 
-      if (error) throw error
+      if (error) {
+        console.error('Rating insert error:', error)
+        throw error
+      }
 
       // Update helper's average rating
       await supabase.rpc('update_helper_rating', {
-        helper_uuid: job.assigned_helper.id
+        helper_uuid: helperProfileId
       })
 
       setSubmitted(true)
