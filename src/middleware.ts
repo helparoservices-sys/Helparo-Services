@@ -48,12 +48,12 @@ export async function middleware(request: NextRequest) {
   response.headers.set(
     'Content-Security-Policy',
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://opnjibjsddwyojrerbll.supabase.co https://vercel.live https://*.vercel.live https://maps.googleapis.com https://*.googleapis.com https://www.google.com https://www.gstatic.com https://apis.google.com; " +
-    "style-src 'self' 'unsafe-inline'; " +
-    "img-src 'self' data: https: blob: https://*.googleapis.com https://*.gstatic.com; " +
-    "font-src 'self' data: https://fonts.gstatic.com; " +
-    "connect-src 'self' https://opnjibjsddwyojrerbll.supabase.co wss://opnjibjsddwyojrerbll.supabase.co https://vercel.live wss://*.vercel.live https://*.googleapis.com https://*.gstatic.com https://www.google.com; " +
-    "frame-src 'self' https://www.google.com https://maps.google.com; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://opnjibjsddwyojrerbll.supabase.co https://vercel.live https://*.vercel.live https://maps.googleapis.com https://*.googleapis.com https://www.google.com https://www.gstatic.com https://apis.google.com https://sdk.cashfree.com https://*.cashfree.com; " +
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+    "img-src 'self' data: https: blob: https://*.googleapis.com https://*.gstatic.com https://*.cashfree.com; " +
+    "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com; " +
+    "connect-src 'self' https://opnjibjsddwyojrerbll.supabase.co wss://opnjibjsddwyojrerbll.supabase.co https://vercel.live wss://*.vercel.live https://*.googleapis.com https://*.gstatic.com https://www.google.com https://api.cashfree.com https://sandbox.cashfree.com https://*.cashfree.com; " +
+    "frame-src 'self' https://www.google.com https://maps.google.com https://*.cashfree.com; " +
     "frame-ancestors 'self';"
   )
   
