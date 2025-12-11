@@ -118,6 +118,8 @@ export function PaymentButton({
   }, [])
 
   const initiatePayment = async () => {
+    console.log('🔵 Payment initiated')
+    
     if (!sdkLoaded) {
       toast.error('Payment service is loading. Please try again.')
       return
@@ -128,6 +130,7 @@ export function PaymentButton({
       return
     }
 
+    console.log('🔵 User details:', userDetails)
     setStatus('creating')
     setError('')
 
@@ -139,11 +142,18 @@ export function PaymentButton({
 
     try {
       // Refresh session before making payment request
+      console.log('🔵 Refreshing session...')
       const supabase = createClient()
       const { data: { session }, error: refreshError } = await supabase.auth.refreshSession()
       
+      console.log('🔵 Session refresh result:', { 
+        hasSession: !!session, 
+        userId: session?.user?.id,
+        error: refreshError?.message 
+      })
+      
       if (refreshError || !session) {
-        console.error('Session refresh failed:', refreshError)
+        console.error('❌ Session refresh failed:', refreshError)
         toast.error('Session expired. Please login again.')
         setStatus('failed')
         setError('Session expired')
@@ -156,6 +166,12 @@ export function PaymentButton({
       }
 
       // 1. Create order on backend
+      console.log('🔵 Creating payment order...', {
+        requestId,
+        amount,
+        userName: userDetails.name
+      })
+      
       const response = await fetch('/api/payments/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -170,7 +186,9 @@ export function PaymentButton({
         }),
       })
 
+      console.log('🔵 Payment API response status:', response.status)
       const orderData = await response.json()
+      console.log('🔵 Payment API response data:', orderData)
 
       if (!response.ok) {
         // Handle auth errors specifically

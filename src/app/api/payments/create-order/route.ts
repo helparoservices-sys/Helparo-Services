@@ -54,17 +54,32 @@ async function createRouteClient() {
  */
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔵 API: Payment order creation started')
+    
     // Verify authentication using route-specific client
+    const cookieStore = await cookies()
+    const allCookies = cookieStore.getAll()
+    console.log('🔵 API: Cookies received:', allCookies.map(c => ({ name: c.name, hasValue: !!c.value })))
+    
     const supabase = await createRouteClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
+    console.log('🔵 API: Auth check result:', { 
+      hasUser: !!user, 
+      userId: user?.id,
+      authError: authError?.message 
+    })
+    
     if (authError || !user) {
+      console.error('❌ API: Payment auth failed', { authError: authError?.message })
       logger.error('Payment auth failed', { authError: authError?.message })
       return NextResponse.json(
         { error: 'Unauthorized - Please login again', details: authError?.message },
         { status: 401 }
       )
     }
+    
+    console.log('✅ API: User authenticated:', user.id)
 
     // Check if Cashfree credentials are configured
     if (!CASHFREE_APP_ID || !CASHFREE_SECRET_KEY) {
