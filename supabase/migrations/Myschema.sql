@@ -285,6 +285,13 @@ CREATE TABLE public.helper_profiles (
   completion_rate_percent numeric DEFAULT 100.0,
   average_response_minutes integer,
   service_area_ids ARRAY DEFAULT '{}'::uuid[],
+  instant_booking_enabled boolean DEFAULT false,
+  instant_booking_price numeric,
+  instant_booking_duration_minutes integer,
+  available_time_slots jsonb DEFAULT '[]'::jsonb,
+  auto_accept_enabled boolean DEFAULT false,
+  max_concurrent_bookings integer DEFAULT 3,
+  response_time_minutes integer DEFAULT 30,
   CONSTRAINT helper_profiles_pkey PRIMARY KEY (id),
   CONSTRAINT helper_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
 );
@@ -641,6 +648,21 @@ CREATE TABLE public.payout_transactions (
   CONSTRAINT payout_transactions_withdrawal_id_fkey FOREIGN KEY (withdrawal_id) REFERENCES public.withdrawal_requests(id),
   CONSTRAINT payout_transactions_helper_id_fkey FOREIGN KEY (helper_id) REFERENCES public.profiles(id)
 );
+CREATE TABLE public.phone_verifications (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid,
+  phone character varying NOT NULL,
+  country_code character varying NOT NULL DEFAULT '+91'::character varying,
+  otp_code character varying NOT NULL,
+  otp_expires_at timestamp with time zone NOT NULL,
+  verified_at timestamp with time zone,
+  attempts integer DEFAULT 0,
+  max_attempts integer DEFAULT 3,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT phone_verifications_pkey PRIMARY KEY (id),
+  CONSTRAINT phone_verifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
 CREATE TABLE public.profiles (
   id uuid NOT NULL,
   email text NOT NULL UNIQUE,
@@ -945,6 +967,8 @@ CREATE TABLE public.service_requests (
   service_city character varying,
   service_state character varying,
   service_pincode character varying,
+  booking_type USER-DEFINED DEFAULT 'normal'::booking_type,
+  instant_booking_confirmed_at timestamp with time zone,
   CONSTRAINT service_requests_pkey PRIMARY KEY (id),
   CONSTRAINT service_requests_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.profiles(id),
   CONSTRAINT service_requests_assigned_helper_id_fkey FOREIGN KEY (assigned_helper_id) REFERENCES public.profiles(id),
@@ -1236,6 +1260,16 @@ CREATE TABLE public.verification_reviews (
   CONSTRAINT verification_reviews_pkey PRIMARY KEY (id),
   CONSTRAINT verification_reviews_helper_user_id_fkey FOREIGN KEY (helper_user_id) REFERENCES public.profiles(id),
   CONSTRAINT verification_reviews_admin_user_id_fkey FOREIGN KEY (admin_user_id) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.verified_phones (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  phone_number character varying NOT NULL,
+  country_code character varying NOT NULL DEFAULT '+91'::character varying,
+  user_id uuid NOT NULL,
+  verified_at timestamp with time zone NOT NULL DEFAULT now(),
+  is_primary boolean NOT NULL DEFAULT true,
+  CONSTRAINT verified_phones_pkey PRIMARY KEY (id),
+  CONSTRAINT verified_phones_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
 CREATE TABLE public.video_call_sessions (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
