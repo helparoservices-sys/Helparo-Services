@@ -37,13 +37,7 @@ async function createRouteClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) => {
-              // Ensure secure cookie settings for production
-              const cookieOptions = {
-                ...options,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax' as const, // 'lax' is better for auth cookies
-              }
-              cookieStore.set(name, value, cookieOptions)
+              cookieStore.set(name, value, options)
             })
           } catch {
             // Ignore errors in route handlers
@@ -60,20 +54,33 @@ async function createRouteClient() {
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔵 API: Payment order creation started')
+    console.log('🔵 API: Payment order creation started', {
+      url: request.url,
+      method: request.method,
+      origin: request.headers.get('origin'),
+      referer: request.headers.get('referer'),
+      userAgent: request.headers.get('user-agent')?.substring(0, 50)
+    })
     
     // Verify authentication using route-specific client
     const cookieStore = await cookies()
     const allCookies = cookieStore.getAll()
     
+    console.log('🔵 API: Total cookies received:', allCookies.length)
+    
+    // Log ALL cookies for debugging
+    console.log('🔵 API: All cookie names:', allCookies.map(c => c.name))
+    
     // Log auth-related cookies for debugging
     const authCookies = allCookies.filter(c => 
-      c.name.includes('auth') || c.name.includes('supabase')
+      c.name.includes('auth') || c.name.includes('supabase') || c.name.includes('sb-')
     )
-    console.log('🔵 API: Auth cookies:', authCookies.map(c => ({ 
+    console.log('🔵 API: Auth cookies found:', authCookies.length)
+    console.log('🔵 API: Auth cookie details:', authCookies.map(c => ({ 
       name: c.name, 
       hasValue: !!c.value,
-      valueLength: c.value?.length || 0
+      valueLength: c.value?.length || 0,
+      valueStart: c.value?.substring(0, 20) + '...'
     })))
     
     const supabase = await createRouteClient()

@@ -141,19 +141,19 @@ export function PaymentButton({
     }
 
     try {
-      // Refresh session before making payment request
-      console.log('🔵 Refreshing session...')
+      // Check if user is authenticated (session check only, no refresh needed)
+      console.log('🔵 Checking session...')
       const supabase = createClient()
-      const { data: { session }, error: refreshError } = await supabase.auth.refreshSession()
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
       
-      console.log('🔵 Session refresh result:', { 
+      console.log('🔵 Session check result:', { 
         hasSession: !!session, 
         userId: session?.user?.id,
-        error: refreshError?.message 
+        error: sessionError?.message 
       })
       
-      if (refreshError || !session) {
-        console.error('❌ Session refresh failed:', refreshError)
+      if (sessionError || !session) {
+        console.error('❌ Session check failed:', sessionError)
         toast.error('Session expired. Please login again.')
         setStatus('failed')
         setError('Session expired')
