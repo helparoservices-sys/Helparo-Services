@@ -9,7 +9,7 @@ const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID || process.env.NEXT_PUBLIC_P
 const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY || process.env.PAYMENT_SECRET_KEY!
 const CASHFREE_ENV = process.env.CASHFREE_ENVIRONMENT || 'PRODUCTION' // TEST or PRODUCTION
 
-const CASHFREE_API_URL = CASHFREE_ENV === 'TEST' 
+const CASHFREE_API_URL = CASHFREE_ENV === 'PRODUCTION' 
   ? 'https://sandbox.cashfree.com/pg'
   : 'https://api.cashfree.com/pg'
 
