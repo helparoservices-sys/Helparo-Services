@@ -8,8 +8,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const mainRoutes = [
     { path: '/', priority: 1.0, changeFrequency: 'daily' as const },
     { path: '/services', priority: 0.9, changeFrequency: 'daily' as const },
-    { path: '/auth/signup', priority: 0.8, changeFrequency: 'monthly' as const },
-    { path: '/auth/login', priority: 0.7, changeFrequency: 'monthly' as const },
+    { path: '/about', priority: 0.8, changeFrequency: 'monthly' as const },
+    { path: '/contact', priority: 0.8, changeFrequency: 'monthly' as const },
+    { path: '/auth/signup', priority: 0.7, changeFrequency: 'monthly' as const },
+    { path: '/auth/login', priority: 0.6, changeFrequency: 'monthly' as const },
     { path: '/helper/register', priority: 0.8, changeFrequency: 'monthly' as const },
   ]
 
@@ -23,6 +25,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/services/painting', priority: 0.8, changeFrequency: 'weekly' as const },
     { path: '/services/appliance-repair', priority: 0.8, changeFrequency: 'weekly' as const },
     { path: '/services/pest-control', priority: 0.8, changeFrequency: 'weekly' as const },
+    { path: '/services/deep-cleaning', priority: 0.8, changeFrequency: 'weekly' as const },
+    { path: '/services/sofa-cleaning', priority: 0.7, changeFrequency: 'weekly' as const },
+    { path: '/services/water-tank-cleaning', priority: 0.7, changeFrequency: 'weekly' as const },
+    { path: '/services/geyser-repair', priority: 0.7, changeFrequency: 'weekly' as const },
   ]
 
   // Legal pages

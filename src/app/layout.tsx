@@ -80,10 +80,11 @@ export const viewport: Viewport = {
   themeColor: '#10b981',
 }
 
-// JSON-LD Structured Data for SEO
-const jsonLd = {
+// JSON-LD Structured Data for SEO - LocalBusiness
+const localBusinessSchema = {
   '@context': 'https://schema.org',
   '@type': 'LocalBusiness',
+  '@id': 'https://helparo.in/#business',
   name: 'Helparo',
   description: 'Book trusted home service helpers - plumbers, electricians, cleaners & more at your doorstep.',
   url: 'https://helparo.in',
@@ -134,6 +135,112 @@ const jsonLd = {
   },
 }
 
+// WebSite schema for sitelinks search box
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  '@id': 'https://helparo.in/#website',
+  name: 'Helparo',
+  url: 'https://helparo.in',
+  description: 'On-demand home services platform - Book verified helpers for plumbing, electrical, cleaning & more',
+  publisher: { '@id': 'https://helparo.in/#business' },
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: 'https://helparo.in/services?search={search_term_string}'
+    },
+    'query-input': 'required name=search_term_string'
+  }
+}
+
+// FAQ Schema for rich snippets
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: 'How do I book a service on Helparo?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Simply browse services, select what you need, choose a time slot, and book. Our verified professionals will arrive at your doorstep within 30 minutes to 2 hours.'
+      }
+    },
+    {
+      '@type': 'Question',
+      name: 'Are Helparo professionals verified?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Yes! All our helpers undergo thorough background verification, skill assessment, and ID verification before joining our platform. We ensure 100% safety.'
+      }
+    },
+    {
+      '@type': 'Question',
+      name: 'What payment methods does Helparo accept?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'We accept Cash, UPI (Google Pay, PhonePe, Paytm), and Card payments. You can choose your preferred payment method during or after the service.'
+      }
+    },
+    {
+      '@type': 'Question',
+      name: 'What services does Helparo offer?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Helparo offers plumbing, electrical repairs, house cleaning, AC service & repair, carpentry, appliance repair, painting, pest control, and many more home services.'
+      }
+    },
+    {
+      '@type': 'Question',
+      name: 'Which cities does Helparo operate in?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Helparo currently operates in major Indian cities including Vijayawada, Hyderabad, Bangalore, Mumbai, Delhi, Chennai, Pune, Kolkata and more cities coming soon.'
+      }
+    },
+    {
+      '@type': 'Question',
+      name: 'How quickly can I get a helper?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'With our instant booking feature, you can get a helper within 30 minutes to 2 hours depending on availability in your area. We also offer scheduled bookings.'
+      }
+    }
+  ]
+}
+
+// Organization schema
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  '@id': 'https://helparo.in/#organization',
+  name: 'Helparo',
+  url: 'https://helparo.in',
+  logo: {
+    '@type': 'ImageObject',
+    url: 'https://helparo.in/logo.svg',
+    width: '512',
+    height: '512'
+  },
+  description: 'India\'s trusted on-demand home services platform',
+  foundingDate: '2024',
+  sameAs: [
+    'https://facebook.com/helparo',
+    'https://instagram.com/helparo',
+    'https://twitter.com/helparo',
+    'https://linkedin.com/company/helparo'
+  ],
+  contactPoint: [
+    {
+      '@type': 'ContactPoint',
+      telephone: '+91-XXXXXXXXXX',
+      contactType: 'customer service',
+      availableLanguage: ['English', 'Hindi', 'Telugu']
+    }
+  ]
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -147,10 +254,22 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         
-        {/* JSON-LD Structured Data */}
+        {/* JSON-LD Structured Data for SEO */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
       </head>
       <body className="antialiased">
