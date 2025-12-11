@@ -131,16 +131,24 @@ export default function CompleteSignupPage() {
         }
 
         // Check localStorage for role (set during signup page)
+        // This is set when user clicks Google OAuth on signup page
         const pendingRole = localStorage.getItem('pendingSignupRole')
         const roleSelected = localStorage.getItem('roleSelected')
 
-        if (pendingRole || roleSelected || profile?.role) {
-          // Role already selected - skip role selection, go to verification
-          setFinalRole(pendingRole || profile?.role || 'customer')
+        // Determine if we have a valid role already
+        // Priority: 1. pendingRole from localStorage, 2. profile.role from DB
+        const hasValidRole = !!(pendingRole && pendingRole !== '') || 
+                            !!(roleSelected === 'true') || 
+                            !!(profile?.role && profile.role !== '')
+
+        if (hasValidRole) {
+          // Role already selected - skip role selection, go directly to verification
+          const roleToUse = pendingRole || profile?.role || 'customer'
+          setFinalRole(roleToUse)
           setStep('verify')
           setTimeout(initializeRecaptcha, 500)
         } else {
-          // Need to select role (fallback for direct navigation)
+          // Need to select role (fallback for direct navigation without going through signup page)
           setStep('selectRole')
         }
       } catch (err) {
