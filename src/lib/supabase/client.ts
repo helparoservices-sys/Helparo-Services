@@ -9,6 +9,15 @@ export const supabase = createBrowserClient<Database>(supabaseUrl, supabaseAnonK
     flowType: 'pkce',
     detectSessionInUrl: true,
     persistSession: true,
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    storageKey: 'sb-auth-token',
+  },
+  cookieOptions: {
+    name: 'sb-auth-token',
+    lifetime: 60 * 60 * 24 * 7, // 7 days
+    domain: typeof window !== 'undefined' ? window.location.hostname : undefined,
+    path: '/',
+    sameSite: 'lax', // Changed from 'strict' to 'lax' to allow cross-site redirects
   }
 })
 
@@ -18,6 +27,15 @@ export function createClient() {
       flowType: 'pkce',
       detectSessionInUrl: true,
       persistSession: true,
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      storageKey: 'sb-auth-token',
+    },
+    cookieOptions: {
+      name: 'sb-auth-token',
+      lifetime: 60 * 60 * 24 * 7, // 7 days
+      domain: typeof window !== 'undefined' ? window.location.hostname : undefined,
+      path: '/',
+      sameSite: 'lax', // Changed from 'strict' to 'lax' to allow cross-site redirects
     }
   })
 }

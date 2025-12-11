@@ -102,7 +102,7 @@ export async function middleware(request: NextRequest) {
     response.cookies.set('csrf-token', csrfToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax', // Changed from 'strict' to 'lax' to support payment redirects
       path: '/'
     })
   }
