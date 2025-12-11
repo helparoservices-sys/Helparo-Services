@@ -1,13 +1,11 @@
-'use server'
-
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
 import crypto from 'crypto'
 
-// Cashfree API configuration
-const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID!
-const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY!
+// Cashfree API configuration - support both old and new variable names
+const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID || process.env.NEXT_PUBLIC_PAYMENT_API_KEY!
+const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY || process.env.PAYMENT_SECRET_KEY!
 const CASHFREE_ENV = process.env.CASHFREE_ENVIRONMENT || 'PRODUCTION' // TEST or PRODUCTION
 
 const CASHFREE_API_URL = CASHFREE_ENV === 'TEST' 
@@ -34,9 +32,19 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
+      logger.error('Payment auth failed', { authError: authError?.message })
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized - Please login again', details: authError?.message },
         { status: 401 }
+      )
+    }
+
+    // Check if Cashfree credentials are configured
+    if (!CASHFREE_APP_ID || !CASHFREE_SECRET_KEY) {
+      logger.error('Cashfree credentials missing')
+      return NextResponse.json(
+        { error: 'Payment service not configured' },
+        { status: 500 }
       )
     }
 
