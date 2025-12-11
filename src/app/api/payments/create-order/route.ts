@@ -36,9 +36,15 @@ async function createRouteClient() {
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
+            cookiesToSet.forEach(({ name, value, options }) => {
+              // Ensure secure cookie settings for production
+              const cookieOptions = {
+                ...options,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax' as const, // 'lax' is better for auth cookies
+              }
+              cookieStore.set(name, value, cookieOptions)
+            })
           } catch {
             // Ignore errors in route handlers
           }
@@ -59,7 +65,16 @@ export async function POST(request: NextRequest) {
     // Verify authentication using route-specific client
     const cookieStore = await cookies()
     const allCookies = cookieStore.getAll()
-    console.log('🔵 API: Cookies received:', allCookies.map(c => ({ name: c.name, hasValue: !!c.value })))
+    
+    // Log auth-related cookies for debugging
+    const authCookies = allCookies.filter(c => 
+      c.name.includes('auth') || c.name.includes('supabase')
+    )
+    console.log('🔵 API: Auth cookies:', authCookies.map(c => ({ 
+      name: c.name, 
+      hasValue: !!c.value,
+      valueLength: c.value?.length || 0
+    })))
     
     const supabase = await createRouteClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -67,7 +82,8 @@ export async function POST(request: NextRequest) {
     console.log('🔵 API: Auth check result:', { 
       hasUser: !!user, 
       userId: user?.id,
-      authError: authError?.message 
+      authError: authError?.message,
+      cookieCount: allCookies.length
     })
     
     if (authError || !user) {
