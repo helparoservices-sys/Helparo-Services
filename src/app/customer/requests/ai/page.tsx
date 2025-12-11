@@ -203,11 +203,8 @@ export default function AIRequestPage() {
 
   const analyzeWithAI = async () => {
     console.log('🔍 Analyze button clicked!')
-    console.log('Images:', images.length)
-    console.log('Description:', description)
-    console.log('CategoryId:', categoryId)
-    console.log('Address:', address)
     
+    // Validation
     if (images.length < 3) {
       toast.error('Please upload at least 3 images (minimum required)')
       return
@@ -222,13 +219,23 @@ export default function AIRequestPage() {
     }
 
     setAnalyzing(true)
+    const startTime = Date.now()
     console.log('✅ Starting AI analysis...')
+    
+    // Create abort controller for timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => {
+      controller.abort()
+      console.log('⏱️ Frontend timeout triggered')
+    }, 15000) // 15 second frontend timeout
+    
     try {
       const response = await fetch('/api/ai/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
-          images,
+          images: images.slice(0, 3), // Only send first 3 images
           description,
           errorCode: errorCode || 'N/A',
           problemDuration,
@@ -236,30 +243,40 @@ export default function AIRequestPage() {
           preferredTime,
           categoryId: categoryId,
           categoryName: getCategoryName(categoryId),
-          location: 'Visakhapatnam, Andhra Pradesh',
+          location: address || 'Visakhapatnam, Andhra Pradesh',
         }),
       })
-
-      console.log('📡 API Response status:', response.status)
+      
+      clearTimeout(timeoutId)
+      const elapsed = Date.now() - startTime
+      console.log(`📡 API Response in ${elapsed}ms, status: ${response.status}`)
+      
       const data = await response.json()
       console.log('📦 API Response data:', data)
 
       if (!response.ok) {
-        console.error('❌ API Error:', data.error)
         throw new Error(data.error || 'AI analysis failed')
       }
 
       console.log('✅ AI Analysis successful!')
       setAiAnalysis(data.analysis)
       setStep('analysis')
-      toast.success('AI analysis completed!')
+      toast.success(`AI analysis completed in ${(elapsed/1000).toFixed(1)}s!`)
     } catch (error: any) {
-      console.error('❌ AI analysis error:', error)
-      console.error('Error message:', error.message)
-      toast.error(error.message || 'Failed to analyze images')
+      clearTimeout(timeoutId)
+      const elapsed = Date.now() - startTime
+      console.error(`❌ AI analysis error after ${elapsed}ms:`, error.message)
+      
+      // Handle different error types
+      if (error.name === 'AbortError') {
+        toast.error('Analysis is taking too long. Please try again with smaller images.')
+      } else if (error.message?.includes('Failed to fetch')) {
+        toast.error('Network error. Please check your connection.')
+      } else {
+        toast.error(error.message || 'AI analysis failed. Please try again.')
+      }
     } finally {
       setAnalyzing(false)
-      console.log('🏁 Analysis complete, analyzing set to false')
     }
   }
 
