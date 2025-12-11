@@ -8,9 +8,9 @@ const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID || process.env.NEXT_PUBLIC_P
 const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY || process.env.PAYMENT_SECRET_KEY!
 const CASHFREE_ENV = process.env.CASHFREE_ENVIRONMENT || 'PRODUCTION'
 
-const CASHFREE_API_URL = CASHFREE_ENV === 'TEST' 
-  ? 'https://sandbox.cashfree.com/pg'
-  : 'https://api.cashfree.com/pg'
+const CASHFREE_API_URL = CASHFREE_ENV === 'PRODUCTION' 
+  ? 'https://api.cashfree.com/pg'
+  : 'https://sandbox.cashfree.com/pg'
 
 // Create Supabase client for route handlers
 async function createRouteClient() {
