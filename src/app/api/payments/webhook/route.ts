@@ -7,7 +7,8 @@ import crypto from 'crypto'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY!
+// Support both variable names for Cashfree
+const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY || process.env.PAYMENT_SECRET_KEY!
 
 /**
  * Verify Cashfree webhook signature

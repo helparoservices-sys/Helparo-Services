@@ -138,6 +138,23 @@ export function PaymentButton({
     }
 
     try {
+      // Refresh session before making payment request
+      const supabase = createClient()
+      const { data: { session }, error: refreshError } = await supabase.auth.refreshSession()
+      
+      if (refreshError || !session) {
+        console.error('Session refresh failed:', refreshError)
+        toast.error('Session expired. Please login again.')
+        setStatus('failed')
+        setError('Session expired')
+        handleError('Session expired - please login again')
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          window.location.href = '/auth/login?redirect=' + encodeURIComponent(window.location.pathname)
+        }, 2000)
+        return
+      }
+
       // 1. Create order on backend
       const response = await fetch('/api/payments/create-order', {
         method: 'POST',
@@ -156,6 +173,14 @@ export function PaymentButton({
       const orderData = await response.json()
 
       if (!response.ok) {
+        // Handle auth errors specifically
+        if (response.status === 401) {
+          toast.error('Session expired. Redirecting to login...')
+          setTimeout(() => {
+            window.location.href = '/auth/login?redirect=' + encodeURIComponent(window.location.pathname)
+          }, 1500)
+          throw new Error('Session expired - please login again')
+        }
         throw new Error(orderData.error || 'Failed to create payment order')
       }
 
@@ -207,7 +232,9 @@ export function PaymentButton({
       // 4. Verify payment status
       setTimeout(async () => {
         try {
-          const verifyResponse = await fetch(`/api/payments/verify?order_id=${orderData.order_id}`)
+          const verifyResponse = await fetch(`/api/payments/verify?order_id=${orderData.order_id}`, {
+            credentials: 'include',
+          })
           const verifyData = await verifyResponse.json()
 
           if (verifyData.status === 'success') {

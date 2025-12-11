@@ -1,15 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { logger } from '@/lib/logger'
 
-// Cashfree API configuration
-const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID!
-const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY!
+// Cashfree API configuration - support both variable names
+const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID || process.env.NEXT_PUBLIC_PAYMENT_API_KEY!
+const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY || process.env.PAYMENT_SECRET_KEY!
 const CASHFREE_ENV = process.env.CASHFREE_ENVIRONMENT || 'PRODUCTION'
 
 const CASHFREE_API_URL = CASHFREE_ENV === 'TEST' 
   ? 'https://sandbox.cashfree.com/pg'
   : 'https://api.cashfree.com/pg'
+
+// Create Supabase client for route handlers
+async function createRouteClient() {
+  const cookieStore = await cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return cookieStore.getAll() },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch { /* Ignore */ }
+        },
+      },
+    }
+  )
+}
 
 /**
  * Verify payment status with Cashfree
@@ -17,8 +39,8 @@ const CASHFREE_API_URL = CASHFREE_ENV === 'TEST'
  */
 export async function GET(request: NextRequest) {
   try {
-    // Verify authentication
-    const supabase = await createClient()
+    // Verify authentication using route-specific client
+    const supabase = await createRouteClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
