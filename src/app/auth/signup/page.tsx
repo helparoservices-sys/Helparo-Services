@@ -167,7 +167,7 @@ function SignUpForm() {
               </p>
             </div>
 
-            {/* Role Selection */}
+            {/* Role Selection - Commented out: Role is now selected on complete-signup page
             <div className="grid grid-cols-2 gap-3 mb-6">
               <button
                 type="button"
@@ -194,6 +194,7 @@ function SignUpForm() {
                 <p className="text-sm text-gray-500">I want to earn</p>
               </button>
             </div>
+            */}
 
             {/* Google Sign Up */}
             <Button
