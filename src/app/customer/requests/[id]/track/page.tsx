@@ -38,13 +38,15 @@ function JobCompletionPopup({
   job,
   onRate,
   onClose,
-  onQuickRate
+  onQuickRate,
+  onPayNow
 }: {
   isOpen: boolean
   job: JobDetails
   onRate: () => void
   onClose: () => void
   onQuickRate: (rating: number) => void
+  onPayNow?: () => void
 }) {
   const [selectedRating, setSelectedRating] = useState(0)
   const [hoveredRating, setHoveredRating] = useState(0)
@@ -153,9 +155,19 @@ function JobCompletionPopup({
 
           {/* Action Buttons */}
           <div className="space-y-3">
+            {/* Pay Now Button for Online Payments */}
+            {!isCash && onPayNow && (
+              <Button 
+                onClick={onPayNow}
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white py-6 text-lg font-semibold rounded-xl"
+              >
+                <CreditCard className="h-5 w-5 mr-2" />
+                Pay ₹{job.estimated_price} Now
+              </Button>
+            )}
             <Button 
               onClick={onRate}
-              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 text-lg font-semibold rounded-xl"
+              className={`w-full ${isCash ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'} py-6 text-lg font-semibold rounded-xl`}
             >
               <Star className="h-5 w-5 mr-2" />
               {selectedRating > 0 ? 'Add Detailed Review' : `Rate ${helperName}`}
@@ -587,6 +599,22 @@ export default function JobTrackingPage() {
       toast.error('Failed to update payment method')
     } finally {
       setUpdatingPayment(false)
+    }
+  }
+
+  // Initiate online payment after job completion
+  async function initiatePayment() {
+    if (!job) return
+    
+    try {
+      // Close the completion popup first
+      setShowCompletionPopup(false)
+      
+      // Redirect to payment page with the request details
+      router.push(`/customer/requests/${requestId}/pay`)
+    } catch (error: any) {
+      console.error('Payment error:', error)
+      toast.error(error.message || 'Failed to initiate payment')
     }
   }
 
@@ -1079,6 +1107,7 @@ export default function JobTrackingPage() {
           }}
           onClose={() => setShowCompletionPopup(false)}
           onQuickRate={submitQuickRating}
+          onPayNow={job.payment_method !== 'cash' ? initiatePayment : undefined}
         />
       )}
     </div>

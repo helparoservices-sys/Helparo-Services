@@ -23,7 +23,9 @@ import {
   Image as ImageIcon,
   Video,
   X,
-  Loader2
+  Loader2,
+  Banknote,
+  Smartphone
 } from 'lucide-react'
 
 const categories = [
@@ -64,6 +66,7 @@ export default function NewRequestPage() {
     longitude: null as number | null,
     budget: '',
     urgency: 'medium',
+    paymentMethod: 'cash', // cash, upi
   })
 
   const handleAddressSelect = (addressData: { 
@@ -229,6 +232,7 @@ export default function NewRequestPage() {
           videos: videos,
           estimatedPrice: parseFloat(formData.budget),
           urgency: formData.urgency,
+          paymentMethod: formData.paymentMethod, // Include payment method
         })
       })
       
@@ -487,6 +491,56 @@ export default function NewRequestPage() {
                 )
               })}
             </div>
+          </div>
+        </div>
+
+        {/* Payment Method Selection */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <label className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <IndianRupee className="w-4 h-4 text-emerald-600" />
+            Payment Method
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'cash' }))}
+              className={`p-3 rounded-xl border-2 transition-all flex items-center gap-3 ${
+                formData.paymentMethod === 'cash'
+                  ? 'border-amber-500 bg-amber-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                formData.paymentMethod === 'cash' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-500'
+              }`}>
+                <Banknote className="w-5 h-5" />
+              </div>
+              <div className="text-left">
+                <p className={`font-semibold text-sm ${formData.paymentMethod === 'cash' ? 'text-amber-700' : 'text-gray-700'}`}>
+                  Cash
+                </p>
+                <p className="text-xs text-gray-500">Pay after service</p>
+              </div>
+            </button>
+            <button
+              onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'upi' }))}
+              className={`p-3 rounded-xl border-2 transition-all flex items-center gap-3 ${
+                formData.paymentMethod === 'upi'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                formData.paymentMethod === 'upi' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500'
+              }`}>
+                <Smartphone className="w-5 h-5" />
+              </div>
+              <div className="text-left">
+                <p className={`font-semibold text-sm ${formData.paymentMethod === 'upi' ? 'text-blue-700' : 'text-gray-700'}`}>
+                  UPI/Online
+                </p>
+                <p className="text-xs text-gray-500">Pay securely online</p>
+              </div>
+            </button>
           </div>
         </div>
 
