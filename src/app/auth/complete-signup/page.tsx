@@ -130,25 +130,18 @@ export default function CompleteSignupPage() {
           return
         }
 
-        // Check localStorage for role (set during signup page)
-        // This is set when user clicks Google OAuth on signup page
-        const pendingRole = localStorage.getItem('pendingSignupRole')
-        const roleSelected = localStorage.getItem('roleSelected')
+        // Clear any stale localStorage data
+        localStorage.removeItem('pendingSignupRole')
+        localStorage.removeItem('roleSelected')
 
-        // Determine if we have a valid role already
-        // Priority: 1. pendingRole from localStorage, 2. profile.role from DB
-        const hasValidRole = !!(pendingRole && pendingRole !== '') || 
-                            !!(roleSelected === 'true') || 
-                            !!(profile?.role && profile.role !== '')
-
-        if (hasValidRole) {
-          // Role already selected - skip role selection, go directly to verification
-          const roleToUse = pendingRole || profile?.role || 'customer'
-          setFinalRole(roleToUse)
+        // Check if profile already has a valid role set in DB
+        if (profile?.role && profile.role !== '') {
+          // Role already in DB - skip role selection, go to verification
+          setFinalRole(profile.role)
           setStep('verify')
           setTimeout(initializeRecaptcha, 500)
         } else {
-          // Need to select role (fallback for direct navigation without going through signup page)
+          // No role yet - show role selection first
           setStep('selectRole')
         }
       } catch (err) {
@@ -183,8 +176,6 @@ export default function CompleteSignupPage() {
   // Role selection handler
   const handleRoleSelect = (role: 'customer' | 'helper') => {
     setFinalRole(role)
-    localStorage.setItem('roleSelected', 'true')
-    localStorage.setItem('pendingSignupRole', role)
     setStep('verify')
     setTimeout(initializeRecaptcha, 500)
   }
@@ -299,9 +290,6 @@ export default function CompleteSignupPage() {
       const result = await signInWithPhoneNumber(auth, fullPhone, recaptchaVerifier)
       setConfirmationResult(result)
       setMaskedPhone(`******${phone.slice(-4)}`)
-      
-      localStorage.removeItem('pendingSignupRole')
-      localStorage.removeItem('roleSelected')
 
       // Move to OTP verification
       setStep('otpVerify')
