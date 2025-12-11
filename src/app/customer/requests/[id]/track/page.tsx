@@ -26,7 +26,9 @@ import {
   PartyPopper,
   Banknote,
   CreditCard,
-  ThumbsUp
+  ThumbsUp,
+  Smartphone,
+  ChevronDown
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -35,17 +37,31 @@ function JobCompletionPopup({
   isOpen,
   job,
   onRate,
-  onClose
+  onClose,
+  onQuickRate
 }: {
   isOpen: boolean
   job: JobDetails
   onRate: () => void
   onClose: () => void
+  onQuickRate: (rating: number) => void
 }) {
+  const [selectedRating, setSelectedRating] = useState(0)
+  const [hoveredRating, setHoveredRating] = useState(0)
+  
   if (!isOpen) return null
 
   const isCash = job.payment_method === 'cash'
   const helperName = job.assigned_helper?.profile?.full_name || 'Helper'
+  const displayRating = hoveredRating || selectedRating
+
+  const handleStarClick = (rating: number) => {
+    setSelectedRating(rating)
+    // Submit quick rating after a small delay
+    setTimeout(() => {
+      onQuickRate(rating)
+    }, 300)
+  }
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -103,15 +119,36 @@ function JobCompletionPopup({
             </div>
           </div>
 
-          {/* Rating Prompt */}
+          {/* Interactive Rating */}
           <div className="text-center bg-emerald-50 rounded-xl p-4">
-            <div className="flex justify-center gap-1 mb-2">
+            <p className="text-sm text-gray-600 mb-3">How was your experience?</p>
+            <div className="flex justify-center gap-2 mb-2">
               {[1, 2, 3, 4, 5].map((star) => (
-                <Star key={star} className="h-6 w-6 fill-yellow-400 text-yellow-400" />
+                <button
+                  key={star}
+                  onClick={() => handleStarClick(star)}
+                  onMouseEnter={() => setHoveredRating(star)}
+                  onMouseLeave={() => setHoveredRating(0)}
+                  className="focus:outline-none transition-transform hover:scale-125 active:scale-110"
+                >
+                  <Star 
+                    className={`h-8 w-8 transition-colors ${
+                      star <= displayRating 
+                        ? 'fill-yellow-400 text-yellow-400' 
+                        : 'fill-gray-200 text-gray-200 hover:fill-yellow-200 hover:text-yellow-200'
+                    }`} 
+                  />
+                </button>
               ))}
             </div>
-            <p className="text-sm text-gray-600 mb-1">How was your experience?</p>
-            <p className="text-xs text-gray-500">Your feedback helps us improve</p>
+            <p className="text-xs text-gray-500">
+              {displayRating === 0 && 'Tap a star to rate'}
+              {displayRating === 5 && '⭐ Excellent!'}
+              {displayRating === 4 && '😊 Great!'}
+              {displayRating === 3 && '👍 Good'}
+              {displayRating === 2 && '😐 Fair'}
+              {displayRating === 1 && '😞 Poor'}
+            </p>
           </div>
 
           {/* Action Buttons */}
@@ -121,7 +158,7 @@ function JobCompletionPopup({
               className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 text-lg font-semibold rounded-xl"
             >
               <Star className="h-5 w-5 mr-2" />
-              Rate {helperName}
+              {selectedRating > 0 ? 'Add Detailed Review' : `Rate ${helperName}`}
             </Button>
             <button
               onClick={onClose}
@@ -406,6 +443,8 @@ export default function JobTrackingPage() {
   const [cancelling, setCancelling] = useState(false)
   const [showCompletionPopup, setShowCompletionPopup] = useState(false)
   const [completionPopupShown, setCompletionPopupShown] = useState(false)
+  const [updatingPayment, setUpdatingPayment] = useState(false)
+  const [showPaymentOptions, setShowPaymentOptions] = useState(false)
 
   useEffect(() => {
     loadJobDetails()
@@ -521,6 +560,97 @@ export default function JobTrackingPage() {
       toast.error('Failed to cancel job')
     } finally {
       setCancelling(false)
+    }
+  }
+
+  async function updatePaymentMethod(method: string) {
+    if (!job || job.work_started_at) {
+      toast.error('Cannot change payment method after work has started')
+      return
+    }
+    
+    setUpdatingPayment(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('service_requests')
+        .update({ payment_method: method })
+        .eq('id', requestId)
+
+      if (error) throw error
+
+      setJob(prev => prev ? { ...prev, payment_method: method } : null)
+      toast.success(`Payment method changed to ${method.toUpperCase()}`)
+      setShowPaymentOptions(false)
+    } catch (error) {
+      console.error('Failed to update payment:', error)
+      toast.error('Failed to update payment method')
+    } finally {
+      setUpdatingPayment(false)
+    }
+  }
+
+  async function submitQuickRating(rating: number) {
+    if (!job?.assigned_helper) {
+      toast.error('Unable to submit rating')
+      return
+    }
+
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      // Get helper_profiles.id
+      let helperProfileId = job.assigned_helper.id
+      
+      if (job.assigned_helper.user_id && job.assigned_helper.id === job.assigned_helper.user_id) {
+        const { data: helperProfile } = await supabase
+          .from('helper_profiles')
+          .select('id')
+          .eq('user_id', job.assigned_helper.user_id)
+          .single()
+        
+        if (helperProfile) {
+          helperProfileId = helperProfile.id
+        }
+      }
+
+      // Insert quick rating
+      const { error } = await supabase
+        .from('reviews')
+        .insert({
+          request_id: requestId,
+          customer_id: user.id,
+          helper_id: helperProfileId,
+          rating: rating,
+          review: null
+        })
+
+      if (error) {
+        // Check if it's a duplicate
+        if (error.code === '23505') {
+          toast.info('You have already rated this job')
+        } else {
+          throw error
+        }
+      } else {
+        // Update helper's average rating
+        try {
+          await supabase.rpc('update_helper_rating', {
+            helper_uuid: helperProfileId
+          })
+        } catch {
+          // Ignore if function doesn't exist
+        }
+
+        toast.success(`Thanks for the ${rating}-star rating! ⭐`)
+      }
+      
+      setShowCompletionPopup(false)
+    } catch (error) {
+      console.error('Failed to submit rating:', error)
+      toast.error('Failed to submit rating')
     }
   }
 
@@ -833,11 +963,70 @@ export default function JobTrackingPage() {
                 </div>
               </div>
 
+              {/* Payment Method with Change Option */}
               <div className="flex items-start gap-3">
-                <Clock className="h-5 w-5 text-gray-400 mt-0.5" />
-                <div>
+                {job.payment_method === 'upi' ? (
+                  <Smartphone className="h-5 w-5 text-gray-400 mt-0.5" />
+                ) : job.payment_method === 'card' ? (
+                  <CreditCard className="h-5 w-5 text-gray-400 mt-0.5" />
+                ) : (
+                  <Banknote className="h-5 w-5 text-gray-400 mt-0.5" />
+                )}
+                <div className="flex-1">
                   <p className="text-sm text-gray-500">Payment Method</p>
-                  <p className="text-gray-800 capitalize">{job.payment_method || 'Cash'}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-gray-800 capitalize font-medium">{job.payment_method || 'Cash'}</p>
+                    {!job.work_started_at && (
+                      <button
+                        onClick={() => setShowPaymentOptions(!showPaymentOptions)}
+                        className="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1"
+                      >
+                        Change <ChevronDown className={`h-3 w-3 transition-transform ${showPaymentOptions ? 'rotate-180' : ''}`} />
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Payment Options Dropdown */}
+                  {showPaymentOptions && !job.work_started_at && (
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => updatePaymentMethod('cash')}
+                        disabled={updatingPayment || job.payment_method === 'cash'}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border-2 transition-all ${
+                          job.payment_method === 'cash'
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                        }`}
+                      >
+                        <Banknote className="h-4 w-4" />
+                        <span className="text-sm font-medium">Cash</span>
+                      </button>
+                      <button
+                        onClick={() => updatePaymentMethod('upi')}
+                        disabled={updatingPayment || job.payment_method === 'upi'}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border-2 transition-all ${
+                          job.payment_method === 'upi'
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                        }`}
+                      >
+                        <Smartphone className="h-4 w-4" />
+                        <span className="text-sm font-medium">UPI</span>
+                      </button>
+                      <button
+                        onClick={() => updatePaymentMethod('card')}
+                        disabled={updatingPayment || job.payment_method === 'card'}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border-2 transition-all ${
+                          job.payment_method === 'card'
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                        }`}
+                      >
+                        <CreditCard className="h-4 w-4" />
+                        <span className="text-sm font-medium">Card</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -889,6 +1078,7 @@ export default function JobTrackingPage() {
             router.push(`/customer/requests/${requestId}/rate`)
           }}
           onClose={() => setShowCompletionPopup(false)}
+          onQuickRate={submitQuickRating}
         />
       )}
     </div>
