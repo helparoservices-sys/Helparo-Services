@@ -313,49 +313,56 @@ function SignUpForm() {
 
               {/* Password Requirements */}
               {formData.password && (
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className={`flex items-center gap-1 ${passwordChecks.length ? 'text-emerald-600' : 'text-gray-400'}`}>
-                    {passwordChecks.length ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                    8+ characters
-                  </div>
-                  <div className={`flex items-center gap-1 ${passwordChecks.upper ? 'text-emerald-600' : 'text-gray-400'}`}>
-                    {passwordChecks.upper ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                    Uppercase
-                  </div>
-                  <div className={`flex items-center gap-1 ${passwordChecks.lower ? 'text-emerald-600' : 'text-gray-400'}`}>
-                    {passwordChecks.lower ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                    Lowercase
-                  </div>
-                  <div className={`flex items-center gap-1 ${passwordChecks.number ? 'text-emerald-600' : 'text-gray-400'}`}>
-                    {passwordChecks.number ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                    Number
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-gray-500 mb-2">Password must include:</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className={`flex items-center gap-2 p-1.5 rounded-lg ${passwordChecks.length ? 'text-emerald-600 bg-emerald-50' : 'text-gray-400'}`}>
+                      {passwordChecks.length ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+                      <span className="font-medium">8+ characters</span>
+                    </div>
+                    <div className={`flex items-center gap-2 p-1.5 rounded-lg ${passwordChecks.upper ? 'text-emerald-600 bg-emerald-50' : 'text-gray-400'}`}>
+                      {passwordChecks.upper ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+                      <span className="font-medium">Uppercase</span>
+                    </div>
+                    <div className={`flex items-center gap-2 p-1.5 rounded-lg ${passwordChecks.lower ? 'text-emerald-600 bg-emerald-50' : 'text-gray-400'}`}>
+                      {passwordChecks.lower ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+                      <span className="font-medium">Lowercase</span>
+                    </div>
+                    <div className={`flex items-center gap-2 p-1.5 rounded-lg ${passwordChecks.number ? 'text-emerald-600 bg-emerald-50' : 'text-gray-400'}`}>
+                      {passwordChecks.number ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+                      <span className="font-medium">Number</span>
+                    </div>
                   </div>
                 </div>
               )}
 
               {/* Confirm Password */}
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-600 transition-colors" />
                 <Input
                   type="password"
                   placeholder="Confirm password"
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                   required
-                  className={`h-12 pl-12 pr-12 border-2 focus:ring-0 rounded-xl text-base ${
+                  className={`h-14 pl-12 pr-12 border-2 focus:ring-0 rounded-2xl text-base transition-all ${
                     formData.confirmPassword 
                       ? passwordMatch 
-                        ? 'border-emerald-500 focus:border-emerald-500' 
-                        : 'border-red-300 focus:border-red-500'
-                      : 'border-gray-200 focus:border-emerald-500'
+                        ? 'border-emerald-500 focus:border-emerald-500 bg-emerald-50/30' 
+                        : 'border-red-300 focus:border-red-500 bg-red-50/30'
+                      : 'border-gray-200 focus:border-emerald-500 hover:border-gray-300'
                   }`}
                 />
                 {formData.confirmPassword && (
                   <div className="absolute right-4 top-1/2 -translate-y-1/2">
                     {passwordMatch ? (
-                      <Check className="h-5 w-5 text-emerald-500" />
+                      <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
+                        <Check className="h-4 w-4 text-white" />
+                      </div>
                     ) : (
-                      <X className="h-5 w-5 text-red-500" />
+                      <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
+                        <X className="h-4 w-4 text-white" />
+                      </div>
                     )}
                   </div>
                 )}
@@ -363,7 +370,10 @@ function SignUpForm() {
 
               {/* Error */}
               {error && (
-                <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl">
+                <div className="p-4 text-sm text-red-600 bg-red-50 border-2 border-red-100 rounded-2xl flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <X className="w-4 h-4 text-red-600" />
+                  </div>
                   {error}
                 </div>
               )}
@@ -371,7 +381,7 @@ function SignUpForm() {
               {/* Submit */}
               <Button 
                 type="submit" 
-                className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition-colors" 
+                className="w-full h-14 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-base rounded-2xl transition-all shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100" 
                 disabled={loading || !passwordValid || !passwordMatch}
               >
                 {loading ? (
@@ -380,27 +390,30 @@ function SignUpForm() {
                     Creating account...
                   </>
                 ) : (
-                  'Create account'
+                  <>
+                    Create account
+                    <Sparkles className="ml-2 w-5 h-5" />
+                  </>
                 )}
               </Button>
             </form>
 
             {/* Login Link */}
-            <p className="text-center text-gray-600 mt-6">
+            <p className="text-center text-gray-600 mt-8">
               Already have an account?{' '}
-              <Link href="/auth/login" className="text-emerald-600 font-semibold hover:text-emerald-700">
+              <Link href="/auth/login" className="text-emerald-600 font-bold hover:text-emerald-700 hover:underline transition-colors">
                 Sign in
               </Link>
             </p>
 
             {/* Legal */}
-            <p className="text-center text-xs text-gray-500 mt-4">
+            <p className="text-center text-xs text-gray-400 mt-6">
               By creating an account, you agree to our{' '}
-              <button onClick={() => setShowTerms(true)} className="text-emerald-600 hover:underline">
+              <button onClick={() => setShowTerms(true)} className="text-emerald-600 font-medium hover:underline">
                 Terms
               </button>
               {' '}and{' '}
-              <button onClick={() => setShowPrivacy(true)} className="text-emerald-600 hover:underline">
+              <button onClick={() => setShowPrivacy(true)} className="text-emerald-600 font-medium hover:underline">
                 Privacy Policy
               </button>
             </p>
@@ -410,36 +423,74 @@ function SignUpForm() {
           </div>
         </div>
 
-        {/* Right Side - Branding */}
-        <div className="hidden lg:flex flex-1 bg-gradient-to-br from-emerald-500 to-teal-600 items-center justify-center p-12">
-          <div className="max-w-md text-white">
-            <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-8">
-              <span className="text-4xl font-bold">H</span>
+        {/* Right Side - Premium Branding */}
+        <div className="hidden lg:flex flex-1 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 items-center justify-center p-12 relative overflow-hidden">
+          {/* Decorative Elements */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-400/20 rounded-full blur-3xl" />
+          <div className="absolute top-1/4 left-1/4 w-4 h-4 bg-white/30 rounded-full animate-pulse" />
+          <div className="absolute bottom-1/3 right-1/4 w-3 h-3 bg-white/40 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
+          <div className="absolute top-1/2 right-1/3 w-2 h-2 bg-white/50 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
+          
+          <div className="max-w-md text-white relative z-10">
+            {/* Logo */}
+            <div className="w-24 h-24 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-8 shadow-2xl">
+              <span className="text-5xl font-black">H</span>
             </div>
-            <h2 className="text-4xl font-bold mb-4">
-              Get things done, the right way.
+            
+            <h2 className="text-4xl font-black mb-4 leading-tight">
+              Get things done,<br />the right way.
             </h2>
-            <p className="text-lg text-white/90 mb-8">
+            <p className="text-lg text-white/80 mb-10 leading-relaxed">
               Verified professionals, transparent pricing, and hassle-free booking. Your home deserves the best.
             </p>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                  <Check className="w-4 h-4" />
+            
+            {/* Features */}
+            <div className="space-y-5">
+              <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-2xl p-4 hover:bg-white/15 transition-colors">
+                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Shield className="w-6 h-6" />
                 </div>
-                <span>Background verified helpers</span>
+                <div>
+                  <p className="font-bold">Background verified helpers</p>
+                  <p className="text-sm text-white/70">100% verified & trusted</p>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                  <Check className="w-4 h-4" />
+              <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-2xl p-4 hover:bg-white/15 transition-colors">
+                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Zap className="w-6 h-6" />
                 </div>
-                <span>Transparent upfront pricing</span>
+                <div>
+                  <p className="font-bold">Transparent upfront pricing</p>
+                  <p className="text-sm text-white/70">No hidden charges ever</p>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                  <Check className="w-4 h-4" />
+              <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-2xl p-4 hover:bg-white/15 transition-colors">
+                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Star className="w-6 h-6" />
                 </div>
-                <span>100% satisfaction guarantee</span>
+                <div>
+                  <p className="font-bold">100% satisfaction guarantee</p>
+                  <p className="text-sm text-white/70">Or your money back</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="flex items-center gap-8 mt-10 pt-8 border-t border-white/20">
+              <div>
+                <p className="text-3xl font-black">50K+</p>
+                <p className="text-sm text-white/70">Happy Customers</p>
+              </div>
+              <div className="w-px h-12 bg-white/20"></div>
+              <div>
+                <p className="text-3xl font-black">10K+</p>
+                <p className="text-sm text-white/70">Verified Pros</p>
+              </div>
+              <div className="w-px h-12 bg-white/20"></div>
+              <div>
+                <p className="text-3xl font-black">4.9★</p>
+                <p className="text-sm text-white/70">Rating</p>
               </div>
             </div>
           </div>
