@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, Suspense, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Eye, EyeOff, CheckCircle, Loader2, ArrowLeft, Mail, Lock, User, Phone, Check, X } from 'lucide-react'
+import { Eye, EyeOff, CheckCircle, Loader2, ArrowLeft, Mail, Lock, User, Phone, Check, X, Shield, Sparkles, Star, Zap } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { LegalModal } from '@/components/legal/legal-modal'
 
@@ -109,17 +109,18 @@ function SignUpForm() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-4">
-        <div className="max-w-md w-full text-center">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-8 h-8 text-emerald-600" />
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center px-4">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(16,185,129,0.15),transparent)]" />
+        <div className="max-w-md w-full text-center relative">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-500/30">
+            <CheckCircle className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Check your email</h1>
-          <p className="text-gray-600 mb-6">
-            We&apos;ve sent a verification link to <strong>{formData.email}</strong>
+          <h1 className="text-3xl font-black text-gray-900 mb-3">Check your email! 📧</h1>
+          <p className="text-gray-600 mb-8">
+            We&apos;ve sent a verification link to <strong className="text-emerald-600">{formData.email}</strong>
           </p>
           <Button 
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl h-12 px-8"
+            className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-2xl h-14 px-10 shadow-xl shadow-emerald-500/30 hover:scale-105 transition-all"
             onClick={() => router.push('/auth/login')}
           >
             Go to Login
@@ -130,40 +131,57 @@ function SignUpForm() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100">
+    <div className="min-h-screen bg-white overflow-hidden">
+      {/* Floating Background Elements */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(16,185,129,0.08),transparent)]" />
+        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(16,185,129,0.05),transparent_70%)]" />
+      </div>
+
+      {/* Premium Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
-              <ArrowLeft className="w-5 h-5" />
-              <span className="text-sm font-medium">Back</span>
-            </Link>
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">H</span>
+            <Link href="/" className="flex items-center gap-2 text-gray-500 hover:text-emerald-600 transition-colors group">
+              <div className="w-8 h-8 rounded-lg bg-gray-100 group-hover:bg-emerald-100 flex items-center justify-center transition-colors">
+                <ArrowLeft className="w-4 h-4" />
               </div>
-              <span className="text-lg font-bold text-gray-900">Helparo</span>
+              <span className="text-sm font-semibold hidden sm:block">Back</span>
             </Link>
-            <div className="w-16"></div>
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+                <span className="text-white font-black text-lg">H</span>
+              </div>
+              <div className="hidden sm:flex flex-col">
+                <span className="text-xl font-extrabold text-gray-900">helparo</span>
+                <span className="text-[9px] font-semibold text-emerald-600 tracking-[0.15em] uppercase -mt-1">Home Services</span>
+              </div>
+            </Link>
+            <div className="w-20 sm:w-24"></div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="pt-16 min-h-screen flex">
+      <main className="pt-16 min-h-screen flex relative">
         {/* Left Side - Form */}
-        <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
+        <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12 lg:py-8">
           <div className="w-full max-w-md">
+            {/* Welcome Badge */}
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+              <Sparkles className="w-4 h-4" />
+              Join 50,000+ Happy Customers
+            </div>
+
             {/* Welcome Text */}
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <div className="mb-8">
+              <h1 className="text-3xl lg:text-4xl font-black text-gray-900 mb-3">
                 Create your account
               </h1>
-              <p className="text-gray-600">
+              <p className="text-gray-500 text-lg">
                 {serviceParam 
                   ? `Book ${serviceParam} service in minutes`
-                  : 'Join thousands of happy customers'}
+                  : 'Get verified home services at your doorstep'}
               </p>
             </div>
 
@@ -200,14 +218,14 @@ function SignUpForm() {
             <Button
               type="button"
               variant="outline"
-              className="w-full h-12 border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 rounded-xl font-medium transition-all"
+              className="w-full h-14 border-2 border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/50 rounded-2xl font-semibold transition-all shadow-sm hover:shadow-md"
               onClick={handleGoogleSignUp}
               disabled={googleLoading || loading}
             >
               {googleLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Connecting...
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin text-emerald-600" />
+                  <span className="text-gray-600">Connecting...</span>
                 </>
               ) : (
                 <>
@@ -217,77 +235,77 @@ function SignUpForm() {
                     <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                   </svg>
-                  Continue with Google
+                  <span className="text-gray-700">Continue with Google</span>
                 </>
               )}
             </Button>
 
             {/* Divider */}
-            <div className="relative my-6">
+            <div className="relative my-8">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
+                <div className="w-full border-t-2 border-gray-100"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500">or sign up with email</span>
+                <span className="px-4 bg-white text-gray-400 font-medium">or sign up with email</span>
               </div>
             </div>
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Full Name */}
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <div className="relative group">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-600 transition-colors" />
                 <Input
                   type="text"
                   placeholder="Full name"
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   required
-                  className="h-12 pl-12 pr-4 border-2 border-gray-200 focus:border-emerald-500 focus:ring-0 rounded-xl text-base"
+                  className="h-14 pl-12 pr-4 border-2 border-gray-200 focus:border-emerald-500 focus:ring-0 rounded-2xl text-base transition-all hover:border-gray-300"
                 />
               </div>
 
               {/* Email */}
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-600 transition-colors" />
                 <Input
                   type="email"
                   placeholder="Email address"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
-                  className="h-12 pl-12 pr-4 border-2 border-gray-200 focus:border-emerald-500 focus:ring-0 rounded-xl text-base"
+                  className="h-14 pl-12 pr-4 border-2 border-gray-200 focus:border-emerald-500 focus:ring-0 rounded-2xl text-base transition-all hover:border-gray-300"
                 />
               </div>
 
               {/* Phone */}
-              <div className="relative">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <div className="relative group">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-600 transition-colors" />
                 <Input
                   type="tel"
                   placeholder="Phone number"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   required
-                  className="h-12 pl-12 pr-4 border-2 border-gray-200 focus:border-emerald-500 focus:ring-0 rounded-xl text-base"
+                  className="h-14 pl-12 pr-4 border-2 border-gray-200 focus:border-emerald-500 focus:ring-0 rounded-2xl text-base transition-all hover:border-gray-300"
                 />
               </div>
 
               {/* Password */}
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-600 transition-colors" />
                 <Input
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
-                  className="h-12 pl-12 pr-12 border-2 border-gray-200 focus:border-emerald-500 focus:ring-0 rounded-xl text-base"
+                  className="h-14 pl-12 pr-12 border-2 border-gray-200 focus:border-emerald-500 focus:ring-0 rounded-2xl text-base transition-all hover:border-gray-300"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-emerald-600 transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>

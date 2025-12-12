@@ -181,7 +181,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-3xl z-10">
           <div>
             <h2 className="text-xl font-bold text-gray-900">Apply for Position</h2>
-            {job && <p className="text-sm text-violet-600 font-medium">{job.title}</p>}
+            {job && <p className="text-sm text-emerald-600 font-medium">{job.title}</p>}
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
             <X className="w-5 h-5 text-gray-500" />
@@ -198,7 +198,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
             <p className="text-gray-500 mb-6">
               Thanks for applying to {job?.title}! We&apos;ll review your application and get back to you within 5-7 business days.
             </p>
-            <Button onClick={onClose} className="bg-violet-600 hover:bg-violet-700 rounded-xl">
+            <Button onClick={onClose} className="bg-emerald-600 hover:bg-emerald-700 rounded-xl">
               Close
             </Button>
           </div>
@@ -214,7 +214,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
             {/* Personal Info */}
             <div>
               <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 bg-violet-100 rounded-full flex items-center justify-center text-violet-600 text-xs">1</span>
+                <span className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-xs">1</span>
                 Personal Information
               </h3>
               <div className="grid sm:grid-cols-2 gap-4">
@@ -225,7 +225,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
                     required
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-colors"
                     placeholder="John Doe"
                   />
                 </div>
@@ -236,7 +236,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-colors"
                     placeholder="john@example.com"
                   />
                 </div>
@@ -247,7 +247,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
                     required
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-colors"
                     placeholder="+91 XXXXX XXXXX"
                   />
                 </div>
@@ -258,7 +258,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
                     required
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-colors"
                     placeholder="City, State"
                   />
                 </div>
@@ -268,7 +268,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
             {/* Professional Links */}
             <div>
               <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 bg-violet-100 rounded-full flex items-center justify-center text-violet-600 text-xs">2</span>
+                <span className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-xs">2</span>
                 Professional Links
               </h3>
               <div className="grid sm:grid-cols-2 gap-4">
@@ -278,7 +278,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
                     type="url"
                     value={formData.linkedinUrl}
                     onChange={(e) => setFormData({ ...formData, linkedinUrl: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-colors"
                     placeholder="https://linkedin.com/in/..."
                   />
                 </div>
@@ -288,7 +288,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
                     type="url"
                     value={formData.portfolioUrl}
                     onChange={(e) => setFormData({ ...formData, portfolioUrl: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-colors"
                     placeholder="https://..."
                   />
                 </div>
@@ -298,7 +298,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
             {/* Work Experience */}
             <div>
               <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 bg-violet-100 rounded-full flex items-center justify-center text-violet-600 text-xs">3</span>
+                <span className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-xs">3</span>
                 Work Experience
               </h3>
               <div className="grid sm:grid-cols-2 gap-4">
@@ -308,7 +308,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
                     type="text"
                     value={formData.currentCompany}
                     onChange={(e) => setFormData({ ...formData, currentCompany: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-colors"
                     placeholder="Company name"
                   />
                 </div>
@@ -318,7 +318,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
                     type="text"
                     value={formData.currentRole}
                     onChange={(e) => setFormData({ ...formData, currentRole: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-colors"
                     placeholder="Your current title"
                   />
                 </div>
@@ -328,7 +328,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
                     required
                     value={formData.experienceYears}
                     onChange={(e) => setFormData({ ...formData, experienceYears: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors bg-white"
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-colors bg-white"
                   >
                     <option value="">Select</option>
                     <option value="0-1">0-1 years</option>
@@ -345,7 +345,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
                   <select
                     value={formData.noticePeriod}
                     onChange={(e) => setFormData({ ...formData, noticePeriod: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors bg-white"
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-colors bg-white"
                   >
                     <option value="">Select</option>
                     <option value="immediate">Immediate</option>
@@ -361,7 +361,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
             {/* Salary & Preferences */}
             <div>
               <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 bg-violet-100 rounded-full flex items-center justify-center text-violet-600 text-xs">4</span>
+                <span className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-xs">4</span>
                 Salary & Preferences
               </h3>
               <div className="grid sm:grid-cols-2 gap-4">
@@ -371,7 +371,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
                     type="text"
                     value={formData.expectedSalary}
                     onChange={(e) => setFormData({ ...formData, expectedSalary: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-colors"
                     placeholder="e.g., 15-20 LPA"
                   />
                 </div>
@@ -380,7 +380,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
                   <select
                     value={formData.howDidYouHear}
                     onChange={(e) => setFormData({ ...formData, howDidYouHear: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors bg-white"
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-colors bg-white"
                   >
                     <option value="">Select</option>
                     <option value="linkedin">LinkedIn</option>
@@ -398,7 +398,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
                     type="checkbox"
                     checked={formData.willingToRelocate}
                     onChange={(e) => setFormData({ ...formData, willingToRelocate: e.target.checked })}
-                    className="w-5 h-5 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                    className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
                   />
                   <span className="text-sm text-gray-700">I&apos;m willing to relocate for this position</span>
                 </label>
@@ -408,13 +408,13 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
             {/* Resume Upload */}
             <div>
               <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 bg-violet-100 rounded-full flex items-center justify-center text-violet-600 text-xs">5</span>
+                <span className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-xs">5</span>
                 Resume & Cover Letter
               </h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Resume *</label>
-                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-violet-400 transition-colors">
+                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-emerald-400 transition-colors">
                     <input
                       type="file"
                       id="resume"
@@ -424,7 +424,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
                     />
                     <label htmlFor="resume" className="cursor-pointer">
                       {resume ? (
-                        <div className="flex items-center justify-center gap-2 text-violet-600">
+                        <div className="flex items-center justify-center gap-2 text-emerald-600">
                           <CheckCircle className="w-5 h-5" />
                           <span className="font-medium">{resume.name}</span>
                         </div>
@@ -432,7 +432,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
                         <>
                           <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                           <p className="text-sm text-gray-500">
-                            <span className="text-violet-600 font-medium">Click to upload</span> or drag and drop
+                            <span className="text-emerald-600 font-medium">Click to upload</span> or drag and drop
                           </p>
                           <p className="text-xs text-gray-400 mt-1">PDF or Word (max 5MB)</p>
                         </>
@@ -446,7 +446,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
                     rows={4}
                     value={formData.coverLetter}
                     onChange={(e) => setFormData({ ...formData, coverLetter: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors resize-none"
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-colors resize-none"
                     placeholder="Tell us why you're excited about this role..."
                   />
                 </div>
@@ -458,7 +458,7 @@ function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps)
               <Button
                 type="submit"
                 disabled={isSubmitting || !resume}
-                className="w-full h-14 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold text-lg rounded-xl shadow-lg shadow-violet-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-14 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-lg rounded-xl shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
@@ -509,8 +509,8 @@ export default function CareersPage() {
     { icon: IndianRupee, title: 'Competitive Salary', desc: 'Top-of-market pay + equity options', color: 'from-emerald-500 to-teal-500' },
     { icon: Plane, title: 'Unlimited PTO', desc: 'Take time off when you need it', color: 'from-blue-500 to-cyan-500' },
     { icon: Coffee, title: 'Free Meals & Snacks', desc: 'Breakfast, lunch & endless chai ☕', color: 'from-amber-500 to-orange-500' },
-    { icon: GraduationCap, title: 'Learning Budget', desc: '₹50,000/year for courses & books', color: 'from-violet-500 to-purple-600' },
-    { icon: Heart, title: 'Health Insurance', desc: 'Full coverage for you + family', color: 'from-rose-500 to-pink-500' },
+    { icon: GraduationCap, title: 'Learning Budget', desc: '₹50,000/year for courses & books', color: 'from-purple-500 to-indigo-600' },
+    { icon: Heart, title: 'Health Insurance', desc: 'Full coverage for you + family', color: 'from-rose-500 to-red-500' },
     { icon: Gamepad2, title: 'Fun Fridays', desc: 'Games, movies & team activities', color: 'from-indigo-500 to-blue-600' },
     { icon: Gift, title: 'Festival Bonuses', desc: 'Extra love during celebrations', color: 'from-red-500 to-orange-500' },
     { icon: Building2, title: 'Hybrid Work', desc: 'Work from home 3 days/week', color: 'from-gray-600 to-gray-800' },
@@ -529,7 +529,7 @@ export default function CareersPage() {
       title: 'Customer Obsessed', 
       desc: 'Every decision starts with "How does this help our customers?"', 
       emoji: '❤️',
-      color: 'from-pink-500 to-rose-500' 
+      color: 'from-red-500 to-rose-500' 
     },
     { 
       icon: Users, 
@@ -743,7 +743,7 @@ export default function CareersPage() {
             </nav>
 
             <div className="flex items-center gap-3">
-              <Button className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl px-5 font-semibold shadow-lg" asChild>
+              <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl px-5 font-semibold shadow-lg" asChild>
                 <a href="#openings">We&apos;re Hiring!</a>
               </Button>
             </div>
@@ -754,9 +754,9 @@ export default function CareersPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           HERO SECTION - EXCITING
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="pt-28 lg:pt-36 pb-20 lg:pb-28 bg-gradient-to-b from-violet-50/80 via-pink-50/30 to-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(139,92,246,0.15),transparent)]" />
-        <div className="absolute top-40 right-0 w-[500px] h-[500px] bg-gradient-to-br from-pink-200/40 to-violet-200/40 rounded-full blur-3xl" />
+      <section className="pt-28 lg:pt-36 pb-20 lg:pb-28 bg-gradient-to-b from-emerald-50/80 via-teal-50/30 to-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(16,185,129,0.15),transparent)]" />
+        <div className="absolute top-40 right-0 w-[500px] h-[500px] bg-gradient-to-br from-teal-200/40 to-emerald-200/40 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-amber-200/30 to-orange-200/30 rounded-full blur-3xl" />
         
         {/* Floating Emojis */}
@@ -768,7 +768,7 @@ export default function CareersPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="text-center max-w-4xl mx-auto">
             {/* Hiring Badge */}
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white px-5 py-2.5 rounded-full shadow-lg shadow-violet-500/30 mb-8">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-5 py-2.5 rounded-full shadow-lg shadow-emerald-500/30 mb-8">
               <span className="relative flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
@@ -780,7 +780,7 @@ export default function CareersPage() {
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black text-gray-900 mb-6 leading-tight">
               Build the Future of
               <br />
-              <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">Home Services</span>
+              <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent">Home Services</span>
             </h1>
             
             <p className="text-xl sm:text-2xl text-gray-500 mb-10 max-w-3xl mx-auto leading-relaxed">
@@ -791,7 +791,7 @@ export default function CareersPage() {
             {/* Quick Stats */}
             <div className="flex flex-wrap justify-center gap-6 mb-10">
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-4 shadow-lg border border-gray-100">
-                <p className="text-3xl font-black text-violet-600 mb-1">
+                <p className="text-3xl font-black text-emerald-600 mb-1">
                   <AnimatedCounter end={50} suffix="+" />
                 </p>
                 <p className="text-sm text-gray-500 font-medium">Team Size</p>
@@ -809,13 +809,13 @@ export default function CareersPage() {
                 <p className="text-sm text-gray-500 font-medium">Cities</p>
               </div>
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-4 shadow-lg border border-gray-100">
-                <p className="text-3xl font-black text-pink-600 mb-1">4.8★</p>
+                <p className="text-3xl font-black text-teal-600 mb-1">4.8★</p>
                 <p className="text-sm text-gray-500 font-medium">Glassdoor</p>
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-2xl px-10 h-14 text-lg font-bold shadow-xl shadow-violet-500/30 hover:scale-105 transition-all" asChild>
+              <Button size="lg" className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-2xl px-10 h-14 text-lg font-bold shadow-xl shadow-emerald-500/30 hover:scale-105 transition-all" asChild>
                 <a href="#openings">
                   View Open Positions
                   <ArrowRight className="ml-2 w-5 h-5" />
@@ -848,7 +848,7 @@ export default function CareersPage() {
           </div>
 
           {/* Big Impact Card */}
-          <div className="bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600 rounded-[2.5rem] p-10 lg:p-14 text-white mb-12 relative overflow-hidden">
+          <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 rounded-[2.5rem] p-10 lg:p-14 text-white mb-12 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
             <div className="absolute bottom-0 left-0 w-60 h-60 bg-black/10 rounded-full blur-3xl" />
             
@@ -951,8 +951,8 @@ export default function CareersPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           PERKS & BENEFITS - COLORFUL
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-20 bg-gradient-to-br from-gray-900 via-gray-900 to-violet-950 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(139,92,246,0.2),transparent_60%)]" />
+      <section className="py-20 bg-gradient-to-br from-gray-900 via-gray-900 to-emerald-950 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.2),transparent_60%)]" />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="text-center mb-16">
@@ -961,7 +961,7 @@ export default function CareersPage() {
               Perks & Benefits
             </div>
             <h2 className="text-4xl lg:text-5xl font-black mb-4">
-              We take care of <span className="text-violet-400">our people</span>
+              We take care of <span className="text-emerald-400">our people</span>
             </h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
               Because happy people build amazing products.
@@ -970,7 +970,7 @@ export default function CareersPage() {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {perks.map((perk, idx) => (
-              <div key={idx} className="group bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-violet-500/50 hover:bg-white/10 transition-all">
+              <div key={idx} className="group bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-emerald-500/50 hover:bg-white/10 transition-all">
                 <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${perk.color} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
                   <perk.icon className="w-7 h-7 text-white" />
                 </div>
@@ -1035,15 +1035,15 @@ export default function CareersPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           TEAM TESTIMONIALS
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-20 bg-gradient-to-br from-amber-50 via-white to-pink-50">
+      <section className="py-20 bg-gradient-to-br from-emerald-50 via-white to-teal-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-pink-100 text-pink-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
               <Heart className="w-4 h-4" />
               From Our Team
             </div>
             <h2 className="text-4xl lg:text-5xl font-black text-gray-900 mb-4">
-              Hear from <span className="text-pink-600">Helparians</span>
+              Hear from <span className="text-emerald-600">Helparians</span>
             </h2>
           </div>
 
@@ -1051,13 +1051,13 @@ export default function CareersPage() {
             {testimonials.map((t, idx) => (
               <div key={idx} className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 hover:shadow-2xl transition-shadow">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-violet-100 to-pink-100 rounded-2xl flex items-center justify-center text-3xl">
+                  <div className="w-16 h-16 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-2xl flex items-center justify-center text-3xl">
                     {t.avatar}
                   </div>
                   <div>
                     <h4 className="font-bold text-gray-900">{t.name}</h4>
                     <p className="text-sm text-gray-500">{t.role}</p>
-                    <p className="text-xs text-violet-600 font-medium">{t.tenure} at Helparo</p>
+                    <p className="text-xs text-emerald-600 font-medium">{t.tenure} at Helparo</p>
                   </div>
                 </div>
                 <p className="text-gray-600 leading-relaxed italic">&ldquo;{t.quote}&rdquo;</p>
@@ -1078,12 +1078,12 @@ export default function CareersPage() {
       <section id="openings" className="py-20 bg-white scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-violet-100 text-violet-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
               <Briefcase className="w-4 h-4" />
               Open Positions
             </div>
             <h2 className="text-4xl lg:text-5xl font-black text-gray-900 mb-4">
-              Find your <span className="text-violet-600">perfect role</span>
+              Find your <span className="text-emerald-600">perfect role</span>
             </h2>
             <p className="text-xl text-gray-500">
               {openPositions.length} positions across {departments.length - 1} teams
@@ -1098,7 +1098,7 @@ export default function CareersPage() {
                 onClick={() => setSelectedDepartment(dept.id)}
                 className={`px-5 py-2.5 rounded-xl font-medium text-sm transition-all ${
                   selectedDepartment === dept.id
-                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/30'
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -1117,12 +1117,12 @@ export default function CareersPage() {
             {filteredPositions.map((job) => (
               <div 
                 key={job.id}
-                className="group bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-violet-200 hover:shadow-xl transition-all"
+                className="group bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-emerald-200 hover:shadow-xl transition-all"
               >
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <h3 className="text-xl font-bold text-gray-900 group-hover:text-violet-600 transition-colors">
+                      <h3 className="text-xl font-bold text-gray-900 group-hover:text-emerald-600 transition-colors">
                         {job.title}
                       </h3>
                       {job.hot && (
@@ -1149,7 +1149,7 @@ export default function CareersPage() {
                   </div>
                   <Button 
                     onClick={() => openApplicationModal({ title: job.title, department: job.department, location: job.location, salary: job.salary })}
-                    className="bg-violet-600 hover:bg-violet-700 text-white rounded-xl px-6 font-semibold shadow-lg shrink-0"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 font-semibold shadow-lg shrink-0"
                   >
                     Apply Now
                     <ArrowRight className="w-4 h-4 ml-2" />
@@ -1169,7 +1169,7 @@ export default function CareersPage() {
           )}
 
           {/* Don't see your role? */}
-          <div className="mt-12 bg-gradient-to-br from-violet-50 to-pink-50 rounded-3xl p-8 lg:p-12 text-center border border-violet-100">
+          <div className="mt-12 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl p-8 lg:p-12 text-center border border-emerald-100">
             <div className="text-5xl mb-4">🤔</div>
             <h3 className="text-2xl font-bold text-gray-900 mb-3">Don&apos;t see your role?</h3>
             <p className="text-gray-500 mb-6 max-w-xl mx-auto">
@@ -1189,7 +1189,7 @@ export default function CareersPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           HIRING PROCESS
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-20 bg-gradient-to-br from-gray-50 to-violet-50/30">
+      <section className="py-20 bg-gradient-to-br from-gray-50 to-emerald-50/30">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
@@ -1197,7 +1197,7 @@ export default function CareersPage() {
               Hiring Process
             </div>
             <h2 className="text-4xl lg:text-5xl font-black text-gray-900 mb-4">
-              Fast & <span className="text-blue-600">transparent</span>
+              Fast & <span className="text-emerald-600">transparent</span>
             </h2>
             <p className="text-xl text-gray-500">
               We respect your time. Our process takes ~2 weeks.
@@ -1232,7 +1232,7 @@ export default function CareersPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           CTA SECTION
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-20 bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 text-white relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')] opacity-30" />
         
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
@@ -1245,7 +1245,7 @@ export default function CareersPage() {
             Your future teammates are excited to meet you!
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white text-violet-700 hover:bg-gray-100 rounded-2xl px-10 h-14 text-lg font-bold shadow-xl hover:scale-105 transition-all" asChild>
+            <Button size="lg" className="bg-white text-emerald-700 hover:bg-gray-100 rounded-2xl px-10 h-14 text-lg font-bold shadow-xl hover:scale-105 transition-all" asChild>
               <a href="#openings">
                 View All Openings
                 <ArrowRight className="ml-2 w-5 h-5" />
