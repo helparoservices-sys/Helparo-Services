@@ -20,8 +20,10 @@ import {
   Zap,
   Heart,
   ArrowRight,
+  Plus,
   Wand2
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export default function CustomerDashboard() {
   const router = useRouter()
@@ -344,7 +346,12 @@ export default function CustomerDashboard() {
                   <Sparkles className="w-8 h-8 text-emerald-600" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No requests yet</h3>
-                <p className="text-gray-500">Book your first service today!</p>
+                <p className="text-gray-500 mb-4">Book your first service today!</p>
+                <Button asChild className="bg-emerald-600 hover:bg-emerald-700">
+                  <Link href="/customer/requests/ai" className="flex items-center gap-2">
+                    <Plus className="w-4 h-4" /> Create Request
+                  </Link>
+                </Button>
               </div>
             )}
           </div>
