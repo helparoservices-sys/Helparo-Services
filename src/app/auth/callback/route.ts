@@ -12,10 +12,6 @@ export async function GET(request: Request) {
     // After session exchange, get user info
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
-      // Check if this is an OAuth user (Google, etc.)
-      const isOAuthUser = user.app_metadata?.provider === 'google' || 
-                          user.app_metadata?.providers?.includes('google')
-      
       // Check if profile exists and has been properly set up
       const { data: profile } = await supabase
         .from('profiles')
@@ -23,20 +19,16 @@ export async function GET(request: Request) {
         .eq('id', user.id)
         .maybeSingle()
 
-      // For OAuth users, check if they need to complete signup
-      // Redirect if: no profile, no full_name, OR user was just created (within last 30 seconds)
-      // This ensures complete-signup can read localStorage for role selection
-      const isNewUser = profile?.created_at && 
-        (new Date().getTime() - new Date(profile.created_at).getTime()) < 30000
-      
-      if (isOAuthUser && (!profile || !profile.full_name || isNewUser)) {
+      // Check if phone is verified - if not, go to complete-signup
+      // complete-signup handles: role selection + terms acceptance + phone verification
+      if (!profile?.phone || !profile?.phone_verified) {
         return NextResponse.redirect(new URL('/auth/complete-signup', requestUrl.origin))
       }
 
-      // Fetch latest active versions for legal consent check
+      // For existing users who have verified phone, check if terms need updating
       const { data: terms } = await supabase
         .from('legal_documents')
-        .select('*')
+        .select('version')
         .eq('type', 'terms')
         .eq('is_active', true)
         .order('version', { ascending: false })
@@ -44,7 +36,7 @@ export async function GET(request: Request) {
         .maybeSingle()
       const { data: privacy } = await supabase
         .from('legal_documents')
-        .select('*')
+        .select('version')
         .eq('type', 'privacy')
         .eq('is_active', true)
         .order('version', { ascending: false })
@@ -73,17 +65,13 @@ export async function GET(request: Request) {
         if (!acceptedPrivacy) needsConsent = true
       }
 
+      // Only show /legal/consent for EXISTING users who need to accept updated terms
       if (needsConsent) {
         return NextResponse.redirect(new URL('/legal/consent', requestUrl.origin))
       }
-
-      // Check if phone is missing or not verified - redirect to complete profile
-      if (!profile?.phone || !(profile as any)?.phone_verified) {
-        return NextResponse.redirect(new URL('/auth/complete-signup', requestUrl.origin))
-      }
       
       // Role-based redirect
-      const role = (profile as any)?.role || 'customer'
+      const role = profile?.role || 'customer'
       return NextResponse.redirect(new URL(`/${role}/dashboard`, requestUrl.origin))
     }
   }

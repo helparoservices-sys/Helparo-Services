@@ -3,12 +3,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
-import { Loader2, CheckCircle, FileText, Users, Briefcase, Shield, X, ArrowRight, Sparkles, Star, Clock, BadgeCheck, Phone, AlertCircle, RefreshCw, Lock, Zap } from 'lucide-react'
-import Image from 'next/image'
+import { Loader2, CheckCircle, FileText, Users, Briefcase, Shield, X, ArrowRight, Phone, AlertCircle, RefreshCw, Lock, Zap, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { auth, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from '@/lib/firebase'
@@ -20,7 +16,6 @@ interface LegalDoc {
   type: string
 }
 
-// Invalid phone patterns to block
 const INVALID_PHONE_PATTERNS = [
   /^(.)\1{9}$/,
   /^0{10}$/,
@@ -46,18 +41,15 @@ function validatePhone(phone: string): { valid: boolean; error?: string } {
 export default function CompleteSignupPage() {
   const router = useRouter()
   
-  // Simplified flow: loading -> selectRole (only if needed) -> verify (T&C + OTP combined) -> otpVerify -> success
   const [step, setStep] = useState<'loading' | 'selectRole' | 'verify' | 'otpVerify' | 'processing' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('Checking your account...')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   
-  // User & role state
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
   const [hoveredRole, setHoveredRole] = useState<'customer' | 'helper' | null>(null)
   const [finalRole, setFinalRole] = useState<string>('customer')
   
-  // Terms state
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [privacyAccepted, setPrivacyAccepted] = useState(false)
   const [showLegalModal, setShowLegalModal] = useState(false)
@@ -66,7 +58,6 @@ export default function CompleteSignupPage() {
   const [privacy, setPrivacy] = useState<LegalDoc | null>(null)
   const [loadingDocs, setLoadingDocs] = useState(false)
   
-  // Phone verification state
   const [phone, setPhone] = useState('')
   const [phoneError, setPhoneError] = useState('')
   const [countryCode] = useState('+91')
@@ -82,7 +73,6 @@ export default function CompleteSignupPage() {
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([])
   const recaptchaContainerRef = useRef<HTMLDivElement>(null)
 
-  // Initialize reCAPTCHA
   const initializeRecaptcha = useCallback(() => {
     if (typeof window === 'undefined' || recaptchaInitialized || recaptchaVerifier) return
     setRecaptchaInitialized(true)
@@ -106,7 +96,6 @@ export default function CompleteSignupPage() {
     }
   }, [recaptchaVerifier, recaptchaInitialized])
 
-  // Initial check
   useEffect(() => {
     const checkAndSetup = async () => {
       try {
@@ -117,22 +106,17 @@ export default function CompleteSignupPage() {
         }
         setUser({ id: authUser.id, email: authUser.email })
 
-        // Check profile
         const { data: profile } = await supabase
           .from('profiles')
           .select('role, phone, phone_verified, full_name')
           .eq('id', authUser.id)
           .maybeSingle()
 
-        // If phone already verified, go to dashboard
         if (profile?.phone && profile?.phone_verified) {
           router.push(`/${profile.role || 'customer'}/dashboard`)
           return
         }
 
-        // For complete-signup, always show role selection first
-        // This is the user's first time setting up their account
-        // They should explicitly choose if they want to be a customer or helper
         setStep('selectRole')
       } catch (err) {
         console.error('Check error:', err)
@@ -145,7 +129,6 @@ export default function CompleteSignupPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Countdown timer
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
@@ -153,7 +136,6 @@ export default function CompleteSignupPage() {
     }
   }, [countdown])
 
-  // Validate phone as user types
   useEffect(() => {
     if (phone) {
       const validation = validatePhone(phone)
@@ -163,7 +145,6 @@ export default function CompleteSignupPage() {
     }
   }, [phone])
 
-  // Role selection handler
   const handleRoleSelect = (role: 'customer' | 'helper') => {
     setFinalRole(role)
     localStorage.setItem('roleSelected', 'true')
@@ -172,7 +153,6 @@ export default function CompleteSignupPage() {
     setTimeout(initializeRecaptcha, 500)
   }
 
-  // Open legal modal
   const openLegalModal = async (tab: 'terms' | 'privacy') => {
     setActiveTab(tab)
     setShowLegalModal(true)
@@ -188,7 +168,6 @@ export default function CompleteSignupPage() {
     }
   }
 
-  // OTP handlers
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return
     const newOtp = [...otp]
@@ -210,14 +189,12 @@ export default function CompleteSignupPage() {
     if (e.key === 'Backspace' && !otp[index] && index > 0) otpInputRefs.current[index - 1]?.focus()
   }
 
-  // Combined: Accept terms + Send OTP
   const handleVerifyAndSendOtp = async () => {
     if (!termsAccepted || !privacyAccepted || !user) return
     setLoading(true)
     setError('')
 
     try {
-      // Validate phone first
       const validation = validatePhone(phone)
       if (!validation.valid) {
         setError(validation.error || 'Invalid phone number')
@@ -225,7 +202,6 @@ export default function CompleteSignupPage() {
         return
       }
 
-      // Update profile with role
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (!authUser) throw new Error('No user')
 
@@ -239,7 +215,6 @@ export default function CompleteSignupPage() {
         }).eq('id', authUser.id)
       }
 
-      // Accept legal terms
       const { data: termsDoc } = await supabase.from('legal_documents').select('version').eq('type', 'terms').eq('is_active', true).order('version', { ascending: false }).limit(1).maybeSingle()
       const { data: privacyDoc } = await supabase.from('legal_documents').select('version').eq('type', 'privacy').eq('is_active', true).order('version', { ascending: false }).limit(1).maybeSingle()
 
@@ -252,7 +227,6 @@ export default function CompleteSignupPage() {
         if (!existing) await supabase.from('legal_acceptances').insert({ user_id: authUser.id, document_type: 'privacy', document_version: privacyDoc.version })
       }
 
-      // Send OTP via API
       const response = await fetch('/api/otp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -265,7 +239,6 @@ export default function CompleteSignupPage() {
         return
       }
 
-      // Initialize reCAPTCHA if not ready
       if (!recaptchaVerifier || !recaptchaReady) {
         initializeRecaptcha()
         await new Promise(resolve => setTimeout(resolve, 1000))
@@ -276,7 +249,6 @@ export default function CompleteSignupPage() {
         return
       }
 
-      // Send Firebase OTP
       const cleanPhone = phone.replace(/[\s-]/g, '')
       const fullPhone = `${countryCode}${cleanPhone}`
       const result = await signInWithPhoneNumber(auth, fullPhone, recaptchaVerifier)
@@ -286,7 +258,6 @@ export default function CompleteSignupPage() {
       localStorage.removeItem('pendingSignupRole')
       localStorage.removeItem('roleSelected')
 
-      // Move to OTP verification
       setStep('otpVerify')
       setCountdown(60)
       setSuccess('OTP sent successfully!')
@@ -310,7 +281,6 @@ export default function CompleteSignupPage() {
     }
   }
 
-  // Verify OTP
   const handleVerifyOtp = async () => {
     const otpCode = otp.join('')
     if (otpCode.length !== 6) {
@@ -357,7 +327,6 @@ export default function CompleteSignupPage() {
     }
   }
 
-  // Resend OTP
   const handleResendOtp = async () => {
     if (countdown > 0) return
     setOtp(['', '', '', '', '', ''])
@@ -372,12 +341,10 @@ export default function CompleteSignupPage() {
     setRecaptchaInitialized(false)
     
     try {
-      // Re-initialize reCAPTCHA
       await new Promise(resolve => setTimeout(resolve, 100))
       initializeRecaptcha()
       await new Promise(resolve => setTimeout(resolve, 500))
       
-      // Send OTP via API
       const response = await fetch('/api/otp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -413,154 +380,89 @@ export default function CompleteSignupPage() {
     }
   }
 
-  // Get step number for progress indicator (now only 2 steps)
-  const getStepNumber = () => {
-    if (step === 'selectRole' || step === 'verify') return 1
-    if (step === 'otpVerify') return 2
-    return 2
-  }
-
-  // Left panel content based on step
-  const getLeftPanelContent = () => {
-    if (step === 'otpVerify') {
-      return {
-        title: 'Almost Done!',
-        subtitle: 'Enter the 6-digit code we just sent to your phone. This keeps your account safe.',
-        features: [
-          { icon: Shield, title: 'Bank-Level Security', desc: 'Your data is encrypted and protected' },
-          { icon: Zap, title: 'Instant Verification', desc: 'OTP delivered in seconds' },
-          { icon: Lock, title: 'Privacy First', desc: 'We never share your phone number' }
-        ]
-      }
-    }
-    return {
-      title: 'One step away from',
-      titleHighlight: 'amazing services',
-      subtitle: 'Join thousands of users who trust Helparo for reliable, verified home services.',
-      features: [
-        { icon: BadgeCheck, title: 'Verified Professionals', desc: 'Background checked & ID verified' },
-        { icon: Clock, title: 'Quick Response', desc: 'Get help within 30 minutes' },
-        { icon: Shield, title: '100% Secure', desc: 'Your data is always protected' }
-      ]
-    }
-  }
-
-  const leftContent = getLeftPanelContent()
   const bothTermsAccepted = termsAccepted && privacyAccepted
   const phoneValid = phone.length === 10 && !phoneError
   const canContinue = bothTermsAccepted && phoneValid
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 flex">
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4 relative overflow-hidden">
       {/* reCAPTCHA container */}
       <div id="recaptcha-container" ref={recaptchaContainerRef}></div>
 
-      {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500" />
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} />
-
-        <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20">
-          <Link href="/" className="flex items-center gap-3 mb-12">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <Image src="/logo.jpg" alt="Helparo" width={36} height={36} className="rounded-lg" />
-            </div>
-            <span className="text-3xl font-bold text-white">Helparo</span>
-          </Link>
-
-          <h1 className="text-4xl xl:text-5xl font-bold text-white mb-6 leading-tight">
-            {leftContent.title}<br />
-            {('titleHighlight' in leftContent) && <span className="text-emerald-200">{leftContent.titleHighlight}</span>}
-          </h1>
-          <p className="text-xl text-emerald-100 mb-12 max-w-md">{leftContent.subtitle}</p>
-
-          <div className="space-y-6">
-            {leftContent.features.map((feature, i) => (
-              <div key={i} className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <feature.icon className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-white font-semibold">{feature.title}</p>
-                  <p className="text-emerald-200 text-sm">{feature.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-16 flex items-center gap-4">
-            <div className="flex -space-x-2">
-              {[1,2,3,4].map((i) => (
-                <div key={i} className="w-10 h-10 rounded-full bg-white/30 border-2 border-white/50 flex items-center justify-center text-white text-sm font-bold">
-                  {String.fromCharCode(64+i)}
-                </div>
-              ))}
-            </div>
-            <div>
-              <div className="flex items-center gap-1 text-yellow-300">
-                {[1,2,3,4,5].map((i) => (<Star key={i} className="w-4 h-4 fill-current" />))}
-              </div>
-              <p className="text-emerald-100 text-sm">Loved by 50,000+ users</p>
-            </div>
-          </div>
-        </div>
+      {/* Animated Background */}
+      <div className="absolute inset-0">
+        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-emerald-500/30 rounded-full blur-[120px] animate-pulse-slow" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-teal-500/20 rounded-full blur-[100px] animate-pulse-slow animation-delay-2000" />
+        <div className="absolute top-[40%] right-[20%] w-[300px] h-[300px] bg-cyan-500/15 rounded-full blur-[80px] animate-pulse-slow animation-delay-4000" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px]" />
       </div>
 
-      {/* Right Side - Form */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
-        <div className="w-full max-w-md">
-          {/* Mobile Logo */}
-          <div className="lg:hidden text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                <Image src="/logo.jpg" alt="Helparo" width={28} height={28} className="rounded-lg" />
+      {/* Back Button */}
+      <Link 
+        href="/" 
+        className="absolute top-6 left-6 z-20 flex items-center gap-2 text-white/60 hover:text-white transition-colors group"
+      >
+        <div className="w-10 h-10 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 flex items-center justify-center group-hover:bg-white/10 transition-all">
+          <ArrowLeft className="w-5 h-5" />
+        </div>
+        <span className="text-sm font-medium hidden sm:block">Home</span>
+      </Link>
+
+      {/* Main Card */}
+      <div className="relative z-10 w-full max-w-lg">
+        <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-cyan-500/20 rounded-3xl blur-xl opacity-70" />
+        
+        <div className="relative bg-gray-900/80 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/25 group-hover:scale-105 transition-transform">
+                <span className="text-xl font-black text-white">H</span>
               </div>
-              <span className="text-2xl font-bold text-gray-900">Helparo</span>
+              <div className="text-left">
+                <span className="text-xl font-bold text-white block">helparo</span>
+                <span className="text-[9px] font-semibold text-emerald-400 tracking-[0.2em] uppercase">Home Services</span>
+              </div>
             </Link>
           </div>
 
-          {/* Progress Indicator - Only 2 steps now */}
-          {step !== 'loading' && step !== 'success' && step !== 'error' && step !== 'processing' && step !== 'selectRole' && (
-            <div className="flex items-center justify-center gap-2 mb-8">
-              {[1, 2].map((num) => (
-                <div key={num} className="flex items-center">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-                    getStepNumber() > num ? 'bg-emerald-500 text-white' :
-                    getStepNumber() === num ? 'bg-emerald-500 text-white ring-4 ring-emerald-100' :
-                    'bg-gray-200 text-gray-500'
-                  }`}>
-                    {getStepNumber() > num ? <CheckCircle className="w-4 h-4" /> : num}
-                  </div>
-                  {num < 2 && <div className={`w-16 h-1 mx-2 rounded ${getStepNumber() > num ? 'bg-emerald-500' : 'bg-gray-200'}`} />}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Fallback Role Selection (only if no role was selected on signup page) */}
+          {/* Role Selection */}
           {step === 'selectRole' && (
-            <div className="space-y-8">
+            <div className="space-y-6">
               <div className="text-center">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-600 text-sm font-medium mb-4">
-                  <Sparkles className="w-4 h-4" />Almost there!
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium mb-4">
+                  <Zap className="w-4 h-4" />Almost there!
                 </div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Helparo!</h1>
-                <p className="text-gray-500">How would you like to use our platform?</p>
+                <h1 className="text-2xl font-bold text-white mb-2">Welcome to Helparo!</h1>
+                <p className="text-gray-400">How would you like to use our platform?</p>
               </div>
 
-              <div className="space-y-4">
-                <button onClick={() => handleRoleSelect('customer')} onMouseEnter={() => setHoveredRole('customer')} onMouseLeave={() => setHoveredRole(null)} className={`w-full p-6 rounded-2xl border-2 text-left transition-all duration-300 group ${hoveredRole === 'customer' ? 'border-emerald-500 bg-emerald-50 shadow-lg shadow-emerald-100' : 'border-gray-200 bg-white hover:border-emerald-300'}`}>
+              <div className="space-y-3">
+                <button 
+                  onClick={() => handleRoleSelect('customer')} 
+                  onMouseEnter={() => setHoveredRole('customer')} 
+                  onMouseLeave={() => setHoveredRole(null)} 
+                  className={`w-full p-5 rounded-2xl border text-left transition-all duration-300 group ${
+                    hoveredRole === 'customer' 
+                      ? 'border-emerald-500/50 bg-emerald-500/10 shadow-lg shadow-emerald-500/10' 
+                      : 'border-white/10 bg-white/5 hover:border-emerald-500/30'
+                  }`}
+                >
                   <div className="flex items-start gap-4">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 ${hoveredRole === 'customer' ? 'bg-emerald-500 text-white' : 'bg-emerald-100 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white'}`}>
-                      <Users className="w-7 h-7" />
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                      hoveredRole === 'customer' ? 'bg-emerald-500 text-white' : 'bg-emerald-500/20 text-emerald-400'
+                    }`}>
+                      <Users className="w-6 h-6" />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-gray-900">I need help</h3>
-                        <ArrowRight className={`w-5 h-5 transition-all duration-300 ${hoveredRole === 'customer' ? 'text-emerald-500 translate-x-1' : 'text-gray-300'}`} />
+                        <h3 className="text-lg font-bold text-white">I need help</h3>
+                        <ArrowRight className={`w-5 h-5 transition-all duration-300 ${
+                          hoveredRole === 'customer' ? 'text-emerald-400 translate-x-1' : 'text-gray-600'
+                        }`} />
                       </div>
-                      <p className="text-gray-500 text-sm mt-1">Find verified professionals for your home services</p>
-                      <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
+                      <p className="text-gray-400 text-sm mt-1">Find verified professionals for your home services</p>
+                      <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
                         <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" />Instant booking</span>
                         <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" />Verified helpers</span>
                       </div>
@@ -568,94 +470,134 @@ export default function CompleteSignupPage() {
                   </div>
                 </button>
 
-                <button onClick={() => handleRoleSelect('helper')} onMouseEnter={() => setHoveredRole('helper')} onMouseLeave={() => setHoveredRole(null)} className={`w-full p-6 rounded-2xl border-2 text-left transition-all duration-300 group ${hoveredRole === 'helper' ? 'border-blue-500 bg-blue-50 shadow-lg shadow-blue-100' : 'border-gray-200 bg-white hover:border-blue-300'}`}>
+                <button 
+                  onClick={() => handleRoleSelect('helper')} 
+                  onMouseEnter={() => setHoveredRole('helper')} 
+                  onMouseLeave={() => setHoveredRole(null)} 
+                  className={`w-full p-5 rounded-2xl border text-left transition-all duration-300 group ${
+                    hoveredRole === 'helper' 
+                      ? 'border-cyan-500/50 bg-cyan-500/10 shadow-lg shadow-cyan-500/10' 
+                      : 'border-white/10 bg-white/5 hover:border-cyan-500/30'
+                  }`}
+                >
                   <div className="flex items-start gap-4">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 ${hoveredRole === 'helper' ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-600 group-hover:bg-blue-500 group-hover:text-white'}`}>
-                      <Briefcase className="w-7 h-7" />
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                      hoveredRole === 'helper' ? 'bg-cyan-500 text-white' : 'bg-cyan-500/20 text-cyan-400'
+                    }`}>
+                      <Briefcase className="w-6 h-6" />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-gray-900">I want to help</h3>
-                        <ArrowRight className={`w-5 h-5 transition-all duration-300 ${hoveredRole === 'helper' ? 'text-blue-500 translate-x-1' : 'text-gray-300'}`} />
+                        <h3 className="text-lg font-bold text-white">I want to help</h3>
+                        <ArrowRight className={`w-5 h-5 transition-all duration-300 ${
+                          hoveredRole === 'helper' ? 'text-cyan-400 translate-x-1' : 'text-gray-600'
+                        }`} />
                       </div>
-                      <p className="text-gray-500 text-sm mt-1">Offer your services and earn money</p>
-                      <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
-                        <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-blue-500" />Flexible hours</span>
-                        <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-blue-500" />Great earnings</span>
+                      <p className="text-gray-400 text-sm mt-1">Offer your services and earn money</p>
+                      <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
+                        <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-cyan-500" />Flexible hours</span>
+                        <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-cyan-500" />Great earnings</span>
                       </div>
                     </div>
                   </div>
                 </button>
               </div>
-              <p className="text-center text-xs text-gray-400">You can always change your role later in settings</p>
+
+              <p className="text-center text-xs text-gray-600">You can always change your role later in settings</p>
             </div>
           )}
 
-          {/* Combined Step: T&C + Phone Verification */}
+          {/* Verify Step - T&C + Phone */}
           {step === 'verify' && (
-            <div className="space-y-6">
+            <div className="space-y-5">
               <div className="text-center">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-600 text-sm font-medium mb-4">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium mb-4">
                   <Shield className="w-4 h-4" />Final Step
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Verify & Get Started</h1>
-                <p className="text-gray-500">Accept our terms and verify your phone number</p>
+                <h1 className="text-2xl font-bold text-white mb-2">Verify & Get Started</h1>
+                <p className="text-gray-400 text-sm">Accept our terms and verify your phone number</p>
               </div>
 
-              {/* Terms Acceptance - Compact */}
+              {/* Terms Checkboxes */}
               <div className="space-y-3">
-                <label className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${termsAccepted ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200 ${termsAccepted ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`}>
+                <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
+                  termsAccepted ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-white/10 bg-white/5 hover:border-white/20'
+                }`}>
+                  <div className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-all ${
+                    termsAccepted ? 'bg-emerald-500 border-emerald-500' : 'border-gray-600'
+                  }`}>
                     {termsAccepted && <CheckCircle className="w-3 h-3 text-white" />}
                   </div>
                   <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="sr-only" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 text-sm">I agree to the Terms of Service</p>
-                  </div>
-                  <button type="button" onClick={(e) => { e.preventDefault(); openLegalModal('terms'); }} className="text-emerald-600 hover:text-emerald-700 font-medium text-xs flex items-center gap-1 flex-shrink-0">
+                  <span className="flex-1 text-white text-sm">I agree to the Terms of Service</span>
+                  <button type="button" onClick={(e) => { e.preventDefault(); openLegalModal('terms'); }} className="text-emerald-400 hover:text-emerald-300 text-xs flex items-center gap-1">
                     <FileText className="w-3.5 h-3.5" />Read
                   </button>
                 </label>
 
-                <label className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${privacyAccepted ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200 ${privacyAccepted ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`}>
+                <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
+                  privacyAccepted ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-white/10 bg-white/5 hover:border-white/20'
+                }`}>
+                  <div className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-all ${
+                    privacyAccepted ? 'bg-emerald-500 border-emerald-500' : 'border-gray-600'
+                  }`}>
                     {privacyAccepted && <CheckCircle className="w-3 h-3 text-white" />}
                   </div>
                   <input type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} className="sr-only" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 text-sm">I agree to the Privacy Policy</p>
-                  </div>
-                  <button type="button" onClick={(e) => { e.preventDefault(); openLegalModal('privacy'); }} className="text-emerald-600 hover:text-emerald-700 font-medium text-xs flex items-center gap-1 flex-shrink-0">
-                    <Shield className="w-3.5 h-3.5" />Read
+                  <span className="flex-1 text-white text-sm">I agree to the Privacy Policy</span>
+                  <button type="button" onClick={(e) => { e.preventDefault(); openLegalModal('privacy'); }} className="text-emerald-400 hover:text-emerald-300 text-xs flex items-center gap-1">
+                    <Lock className="w-3.5 h-3.5" />Read
                   </button>
                 </label>
               </div>
 
               {/* Phone Input */}
               <div className="space-y-2 pt-2">
-                <Label htmlFor="phone" className="text-gray-700 font-semibold text-sm">Phone Number for Verification</Label>
+                <label className="text-gray-400 text-sm font-medium">Phone Number for Verification</label>
                 <div className="flex gap-3">
-                  <div className="flex items-center justify-center w-20 h-12 bg-gray-100 border-2 border-gray-200 rounded-xl text-gray-700 font-semibold text-sm">+91 🇮🇳</div>
+                  <div className="flex items-center justify-center w-20 h-12 bg-white/5 border border-white/10 rounded-xl text-white text-sm">+91 🇮🇳</div>
                   <div className="relative flex-1">
-                    <Input id="phone" type="tel" placeholder="9876543210" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} className={`h-12 text-base font-medium bg-white border-2 ${phoneError ? 'border-red-300' : phone && !phoneError ? 'border-emerald-300' : 'border-gray-200'} rounded-xl focus:ring-4 focus:ring-emerald-100 transition-all duration-300`} />
-                    {phone && !phoneError && phone.length === 10 && <div className="absolute right-3 top-1/2 -translate-y-1/2"><CheckCircle className="h-5 w-5 text-emerald-500" /></div>}
+                    <input 
+                      type="tel" 
+                      placeholder="9876543210" 
+                      value={phone} 
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} 
+                      className={`w-full h-12 px-4 bg-white/5 border rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all ${
+                        phoneError ? 'border-red-500/50' : phone && !phoneError ? 'border-emerald-500/50' : 'border-white/10'
+                      }`} 
+                    />
+                    {phone && !phoneError && phone.length === 10 && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <CheckCircle className="h-5 w-5 text-emerald-500" />
+                      </div>
+                    )}
                   </div>
                 </div>
-                {phoneError && <div className="flex items-center gap-2 text-red-500 text-xs"><AlertCircle className="h-3.5 w-3.5" />{phoneError}</div>}
+                {phoneError && (
+                  <div className="flex items-center gap-2 text-red-400 text-xs">
+                    <AlertCircle className="h-3.5 w-3.5" />{phoneError}
+                  </div>
+                )}
               </div>
 
               {error && (
-                <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                <div className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
                   <span>{error}</span>
                 </div>
               )}
 
-              <Button onClick={handleVerifyAndSendOtp} disabled={!canContinue || loading} className="w-full h-14 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold text-lg shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:shadow-none transition-all duration-300">
-                {loading ? <><Loader2 className="mr-2 w-5 h-5 animate-spin" />Processing...</> : <>Continue & Send OTP<ArrowRight className="ml-2 w-5 h-5" /></>}
-              </Button>
-              
-              <p className="text-center text-xs text-gray-400">Standard SMS rates may apply</p>
+              <button 
+                onClick={handleVerifyAndSendOtp} 
+                disabled={!canContinue || loading} 
+                className="w-full h-12 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" />Processing...</>
+                ) : (
+                  <>Continue & Send OTP<ArrowRight className="w-5 h-5" /></>
+                )}
+              </button>
             </div>
           )}
 
@@ -663,29 +605,68 @@ export default function CompleteSignupPage() {
           {step === 'otpVerify' && (
             <div className="space-y-6">
               <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-5 shadow-lg bg-gradient-to-br from-teal-500 to-emerald-600">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/25 mb-5">
                   <Phone className="h-8 w-8 text-white" />
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Enter Verification Code</h1>
-                <p className="text-gray-500">Code sent to {countryCode} {maskedPhone}</p>
+                <h1 className="text-2xl font-bold text-white mb-2">Enter Verification Code</h1>
+                <p className="text-gray-400">Code sent to {countryCode} {maskedPhone}</p>
               </div>
 
-              <div className="flex justify-center gap-3" onPaste={handleOtpPaste}>
+              <div className="flex justify-center gap-2 sm:gap-3" onPaste={handleOtpPaste}>
                 {otp.map((digit, index) => (
-                  <input key={index} ref={(el) => { otpInputRefs.current[index] = el }} type="text" inputMode="numeric" maxLength={1} value={digit} onChange={(e) => handleOtpChange(index, e.target.value)} onKeyDown={(e) => handleOtpKeyDown(index, e)} className={`w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl font-bold border-2 rounded-xl transition-all duration-300 ${digit ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-200 bg-white hover:border-gray-300'} focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 focus:outline-none`} />
+                  <input 
+                    key={index} 
+                    ref={(el) => { otpInputRefs.current[index] = el }} 
+                    type="text" 
+                    inputMode="numeric" 
+                    maxLength={1} 
+                    value={digit} 
+                    onChange={(e) => handleOtpChange(index, e.target.value)} 
+                    onKeyDown={(e) => handleOtpKeyDown(index, e)} 
+                    className={`w-11 h-14 sm:w-12 sm:h-16 text-center text-2xl font-bold border rounded-xl transition-all ${
+                      digit ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400' : 'border-white/10 bg-white/5 text-white'
+                    } focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none`} 
+                  />
                 ))}
               </div>
 
-              {success && <div className="p-4 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3"><CheckCircle className="h-5 w-5" />{success}</div>}
-              {error && <div className="p-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3"><AlertCircle className="h-5 w-5 mt-0.5" />{error}</div>}
+              {success && (
+                <div className="flex items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm">
+                  <CheckCircle className="w-5 h-5" />{success}
+                </div>
+              )}
+              {error && (
+                <div className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+                  <AlertCircle className="w-5 h-5" />{error}
+                </div>
+              )}
 
-              <Button onClick={handleVerifyOtp} className="w-full h-14 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-lg rounded-xl shadow-lg transition-all duration-300" disabled={loading || otp.join('').length !== 6}>
-                {loading ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Verifying...</> : <><CheckCircle className="mr-2 h-5 w-5" />Verify & Continue</>}
-              </Button>
+              <button 
+                onClick={handleVerifyOtp} 
+                disabled={loading || otp.join('').length !== 6} 
+                className="w-full h-12 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" />Verifying...</>
+                ) : (
+                  <><CheckCircle className="w-5 h-5" />Verify & Continue</>
+                )}
+              </button>
 
               <div className="flex items-center justify-between pt-2">
-                <button onClick={() => { setStep('verify'); setOtp(['', '', '', '', '', '']); setError(''); }} className="text-sm text-gray-600 hover:text-emerald-600 font-medium transition-colors">← Change Number</button>
-                <button onClick={handleResendOtp} disabled={countdown > 0 || loading} className={`flex items-center gap-2 text-sm font-medium transition-all ${countdown > 0 ? 'text-gray-400' : 'text-emerald-600 hover:text-emerald-700'}`}>
+                <button 
+                  onClick={() => { setStep('verify'); setOtp(['', '', '', '', '', '']); setError(''); }} 
+                  className="text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  ← Change Number
+                </button>
+                <button 
+                  onClick={handleResendOtp} 
+                  disabled={countdown > 0 || loading} 
+                  className={`flex items-center gap-2 text-sm font-medium transition-all ${
+                    countdown > 0 ? 'text-gray-600' : 'text-emerald-400 hover:text-emerald-300'
+                  }`}
+                >
                   <RefreshCw className={`h-4 w-4 ${loading && countdown === 0 ? 'animate-spin' : ''}`} />
                   {countdown > 0 ? `Resend in ${countdown}s` : 'Resend OTP'}
                 </button>
@@ -695,41 +676,39 @@ export default function CompleteSignupPage() {
 
           {/* Loading */}
           {step === 'loading' && (
-            <div className="text-center space-y-6">
-              <div className="relative inline-flex">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-200">
-                  <Loader2 className="w-10 h-10 text-white animate-spin" />
-                </div>
+            <div className="text-center space-y-6 py-8">
+              <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                <Loader2 className="w-10 h-10 text-white animate-spin" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Loading...</h2>
-                <p className="text-gray-500">{message}</p>
+                <h2 className="text-2xl font-bold text-white mb-2">Loading...</h2>
+                <p className="text-gray-400">{message}</p>
               </div>
             </div>
           )}
 
           {/* Success */}
           {step === 'success' && (
-            <div className="text-center space-y-6">
-              <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-200">
+            <div className="text-center space-y-6 py-8">
+              <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/25">
                 <CheckCircle className="w-10 h-10 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">You&apos;re All Set!</h2>
-                <p className="text-gray-500">Redirecting you to your dashboard...</p>
+                <h2 className="text-2xl font-bold text-white mb-2">You&apos;re All Set!</h2>
+                <p className="text-gray-400">Redirecting you to your dashboard...</p>
               </div>
             </div>
           )}
 
           {/* Error */}
           {step === 'error' && (
-            <div className="text-center space-y-6">
-              <div className="w-20 h-20 mx-auto rounded-full bg-red-100 flex items-center justify-center">
-                <X className="w-10 h-10 text-red-500" />
+            <div className="text-center space-y-6 py-8">
+              <div className="w-20 h-20 mx-auto rounded-2xl bg-red-500/20 flex items-center justify-center">
+                <X className="w-10 h-10 text-red-400" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Oops!</h2>
-                <p className="text-gray-500">{message}</p>
+                <h2 className="text-2xl font-bold text-white mb-2">Oops!</h2>
+                <p className="text-gray-400">{message}</p>
               </div>
             </div>
           )}
@@ -738,32 +717,106 @@ export default function CompleteSignupPage() {
 
       {/* Legal Modal */}
       {showLegalModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-gray-900 border border-white/10 rounded-3xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
               <div className="flex gap-2">
-                <button onClick={() => setActiveTab('terms')} className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === 'terms' ? 'bg-emerald-100 text-emerald-700' : 'text-gray-500 hover:bg-gray-100'}`}>Terms of Service</button>
-                <button onClick={() => setActiveTab('privacy')} className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === 'privacy' ? 'bg-emerald-100 text-emerald-700' : 'text-gray-500 hover:bg-gray-100'}`}>Privacy Policy</button>
+                <button 
+                  onClick={() => setActiveTab('terms')} 
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    activeTab === 'terms' ? 'bg-emerald-500/20 text-emerald-400' : 'text-gray-500 hover:text-white'
+                  }`}
+                >
+                  Terms of Service
+                </button>
+                <button 
+                  onClick={() => setActiveTab('privacy')} 
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    activeTab === 'privacy' ? 'bg-emerald-500/20 text-emerald-400' : 'text-gray-500 hover:text-white'
+                  }`}
+                >
+                  Privacy Policy
+                </button>
               </div>
-              <button onClick={() => setShowLegalModal(false)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors"><X className="w-5 h-5 text-gray-500" /></button>
+              <button onClick={() => setShowLegalModal(false)} className="p-2 rounded-lg hover:bg-white/10 transition-colors">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
             </div>
             <div className="p-6 overflow-y-auto max-h-[calc(85vh-140px)]">
               {loadingDocs ? (
-                <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 text-emerald-500 animate-spin" /></div>
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+                </div>
               ) : (
-                <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-600">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {activeTab === 'terms' ? (terms?.content_md || 'Terms of Service content not available.') : (privacy?.content_md || 'Privacy Policy content not available.')}
-                  </ReactMarkdown>
+                <div className="text-gray-300 text-sm leading-relaxed space-y-4">
+                  {activeTab === 'terms' ? (
+                    terms?.content_md ? (
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          h1: ({children}) => <h1 className="text-xl font-bold text-white mb-4">{children}</h1>,
+                          h2: ({children}) => <h2 className="text-lg font-semibold text-white mt-6 mb-3">{children}</h2>,
+                          h3: ({children}) => <h3 className="text-base font-semibold text-white mt-4 mb-2">{children}</h3>,
+                          p: ({children}) => <p className="text-gray-300 mb-3">{children}</p>,
+                          ul: ({children}) => <ul className="list-disc list-inside text-gray-300 space-y-1 ml-4">{children}</ul>,
+                          ol: ({children}) => <ol className="list-decimal list-inside text-gray-300 space-y-1 ml-4">{children}</ol>,
+                          li: ({children}) => <li className="text-gray-300">{children}</li>,
+                          strong: ({children}) => <strong className="text-white font-semibold">{children}</strong>,
+                          a: ({children, href}) => <a href={href} className="text-emerald-400 hover:underline">{children}</a>,
+                        }}
+                      >
+                        {terms.content_md}
+                      </ReactMarkdown>
+                    ) : (
+                      <p className="text-gray-400 text-center py-8">Terms of Service content not available.</p>
+                    )
+                  ) : (
+                    privacy?.content_md ? (
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          h1: ({children}) => <h1 className="text-xl font-bold text-white mb-4">{children}</h1>,
+                          h2: ({children}) => <h2 className="text-lg font-semibold text-white mt-6 mb-3">{children}</h2>,
+                          h3: ({children}) => <h3 className="text-base font-semibold text-white mt-4 mb-2">{children}</h3>,
+                          p: ({children}) => <p className="text-gray-300 mb-3">{children}</p>,
+                          ul: ({children}) => <ul className="list-disc list-inside text-gray-300 space-y-1 ml-4">{children}</ul>,
+                          ol: ({children}) => <ol className="list-decimal list-inside text-gray-300 space-y-1 ml-4">{children}</ol>,
+                          li: ({children}) => <li className="text-gray-300">{children}</li>,
+                          strong: ({children}) => <strong className="text-white font-semibold">{children}</strong>,
+                          a: ({children, href}) => <a href={href} className="text-emerald-400 hover:underline">{children}</a>,
+                        }}
+                      >
+                        {privacy.content_md}
+                      </ReactMarkdown>
+                    ) : (
+                      <p className="text-gray-400 text-center py-8">Privacy Policy content not available.</p>
+                    )
+                  )}
                 </div>
               )}
             </div>
-            <div className="px-6 py-4 border-t bg-gray-50">
-              <Button onClick={() => setShowLegalModal(false)} className="w-full h-12 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-medium">I understand</Button>
+            <div className="px-6 py-4 border-t border-white/10">
+              <button 
+                onClick={() => setShowLegalModal(false)} 
+                className="w-full h-12 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-semibold rounded-xl transition-all"
+              >
+                I understand
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Custom Styles */}
+      <style jsx>{`
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(1.05); }
+        }
+        .animate-pulse-slow { animation: pulse-slow 8s ease-in-out infinite; }
+        .animation-delay-2000 { animation-delay: 2s; }
+        .animation-delay-4000 { animation-delay: 4s; }
+      `}</style>
     </div>
   )
 }

@@ -1,410 +1,388 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { 
-  Search, 
-  Plus, 
   CheckCircle,
   Clock,
-  ArrowRight,
-  MapPin,
-  MessageSquare,
-  Eye,
   Sparkles,
-  Zap,
+  ChevronRight,
+  Bell,
+  Wallet,
+  IndianRupee,
+  Crown,
+  Loader2,
   Shield,
   Star,
-  Calendar,
-  ChevronRight,
-  Wrench,
-  Paintbrush,
-  Truck,
-  Plug,
-  Home,
-  Droplets,
-  Wind,
-  Camera,
-  Gift
+  Zap,
+  Heart,
+  ArrowRight,
+  Wand2
 } from 'lucide-react'
 
-const EmergencySOSButton = dynamic(() => import('@/components/emergency-sos-button'), { ssr: false })
+export default function CustomerDashboard() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState<{ full_name?: string; avatar_url?: string } | null>(null)
+  const [wallet, setWallet] = useState<{ available_balance?: number } | null>(null)
+  const [loyalty, setLoyalty] = useState<{ points_balance?: number } | null>(null)
+  const [requests, setRequests] = useState<Array<{ id: string; title: string; status: string; created_at: string; city?: string }>>([])
+  const [activeCount, setActiveCount] = useState(0)
+  const [completedCount, setCompletedCount] = useState(0)
 
-export default async function CustomerDashboard() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    redirect('/auth/login')
-  }
+  useEffect(() => {
+    async function loadData() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        router.push('/auth/login')
+        return
+      }
 
-  // Check if phone is verified
-  const { data: userProfile } = await supabase
-    .from('profiles')
-    .select('phone, phone_verified')
-    .eq('id', user.id)
-    .single()
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('phone, phone_verified, full_name, avatar_url')
+        .eq('id', user.id)
+        .single()
 
-  if (!userProfile?.phone || !userProfile?.phone_verified) {
-    redirect('/auth/complete-signup')
-  }
+      if (!userProfile?.phone || !userProfile?.phone_verified) {
+        router.push('/auth/complete-signup')
+        return
+      }
 
-  // Fetch user data
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, avatar_url')
-    .eq('id', user.id)
-    .single()
+      setProfile(userProfile)
 
-  // Fetch wallet balance
-  const { data: wallet } = await supabase
-    .from('wallet_accounts')
-    .select('available_balance, escrow_balance')
-    .eq('user_id', user.id)
-    .single()
+      const [walletRes, loyaltyRes, requestsRes, activeRes, completedRes] = await Promise.all([
+        supabase.from('wallet_accounts').select('available_balance').eq('user_id', user.id).single(),
+        supabase.from('loyalty_points').select('points_balance').eq('user_id', user.id).single(),
+        supabase.from('service_requests').select('id, title, status, created_at, city').eq('customer_id', user.id).order('created_at', { ascending: false }).limit(5),
+        supabase.from('service_requests').select('id', { count: 'exact', head: true }).eq('customer_id', user.id).in('status', ['open', 'assigned', 'in_progress']),
+        supabase.from('service_requests').select('id', { count: 'exact', head: true }).eq('customer_id', user.id).eq('status', 'completed'),
+      ])
 
-  // Fetch loyalty points
-  const { data: loyalty } = await supabase
-    .from('loyalty_points')
-    .select('points_balance, tier_level')
-    .eq('user_id', user.id)
-    .single()
+      setWallet(walletRes.data)
+      setLoyalty(loyaltyRes.data)
+      setRequests(requestsRes.data || [])
+      setActiveCount(activeRes.count || 0)
+      setCompletedCount(completedRes.count || 0)
+      setLoading(false)
+    }
 
-  // Fetch recent requests
-  const { data: requests } = await supabase
-    .from('service_requests')
-    .select('id, title, status, created_at, city')
-    .eq('customer_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(5)
-
-  // Count active requests
-  const { count: activeRequests } = await supabase
-    .from('service_requests')
-    .select('id', { count: 'exact', head: true })
-    .eq('customer_id', user.id)
-    .in('status', ['open', 'assigned', 'in_progress'])
-
-  const { count: completedRequests } = await supabase
-    .from('service_requests')
-    .select('id', { count: 'exact', head: true })
-    .eq('customer_id', user.id)
-    .eq('status', 'completed')
+    loadData()
+  }, [router])
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there'
-  const greeting = getGreeting()
 
-  function getGreeting() {
-    const hour = new Date().getHours()
-    if (hour < 12) return 'Good morning'
-    if (hour < 17) return 'Good afternoon'
-    return 'Good evening'
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-teal-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-10 w-10 animate-spin text-emerald-600 mx-auto mb-4" />
+          <p className="text-gray-500 font-medium">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
-  const services = [
-    { name: 'Plumber', emoji: '🔧', icon: Droplets, color: 'bg-blue-500', lightBg: 'bg-blue-50', href: '/services/plumber' },
-    { name: 'Electrician', emoji: '⚡', icon: Plug, color: 'bg-amber-500', lightBg: 'bg-amber-50', href: '/services/electrician' },
-    { name: 'Carpenter', emoji: '🪚', icon: Wrench, color: 'bg-orange-600', lightBg: 'bg-orange-50', href: '/services/carpenter' },
-    { name: 'Painter', emoji: '🎨', icon: Paintbrush, color: 'bg-pink-500', lightBg: 'bg-pink-50', href: '/services/painter' },
-    { name: 'AC Repair', emoji: '❄️', icon: Wind, color: 'bg-cyan-500', lightBg: 'bg-cyan-50', href: '/services/ac-repair' },
-    { name: 'Cleaning', emoji: '🧹', icon: Home, color: 'bg-emerald-500', lightBg: 'bg-emerald-50', href: '/services/cleaning' },
-    { name: 'Movers', emoji: '🚚', icon: Truck, color: 'bg-purple-500', lightBg: 'bg-purple-50', href: '/services/movers' },
-    { name: 'More', emoji: '➕', icon: Plus, color: 'bg-gray-600', lightBg: 'bg-gray-50', href: '/services' },
-  ]
-
   return (
-    <div className="min-h-screen bg-white">
-      {/* Clean Header */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo & Greeting */}
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-emerald-500 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-lg">H</span>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 font-medium">{greeting}</p>
-                <h1 className="text-lg font-bold text-gray-900">{firstName}</h1>
-              </div>
-            </div>
-            
-            {/* Right Actions */}
-            <div className="flex items-center gap-3">
-              <Link 
-                href="/customer/wallet" 
-                className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl hover:bg-emerald-100 transition-colors"
-              >
-                <Gift className="h-4 w-4" />
-                <span className="font-semibold text-sm">₹{wallet?.available_balance || 0}</span>
-              </Link>
-              <Link href="/customer/profile" className="relative">
-                <div className="h-10 w-10 rounded-full bg-gray-100 overflow-hidden border-2 border-gray-200">
-                  {profile?.avatar_url ? (
-                    <Image 
-                      src={profile.avatar_url} 
-                      alt={firstName} 
-                      width={40} 
-                      height={40}
-                      className="object-cover w-full h-full"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-emerald-500 text-white font-bold">
-                      {firstName.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                </div>
-                <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
-                  <CheckCircle className="h-2.5 w-2.5 text-white" />
-                </div>
-              </Link>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50/50 via-white to-teal-50/50">
+      {/* Decorative Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-20 right-20 w-96 h-96 bg-emerald-100/50 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 left-20 w-80 h-80 bg-teal-100/50 rounded-full blur-3xl" />
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        {/* Main Heading */}
-        <div className="mb-5">
-          <h2 className="text-xl font-bold text-gray-900">What do you need help with?</h2>
-          <p className="text-gray-500 text-sm">Choose how you want to find help</p>
-        </div>
-
-        {/* Two Main Options - 60/40 Priority */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {/* AI Smart Request - 60% Priority (slightly more prominent) */}
-          <Link 
-            href="/customer/requests/ai"
-            className="relative bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 rounded-2xl p-5 overflow-hidden group hover:shadow-xl hover:shadow-emerald-500/20 transition-all"
-          >
-            {/* Decorative */}
-            <div className="absolute right-0 top-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4"></div>
-            <div className="absolute right-8 bottom-0 w-16 h-16 bg-white/10 rounded-full translate-y-1/2"></div>
-            
-            <div className="relative z-10">
-              {/* Badge */}
-              <div className="inline-flex items-center gap-1.5 bg-amber-400 text-amber-900 text-xs font-bold px-2.5 py-1 rounded-full mb-3">
-                <Zap className="h-3 w-3" />
-                RECOMMENDED
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2 group">
+              <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+                <span className="text-white font-bold">H</span>
               </div>
-              
-              <div className="flex items-start gap-3 mb-3">
-                <div className="h-12 w-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Camera className="h-6 w-6 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-white">AI Smart Request</h3>
-                  <p className="text-emerald-100 text-xs mt-0.5">Instant pricing • Auto-match helpers</p>
-                </div>
-              </div>
-              
-              <p className="text-emerald-50 text-sm mb-4">
-                Snap a photo, describe your issue, and get <span className="font-semibold text-amber-300">instant AI quotes</span> in seconds!
-              </p>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 text-xs text-emerald-100">
-                  <span className="flex items-center gap-1"><Sparkles className="h-3 w-3" /> AI Pricing</span>
-                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> 30 sec</span>
-                </div>
-                <div className="flex items-center gap-2 bg-white text-emerald-600 font-bold px-4 py-2 rounded-xl shadow-lg group-hover:gap-3 transition-all text-sm">
-                  Try Now
-                  <ArrowRight className="h-4 w-4" />
-                </div>
-              </div>
-            </div>
-          </Link>
-
-          {/* Get Quotes / Bidding - 40% Priority (still prominent!) */}
-          <Link 
-            href="/customer/requests/new"
-            className="relative bg-white border-2 border-gray-200 hover:border-emerald-300 rounded-2xl p-5 overflow-hidden group hover:shadow-xl transition-all"
-          >
-            {/* Decorative */}
-            <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-full -translate-y-1/2 translate-x-1/4"></div>
-            
-            <div className="relative z-10">
-              {/* Badge */}
-              <div className="inline-flex items-center gap-1.5 bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full mb-3">
-                <Star className="h-3 w-3" />
-                BEST PRICES
-              </div>
-              
-              <div className="flex items-start gap-3 mb-3">
-                <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Search className="h-6 w-6 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-900">Get Multiple Quotes</h3>
-                  <p className="text-gray-500 text-xs mt-0.5">Compare bids • Choose your pro</p>
-                </div>
-              </div>
-              
-              <p className="text-gray-600 text-sm mb-4">
-                Post your request and receive <span className="font-semibold text-blue-600">competitive bids</span> from verified helpers. You choose the best!
-              </p>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 text-xs text-gray-500">
-                  <span className="flex items-center gap-1"><Shield className="h-3 w-3" /> Verified</span>
-                  <span className="flex items-center gap-1"><CheckCircle className="h-3 w-3" /> 5+ Bids</span>
-                </div>
-                <div className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold px-4 py-2 rounded-xl shadow-lg group-hover:gap-3 transition-all text-sm">
-                  Post Request
-                  <ArrowRight className="h-4 w-4" />
-                </div>
-              </div>
-            </div>
-          </Link>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <Link 
-            href="/customer/bookings?tab=active"
-            className="bg-gray-50 hover:bg-gray-100 rounded-xl p-4 transition-colors group text-center"
-          >
-            <p className="text-2xl font-bold text-gray-900">{activeRequests || 0}</p>
-            <p className="text-xs text-gray-500">Active</p>
-          </Link>
-          
-          <Link 
-            href="/customer/bookings?tab=completed"
-            className="bg-gray-50 hover:bg-gray-100 rounded-xl p-4 transition-colors group text-center"
-          >
-            <p className="text-2xl font-bold text-gray-900">{completedRequests || 0}</p>
-            <p className="text-xs text-gray-500">Completed</p>
-          </Link>
-
-          <div className="bg-red-50 hover:bg-red-100 rounded-xl p-4 transition-colors text-center">
-            <div className="flex items-center justify-center mb-1">
-              <Shield className="h-5 w-5 text-red-500" />
-            </div>
-            <EmergencySOSButton className="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg font-semibold" />
-          </div>
-        </div>
-
-        {/* Services Grid - Swiggy/Zepto Style */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-900">Popular Services</h2>
-            <Link href="/services" className="text-emerald-600 text-sm font-semibold flex items-center gap-1 hover:text-emerald-700">
-              See all <ChevronRight className="h-4 w-4" />
+              <span className="text-lg font-bold text-gray-900 hidden sm:block">helparo</span>
             </Link>
-          </div>
-          
-          {/* Horizontal scrollable on mobile, grid on desktop */}
-          <div className="flex md:grid md:grid-cols-4 gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-            {services.map((service) => (
-              <Link 
-                key={service.name}
-                href={service.href}
-                className="flex-shrink-0 w-[72px] md:w-auto flex flex-col items-center gap-2 p-3 bg-white hover:bg-gray-50 rounded-2xl transition-all hover:scale-105 group border border-gray-100 hover:border-gray-200 hover:shadow-md"
-              >
-                {/* Emoji Circle - Clean & Modern */}
-                <div className={`h-14 w-14 ${service.lightBg} rounded-2xl flex items-center justify-center transition-all group-hover:scale-110`}>
-                  <span className="text-2xl">{service.emoji}</span>
-                </div>
-                <span className="text-xs font-medium text-gray-700 text-center whitespace-nowrap">{service.name}</span>
+
+            {/* Right */}
+            <div className="flex items-center gap-3">
+              <Link href="/customer/wallet" className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full font-semibold text-sm border border-emerald-200 hover:bg-emerald-100 transition-colors">
+                <Wallet className="h-4 w-4" />
+                ₹{wallet?.available_balance || 0}
               </Link>
-            ))}
+
+              <Link href="/customer/notifications" className="relative p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
+                <Bell className="h-5 w-5 text-gray-600" />
+                <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full" />
+              </Link>
+
+              <Link href="/customer/profile" className="h-9 w-9 rounded-full overflow-hidden ring-2 ring-gray-200 hover:ring-emerald-500 transition-all">
+                {profile?.avatar_url ? (
+                  <Image src={profile.avatar_url} alt={firstName} width={36} height={36} className="object-cover w-full h-full" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold text-sm">
+                    {firstName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </Link>
+            </div>
           </div>
         </div>
+      </header>
 
-        {/* Recent Activity - Clean List */}
-        <div className="bg-white rounded-xl border border-gray-100">
-          <div className="flex items-center justify-between p-4 border-b border-gray-100">
-            <h2 className="font-bold text-gray-900">Recent Activity</h2>
-            <Link href="/customer/requests" className="text-emerald-600 text-sm font-semibold flex items-center gap-1 hover:text-emerald-700">
-              View all <ChevronRight className="h-4 w-4" />
-            </Link>
-          </div>
+      <main className="relative max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        {/* Welcome */}
+        <div className="mb-8">
+          <p className="text-emerald-600 font-medium mb-1">👋 Welcome back</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
+            Hi {firstName}!
+          </h1>
+        </div>
 
-          {requests && requests.length > 0 ? (
-            <div className="divide-y divide-gray-50">
-              {requests.slice(0, 4).map((req: any) => (
-                <Link
-                  key={req.id}
-                  href={`/customer/requests/${req.id}`}
-                  className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                      req.status === 'completed' 
-                        ? 'bg-emerald-100' 
-                        : req.status === 'in_progress' 
-                          ? 'bg-blue-100' 
-                          : 'bg-amber-100'
-                    }`}>
-                      {req.status === 'completed' ? (
-                        <CheckCircle className="h-5 w-5 text-emerald-600" />
-                      ) : req.status === 'in_progress' ? (
-                        <Clock className="h-5 w-5 text-blue-600" />
-                      ) : (
-                        <Sparkles className="h-5 w-5 text-amber-600" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900 text-sm">{req.title}</p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(req.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        {req.city && ` · ${req.city}`}
-                      </p>
-                    </div>
+        {/* Quick Actions - Two Big Cards */}
+        <div className="grid sm:grid-cols-2 gap-5 mb-8">
+          {/* AI Request */}
+          <Link href="/customer/requests/ai" className="group">
+            <div className="relative bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 rounded-3xl p-6 text-white overflow-hidden shadow-lg hover:shadow-xl hover:shadow-emerald-500/20 transition-all duration-300">
+              {/* Decorative circles */}
+              <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4" />
+              <div className="absolute bottom-0 right-20 w-24 h-24 bg-white/5 rounded-full translate-y-1/2" />
+              
+              <div className="relative">
+                {/* Top Badge */}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-400 text-amber-900 rounded-full text-xs font-bold mb-4">
+                  <Zap className="w-3 h-3" />
+                  RECOMMENDED
+                </div>
+                
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Wand2 className="w-6 h-6" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      req.status === 'completed' 
-                        ? 'bg-emerald-100 text-emerald-700' 
-                        : req.status === 'in_progress' 
-                          ? 'bg-blue-100 text-blue-700' 
-                          : 'bg-amber-100 text-amber-700'
-                    }`}>
-                      {req.status === 'completed' ? 'Done' :
-                       req.status === 'in_progress' ? 'Active' : 'Open'}
+                  <div>
+                    <h3 className="text-xl font-bold">AI Smart Request</h3>
+                    <p className="text-emerald-200 text-sm">Instant pricing • Auto-match helpers</p>
+                  </div>
+                </div>
+                
+                {/* Description */}
+                <p className="text-white/90 mb-5">
+                  Describe your issue and get <span className="text-amber-300 font-semibold">instant AI quotes</span> in seconds!
+                </p>
+                
+                {/* Bottom Row */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 text-sm text-emerald-100">
+                    <span className="flex items-center gap-1">
+                      <Sparkles className="w-4 h-4" />
+                      AI Pricing
                     </span>
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      30 sec
+                    </span>
                   </div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="p-8 text-center">
-              <div className="h-16 w-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="h-8 w-8 text-gray-400" />
+                  <div className="bg-white text-emerald-700 font-bold px-4 py-2 rounded-full text-sm flex items-center gap-1.5 group-hover:gap-2.5 transition-all shadow-lg">
+                    Try Now <ArrowRight className="w-4 h-4" />
+                  </div>
+                </div>
               </div>
-              <p className="text-gray-900 font-medium mb-1">No requests yet</p>
-              <p className="text-gray-500 text-sm mb-4">Create your first request to get started</p>
-              <Link 
-                href="/customer/requests/new" 
-                className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-                Create Request
-              </Link>
             </div>
-          )}
+          </Link>
+
+          {/* Manual Request */}
+          <Link href="/customer/requests/new" className="group">
+            <div className="relative bg-gradient-to-br from-amber-500 via-orange-500 to-orange-600 rounded-3xl p-6 text-white overflow-hidden shadow-lg hover:shadow-xl hover:shadow-orange-500/20 transition-all duration-300">
+              {/* Decorative circles */}
+              <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4" />
+              <div className="absolute bottom-0 right-20 w-24 h-24 bg-white/5 rounded-full translate-y-1/2" />
+              
+              <div className="relative">
+                {/* Top Badge */}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur-sm text-white rounded-full text-xs font-bold mb-4">
+                  <Crown className="w-3 h-3" />
+                  YOU DECIDE PRICE
+                </div>
+                
+                {/* Icon + Title Row */}
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                    <IndianRupee className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">Post a Request</h3>
+                    <p className="text-orange-200 text-sm">Name your price • Helpers accept</p>
+                  </div>
+                </div>
+                
+                {/* Description */}
+                <p className="text-white/90 mb-5">
+                  Set <span className="text-amber-200 font-semibold">your own budget</span> and helpers will accept your offer!
+                </p>
+                
+                {/* Bottom Row */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 text-sm text-orange-100">
+                    <span className="flex items-center gap-1">
+                      <Shield className="w-4 h-4" />
+                      Verified
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Heart className="w-4 h-4" />
+                      Fair Pricing
+                    </span>
+                  </div>
+                  <div className="bg-white text-orange-700 font-bold px-4 py-2 rounded-full text-sm flex items-center gap-1.5 group-hover:gap-2.5 transition-all shadow-lg">
+                    Post Now <ArrowRight className="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Link>
         </div>
 
-        {/* Trust Badges - Bottom */}
-        <div className="mt-6 flex items-center justify-center gap-6 py-4">
-          <div className="flex items-center gap-2 text-gray-400">
-            <Shield className="h-4 w-4" />
-            <span className="text-xs font-medium">100% Verified</span>
-          </div>
-          <div className="w-px h-4 bg-gray-200"></div>
-          <div className="flex items-center gap-2 text-gray-400">
-            <Star className="h-4 w-4" />
-            <span className="text-xs font-medium">4.8★ Rated</span>
-          </div>
-          <div className="w-px h-4 bg-gray-200"></div>
-          <div className="flex items-center gap-2 text-gray-400">
-            <Zap className="h-4 w-4" />
-            <span className="text-xs font-medium">Fast Response</span>
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          <Link href="/customer/bookings?tab=active" className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                <Clock className="w-5 h-5 text-amber-600" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{activeCount}</p>
+            <p className="text-sm text-gray-500">Active</p>
+          </Link>
+
+          <Link href="/customer/bookings?tab=completed" className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-emerald-600" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{completedCount}</p>
+            <p className="text-sm text-gray-500">Completed</p>
+          </Link>
+
+          <Link href="/customer/wallet" className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Wallet className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">₹{wallet?.available_balance || 0}</p>
+            <p className="text-sm text-gray-500">Wallet</p>
+          </Link>
+
+          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-violet-100 rounded-lg flex items-center justify-center">
+                <Star className="w-5 h-5 text-violet-600" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{loyalty?.points_balance || 0}</p>
+            <p className="text-sm text-gray-500">Points</p>
           </div>
         </div>
-      </div>
+
+        {/* Recent Activity */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
+            <Link href="/customer/requests" className="text-emerald-600 text-sm font-semibold hover:text-emerald-700 flex items-center gap-1">
+              View all <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            {requests.length > 0 ? (
+              <div className="divide-y divide-gray-100">
+                {requests.slice(0, 4).map((req) => (
+                  <Link
+                    key={req.id}
+                    href={`/customer/requests/${req.id}`}
+                    className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        req.status === 'completed' ? 'bg-emerald-100' : req.status === 'in_progress' ? 'bg-blue-100' : 'bg-amber-100'
+                      }`}>
+                        {req.status === 'completed' ? (
+                          <CheckCircle className="w-5 h-5 text-emerald-600" />
+                        ) : req.status === 'in_progress' ? (
+                          <Clock className="w-5 h-5 text-blue-600" />
+                        ) : (
+                          <Sparkles className="w-5 h-5 text-amber-600" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">{req.title}</p>
+                        <p className="text-sm text-gray-500">
+                          {new Date(req.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          {req.city && ` · ${req.city}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                        req.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 
+                        req.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+                      }`}>
+                        {req.status === 'completed' ? 'Done' : req.status === 'in_progress' ? 'Active' : 'Open'}
+                      </span>
+                      <ChevronRight className="w-5 h-5 text-gray-400" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="p-12 text-center">
+                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Sparkles className="w-8 h-8 text-emerald-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No requests yet</h3>
+                <p className="text-gray-500">Book your first service today!</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Trust Banner */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="text-center sm:text-left">
+              <p className="text-emerald-600 font-semibold text-sm mb-1">✨ Trusted by 50,000+ Indians</p>
+              <h3 className="text-xl font-bold text-gray-900">Book with confidence</h3>
+            </div>
+            <div className="flex items-center gap-8">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Shield className="w-5 h-5 text-emerald-600" />
+                  <span className="text-xl font-bold text-gray-900">100%</span>
+                </div>
+                <p className="text-xs text-gray-500">Verified</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Star className="w-5 h-5 text-amber-500" />
+                  <span className="text-xl font-bold text-gray-900">4.9</span>
+                </div>
+                <p className="text-xs text-gray-500">Rating</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Zap className="w-5 h-5 text-blue-600" />
+                  <span className="text-xl font-bold text-gray-900">30m</span>
+                </div>
+                <p className="text-xs text-gray-500">Response</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   )
 }
