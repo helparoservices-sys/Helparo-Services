@@ -4,9 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Mail, Loader2, ArrowLeft } from 'lucide-react'
-import Image from 'next/image'
+import { Mail, Loader2, ArrowLeft, CheckCircle, Sparkles, X } from 'lucide-react'
 import { logger } from '@/lib/logger'
 import { requestPasswordResetAction } from '@/app/actions/auth'
 
@@ -40,97 +38,117 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 relative overflow-hidden">
-      {/* Logo Watermark Background */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <img
-          src="/logo.jpg"
-          alt="Helparo"
-          className="h-96 w-96 object-contain opacity-[0.03] dark:opacity-[0.02]"
-          loading="lazy"
-          decoding="async"
-        />
+    <div className="min-h-screen bg-white overflow-hidden">
+      {/* Floating Background Elements */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(16,185,129,0.1),transparent)]" />
+        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(16,185,129,0.06),transparent_70%)]" />
+        <div className="absolute top-1/4 left-1/4 w-4 h-4 bg-emerald-400/30 rounded-full animate-pulse" />
+        <div className="absolute bottom-1/3 right-1/4 w-3 h-3 bg-teal-400/40 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
       </div>
 
-      {/* Forgot Password Card */}
-      <div className="w-full max-w-md relative z-10">
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/20 dark:border-slate-700/50 shadow-2xl rounded-2xl p-8">
-          {/* Header with Logo */}
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center justify-center gap-2 mb-6 group">
-              <div className="relative">
-                <img
-                  src="/logo.jpg"
-                  alt="Helparo"
-                  className="h-12 w-12 rounded-xl object-cover shadow-lg group-hover:shadow-xl transition-shadow duration-300"
-                  loading="lazy"
-                  decoding="async"
-
-                />
-
+      {/* Premium Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <Link href="/auth/login" className="flex items-center gap-2 text-gray-500 hover:text-emerald-600 transition-colors group">
+              <div className="w-8 h-8 rounded-lg bg-gray-100 group-hover:bg-emerald-100 flex items-center justify-center transition-colors">
+                <ArrowLeft className="w-4 h-4" />
               </div>
-              <span className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">Helparo</span>
+              <span className="text-sm font-semibold hidden sm:block">Back to login</span>
             </Link>
-
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Forgot Password</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Enter your email to reset your password
-            </p>
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+                <span className="text-white font-black text-lg">H</span>
+              </div>
+              <div className="hidden sm:flex flex-col">
+                <span className="text-xl font-extrabold text-gray-900">helparo</span>
+                <span className="text-[9px] font-semibold text-emerald-600 tracking-[0.15em] uppercase -mt-1">Home Services</span>
+              </div>
+            </Link>
+            <div className="w-24"></div>
           </div>
+        </div>
+      </header>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700 dark:text-slate-300">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="john@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
-              />
+      {/* Main Content */}
+      <div className="min-h-screen flex items-center justify-center p-4 pt-20 relative z-10">
+        <div className="w-full max-w-md">
+          {/* Card */}
+          <div className="bg-white/80 backdrop-blur-xl border border-gray-100 shadow-2xl rounded-3xl p-8 lg:p-10">
+            {/* Icon */}
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-500/30">
+              <Mail className="w-8 h-8 text-white" />
             </div>
 
-            {error && (
-              <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg animate-fade-in">
-                {error}
-              </div>
-            )}
+            {/* Header */}
+            <div className="text-center mb-8">
+              <h1 className="text-2xl lg:text-3xl font-black text-gray-900 mb-2">
+                Forgot Password?
+              </h1>
+              <p className="text-gray-500">
+                No worries! Enter your email and we&apos;ll send you a reset link.
+              </p>
+            </div>
 
-            {message && (
-              <div className="p-3 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg animate-fade-in">
-                {message}
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-600 transition-colors" />
+                <Input
+                  type="email"
+                  placeholder="Enter your email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="h-14 pl-12 pr-4 border-2 border-gray-200 focus:border-emerald-500 focus:ring-0 rounded-2xl text-base transition-all hover:border-gray-300"
+                />
               </div>
-            )}
 
-            <Button
-              type="submit"
-              className="w-full shadow-lg hover:shadow-xl transition-all duration-300"
-              size="lg"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Sending Reset Link...
-                </>
-              ) : (
-                <>
-                  <Mail className="mr-2 h-5 w-5" />
-                  Send Reset Link
-                </>
+              {error && (
+                <div className="p-4 text-sm text-red-600 bg-red-50 border-2 border-red-100 rounded-2xl flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <X className="w-4 h-4 text-red-600" />
+                  </div>
+                  {error}
+                </div>
               )}
-            </Button>
-          </form>
 
-          {/* Back to Login */}
-          <div className="text-center mt-6">
-            <Link href="/auth/login" className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 hover:underline transition-colors">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Login
-            </Link>
+              {message && (
+                <div className="p-4 text-sm text-emerald-600 bg-emerald-50 border-2 border-emerald-100 rounded-2xl flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  {message}
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full h-14 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-base rounded-2xl transition-all shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    Send Reset Link
+                    <Sparkles className="ml-2 w-5 h-5" />
+                  </>
+                )}
+              </Button>
+            </form>
+
+            {/* Back to Login */}
+            <p className="text-center text-gray-600 mt-8">
+              Remember your password?{' '}
+              <Link href="/auth/login" className="text-emerald-600 font-bold hover:text-emerald-700 hover:underline transition-colors">
+                Sign in
+              </Link>
+            </p>
           </div>
         </div>
       </div>
