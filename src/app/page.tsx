@@ -959,7 +959,7 @@ export default function LandingPage() {
             {[
               { title: 'Services', links: [['All Services', '/services'], ['Book Now', '/auth/signup'], ['Pricing', '/pricing']] },
               { title: 'Partner', links: [['Become a Pro', '/helper/register'], ['Partner Login', '/helper/login'], ['Resources', '/about']] },
-              { title: 'Company', links: [['About Us', '/about'], ['Contact', '/contact'], ['Careers', '/about']] },
+              { title: 'Company', links: [['About Us', '/about'], ['Contact', '/contact'], ['Careers', '/careers']] },
               { title: 'Legal', links: [['Terms', '/legal/terms'], ['Privacy', '/legal/privacy'], ['Refunds', '/legal/refunds']] },
             ].map((col) => (
               <div key={col.title}>

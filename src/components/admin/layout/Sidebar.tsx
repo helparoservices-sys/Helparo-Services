@@ -25,7 +25,8 @@ import {
   CheckCircle,
   ShoppingBag,
   Sparkles,
-  MapPin
+  MapPin,
+  Briefcase
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -42,6 +43,11 @@ const menuItems = [
     label: 'Users',
     icon: Users,
     href: '/admin/users',
+  },
+  {
+    label: 'Candidates',
+    icon: Briefcase,
+    href: '/admin/candidates',
   },
   {
     label: 'Providers',

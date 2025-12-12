@@ -29,7 +29,11 @@ import {
   Target,
   Lightbulb,
   Shield,
-  IndianRupee
+  IndianRupee,
+  X,
+  Upload,
+  CheckCircle,
+  Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -63,15 +67,443 @@ function AnimatedCounter({ end, duration = 2000, suffix = '' }: { end: number; d
   return <span ref={ref}>{count.toLocaleString()}{suffix}</span>
 }
 
+// Application Modal Component
+interface JobApplicationModalProps {
+  isOpen: boolean
+  onClose: () => void
+  job: {
+    title: string
+    department: string
+    location: string
+    salary: string
+  } | null
+}
+
+function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModalProps) {
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    linkedinUrl: '',
+    portfolioUrl: '',
+    currentCompany: '',
+    currentRole: '',
+    experienceYears: '',
+    expectedSalary: '',
+    noticePeriod: '',
+    location: '',
+    willingToRelocate: false,
+    howDidYouHear: '',
+    coverLetter: '',
+  })
+  const [resume, setResume] = useState<File | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!job) return
+    
+    setIsSubmitting(true)
+    setError('')
+
+    try {
+      // Create form data for file upload
+      const submitData = new FormData()
+      submitData.append('fullName', formData.fullName)
+      submitData.append('email', formData.email)
+      submitData.append('phone', formData.phone)
+      submitData.append('jobTitle', job.title)
+      submitData.append('department', job.department)
+      submitData.append('linkedinUrl', formData.linkedinUrl)
+      submitData.append('portfolioUrl', formData.portfolioUrl)
+      submitData.append('currentCompany', formData.currentCompany)
+      submitData.append('currentRole', formData.currentRole)
+      submitData.append('experienceYears', formData.experienceYears)
+      submitData.append('expectedSalary', formData.expectedSalary)
+      submitData.append('noticePeriod', formData.noticePeriod)
+      submitData.append('location', formData.location)
+      submitData.append('willingToRelocate', String(formData.willingToRelocate))
+      submitData.append('howDidYouHear', formData.howDidYouHear)
+      submitData.append('coverLetter', formData.coverLetter)
+      if (resume) {
+        submitData.append('resume', resume)
+      }
+
+      const response = await fetch('/api/careers/apply', {
+        method: 'POST',
+        body: submitData,
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to submit application')
+      }
+
+      setSubmitted(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+      if (!allowedTypes.includes(file.type)) {
+        setError('Please upload a PDF or Word document')
+        return
+      }
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('File size should be less than 5MB')
+        return
+      }
+      setResume(file)
+      setError('')
+    }
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      
+      {/* Modal */}
+      <div className="relative bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-3xl z-10">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Apply for Position</h2>
+            {job && <p className="text-sm text-violet-600 font-medium">{job.title}</p>}
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        {submitted ? (
+          /* Success State */
+          <div className="p-8 text-center">
+            <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-10 h-10 text-emerald-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">Application Submitted! 🎉</h3>
+            <p className="text-gray-500 mb-6">
+              Thanks for applying to {job?.title}! We&apos;ll review your application and get back to you within 5-7 business days.
+            </p>
+            <Button onClick={onClose} className="bg-violet-600 hover:bg-violet-700 rounded-xl">
+              Close
+            </Button>
+          </div>
+        ) : (
+          /* Application Form */
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                {error}
+              </div>
+            )}
+
+            {/* Personal Info */}
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                <span className="w-6 h-6 bg-violet-100 rounded-full flex items-center justify-center text-violet-600 text-xs">1</span>
+                Personal Information
+              </h3>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors"
+                    placeholder="John Doe"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors"
+                    placeholder="john@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors"
+                    placeholder="+91 XXXXX XXXXX"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Location *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors"
+                    placeholder="City, State"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Professional Links */}
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                <span className="w-6 h-6 bg-violet-100 rounded-full flex items-center justify-center text-violet-600 text-xs">2</span>
+                Professional Links
+              </h3>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn Profile</label>
+                  <input
+                    type="url"
+                    value={formData.linkedinUrl}
+                    onChange={(e) => setFormData({ ...formData, linkedinUrl: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors"
+                    placeholder="https://linkedin.com/in/..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Portfolio / GitHub</label>
+                  <input
+                    type="url"
+                    value={formData.portfolioUrl}
+                    onChange={(e) => setFormData({ ...formData, portfolioUrl: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors"
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Work Experience */}
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                <span className="w-6 h-6 bg-violet-100 rounded-full flex items-center justify-center text-violet-600 text-xs">3</span>
+                Work Experience
+              </h3>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Company</label>
+                  <input
+                    type="text"
+                    value={formData.currentCompany}
+                    onChange={(e) => setFormData({ ...formData, currentCompany: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors"
+                    placeholder="Company name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Role</label>
+                  <input
+                    type="text"
+                    value={formData.currentRole}
+                    onChange={(e) => setFormData({ ...formData, currentRole: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors"
+                    placeholder="Your current title"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Total Experience (Years) *</label>
+                  <select
+                    required
+                    value={formData.experienceYears}
+                    onChange={(e) => setFormData({ ...formData, experienceYears: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors bg-white"
+                  >
+                    <option value="">Select</option>
+                    <option value="0-1">0-1 years</option>
+                    <option value="1-2">1-2 years</option>
+                    <option value="2-4">2-4 years</option>
+                    <option value="4-6">4-6 years</option>
+                    <option value="6-8">6-8 years</option>
+                    <option value="8-10">8-10 years</option>
+                    <option value="10+">10+ years</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notice Period</label>
+                  <select
+                    value={formData.noticePeriod}
+                    onChange={(e) => setFormData({ ...formData, noticePeriod: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors bg-white"
+                  >
+                    <option value="">Select</option>
+                    <option value="immediate">Immediate</option>
+                    <option value="15-days">15 days</option>
+                    <option value="1-month">1 month</option>
+                    <option value="2-months">2 months</option>
+                    <option value="3-months">3 months</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Salary & Preferences */}
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                <span className="w-6 h-6 bg-violet-100 rounded-full flex items-center justify-center text-violet-600 text-xs">4</span>
+                Salary & Preferences
+              </h3>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Expected Salary (LPA)</label>
+                  <input
+                    type="text"
+                    value={formData.expectedSalary}
+                    onChange={(e) => setFormData({ ...formData, expectedSalary: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors"
+                    placeholder="e.g., 15-20 LPA"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">How did you hear about us?</label>
+                  <select
+                    value={formData.howDidYouHear}
+                    onChange={(e) => setFormData({ ...formData, howDidYouHear: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors bg-white"
+                  >
+                    <option value="">Select</option>
+                    <option value="linkedin">LinkedIn</option>
+                    <option value="referral">Employee Referral</option>
+                    <option value="job-portal">Job Portal (Naukri/Indeed)</option>
+                    <option value="social-media">Social Media</option>
+                    <option value="website">Company Website</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </div>
+              <div className="mt-4">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.willingToRelocate}
+                    onChange={(e) => setFormData({ ...formData, willingToRelocate: e.target.checked })}
+                    className="w-5 h-5 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                  />
+                  <span className="text-sm text-gray-700">I&apos;m willing to relocate for this position</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Resume Upload */}
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                <span className="w-6 h-6 bg-violet-100 rounded-full flex items-center justify-center text-violet-600 text-xs">5</span>
+                Resume & Cover Letter
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Resume *</label>
+                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-violet-400 transition-colors">
+                    <input
+                      type="file"
+                      id="resume"
+                      accept=".pdf,.doc,.docx"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <label htmlFor="resume" className="cursor-pointer">
+                      {resume ? (
+                        <div className="flex items-center justify-center gap-2 text-violet-600">
+                          <CheckCircle className="w-5 h-5" />
+                          <span className="font-medium">{resume.name}</span>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-500">
+                            <span className="text-violet-600 font-medium">Click to upload</span> or drag and drop
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">PDF or Word (max 5MB)</p>
+                        </>
+                      )}
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cover Letter (Optional)</label>
+                  <textarea
+                    rows={4}
+                    value={formData.coverLetter}
+                    onChange={(e) => setFormData({ ...formData, coverLetter: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-violet-500 outline-none transition-colors resize-none"
+                    placeholder="Tell us why you're excited about this role..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="pt-4 border-t border-gray-100">
+              <Button
+                type="submit"
+                disabled={isSubmitting || !resume}
+                className="w-full h-14 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold text-lg rounded-xl shadow-lg shadow-violet-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Submitting...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    Submit Application
+                    <ArrowRight className="w-5 h-5" />
+                  </span>
+                )}
+              </Button>
+              <p className="text-xs text-gray-500 text-center mt-3">
+                By submitting, you agree to our privacy policy and consent to us processing your data.
+              </p>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function CareersPage() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [selectedDepartment, setSelectedDepartment] = useState('all')
+  const [applicationModal, setApplicationModal] = useState<{ isOpen: boolean; job: { title: string; department: string; location: string; salary: string } | null }>({
+    isOpen: false,
+    job: null
+  })
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  const openApplicationModal = (job: { title: string; department: string; location: string; salary: string }) => {
+    setApplicationModal({ isOpen: true, job })
+  }
+
+  const closeApplicationModal = () => {
+    setApplicationModal({ isOpen: false, job: null })
+  }
 
   const perks = [
     { icon: IndianRupee, title: 'Competitive Salary', desc: 'Top-of-market pay + equity options', color: 'from-emerald-500 to-teal-500' },
@@ -475,7 +907,7 @@ export default function CareersPage() {
                   <span className="text-red-400">✗</span> Politics & hierarchy
                 </li>
                 <li className="flex items-center gap-3">
-                  <span className="text-red-400">✗</span> "We&apos;ll review in Q3"
+                  <span className="text-red-400">✗</span> &quot;We&apos;ll review in Q3&quot;
                 </li>
                 <li className="flex items-center gap-3">
                   <span className="text-red-400">✗</span> Burnout culture
@@ -715,7 +1147,10 @@ export default function CareersPage() {
                       </span>
                     </div>
                   </div>
-                  <Button className="bg-violet-600 hover:bg-violet-700 text-white rounded-xl px-6 font-semibold shadow-lg shrink-0">
+                  <Button 
+                    onClick={() => openApplicationModal({ title: job.title, department: job.department, location: job.location, salary: job.salary })}
+                    className="bg-violet-600 hover:bg-violet-700 text-white rounded-xl px-6 font-semibold shadow-lg shrink-0"
+                  >
                     Apply Now
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
@@ -879,6 +1314,13 @@ export default function CareersPage() {
           </div>
         </div>
       </footer>
+
+      {/* Application Modal */}
+      <JobApplicationModal 
+        isOpen={applicationModal.isOpen}
+        onClose={closeApplicationModal}
+        job={applicationModal.job}
+      />
     </div>
   )
 }
