@@ -235,26 +235,49 @@ export async function POST(request: NextRequest) {
     console.log(`📢 Found ${relevantHelpers?.length || 0} approved helpers total`)
     console.log(`📢 Looking for category: ${finalCategoryName} (ID: ${finalCategoryId})`)
     
+    // Get the category slug for matching helpers who stored slugs instead of UUIDs
+    const { data: categoryInfo } = await supabase
+      .from('service_categories')
+      .select('id, name, slug, parent_id')
+      .eq('id', finalCategoryId)
+      .single()
+    
+    const categorySlug = categoryInfo?.slug || ''
+    const categoryParentId = categoryInfo?.parent_id || null
+    
+    console.log(`📢 Category slug: ${categorySlug}, parent: ${categoryParentId}`)
+    
     // Log each helper's categories for debugging
     relevantHelpers?.forEach(h => {
       console.log(`   Helper ${h.id}: categories count = ${h.service_categories?.length || 0}`)
     })
 
     // Filter helpers who:
-    // 1. Have this category UUID in their service_categories array
-    // 2. Are within their service radius from the job location
-    // 3. Are currently online and not on another job (optional)
+    // 1. Have this category (by UUID OR slug) in their service_categories array
+    // 2. Are within reasonable distance (using helper's radius OR a max default)
+    // 3. Helpers without location are included (they might be nearby)
     let filteredHelpers = relevantHelpers?.filter(helper => {
-      // Check category match by UUID (service_categories contains UUIDs)
+      // Check category match by UUID or slug
       const categories = helper.service_categories || []
       
-      // Match by UUID - the category ID we have
-      const categoryMatch = categories.length === 0 || categories.some((catId: string) => 
-        catId === finalCategoryId
-      )
+      // If helper has NO categories defined, include them (they accept all work)
+      // If helper HAS categories, check if our category matches by UUID or slug
+      const categoryMatch = categories.length === 0 || categories.some((cat: string) => {
+        // Match by exact UUID
+        if (cat === finalCategoryId) return true
+        // Match by parent UUID (if category is a subcategory)
+        if (categoryParentId && cat === categoryParentId) return true
+        // Match by slug (some helpers have slug-based categories)
+        if (categorySlug && cat.toLowerCase() === categorySlug.toLowerCase()) return true
+        // Match by partial slug (e.g., "electrical" matches "electrical-work")
+        if (categorySlug && cat.toLowerCase().includes(categorySlug.split('-')[0].toLowerCase())) return true
+        // Match by name similarity
+        if (finalCategoryName && cat.toLowerCase().includes(finalCategoryName.toLowerCase().split(' ')[0])) return true
+        return false
+      })
       
       if (!categoryMatch) {
-        console.log(`❌ Helper ${helper.id} excluded: category UUID mismatch. Looking for: ${finalCategoryId}`)
+        console.log(`❌ Helper ${helper.id} excluded: category mismatch. Has: ${categories.slice(0,3).join(', ')}...`)
         return false
       }
 
@@ -275,12 +298,14 @@ export async function POST(request: NextRequest) {
         
         // Attach distance for later use
         ;(helper as any).distance_km = distance
+        console.log(`✅ Helper ${helper.id} included: ${distance.toFixed(1)}km within ${helperRadius}km radius`)
       } else {
-        // If no location set, default distance
+        // If helper has no location set, include them with distance 0
+        // They might be nearby and can update their location later
         ;(helper as any).distance_km = 0
+        console.log(`✅ Helper ${helper.id} included: no location set (will be notified anyway)`)
       }
 
-      console.log(`✅ Helper ${helper.id} included for ${finalCategoryName}`)
       return true
     }) || []
 

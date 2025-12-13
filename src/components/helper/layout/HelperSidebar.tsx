@@ -63,12 +63,14 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
       href: '/helper/dashboard',
       requiresVerification: false
     },
+    /* === HIDDEN - BROWSE JOBS ===
     {
       label: 'Browse Jobs',
       icon: Search,
       href: '/helper/requests',
       requiresVerification: true
     },
+    === END HIDDEN === */
     {
       label: 'My Jobs',
       icon: Briefcase,
@@ -87,23 +89,10 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
       href: '/helper/ratings',
       requiresVerification: true
     },
-    /* === HIDDEN - SIMPLIFIED SIDEBAR ===
-    {
-      label: 'My Bids',
-      icon: DollarSign,
-      href: '/helper/bids',
-      requiresVerification: true
-    },
     {
       label: 'Achievements',
       icon: Award,
       href: '/helper/gamification',
-      requiresVerification: true
-    },
-    {
-      label: 'Trust Score',
-      icon: Users,
-      href: '/helper/trust-score',
       requiresVerification: true
     },
     {
@@ -112,7 +101,6 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
       href: '/helper/referrals',
       requiresVerification: false
     },
-    === END HIDDEN SIMPLIFIED === */
     /* === HIDDEN - TIME TRACKING ===
     {
       label: 'Time Tracking',

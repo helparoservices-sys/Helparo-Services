@@ -11,7 +11,7 @@ import { logger } from '@/lib/logger'
 
 /**
  * GET HELPER REVIEWS
- * Fetch all reviews for the authenticated helper
+ * Fetch all reviews/ratings for the authenticated helper from job_ratings table
  */
 export async function getHelperReviews() {
   try {
@@ -30,47 +30,63 @@ export async function getHelperReviews() {
       return { error: 'Helper profile not found' }
     }
 
-    // Get reviews with service request and customer details
-    const { data: reviews, error } = await supabase
-      .from('reviews')
+    // Get ratings from job_ratings table (where customers submit ratings)
+    const { data: ratings, error } = await supabase
+      .from('job_ratings')
       .select(`
         id,
         rating,
-        comment,
+        review,
+        punctuality_rating,
+        quality_rating,
+        behaviour_rating,
+        would_recommend,
+        tip_amount,
         created_at,
-        service_requests!inner(id, title),
-        profiles!reviews_customer_id_fkey(full_name, email),
-        review_responses(response_text, created_at)
+        request_id,
+        service_requests!inner(id, title, category_id),
+        profiles!job_ratings_customer_id_fkey(full_name, email, avatar_url)
       `)
       .eq('helper_id', helperProfile.id)
-      .eq('is_visible', true)
       .order('created_at', { ascending: false })
 
     if (error) {
-      logger.error('Failed to fetch helper reviews', { error })
-      return { error: 'Failed to load reviews' }
+      logger.error('Failed to fetch helper ratings', { error })
+      return { error: 'Failed to load ratings' }
     }
 
-    type ReviewWithRelations = {
+    type RatingWithRelations = {
       id: string
       rating: number
-      comment: string | null
+      review: string | null
+      punctuality_rating: number | null
+      quality_rating: number | null
+      behaviour_rating: number | null
+      would_recommend: boolean | null
+      tip_amount: number | null
       created_at: string
-      service_requests: Array<{ id: string; title: string | null }>
-      profiles: Array<{ full_name: string | null; email: string }>
-      review_responses: Array<{ response_text: string; created_at: string }>
+      request_id: string
+      service_requests: { id: string; title: string | null; category_id: string | null }
+      profiles: { full_name: string | null; email: string; avatar_url: string | null }
     }
 
     // Transform data for frontend
-    const transformedReviews = (reviews as unknown as ReviewWithRelations[])?.map(r => ({
+    const transformedReviews = (ratings as unknown as RatingWithRelations[])?.map(r => ({
       id: r.id,
       rating: r.rating,
-      comment: r.comment,
+      comment: r.review,
+      punctuality_rating: r.punctuality_rating,
+      quality_rating: r.quality_rating,
+      behaviour_rating: r.behaviour_rating,
+      would_recommend: r.would_recommend,
+      tip_amount: r.tip_amount,
       created_at: r.created_at,
-      customer_name: r.profiles?.[0]?.full_name || 'Anonymous',
-      customer_email: r.profiles?.[0]?.email || '',
-      service_title: r.service_requests?.[0]?.title || 'Service',
-      response: r.review_responses?.[0] || null,
+      customer_name: r.profiles?.full_name || 'Anonymous',
+      customer_email: r.profiles?.email || '',
+      customer_avatar: r.profiles?.avatar_url || null,
+      service_title: r.service_requests?.title || 'Service',
+      request_id: r.request_id,
+      response: null, // Job ratings don't have responses yet
     })) || []
 
     return { data: { reviews: transformedReviews } }

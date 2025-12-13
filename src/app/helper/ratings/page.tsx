@@ -4,23 +4,29 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner, SkeletonCard } from '@/components/ui/loading'
-import { getHelperReviews } from '@/app/actions/reviews'
-import { respondToReview } from '@/app/actions/review-responses'
-import { Star, TrendingUp, TrendingDown, MessageSquare, Send, Filter, Search } from 'lucide-react'
+import { getHelperReviews } from '@/app/actions/review-responses'
+import { Star, TrendingUp, TrendingDown, MessageSquare, Send, Filter, Search, ThumbsUp, Clock, Award } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Review {
   id: string
   rating: number
   comment: string | null
+  punctuality_rating: number | null
+  quality_rating: number | null
+  behaviour_rating: number | null
+  would_recommend: boolean | null
+  tip_amount: number | null
   created_at: string
   customer_name: string
   customer_email: string
+  customer_avatar: string | null
   service_title: string
+  request_id: string
   response?: {
     response_text: string
     created_at: string
-  }
+  } | null
 }
 
 export default function HelperRatingsPage() {
@@ -30,9 +36,6 @@ export default function HelperRatingsPage() {
   const [error, setError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [filterRating, setFilterRating] = useState<number | null>(null)
-  const [respondingTo, setRespondingTo] = useState<string | null>(null)
-  const [responseText, setResponseText] = useState('')
-  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -80,28 +83,6 @@ export default function HelperRatingsPage() {
     setFilteredReviews(filtered)
   }
 
-  const handleRespondToReview = async (reviewId: string) => {
-    if (!responseText.trim()) {
-      toast.error('Please enter a response')
-      return
-    }
-
-    setSubmitting(true)
-
-    const result = await respondToReview(reviewId, responseText.trim())
-
-    if ('error' in result && result.error) {
-      toast.error(result.error)
-    } else {
-      toast.success('Response submitted successfully')
-      setResponseText('')
-      setRespondingTo(null)
-      loadData()
-    }
-
-    setSubmitting(false)
-  }
-
   const calculateStats = () => {
     if (reviews.length === 0) {
       return {
@@ -115,7 +96,11 @@ export default function HelperRatingsPage() {
         positive: 0,
         neutral: 0,
         negative: 0,
-        responseRate: 0,
+        recommendRate: 0,
+        avgPunctuality: 0,
+        avgQuality: 0,
+        avgBehaviour: 0,
+        totalTips: 0
       }
     }
 
@@ -133,8 +118,25 @@ export default function HelperRatingsPage() {
     const neutral = threeStar
     const negative = twoStar + oneStar
 
-    const withResponses = reviews.filter(r => r.response).length
-    const responseRate = Math.round((withResponses / total) * 100)
+    const wouldRecommendCount = reviews.filter(r => r.would_recommend === true).length
+    const recommendRate = Math.round((wouldRecommendCount / total) * 100)
+
+    // Calculate average sub-ratings
+    const punctualityRatings = reviews.filter(r => r.punctuality_rating).map(r => r.punctuality_rating!)
+    const qualityRatings = reviews.filter(r => r.quality_rating).map(r => r.quality_rating!)
+    const behaviourRatings = reviews.filter(r => r.behaviour_rating).map(r => r.behaviour_rating!)
+
+    const avgPunctuality = punctualityRatings.length > 0 
+      ? punctualityRatings.reduce((a, b) => a + b, 0) / punctualityRatings.length 
+      : 0
+    const avgQuality = qualityRatings.length > 0 
+      ? qualityRatings.reduce((a, b) => a + b, 0) / qualityRatings.length 
+      : 0
+    const avgBehaviour = behaviourRatings.length > 0 
+      ? behaviourRatings.reduce((a, b) => a + b, 0) / behaviourRatings.length 
+      : 0
+
+    const totalTips = reviews.reduce((acc, r) => acc + (r.tip_amount || 0), 0)
 
     return {
       total,
@@ -147,7 +149,11 @@ export default function HelperRatingsPage() {
       positive,
       neutral,
       negative,
-      responseRate,
+      recommendRate,
+      avgPunctuality,
+      avgQuality,
+      avgBehaviour,
+      totalTips
     }
   }
 
@@ -267,15 +273,17 @@ export default function HelperRatingsPage() {
                       <p className="text-xs text-gray-600 mt-1">Positive</p>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-yellow-600">{stats.neutral}</div>
-                      <p className="text-xs text-gray-600 mt-1">Neutral</p>
+                      <div className="flex items-center justify-center gap-1 text-2xl font-bold text-blue-600">
+                        <ThumbsUp className="h-5 w-5" />
+                        {stats.recommendRate}%
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">Recommend</p>
                     </div>
                     <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 text-2xl font-bold text-red-600">
-                        <TrendingDown className="h-5 w-5" />
-                        {stats.negative}
+                      <div className="flex items-center justify-center gap-1 text-2xl font-bold text-emerald-600">
+                        ₹{stats.totalTips}
                       </div>
-                      <p className="text-xs text-gray-600 mt-1">Negative</p>
+                      <p className="text-xs text-gray-600 mt-1">Total Tips</p>
                     </div>
                   </div>
                 </CardContent>
@@ -336,25 +344,43 @@ export default function HelperRatingsPage() {
                         <div className="flex items-start justify-between gap-4 mb-3">
                           <div className="flex-1">
                             <div className="flex items-center gap-3">
-                              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-medium">
-                                {review.customer_name.charAt(0).toUpperCase()}
-                              </div>
+                              {review.customer_avatar ? (
+                                <img 
+                                  src={review.customer_avatar} 
+                                  alt={review.customer_name}
+                                  className="h-10 w-10 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-medium">
+                                  {review.customer_name.charAt(0).toUpperCase()}
+                                </div>
+                              )}
                               <div>
                                 <p className="font-medium text-gray-900">{review.customer_name}</p>
-                                <p className="text-xs text-gray-500">{review.customer_email}</p>
+                                <span className="text-xs text-gray-500">
+                                  {new Date(review.created_at).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  })}
+                                </span>
                               </div>
                             </div>
                             <div className="flex items-center gap-3 mt-2">
                               <div className="flex gap-1">{renderStars(review.rating)}</div>
-                              <span className="text-xs text-gray-500">
-                                {new Date(review.created_at).toLocaleDateString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric',
-                                })}
-                              </span>
+                              {review.would_recommend && (
+                                <span className="inline-flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                                  <ThumbsUp className="h-3 w-3" /> Recommends
+                                </span>
+                              )}
                             </div>
                           </div>
+                          {review.tip_amount && review.tip_amount > 0 && (
+                            <div className="bg-green-50 px-3 py-1 rounded-lg">
+                              <p className="text-xs text-green-600">Tip</p>
+                              <p className="text-sm font-bold text-green-700">₹{review.tip_amount}</p>
+                            </div>
+                          )}
                         </div>
 
                         <div className="bg-gray-50 rounded-lg p-3 mb-3">
@@ -363,66 +389,32 @@ export default function HelperRatingsPage() {
                           </p>
                         </div>
 
-                        {review.comment && (
-                          <p className="text-gray-700 leading-relaxed">{review.comment}</p>
-                        )}
-
-                        {/* Helper Response */}
-                        {review.response ? (
-                          <div className="mt-4 ml-6 pl-4 border-l-2 border-blue-300 bg-blue-50 rounded-r-lg p-4">
-                            <div className="flex items-center gap-2 mb-2">
-                              <MessageSquare className="h-4 w-4 text-blue-600" />
-                              <span className="text-sm font-medium text-blue-900">Your Response</span>
-                              <span className="text-xs text-blue-600">
-                                {new Date(review.response.created_at).toLocaleDateString()}
-                              </span>
-                            </div>
-                            <p className="text-sm text-blue-900">{review.response.response_text}</p>
-                          </div>
-                        ) : (
-                          <div className="mt-4">
-                            {respondingTo === review.id ? (
-                              <div className="space-y-3">
-                                <textarea
-                                  value={responseText}
-                                  onChange={e => setResponseText(e.target.value)}
-                                  placeholder="Write your response..."
-                                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                                  rows={3}
-                                />
-                                <div className="flex gap-2">
-                                  <Button
-                                    onClick={() => handleRespondToReview(review.id)}
-                                    disabled={submitting || !responseText.trim()}
-                                    className="gap-2"
-                                  >
-                                    <Send className="h-4 w-4" />
-                                    {submitting ? 'Submitting...' : 'Send Response'}
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    onClick={() => {
-                                      setRespondingTo(null)
-                                      setResponseText('')
-                                    }}
-                                    disabled={submitting}
-                                  >
-                                    Cancel
-                                  </Button>
-                                </div>
+                        {/* Sub-ratings */}
+                        {(review.punctuality_rating || review.quality_rating || review.behaviour_rating) && (
+                          <div className="flex flex-wrap gap-3 mb-3">
+                            {review.punctuality_rating && (
+                              <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                                <Clock className="h-3 w-3" />
+                                Punctuality: {review.punctuality_rating}/5
                               </div>
-                            ) : (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setRespondingTo(review.id)}
-                                className="gap-2"
-                              >
-                                <MessageSquare className="h-4 w-4" />
-                                Respond
-                              </Button>
+                            )}
+                            {review.quality_rating && (
+                              <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                                <Award className="h-3 w-3" />
+                                Quality: {review.quality_rating}/5
+                              </div>
+                            )}
+                            {review.behaviour_rating && (
+                              <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                                <ThumbsUp className="h-3 w-3" />
+                                Behaviour: {review.behaviour_rating}/5
+                              </div>
                             )}
                           </div>
+                        )}
+
+                        {review.comment && (
+                          <p className="text-gray-700 leading-relaxed">{review.comment}</p>
                         )}
                       </div>
                     ))}
