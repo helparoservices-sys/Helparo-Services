@@ -27,6 +27,9 @@ export default function Breadcrumb() {
   pathSegments.forEach((segment, index) => {
     if (segment === 'admin' || segment === 'helper' || segment === 'customer') return // Skip role segment
     
+    // Skip 'dashboard' since it's already in Home breadcrumb
+    if (segment === 'dashboard') return
+    
     currentPath += `/${segment}`
     const label = segment
       .split('-')
@@ -46,7 +49,7 @@ export default function Breadcrumb() {
         const Icon = item.icon
 
         return (
-          <div key={item.href} className="flex items-center gap-2">
+          <div key={`${item.href}-${index}`} className="flex items-center gap-2">
             {index > 0 && (
               <ChevronRight className="h-4 w-4 text-slate-400" />
             )}

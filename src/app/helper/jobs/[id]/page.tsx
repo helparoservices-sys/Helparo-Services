@@ -19,7 +19,6 @@ import {
   XCircle,
   AlertCircle,
   Loader2,
-  Play,
   Flag,
   Shield,
   Camera,
@@ -28,9 +27,20 @@ import {
   CreditCard,
   Star as StarIcon,
   PartyPopper,
-  Wallet
+  Wallet,
+  Video,
+  Play as PlayIcon
 } from 'lucide-react'
 import { toast } from 'sonner'
+
+interface ServiceTypeDetails {
+  videos?: string[]
+  ai_analysis?: string
+  pricing_tier?: string
+  problem_duration?: string
+  error_code?: string
+  preferred_time?: string
+}
 
 interface JobDetails {
   id: string
@@ -47,6 +57,8 @@ interface JobDetails {
   service_location_lat: number
   service_location_lng: number
   images: string[]
+  videos?: string[] // Direct videos array
+  service_type_details?: ServiceTypeDetails // Contains videos and other details
   created_at: string
   helper_accepted_at: string | null
   work_started_at: string | null
@@ -247,6 +259,8 @@ export default function HelperJobPage() {
   const requestId = params.id as string
   
   const [job, setJob] = useState<JobDetails | null>(null)
+  const [videoSrcs, setVideoSrcs] = useState<string[]>([])
+  const videoSrcsRef = useRef<string[]>([])
   const [loading, setLoading] = useState(true)
   const [startOtpInput, setStartOtpInput] = useState('')
   const [endOtpInput, setEndOtpInput] = useState('')
@@ -279,6 +293,10 @@ export default function HelperJobPage() {
       
       const data = await response.json()
       
+      // Extract videos from service_type_details
+      const serviceDetails = data.service_type_details || {}
+      const videos = serviceDetails.videos || data.videos || []
+      
       // Transform to match expected format
       const transformedData: JobDetails = {
         id: data.id,
@@ -295,6 +313,8 @@ export default function HelperJobPage() {
         service_location_lat: data.service_location_lat || data.latitude || 0,
         service_location_lng: data.service_location_lng || data.longitude || 0,
         images: data.images || [],
+        videos: videos,
+        service_type_details: serviceDetails,
         created_at: data.created_at,
         helper_accepted_at: data.helper_accepted_at || null,
         work_started_at: data.work_started_at || null,
@@ -303,8 +323,36 @@ export default function HelperJobPage() {
         category: data.category || undefined
       }
 
-      console.log('✅ Job loaded with OTPs:', { start_otp: transformedData.start_otp, end_otp: transformedData.end_otp })
+      console.log('✅ Job loaded with OTPs:', { start_otp: transformedData.start_otp, end_otp: transformedData.end_otp, videos: videos.length })
       setJob(transformedData)
+      // Convert any base64/data: URLs to blob object URLs for better browser compatibility
+      try {
+        const rawVideos = videos || []
+        const createUrls = await Promise.all(rawVideos.map(async (v: string) => {
+          try {
+            // If already an object URL or http(s), leave as-is
+            if (v.startsWith('blob:') || v.startsWith('http')) return v
+            const res = await fetch(v)
+            const blob = await res.blob()
+            return URL.createObjectURL(blob)
+          } catch (err) {
+            console.error('Failed to convert video to blob URL', err)
+            return v
+          }
+        }))
+        setVideoSrcs(createUrls)
+        videoSrcsRef.current = createUrls
+      } catch (err) {
+        console.error('Error preparing video URLs', err)
+      }
+
+      // cleanup previous blob URLs when loading new job
+      if (videoSrcsRef.current && videoSrcsRef.current.length > 0) {
+        videoSrcsRef.current.forEach(url => {
+          try { URL.revokeObjectURL(url) } catch { /* ignore */ }
+        })
+      }
+      videoSrcsRef.current = []
     } catch (error) {
       console.error('Failed to load job:', error)
       toast.error('Failed to load job details')
@@ -682,7 +730,7 @@ export default function HelperJobPage() {
                 <div className="flex gap-2 overflow-x-auto pb-2">
                   {job.images.map((img, idx) => (
                     <img 
-                      key={idx}
+                      key={`img-${idx}`}
                       src={img}
                       alt={`Problem ${idx + 1}`}
                       className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
@@ -691,6 +739,44 @@ export default function HelperJobPage() {
                 </div>
               </div>
             )}
+
+            {/* Job Videos */}
+            {(job.videos && job.videos.length > 0) || (job.service_type_details?.videos && job.service_type_details.videos.length > 0) ? (
+              <div className="mb-4">
+                <p className="text-sm text-gray-500 mb-2">Problem Videos</p>
+                <div className="space-y-3">
+                  {(videoSrcs.length > 0 ? videoSrcs : (job.videos || job.service_type_details?.videos || [])).map((video, idx) => (
+                    <div key={`video-${idx}`} className="relative rounded-lg overflow-hidden bg-black">
+                      <video
+                        src={video}
+                        controls
+                        className="w-full h-36 object-contain bg-black"
+                        preload="metadata"
+                        playsInline
+                        onError={(e) => {
+                          console.error('Video playback error for job:', job.id, { idx, src: video, e })
+                          // show small inline hint to download
+                        }}
+                      />
+                      <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <PlayIcon className="h-3 w-3" />
+                        <span>Video {idx + 1}</span>
+                      </div>
+                      <div className="absolute bottom-2 right-2">
+                        <a
+                          href={video}
+                          download={`job-${job.id}-video-${idx + 1}.mp4`}
+                          className="text-xs bg-white/20 text-white px-2 py-1 rounded"
+                        >
+                          Download
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">🔊 Customer explains the problem in the video — if playback fails, please download and play locally</p>
+              </div>
+            ) : null}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-emerald-50 rounded-xl p-4 text-center">
@@ -716,7 +802,7 @@ export default function HelperJobPage() {
             <CardContent className="p-5">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                  <Play className="h-5 w-5 text-emerald-600" />
+                  <PlayIcon className="h-5 w-5 text-emerald-600" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">Start Work</h3>
@@ -854,3 +940,15 @@ export default function HelperJobPage() {
     </div>
   )
 }
+
+  // when videoSrcs change, track them for cleanup
+  useEffect(() => {
+    // revoke previous stored urls when component unmounts
+    return () => {
+      if (videoSrcsRef.current && videoSrcsRef.current.length > 0) {
+        videoSrcsRef.current.forEach(u => {
+          try { URL.revokeObjectURL(u) } catch { }
+        })
+      }
+    }
+  }, [])

@@ -47,6 +47,8 @@ export async function GET(
         work_started_at,
         work_completed_at,
         assigned_helper_id,
+        images,
+        service_type_details,
         category:category_id (name, icon)
       `)
       .eq('id', requestId)

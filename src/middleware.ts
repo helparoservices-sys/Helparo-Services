@@ -52,6 +52,7 @@ export async function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "img-src 'self' data: https: blob: https://*.googleapis.com https://*.gstatic.com https://*.cashfree.com; " +
     "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com; " +
+    "media-src 'self' data: blob: https:; " +
     "connect-src 'self' https://opnjibjsddwyojrerbll.supabase.co wss://opnjibjsddwyojrerbll.supabase.co https://vercel.live wss://*.vercel.live https://*.googleapis.com https://*.gstatic.com https://www.google.com https://api.cashfree.com https://sandbox.cashfree.com https://*.cashfree.com; " +
     "frame-src 'self' https://www.google.com https://maps.google.com https://*.cashfree.com; " +
     "frame-ancestors 'self';"

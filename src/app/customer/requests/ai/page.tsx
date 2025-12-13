@@ -30,21 +30,29 @@ import {
   Upload,
   FileCheck,
   PartyPopper,
-  Phone
+  Phone,
+  Wrench,
+  Package,
+  User,
+  ClipboardList,
+  Timer
 } from 'lucide-react'
 
-// Animated counter component
-function AnimatedCounter({ end, duration = 1000, prefix = '', suffix = '' }: { end: number; duration?: number; prefix?: string; suffix?: string }) {
-  const [count, setCount] = useState(0)
+// Animated counter component - counts DOWN from high to target
+function AnimatedCounter({ end, duration = 1500, prefix = '', suffix = '' }: { end: number; duration?: number; prefix?: string; suffix?: string }) {
+  const [count, setCount] = useState(end * 1.5) // Start higher
   
   useEffect(() => {
     let startTime: number
     let animationFrame: number
+    const startValue = end * 1.5 // Start 50% higher
     
     const animate = (timestamp: number) => {
       if (!startTime) startTime = timestamp
       const progress = Math.min((timestamp - startTime) / duration, 1)
-      setCount(Math.floor(progress * end))
+      // Ease out - starts fast, slows down at end
+      const easeOut = 1 - Math.pow(1 - progress, 3)
+      setCount(Math.round(startValue - (startValue - end) * easeOut))
       
       if (progress < 1) {
         animationFrame = requestAnimationFrame(animate)
@@ -56,6 +64,122 @@ function AnimatedCounter({ end, duration = 1000, prefix = '', suffix = '' }: { e
   }, [end, duration])
   
   return <>{prefix}{count.toLocaleString()}{suffix}</>
+}
+
+// Category details for helper information
+const getCategoryDetails = (categoryId: string, _description: string) => {
+  
+  const categoryInfo: Record<string, {
+    basePrice: number;
+    duration: number;
+    materials: string[];
+    helperBrings: string[];
+    customerProvides: string[];
+    workOverview: string;
+    description: string;
+  }> = {
+    'cleaning': {
+      basePrice: 500,
+      duration: 60,
+      materials: ['Cleaning solutions', 'Mops & brooms', 'Dusters', 'Garbage bags'],
+      helperBrings: ['Professional cleaning equipment', 'Eco-friendly cleaning solutions', 'Microfiber cloths', 'Vacuum cleaner'],
+      customerProvides: ['Access to water supply', 'Electricity for equipment', 'Point out specific areas to clean'],
+      workOverview: 'Helper will arrive with all necessary cleaning supplies. They will systematically clean all specified areas, dust surfaces, mop floors, and sanitize bathrooms/kitchen. Deep cleaning takes 2-3 hours for standard home.',
+      description: 'Professional home cleaning service',
+    },
+    'plumbing': {
+      basePrice: 400,
+      duration: 45,
+      materials: ['Pipe fittings', 'Sealant tape', 'Washers', 'Basic plumbing tools'],
+      helperBrings: ['Plumbing toolkit', 'Pipe wrenches', 'Plunger', 'Drain snake', 'Common spare parts'],
+      customerProvides: ['Access to water main shutoff', 'Clear area around problem', 'Describe issue history'],
+      workOverview: 'Plumber will inspect the issue, diagnose the problem, and fix leaks, blockages, or damaged pipes. For major repairs, they may need to visit a hardware store for specific parts.',
+      description: 'Expert plumbing repair and installation',
+    },
+    'electrical': {
+      basePrice: 350,
+      duration: 45,
+      materials: ['Wires', 'Switches', 'Sockets', 'Electrical tape', 'MCBs'],
+      helperBrings: ['Electrical toolkit', 'Multimeter', 'Wire strippers', 'Common switches & sockets', 'Safety gear'],
+      customerProvides: ['Access to main switchboard', 'Turn off relevant MCB if needed', 'Keep children/pets away'],
+      workOverview: 'Electrician will safely inspect electrical issues, check wiring, replace faulty switches/sockets, fix short circuits. Safety is priority - they will ensure all work meets standards.',
+      description: 'Safe electrical repairs and installations',
+    },
+    'ac-repair': {
+      basePrice: 500,
+      duration: 60,
+      materials: ['Refrigerant gas', 'Filters', 'Capacitors', 'Cleaning chemicals'],
+      helperBrings: ['AC servicing kit', 'Gas pressure gauge', 'Cleaning equipment', 'Common spare parts', 'Ladder'],
+      customerProvides: ['Clear space around AC unit', 'AC remote', 'Information about AC model & issue'],
+      workOverview: 'Technician will inspect your AC, clean filters and coils, check gas pressure, test cooling efficiency. If parts need replacement, they will inform you of additional costs first.',
+      description: 'AC repair, servicing and gas refilling',
+    },
+    'automotive': {
+      basePrice: 600,
+      duration: 60,
+      materials: ['Engine oil', 'Filters', 'Brake fluid', 'Basic auto parts'],
+      helperBrings: ['Automotive toolkit', 'Jack & stands', 'Diagnostic scanner', 'Common fluids & filters'],
+      customerProvides: ['Vehicle documents', 'Keys', 'Describe symptoms clearly', 'Park in accessible location'],
+      workOverview: 'Mechanic will diagnose vehicle issues, check engine, brakes, and electrical systems. Basic repairs done on-spot, major repairs may require workshop visit.',
+      description: 'Vehicle repair and maintenance',
+    },
+    'tech': {
+      basePrice: 400,
+      duration: 45,
+      materials: ['Cables', 'Thermal paste', 'Cleaning supplies'],
+      helperBrings: ['Laptop toolkit', 'USB drives with software', 'Ethernet cables', 'Cleaning kit'],
+      customerProvides: ['Device passwords if needed', 'Backup important data', 'List of issues/requirements'],
+      workOverview: 'Tech expert will troubleshoot your device, remove viruses, optimize performance, setup software/wifi, and fix hardware issues if possible.',
+      description: 'Computer and device technical support',
+    },
+    'carpentry': {
+      basePrice: 600,
+      duration: 90,
+      materials: ['Wood pieces', 'Nails & screws', 'Wood glue', 'Polish/paint'],
+      helperBrings: ['Carpentry tools', 'Measuring tape', 'Saw', 'Drill', 'Sandpaper', 'Wood samples'],
+      customerProvides: ['Clear work area', 'Explain exact requirements', 'Reference images if any'],
+      workOverview: 'Carpenter will assess the work, measure dimensions, repair/build furniture, fix doors/windows, and finish with polish or paint as needed.',
+      description: 'Wood work, furniture repair and installation',
+    },
+    'painting': {
+      basePrice: 800,
+      duration: 120,
+      materials: ['Paint', 'Primer', 'Brushes', 'Rollers', 'Masking tape', 'Drop cloths'],
+      helperBrings: ['Painting equipment', 'Color samples', 'Ladders', 'Surface preparation tools'],
+      customerProvides: ['Move furniture away from walls', 'Choose paint colors', 'Cover items you want protected'],
+      workOverview: 'Painter will prep surfaces, fill cracks, apply primer, then 2 coats of paint. Includes cleanup. Large areas may need multiple visits.',
+      description: 'Interior and exterior painting',
+    },
+    'appliance': {
+      basePrice: 450,
+      duration: 60,
+      materials: ['Common spare parts', 'Fuses', 'Belts', 'Motors'],
+      helperBrings: ['Appliance repair toolkit', 'Multimeter', 'Common replacement parts', 'Cleaning supplies'],
+      customerProvides: ['Model number of appliance', 'Warranty documents if available', 'Describe when issue started'],
+      workOverview: 'Technician will diagnose appliance issue, repair or replace faulty components. For warranty items, may guide you to authorized service.',
+      description: 'Repair of washing machines, refrigerators, etc.',
+    },
+    'pest-control': {
+      basePrice: 700,
+      duration: 60,
+      materials: ['Pest control chemicals', 'Sprayers', 'Gel baits', 'Traps'],
+      helperBrings: ['Professional pest control equipment', 'EPA-approved chemicals', 'Safety gear', 'Bait stations'],
+      customerProvides: ['Clear kitchen cabinets', 'Cover food items', 'Keep pets away for 2-3 hours', 'Point out problem areas'],
+      workOverview: 'Expert will inspect for pest entry points, apply targeted treatment, set up bait stations. May need follow-up visit in 15 days for complete elimination.',
+      description: 'Cockroach, ant, rat, and general pest control',
+    },
+    'other': {
+      basePrice: 400,
+      duration: 60,
+      materials: ['Will be assessed based on job'],
+      helperBrings: ['Basic toolkit', 'Will bring specific items based on job requirement'],
+      customerProvides: ['Clear description of work needed', 'Access to work area', 'Any specific materials you have'],
+      workOverview: 'Helper will assess your requirement on arrival and provide the best solution. Final price will be confirmed after inspection.',
+      description: 'General home services and repairs',
+    },
+  }
+  
+  return categoryInfo[categoryId] || categoryInfo['other']
 }
 
 const categories = [
@@ -125,6 +249,14 @@ export default function AIRequestPage() {
     categoryName: string;
     estimatedPrice: number;
     confidence: number;
+    estimatedDuration?: number;
+    severity?: string;
+    materialsNeeded?: string[];
+    requiredSkills?: string[];
+    description?: string;
+    helperBrings?: string[];
+    customerProvides?: string[];
+    workOverview?: string;
   } | null>(null)
 
   const handleAddressSelect = (addressData: { 
@@ -306,40 +438,62 @@ export default function AIRequestPage() {
 
     setAnalyzing(true)
     try {
-      const response = await fetch('/api/ai/analyze-request', {
+      const categoryName = categories.find(c => c.id === formData.category)?.name || 'General'
+      
+      const response = await fetch('/api/ai/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           description: formData.description,
-          category: formData.category,
+          categoryId: formData.category,
+          categoryName: categoryName,
           images: images,
-          errorCode: formData.errorCode,
-          howLong: formData.howLong,
-          urgency: formData.urgency,
+          location: formData.location,
         })
       })
 
       if (!response.ok) {
-        const category = detectCategory(formData.description)
-        setAiResult({
-          category: formData.category || category.id,
-          categoryName: categories.find(c => c.id === formData.category)?.name || category.name,
-          estimatedPrice: category.basePrice,
-          confidence: 85,
-        })
-      } else {
-        const data = await response.json()
-        setAiResult(data)
+        throw new Error('API failed')
       }
+      
+      const data = await response.json()
+      const analysis = data.analysis || data
+      
+      // Get detailed info based on category
+      const categoryDetails = getCategoryDetails(formData.category, formData.description)
+      
+      setAiResult({
+        category: formData.category,
+        categoryName: categoryName,
+        estimatedPrice: analysis.estimatedPrice || categoryDetails.basePrice,
+        confidence: analysis.confidence || 85,
+        estimatedDuration: analysis.estimatedDuration || categoryDetails.duration,
+        severity: analysis.severity || 'medium',
+        materialsNeeded: analysis.materialsNeeded || categoryDetails.materials,
+        requiredSkills: analysis.requiredSkills || [categoryName],
+        description: analysis.description || categoryDetails.description,
+        helperBrings: categoryDetails.helperBrings,
+        customerProvides: categoryDetails.customerProvides,
+        workOverview: categoryDetails.workOverview,
+      })
       
       setStep(2) // Move to review step
     } catch (err) {
+      console.error('AI analysis error:', err)
       const category = detectCategory(formData.description)
+      const categoryName = categories.find(c => c.id === formData.category)?.name || category.name
+      const categoryDetails = getCategoryDetails(formData.category, formData.description)
+      
       setAiResult({
         category: formData.category || category.id,
-        categoryName: categories.find(c => c.id === formData.category)?.name || category.name,
+        categoryName: categoryName,
         estimatedPrice: category.basePrice,
-        confidence: 85,
+        confidence: 75,
+        estimatedDuration: categoryDetails.duration,
+        materialsNeeded: categoryDetails.materials,
+        helperBrings: categoryDetails.helperBrings,
+        customerProvides: categoryDetails.customerProvides,
+        workOverview: categoryDetails.workOverview,
       })
       setStep(2)
     } finally {
@@ -905,7 +1059,7 @@ export default function AIRequestPage() {
 
       {/* Step 2: Review - Premium Design */}
       {step === 2 && aiResult && (
-        <div className="max-w-2xl mx-auto px-4 py-6 space-y-5 relative">
+        <div className="max-w-2xl mx-auto px-4 py-6 pb-32 space-y-5 relative">
           {/* AI Result - Premium Gradient Card */}
           <div className="relative overflow-hidden bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 rounded-[32px] p-6 shadow-2xl shadow-emerald-500/30">
             {/* Decorative Elements */}
@@ -930,13 +1084,22 @@ export default function AIRequestPage() {
                 <div className="text-5xl font-black text-white mb-1">
                   ₹<AnimatedCounter end={aiResult.estimatedPrice} duration={1500} />
                 </div>
-                <p className="text-white/80 text-sm flex items-center gap-2">
-                  <Star className="w-4 h-4 text-amber-300" />
-                  {aiResult.categoryName} • Final price may vary based on actual work
-                </p>
+                <div className="flex items-center gap-4 text-white/80 text-sm mt-2">
+                  <span className="flex items-center gap-1">
+                    <Star className="w-4 h-4 text-amber-300" />
+                    {aiResult.categoryName}
+                  </span>
+                  {aiResult.estimatedDuration && (
+                    <span className="flex items-center gap-1">
+                      <Timer className="w-4 h-4" />
+                      ~{aiResult.estimatedDuration} mins
+                    </span>
+                  )}
+                </div>
+                <p className="text-white/60 text-xs mt-2">Final price may vary based on actual work</p>
               </div>
               
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex items-center gap-2 px-3 py-2 bg-white/20 rounded-xl">
                   <Shield className="w-4 h-4 text-white" />
                   <span className="text-white text-sm font-medium">Price Protection</span>
@@ -948,6 +1111,84 @@ export default function AIRequestPage() {
               </div>
             </div>
           </div>
+
+          {/* Work Overview Card */}
+          {aiResult.workOverview && (
+            <div className="bg-white/80 backdrop-blur-sm rounded-[28px] p-6 shadow-xl shadow-black/5 border border-white/60">
+              <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
+                <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
+                  <ClipboardList className="w-5 h-5 text-white" />
+                </div>
+                What Will Happen
+              </h3>
+              <p className="text-gray-700 leading-relaxed bg-gradient-to-r from-violet-50 to-purple-50 p-4 rounded-xl border border-violet-100">
+                {aiResult.workOverview}
+              </p>
+            </div>
+          )}
+
+          {/* Helper Brings & Customer Provides */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Helper Brings */}
+            {aiResult.helperBrings && aiResult.helperBrings.length > 0 && (
+              <div className="bg-white/80 backdrop-blur-sm rounded-[28px] p-5 shadow-xl shadow-black/5 border border-white/60">
+                <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
+                    <Wrench className="w-4 h-4 text-white" />
+                  </div>
+                  Helper Will Bring
+                </h4>
+                <ul className="space-y-2">
+                  {aiResult.helperBrings.map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Customer Provides */}
+            {aiResult.customerProvides && aiResult.customerProvides.length > 0 && (
+              <div className="bg-white/80 backdrop-blur-sm rounded-[28px] p-5 shadow-xl shadow-black/5 border border-white/60">
+                <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                    <User className="w-4 h-4 text-white" />
+                  </div>
+                  You Should Provide
+                </h4>
+                <ul className="space-y-2">
+                  {aiResult.customerProvides.map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                      <CheckCircle2 className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Materials Needed */}
+          {aiResult.materialsNeeded && aiResult.materialsNeeded.length > 0 && (
+            <div className="bg-white/80 backdrop-blur-sm rounded-[28px] p-5 shadow-xl shadow-black/5 border border-white/60">
+              <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
+                  <Package className="w-4 h-4 text-white" />
+                </div>
+                Materials That May Be Needed
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {aiResult.materialsNeeded.map((item, idx) => (
+                  <span key={idx} className="px-3 py-1.5 bg-amber-50 text-amber-700 rounded-full text-sm font-medium border border-amber-200">
+                    {item}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-3">* Additional materials cost will be informed before purchase</p>
+            </div>
+          )}
 
           {/* Summary - Premium Card */}
           <div className="bg-white/80 backdrop-blur-sm rounded-[28px] p-6 shadow-xl shadow-black/5 border border-white/60">
@@ -1002,7 +1243,7 @@ export default function AIRequestPage() {
           </div>
 
           {/* Trust badges - Premium Style */}
-          <div className="flex items-center justify-center gap-4 py-3">
+          <div className="flex items-center justify-center gap-4 py-3 flex-wrap">
             <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 rounded-xl border border-emerald-200">
               <Shield className="w-5 h-5 text-emerald-600" />
               <span className="text-sm font-semibold text-emerald-700">Verified Helpers</span>

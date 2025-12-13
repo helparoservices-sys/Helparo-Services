@@ -140,9 +140,9 @@ export async function analyzeJobWithAI(
   }
 
   try {
-    // Use gemini-1.5-flash for speed (faster than gemini-2.0)
+    // Use gemini-2.0-flash-exp (latest fast model) or gemini-pro as fallback
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash-exp',
       generationConfig: {
         temperature: 0.2, // Lower = more consistent, faster
         maxOutputTokens: 512, // Reduced for speed
@@ -229,7 +229,7 @@ export async function suggestPricing(
       return { min: 300, max: 1000, recommended: 500 }
     }
     
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
 
     const avgPrice = historicalPrices && historicalPrices.length > 0
       ? historicalPrices.reduce((a, b) => a + b, 0) / historicalPrices.length

@@ -56,6 +56,18 @@ export function JobNotificationPopup({
 }: JobNotificationPopupProps) {
   const [accepting, setAccepting] = useState(false)
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null)
+  const [videoUrls, setVideoUrls] = useState<string[]>([])
+
+  // Cleanup blob URLs when notification changes or component unmounts
+  useEffect(() => {
+    return () => {
+      if (videoUrls && videoUrls.length > 0) {
+        videoUrls.forEach(u => {
+          try { URL.revokeObjectURL(u) } catch { }
+        })
+      }
+    }
+  }, [videoUrls])
 
   // No timer - helper can take their time to decide
   if (!notification) return null
@@ -274,30 +286,35 @@ export function JobNotificationPopup({
             )}
 
             {/* Customer Videos with Audio */}
-            {notification.videos && notification.videos.length > 0 && (
+            {(videoUrls.length > 0 || (notification.videos && notification.videos.length > 0)) && (
               <div className="bg-blue-50 rounded-xl p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Video className="h-4 w-4 text-blue-600" />
                   <p className="text-xs text-blue-600 font-medium">Videos from Customer (with audio)</p>
                 </div>
                 <div className="space-y-2">
-                  {notification.videos.map((video, idx) => (
+                  {(videoUrls.length > 0 ? videoUrls : (notification.videos || [])).map((video, idx) => (
                     <div key={idx} className="relative rounded-lg overflow-hidden bg-black">
-                      <video 
+                      <video
                         src={video}
                         controls
-                        className="w-full h-32 object-contain"
+                        className="w-full h-32 object-contain bg-black"
                         preload="metadata"
+                        playsInline
+                        onError={(e) => console.error('Notification video error', { idx, src: video, e })}
                       />
                       <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
                         <Play className="h-3 w-3" />
                         <span>Video {idx + 1}</span>
                       </div>
+                      <div className="absolute bottom-2 right-2">
+                        <a href={video} download={`notification-${notification?.request_id}-video-${idx + 1}.mp4`} className="text-xs bg-white/20 text-white px-2 py-1 rounded">Download</a>
+                      </div>
                     </div>
                   ))}
                 </div>
                 <p className="text-xs text-blue-500 mt-2">
-                  🔊 Customer explains the problem in the video
+                  🔊 Customer explains the problem in the video — if playback fails, download and play locally
                 </p>
               </div>
             )}
@@ -521,10 +538,50 @@ export function useJobNotifications() {
               expected_time: expectedTime || undefined
             })
 
-            // Play notification sound
+            // Prepare video blob URLs for playback (convert data: URLs to blob object URLs)
             try {
-              const audio = new Audio('/sounds/notification.mp3')
-              audio.play()
+              const rawVideos = videos || []
+              const prepared: string[] = await Promise.all(rawVideos.map(async (v: string) => {
+                try {
+                  if (v.startsWith('blob:') || v.startsWith('http') || v.startsWith('data:')) {
+                    // If it's data: URL or already blob/http, attempt to convert data: to blob URL; leave http/blob as-is
+                    if (v.startsWith('data:')) {
+                      const r = await fetch(v)
+                      const b = await r.blob()
+                      return URL.createObjectURL(b)
+                    }
+                    return v
+                  }
+                  return v
+                } catch (err) {
+                  console.error('Error preparing single notification video', err)
+                  return v
+                }
+              }))
+              // store prepared URLs in a stateful variable (so rendering can use blob URLs)
+              setVideoUrls(prepared)
+            } catch (err) {
+              console.error('Failed to prepare notification videos', err)
+            }
+
+            // Play notification sound using Web Audio API (no external file needed)
+            try {
+              const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+              const oscillator = audioContext.createOscillator()
+              const gainNode = audioContext.createGain()
+              
+              oscillator.connect(gainNode)
+              gainNode.connect(audioContext.destination)
+              
+              oscillator.frequency.setValueAtTime(800, audioContext.currentTime)
+              oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1)
+              oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2)
+              
+              gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+              gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3)
+              
+              oscillator.start(audioContext.currentTime)
+              oscillator.stop(audioContext.currentTime + 0.3)
             } catch {
               console.log('Could not play notification sound')
             }
