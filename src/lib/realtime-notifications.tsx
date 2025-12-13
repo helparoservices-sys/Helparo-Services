@@ -54,15 +54,23 @@ export function useRealtimeNotifications(userId: string | undefined) {
         .limit(20)
 
       if (data) {
-        const formatted = data.map(n => ({
-          id: n.id,
-          type: n.type,
-          title: n.title,
-          message: n.message,
-          link: n.link,
-          timestamp: new Date(n.created_at),
-          read: n.read,
-        }))
+        const formatted = data.map(n => {
+          // Parse data field if it's a JSON string
+          let parsedData: { type?: string; link?: string } = {}
+          try {
+            parsedData = typeof n.data === 'string' ? JSON.parse(n.data) : (n.data || {})
+          } catch { parsedData = {} }
+          
+          return {
+            id: n.id,
+            type: (parsedData.type || n.channel || 'push') as NotificationType,
+            title: n.title || 'Notification',
+            message: n.body || n.message || '',
+            link: parsedData.link || n.link,
+            timestamp: new Date(n.created_at),
+            read: n.read_at !== null || n.read === true,
+          }
+        })
         setNotifications(formatted)
         setUnreadCount(formatted.filter(n => !n.read).length)
       }

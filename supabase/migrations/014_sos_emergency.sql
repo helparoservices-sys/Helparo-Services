@@ -451,6 +451,10 @@ COMMENT ON FUNCTION public.get_nearby_helpers_for_emergency IS 'Find nearby help
 -- GEOFENCE VALIDATION (Check if location matches expected location)
 -- ============================================================================
 
+-- Drop existing function if any
+DROP FUNCTION IF EXISTS public.validate_job_location(UUID, DECIMAL, DECIMAL, INTEGER);
+DROP FUNCTION IF EXISTS public.validate_job_location(UUID, DECIMAL, DECIMAL);
+
 CREATE OR REPLACE FUNCTION public.validate_job_location(
   p_request_id UUID,
   p_current_lat DECIMAL(10,8),
@@ -511,4 +515,4 @@ GRANT EXECUTE ON FUNCTION public.get_active_sos_alerts TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_nearby_helpers_for_emergency TO authenticated;
 GRANT EXECUTE ON FUNCTION public.validate_job_location TO authenticated;
 
-COMMENT ON MIGRATION IS 'SOS emergency system with real-time alerts, geofencing, and admin response';
+-- Migration 014: SOS emergency system with real-time alerts, geofencing, and admin response

@@ -2,10 +2,95 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { SupabaseClient } from '@supabase/supabase-js'
 import { useLocation } from '@/lib/use-location'
 import { AlertTriangle, Phone, MapPin, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from './ui/toast-notification'
+
+// Haversine formula to calculate distance between two points
+function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371 // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+  return R * c
+}
+
+// Notify nearby helpers about the emergency
+async function notifyNearbyHelpers(
+  supabase: SupabaseClient,
+  customerId: string,
+  alertId: string,
+  lat: number,
+  lng: number,
+  sosType: string
+) {
+  try {
+    // Get nearby available helpers (within 15km)
+    const { data: helpers } = await supabase
+      .from('helper_profiles')
+      .select('id, latitude, longitude, profiles!inner(full_name)')
+      .eq('verification_status', 'approved')
+      .eq('is_available_now', true)
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null)
+
+    if (!helpers || helpers.length === 0) {
+      console.log('No nearby helpers found for SOS alert')
+      return
+    }
+
+    // Filter helpers within 15km radius
+    const nearbyHelpers = helpers.filter(helper => {
+      if (!helper.latitude || !helper.longitude || lat === 0 || lng === 0) return true // Include all if no location
+      const distance = getDistanceKm(lat, lng, helper.latitude, helper.longitude)
+      return distance <= 15 // 15km radius
+    }).slice(0, 10) // Limit to 10 nearest helpers
+
+    // Create notifications for each nearby helper
+    const notifications = nearbyHelpers.map(helper => ({
+      user_id: helper.id,
+      channel: 'push',
+      title: '🚨 EMERGENCY: Customer needs help!',
+      body: `A customer nearby needs ${sosType} assistance. Please respond if you can help.`,
+      data: JSON.stringify({ alert_id: alertId, type: 'sos_alert', link: '/helper/sos' }),
+      status: 'sent',
+      created_at: new Date().toISOString(),
+    }))
+
+    if (notifications.length > 0) {
+      await supabase.from('notifications').insert(notifications)
+      console.log(`Notified ${notifications.length} helpers about SOS alert`)
+    }
+
+    // Also notify admins
+    const { data: admins } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'admin')
+
+    if (admins && admins.length > 0) {
+      const adminNotifications = admins.map(admin => ({
+        user_id: admin.id,
+        channel: 'push',
+        title: '🚨 SOS ALERT: Customer Emergency',
+        body: `A customer has triggered a ${sosType} emergency alert. Immediate attention required.`,
+        data: JSON.stringify({ alert_id: alertId, type: 'sos_alert', link: '/admin/sos' }),
+        status: 'sent',
+        created_at: new Date().toISOString(),
+      }))
+      await supabase.from('notifications').insert(adminNotifications)
+    }
+  } catch (error) {
+    console.error('Failed to notify helpers:', error)
+    // Don't throw - alert was already created successfully
+  }
+}
 
 interface EmergencySOSButtonProps {
   requestId?: string
@@ -29,29 +114,85 @@ export default function EmergencySOSButton({ requestId, className = '' }: Emerge
       let lng = coordinates?.longitude
 
       if (!lat || !lng) {
-        const location = await requestLocation()
-        lat = location.coords.latitude
-        lng = location.coords.longitude
+        try {
+          const location = await requestLocation()
+          if (location?.coords) {
+            lat = location.coords.latitude
+            lng = location.coords.longitude
+          }
+        } catch (locError) {
+          console.error('Location error:', locError)
+        }
+      }
+
+      // If still no location, use a default or allow without location
+      if (!lat || !lng) {
+        // Use last known location from browser if available
+        if (navigator.geolocation) {
+          try {
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: false,
+                timeout: 5000,
+                maximumAge: 300000 // Accept 5 minute old location
+              })
+            })
+            lat = position.coords.latitude
+            lng = position.coords.longitude
+          } catch {
+            // Continue without location - emergency is more important
+            lat = 0
+            lng = 0
+          }
+        } else {
+          lat = 0
+          lng = 0
+        }
       }
 
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      
+      // Try to get user - first from getUser, then from session
+      let user = null
+      try {
+        const { data: userData } = await supabase.auth.getUser()
+        user = userData?.user
+      } catch {
+        // If getUser fails, try getSession
+        const { data: sessionData } = await supabase.auth.getSession()
+        user = sessionData?.session?.user
+      }
       
       if (!user) {
-        throw new Error('Not authenticated')
+        // Last resort: check if we have a session
+        const { data: sessionData } = await supabase.auth.getSession()
+        user = sessionData?.session?.user
+      }
+      
+      if (!user) {
+        throw new Error('Please log in to send an SOS alert')
+      }
+
+      // Map SOS type to database alert_type
+      const alertTypeMap: Record<string, string> = {
+        'safety': 'safety_concern',
+        'medical': 'emergency',
+        'dispute': 'dispute'
       }
 
       // Create SOS alert using database function
-      const { error } = await supabase.rpc('create_sos_alert', {
+      const { data: alertId, error } = await supabase.rpc('create_sos_alert', {
+        p_alert_type: alertTypeMap[sosType] || 'emergency',
+        p_latitude: lat,
+        p_longitude: lng,
+        p_description: description || `${sosType} emergency - immediate assistance needed`,
         p_request_id: requestId || null,
-        p_customer_id: user.id,
-        p_sos_type: sosType,
-        p_description: description || null,
-        p_location_lat: lat,
-        p_location_lng: lng,
       })
 
       if (error) throw error
+
+      // Notify nearby helpers about the emergency
+      await notifyNearbyHelpers(supabase, user.id, alertId, lat, lng, sosType)
 
       showSuccess('🚨 Emergency Alert Sent', 'Help is on the way!')
       setShowModal(false)
@@ -217,11 +358,15 @@ export default function EmergencySOSButton({ requestId, className = '' }: Emerge
   return (
     <button
       onClick={() => setShowModal(true)}
-      className={`flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium shadow-lg hover:shadow-xl transition-all ${className}`}
+      className={`group relative flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-full font-bold shadow-lg hover:shadow-xl transition-all duration-300 ${className}`}
       title="Emergency SOS - Send immediate alert"
     >
-      <AlertTriangle className="h-5 w-5" />
-      <span className="hidden sm:inline">Emergency SOS</span>
+      {/* Pulsing ring effect */}
+      <span className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-20"></span>
+      <span className="absolute inset-0 rounded-full bg-red-600 animate-pulse opacity-30"></span>
+      
+      <AlertTriangle className="h-5 w-5 relative z-10" />
+      <span className="relative z-10 hidden sm:inline">SOS</span>
     </button>
   )
 }

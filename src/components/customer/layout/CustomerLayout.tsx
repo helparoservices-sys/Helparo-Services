@@ -8,6 +8,7 @@ import CustomerTopbar from './CustomerTopbar'
 import Breadcrumb from '@/components/admin/layout/Breadcrumb'
 import { ToastProvider } from '@/components/ui/toast-notification'
 import { LocationPermissionModal } from '@/components/location-permission-modal'
+import EmergencySOSButton from '@/components/emergency-sos-button'
 
 interface CustomerLayoutProps {
   children: ReactNode
@@ -78,6 +79,11 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
             animation: glow-pulse 2s ease-in-out infinite;
           }
         `}</style>
+
+        {/* Floating SOS Button - Always visible */}
+        <div className="fixed bottom-6 right-6 z-50">
+          <EmergencySOSButton className="shadow-2xl shadow-red-500/30 hover:shadow-red-500/50 animate-pulse hover:animate-none" />
+        </div>
       </div>
     </ToastProvider>
     </RoleGuard>
