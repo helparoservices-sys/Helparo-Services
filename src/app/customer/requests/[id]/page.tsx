@@ -268,13 +268,23 @@ export default function RequestDetailPage() {
     setError('')
     const { error: updErr } = await supabase
       .from('service_requests')
-      .update({ status: 'cancelled' })
+      .update({ 
+        status: 'cancelled',
+        broadcast_status: 'cancelled' // Also cancel broadcast so helpers see update
+      })
       .eq('id', requestId)
     
     if (updErr) { 
       setError(updErr.message)
       return 
     }
+
+    // Also update any pending broadcast notifications for this request
+    await supabase
+      .from('broadcast_notifications')
+      .update({ status: 'cancelled' })
+      .eq('request_id', requestId)
+      .in('status', ['pending', 'sent'])
     
     loadData()
   }

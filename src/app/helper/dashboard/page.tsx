@@ -69,11 +69,40 @@ export default function HelperDashboard() {
   const [error, setError] = useState('')
   const [isAvailableNow, setIsAvailableNow] = useState(false)
   const [togglingAvailability, setTogglingAvailability] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
     checkProfile()
     loadAvailability()
   }, [])
+
+  // Realtime subscription for job updates on dashboard
+  useEffect(() => {
+    if (!userId) return
+
+    const supabase = createClient()
+    
+    const channel = supabase
+      .channel('dashboard-jobs-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'service_requests',
+          filter: `assigned_helper_id=eq.${userId}`
+        },
+        (payload) => {
+          console.log('📡 Realtime update for dashboard:', payload)
+          loadDashboard() // Reload dashboard when any assigned job changes
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [userId])
 
   const checkProfile = async () => {
     try {
@@ -86,6 +115,9 @@ export default function HelperDashboard() {
         setLoading(false)
         return
       }
+
+      // Set userId for realtime subscription
+      setUserId(user.id)
 
       // Check if phone is verified - redirect to complete-profile if not
       const { data: userProfile } = await supabase
@@ -445,6 +477,8 @@ export default function HelperDashboard() {
                       <span className={`inline-block text-xs px-2 py-1 rounded-full mt-1 ${
                         job.status === 'completed' 
                           ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                          : job.status === 'cancelled'
+                          ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                           : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                       }`}>
                         {job.status}

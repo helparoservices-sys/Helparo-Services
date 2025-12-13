@@ -51,17 +51,49 @@ const statusConfig: Record<string, { label: string; color: string; icon: typeof 
 export default function HelperBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
+  const [filter, setFilter] = useState<'all' | 'active' | 'completed' | 'cancelled'>('all')
+  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
     loadBookings()
   }, [])
+
+  // Set up realtime subscription for job updates
+  useEffect(() => {
+    if (!userId) return
+
+    const supabase = createClient()
+    
+    const channel = supabase
+      .channel('helper-bookings-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'service_requests',
+          filter: `assigned_helper_id=eq.${userId}`
+        },
+        (payload) => {
+          console.log('📡 Realtime update for helper bookings:', payload)
+          loadBookings() // Reload bookings when any assigned job changes
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [userId])
 
   async function loadBookings() {
     const supabase = createClient()
     const { data } = await supabase.auth.getUser()
     const user = data?.user
     if (!user) return
+
+    // Set userId for realtime subscription
+    if (!userId) setUserId(user.id)
 
     // Get bookings where helper is assigned
     const { data: assignedBookings, error } = await supabase
@@ -113,6 +145,7 @@ export default function HelperBookingsPage() {
     if (filter === 'all') return true
     if (filter === 'active') return ['open', 'assigned'].includes(booking.status)
     if (filter === 'completed') return booking.status === 'completed'
+    if (filter === 'cancelled') return booking.status === 'cancelled'
     return true
   })
 
@@ -120,6 +153,7 @@ export default function HelperBookingsPage() {
     total: bookings.length,
     active: bookings.filter(b => ['open', 'assigned'].includes(b.status)).length,
     completed: bookings.filter(b => b.status === 'completed').length,
+    cancelled: bookings.filter(b => b.status === 'cancelled').length,
   }
 
   if (loading) {
@@ -183,7 +217,7 @@ export default function HelperBookingsPage() {
         </div>
 
         {/* Filters */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
             variant={filter === 'all' ? 'default' : 'outline'}
             onClick={() => setFilter('all')}
@@ -204,6 +238,14 @@ export default function HelperBookingsPage() {
             size="sm"
           >
             Completed ({stats.completed})
+          </Button>
+          <Button
+            variant={filter === 'cancelled' ? 'default' : 'outline'}
+            onClick={() => setFilter('cancelled')}
+            size="sm"
+            className={filter === 'cancelled' ? 'bg-red-500 hover:bg-red-600' : 'text-red-600 border-red-200 hover:bg-red-50'}
+          >
+            Cancelled ({stats.cancelled})
           </Button>
         </div>
 

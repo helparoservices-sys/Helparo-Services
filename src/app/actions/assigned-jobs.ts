@@ -26,7 +26,7 @@ export async function getHelperAssignedJobs() {
       return { error: 'Helper profile not found' }
     }
 
-    // Get assigned jobs
+    // Get assigned jobs - use user.id directly as assigned_helper_id stores user ID
     const { data: jobs, error } = await supabase
       .from('service_requests')
       .select(`
@@ -51,8 +51,8 @@ export async function getHelperAssignedJobs() {
           is_active
         )
       `)
-      .eq('helper_id', helperProfile.id)
-      .in('status', ['accepted', 'in_progress', 'completed', 'cancelled'])
+      .eq('assigned_helper_id', user.id)
+      .in('status', ['accepted', 'in_progress', 'assigned'])
       .order('created_at', { ascending: false })
 
     if (error) {

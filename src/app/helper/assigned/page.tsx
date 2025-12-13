@@ -57,6 +57,7 @@ export default function HelperAssignedJobsPage() {
   const [isVerified, setIsVerified] = useState(false)
   const [checkingVerification, setCheckingVerification] = useState(true)
   const [updatingStatus, setUpdatingStatus] = useState<Record<string, boolean>>({})
+  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
     checkVerification()
@@ -68,6 +69,34 @@ export default function HelperAssignedJobsPage() {
     }
   }, [isVerified])
 
+  // Realtime subscription for job updates
+  useEffect(() => {
+    if (!userId) return
+
+    const supabase = createClient()
+    
+    const channel = supabase
+      .channel('assigned-jobs-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'service_requests',
+          filter: `assigned_helper_id=eq.${userId}`
+        },
+        (payload) => {
+          console.log('📡 Realtime update for assigned jobs:', payload)
+          loadJobs() // Reload jobs when any assigned job changes
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [userId])
+
   const checkVerification = async () => {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -76,6 +105,9 @@ export default function HelperAssignedJobsPage() {
       setCheckingVerification(false)
       return
     }
+
+    // Set userId for realtime subscription
+    setUserId(user.id)
 
     const { data: profile } = await supabase
       .from('helper_profiles')

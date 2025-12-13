@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
@@ -39,6 +39,13 @@ interface JobNotification {
   photos?: string[] // Customer uploaded photos
   videos?: string[] // Customer uploaded videos with audio
   expected_time?: string // When customer expects resolution
+  // AI estimation details
+  estimated_duration?: number // in minutes
+  confidence?: number // 0-100
+  helper_brings?: string[]
+  customer_provides?: string[]
+  work_overview?: string
+  materials_needed?: string[]
 }
 
 interface JobNotificationPopupProps {
@@ -360,6 +367,104 @@ export function JobNotificationPopup({
               </div>
             )}
 
+            {/* AI Estimation Details - Always Visible */}
+            {(notification.work_overview || (notification.helper_brings && notification.helper_brings.length > 0)) && (
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border border-emerald-200 overflow-hidden">
+                <div className="flex items-center gap-2 p-3 bg-emerald-100/50">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
+                    <Zap className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="font-semibold text-emerald-800 text-sm">📋 Job Details (AI Analysis)</span>
+                </div>
+                
+                <div className="px-3 pb-3 space-y-3">
+                  {/* Work Overview */}
+                  {notification.work_overview && (
+                    <div className="bg-white rounded-lg p-3">
+                      <p className="text-xs font-medium text-emerald-700 mb-1">What You'll Do</p>
+                      <p className="text-sm text-gray-700">{notification.work_overview}</p>
+                    </div>
+                  )}
+
+                  {/* Helper Brings & Customer Provides - Side by Side */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {notification.helper_brings && notification.helper_brings.length > 0 && (
+                      <div className="bg-white rounded-lg p-2">
+                        <p className="text-xs font-medium text-blue-600 mb-1 flex items-center gap-1">
+                          🛠️ You Bring
+                        </p>
+                        <ul className="space-y-0.5">
+                          {notification.helper_brings.slice(0, 4).map((item, idx) => (
+                            <li key={idx} className="text-xs text-gray-600 flex items-start gap-1">
+                              <span className="text-emerald-500 mt-0.5">✓</span>
+                              <span className="line-clamp-1">{item}</span>
+                            </li>
+                          ))}
+                          {notification.helper_brings.length > 4 && (
+                            <li className="text-xs text-gray-400">+{notification.helper_brings.length - 4} more</li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+
+                    {notification.customer_provides && notification.customer_provides.length > 0 && (
+                      <div className="bg-white rounded-lg p-2">
+                        <p className="text-xs font-medium text-orange-600 mb-1 flex items-center gap-1">
+                          👤 Customer Has
+                        </p>
+                        <ul className="space-y-0.5">
+                          {notification.customer_provides.slice(0, 4).map((item, idx) => (
+                            <li key={idx} className="text-xs text-gray-600 flex items-start gap-1">
+                              <span className="text-orange-500 mt-0.5">✓</span>
+                              <span className="line-clamp-1">{item}</span>
+                            </li>
+                          ))}
+                          {notification.customer_provides.length > 4 && (
+                            <li className="text-xs text-gray-400">+{notification.customer_provides.length - 4} more</li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Materials Needed */}
+                  {notification.materials_needed && notification.materials_needed.length > 0 && (
+                    <div className="bg-white rounded-lg p-2">
+                      <p className="text-xs font-medium text-purple-600 mb-1">📦 Materials May Be Needed</p>
+                      <div className="flex flex-wrap gap-1">
+                        {notification.materials_needed.slice(0, 5).map((item, idx) => (
+                          <span key={idx} className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                            {item}
+                          </span>
+                        ))}
+                        {notification.materials_needed.length > 5 && (
+                          <span className="text-xs text-gray-400">+{notification.materials_needed.length - 5} more</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Duration & Confidence */}
+                  {(notification.estimated_duration || notification.confidence) && (
+                    <div className="flex gap-2">
+                      {notification.estimated_duration && (
+                        <div className="flex-1 bg-white rounded-lg p-2 text-center">
+                          <p className="text-lg font-bold text-emerald-600">~{notification.estimated_duration}</p>
+                          <p className="text-xs text-gray-500">min est.</p>
+                        </div>
+                      )}
+                      {notification.confidence && (
+                        <div className="flex-1 bg-white rounded-lg p-2 text-center">
+                          <p className="text-lg font-bold text-blue-600">{notification.confidence}%</p>
+                          <p className="text-xs text-gray-500">AI confidence</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Address */}
             <div className="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
               <MapPin className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -424,6 +529,96 @@ export function JobNotificationPopup({
 export function useJobNotifications() {
   const [notification, setNotification] = useState<JobNotification | null>(null)
   const [helperProfile, setHelperProfile] = useState<{ id: string } | null>(null)
+  const [videoUrls, setVideoUrls] = useState<string[]>([])
+  const seenNotificationIds = useRef<Set<string>>(new Set())
+  const soundIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
+
+  // Function to play alert sound once
+  const playAlertSoundOnce = useCallback(() => {
+    try {
+      if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
+      }
+      const audioContext = audioContextRef.current
+      
+      const playTone = (freq: number, startTime: number, duration: number) => {
+        const osc = audioContext.createOscillator()
+        const gain = audioContext.createGain()
+        osc.type = 'square'
+        osc.frequency.value = freq
+        gain.gain.value = 0.5
+        osc.connect(gain)
+        gain.connect(audioContext.destination)
+        osc.start(startTime)
+        osc.stop(startTime + duration)
+      }
+      
+      const now = audioContext.currentTime
+      // Play urgent 3-tone pattern
+      playTone(880, now, 0.12)
+      playTone(660, now + 0.15, 0.12)
+      playTone(880, now + 0.30, 0.12)
+      
+      // Vibrate on mobile
+      if (navigator.vibrate) {
+        navigator.vibrate([200, 100, 200])
+      }
+    } catch (err) {
+      console.log('Audio not supported', err)
+    }
+  }, [])
+
+  // Continuous sound loop when notification is active
+  useEffect(() => {
+    if (notification) {
+      console.log('🔔 Starting continuous notification sound')
+      // Play immediately
+      playAlertSoundOnce()
+      
+      // Then play every 2.5 seconds until dismissed
+      soundIntervalRef.current = setInterval(() => {
+        playAlertSoundOnce()
+      }, 2500)
+      
+      return () => {
+        console.log('🔔 Stopping notification sound')
+        if (soundIntervalRef.current) {
+          clearInterval(soundIntervalRef.current)
+          soundIntervalRef.current = null
+        }
+      }
+    } else {
+      // Clear interval if notification is dismissed
+      if (soundIntervalRef.current) {
+        clearInterval(soundIntervalRef.current)
+        soundIntervalRef.current = null
+      }
+    }
+  }, [notification, playAlertSoundOnce])
+
+  // Cleanup audio context on unmount
+  useEffect(() => {
+    return () => {
+      if (soundIntervalRef.current) {
+        clearInterval(soundIntervalRef.current)
+      }
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close()
+      }
+    }
+  }, [])
+
+  // Cleanup video blob URLs when notification changes
+  useEffect(() => {
+    return () => {
+      if (videoUrls && videoUrls.length > 0) {
+        videoUrls.forEach(u => {
+          try { URL.revokeObjectURL(u) } catch { }
+        })
+      }
+    }
+  }, [videoUrls])
 
   useEffect(() => {
     // Get helper profile
@@ -453,6 +648,131 @@ export function useJobNotifications() {
     }
     getProfile()
   }, [])
+
+  // Poll for new notifications as backup (every 5 seconds)
+  useEffect(() => {
+    if (!helperProfile) return
+
+    console.log('🔔 Starting polling fallback for helper:', helperProfile.id)
+
+    const checkForNewNotifications = async () => {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('broadcast_notifications')
+          .select(`
+            *,
+            service_request:request_id (
+              id,
+              title,
+              description,
+              service_address,
+              address_line1,
+              estimated_price,
+              urgency_level,
+              images,
+              status,
+              service_type_details,
+              category:category_id (name),
+              customer:customer_id (full_name, phone)
+            )
+          `)
+          .eq('helper_id', helperProfile.id)
+          .in('status', ['sent', 'pending']) // Match 'sent' status from broadcast API
+          .order('sent_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (error && error.code !== 'PGRST116') {
+          console.log('🔔 Poll check error:', error.message)
+          return
+        }
+
+        // Skip if already showing a notification or already seen this one
+        if (data && !notification && !seenNotificationIds.current.has(data.id)) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const req = data.service_request as Record<string, any>
+          if (!req) {
+            console.log('🔔 [POLL] No service request data for notification:', data.id)
+            return
+          }
+          
+          // Skip if job is already cancelled or assigned
+          const jobStatus = req.status || ''
+          if (jobStatus === 'cancelled' || jobStatus === 'assigned' || jobStatus === 'completed') {
+            console.log('🔔 [POLL] Skipping notification - job status:', jobStatus)
+            seenNotificationIds.current.add(data.id)
+            return
+          }
+
+          seenNotificationIds.current.add(data.id)
+          console.log('🔔 [POLL] Found new notification:', data.id, 'for request:', data.request_id)
+          
+          const serviceDetails = req.service_type_details || {}
+          let expectedTime = serviceDetails.preferred_time || ''
+          if (expectedTime === 'asap') expectedTime = 'As soon as possible'
+          else if (expectedTime === 'today') expectedTime = 'Today'
+          else if (expectedTime === 'tomorrow') expectedTime = 'Tomorrow'
+          else if (expectedTime === 'this_week') expectedTime = 'This week'
+          
+          const images = serviceDetails.images || req.images || []
+          const videos = serviceDetails.videos || []
+          
+          setNotification({
+            id: data.id,
+            request_id: data.request_id,
+            customer_name: req.customer?.full_name || 'Customer',
+            customer_phone: req.customer?.phone || undefined,
+            category: req.category?.name || 'Service',
+            description: req.description || req.title,
+            address: req.service_address || req.address_line1 || 'Address not provided',
+            estimated_price: req.estimated_price || 0,
+            urgency: req.urgency_level || 'normal',
+            distance_km: parseFloat(data.distance_km) || 0,
+            expires_in: 30,
+            sent_at: data.sent_at,
+            photos: images,
+            videos: videos,
+            expected_time: expectedTime || undefined,
+            estimated_duration: serviceDetails.estimated_duration,
+            confidence: serviceDetails.confidence,
+            helper_brings: serviceDetails.helper_brings || [],
+            customer_provides: serviceDetails.customer_provides || [],
+            work_overview: serviceDetails.work_overview || '',
+            materials_needed: serviceDetails.materials_needed || []
+          })
+
+          // Prepare video URLs
+          try {
+            const prepared: string[] = await Promise.all(videos.map(async (v: string) => {
+              if (v.startsWith('data:')) {
+                const r = await fetch(v)
+                const b = await r.blob()
+                return URL.createObjectURL(b)
+              }
+              return v
+            }))
+            setVideoUrls(prepared)
+          } catch (err) {
+            console.error('Failed to prepare notification videos', err)
+          }
+          // Sound is now handled by the continuous sound loop useEffect
+        }
+      } catch (err) {
+        console.error('🔔 Poll error:', err)
+      }
+    }
+
+    // Initial check
+    checkForNewNotifications()
+
+    // Poll every 5 seconds
+    const pollInterval = setInterval(checkForNewNotifications, 5000)
+
+    return () => {
+      clearInterval(pollInterval)
+    }
+  }, [helperProfile, notification])
 
   useEffect(() => {
     if (!helperProfile) {
@@ -491,6 +811,7 @@ export function useJobNotifications() {
                 estimated_price,
                 urgency_level,
                 images,
+                status,
                 service_type_details,
                 category:category_id (name),
                 customer:customer_id (full_name, phone)
@@ -535,7 +856,14 @@ export function useJobNotifications() {
               sent_at: data.sent_at,
               photos: images,
               videos: videos,
-              expected_time: expectedTime || undefined
+              expected_time: expectedTime || undefined,
+              // AI estimation details
+              estimated_duration: serviceDetails.estimated_duration,
+              confidence: serviceDetails.confidence,
+              helper_brings: serviceDetails.helper_brings || [],
+              customer_provides: serviceDetails.customer_provides || [],
+              work_overview: serviceDetails.work_overview || '',
+              materials_needed: serviceDetails.materials_needed || []
             })
 
             // Prepare video blob URLs for playback (convert data: URLs to blob object URLs)
@@ -563,28 +891,7 @@ export function useJobNotifications() {
             } catch (err) {
               console.error('Failed to prepare notification videos', err)
             }
-
-            // Play notification sound using Web Audio API (no external file needed)
-            try {
-              const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-              const oscillator = audioContext.createOscillator()
-              const gainNode = audioContext.createGain()
-              
-              oscillator.connect(gainNode)
-              gainNode.connect(audioContext.destination)
-              
-              oscillator.frequency.setValueAtTime(800, audioContext.currentTime)
-              oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1)
-              oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2)
-              
-              gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
-              gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3)
-              
-              oscillator.start(audioContext.currentTime)
-              oscillator.stop(audioContext.currentTime + 0.3)
-            } catch {
-              console.log('Could not play notification sound')
-            }
+            // Sound is now handled by the continuous sound loop useEffect
           }
         }
       )
@@ -592,9 +899,37 @@ export function useJobNotifications() {
         console.log('🔔 Subscription status:', status)
       })
 
+    // Also subscribe to service_request changes to detect cancellations
+    const cancellationChannel = supabase
+      .channel(`job-cancellations-${helperProfile.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'service_requests'
+        },
+        (payload) => {
+          console.log('🔔 Service request update received:', payload)
+          const newData = payload.new as { id: string; status: string }
+          
+          // Check if this is the currently displayed notification being cancelled
+          setNotification(prev => {
+            if (prev && prev.request_id === newData.id && newData.status === 'cancelled') {
+              console.log('🔔 Current notification cancelled, dismissing popup')
+              toast.info('This job has been cancelled by the customer')
+              return null
+            }
+            return prev
+          })
+        }
+      )
+      .subscribe()
+
     return () => {
       console.log('🔔 Cleaning up subscription')
       supabase.removeChannel(channel)
+      supabase.removeChannel(cancellationChannel)
     }
   }, [helperProfile])
 

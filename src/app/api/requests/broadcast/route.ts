@@ -54,11 +54,18 @@ export async function POST(request: NextRequest) {
       aiAnalysis,
       selectedTier,
       estimatedPrice,
+      estimatedDuration,
+      confidence,
       urgency,
       problemDuration,
       errorCode,
       preferredTime,
-      paymentMethod = 'cash' // Default to cash like Rapido
+      paymentMethod = 'cash', // Default to cash like Rapido
+      // AI estimation details for helper
+      helperBrings,
+      customerProvides,
+      workOverview,
+      materialsNeeded
     } = body
 
     // Map category to service_categories id (or use the slug)
@@ -176,7 +183,14 @@ export async function POST(request: NextRequest) {
           problem_duration: problemDuration,
           error_code: errorCode,
           preferred_time: preferredTime,
-          videos: videos || [] // Store videos with audio for helper to view
+          videos: videos || [], // Store videos with audio for helper to view
+          // AI estimation details for helper to view
+          estimated_duration: estimatedDuration,
+          confidence: confidence,
+          helper_brings: helperBrings || [],
+          customer_provides: customerProvides || [],
+          work_overview: workOverview || '',
+          materials_needed: materialsNeeded || []
         }
       })
       .select()

@@ -532,9 +532,16 @@ export default function AIRequestPage() {
           images: images,
           videos: videos,
           estimatedPrice: aiResult.estimatedPrice,
+          estimatedDuration: aiResult.estimatedDuration,
+          confidence: aiResult.confidence,
           urgency: formData.urgency,
           paymentMethod: 'cash',
           isAiRequest: true,
+          // AI estimation details for helper
+          helperBrings: aiResult.helperBrings,
+          customerProvides: aiResult.customerProvides,
+          workOverview: aiResult.workOverview,
+          materialsNeeded: aiResult.materialsNeeded,
           additionalInfo: {
             errorCode: formData.errorCode,
             howLong: formData.howLong,

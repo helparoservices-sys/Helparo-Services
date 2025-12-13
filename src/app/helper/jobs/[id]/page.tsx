@@ -40,6 +40,13 @@ interface ServiceTypeDetails {
   problem_duration?: string
   error_code?: string
   preferred_time?: string
+  // AI estimation details
+  estimated_duration?: number
+  confidence?: number
+  helper_brings?: string[]
+  customer_provides?: string[]
+  work_overview?: string
+  materials_needed?: string[]
 }
 
 interface JobDetails {
@@ -268,15 +275,74 @@ export default function HelperJobPage() {
   const [completing, setCompleting] = useState(false)
   const [showCompletionModal, setShowCompletionModal] = useState(false)
   const [locationWatchId, setLocationWatchId] = useState<number | null>(null)
+  const [elapsedTime, setElapsedTime] = useState<string>('00:00:00')
   const supabase = createClient()
+
+  // Timer effect - updates elapsed time every second when work is in progress
+  useEffect(() => {
+    if (!job?.work_started_at || job?.work_completed_at) {
+      return
+    }
+
+    const startTime = new Date(job.work_started_at).getTime()
+    
+    const updateTimer = () => {
+      const now = Date.now()
+      const diff = now - startTime
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60))
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+      
+      setElapsedTime(
+        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+      )
+    }
+
+    // Update immediately
+    updateTimer()
+    
+    // Update every second
+    const interval = setInterval(updateTimer, 1000)
+
+    return () => clearInterval(interval)
+  }, [job?.work_started_at, job?.work_completed_at])
 
   useEffect(() => {
     loadJobDetails()
     startLocationTracking()
 
+    // Subscribe to realtime updates for this request so helper UI reflects cancellations/updates
+    const channel = supabase
+      .channel(`helper-job-${requestId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'service_requests',
+          filter: `id=eq.${requestId}`,
+        },
+        (payload) => {
+          console.log('Realtime update for job:', requestId, payload)
+          // reload details to reflect status changes (e.g., cancelled)
+          loadJobDetails()
+        }
+      )
+      .subscribe((status) => {
+        console.log('Subscribed to job updates:', status)
+      })
+
     return () => {
+      // Cleanup location watcher
       if (locationWatchId !== null) {
         navigator.geolocation.clearWatch(locationWatchId)
+      }
+      // Remove supabase subscription
+      try {
+        supabase.removeChannel(channel)
+      } catch (err) {
+        console.warn('Failed to remove supabase channel', err)
       }
     }
   }, [requestId])
@@ -635,7 +701,7 @@ export default function HelperJobPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-br from-emerald-500 to-teal-600 px-4 pt-6 pb-8">
+      <div className={`px-4 pt-6 pb-8 ${job.status === 'cancelled' ? 'bg-gradient-to-br from-red-500 to-red-600' : 'bg-gradient-to-br from-emerald-500 to-teal-600'}`}>
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => router.back()} className="p-2 -ml-2 text-white">
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -647,12 +713,37 @@ export default function HelperJobPage() {
           </Badge>
         </div>
         
-        <h1 className="text-xl font-bold text-white mb-1">Active Job</h1>
-        <p className="text-emerald-100 text-sm">Job #{job.id.slice(0, 8)}</p>
+        <h1 className="text-xl font-bold text-white mb-1">
+          {job.status === 'cancelled' ? 'Cancelled Job' : 'Active Job'}
+        </h1>
+        <p className={`text-sm ${job.status === 'cancelled' ? 'text-red-100' : 'text-emerald-100'}`}>Job #{job.id.slice(0, 8)}</p>
       </div>
 
       {/* Content */}
       <div className="px-4 -mt-4">
+        {/* Cancelled Status Banner */}
+        {job.status === 'cancelled' && (
+          <Card className="mb-4 bg-red-50 border-2 border-red-300 shadow-lg">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <XCircle className="h-7 w-7 text-red-500" />
+                </div>
+                <div>
+                  <p className="font-bold text-red-700 text-lg">Booking Cancelled</p>
+                  <p className="text-red-600 text-sm">The customer has cancelled this booking</p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => router.push('/helper/bookings')} 
+                className="w-full mt-4 bg-red-500 hover:bg-red-600 text-white"
+              >
+                Return to My Jobs
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Customer Card */}
         <Card className="mb-4 shadow-lg">
           <CardContent className="p-5">
@@ -778,6 +869,92 @@ export default function HelperJobPage() {
               </div>
             ) : null}
 
+            {/* AI Estimation Details */}
+            {job.service_type_details && (job.service_type_details.work_overview || (job.service_type_details.helper_brings && job.service_type_details.helper_brings.length > 0)) && (
+              <div className="mb-4 space-y-3">
+                {/* Work Overview */}
+                {job.service_type_details.work_overview && (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
+                        <Flag className="h-4 w-4 text-white" />
+                      </div>
+                      <h4 className="font-semibold text-emerald-800">What You&apos;ll Do</h4>
+                    </div>
+                    <p className="text-sm text-gray-700">{job.service_type_details.work_overview}</p>
+                  </div>
+                )}
+
+                {/* Helper Brings & Customer Provides */}
+                <div className="grid grid-cols-2 gap-3">
+                  {job.service_type_details.helper_brings && job.service_type_details.helper_brings.length > 0 && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                      <h4 className="font-semibold text-blue-700 text-sm mb-2 flex items-center gap-1">
+                        🛠️ You Should Bring
+                      </h4>
+                      <ul className="space-y-1">
+                        {job.service_type_details.helper_brings.map((item, idx) => (
+                          <li key={idx} className="text-xs text-gray-600 flex items-start gap-1">
+                            <CheckCircle className="h-3 w-3 text-blue-500 mt-0.5 flex-shrink-0" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {job.service_type_details.customer_provides && job.service_type_details.customer_provides.length > 0 && (
+                    <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
+                      <h4 className="font-semibold text-orange-700 text-sm mb-2 flex items-center gap-1">
+                        👤 Customer Should Provide
+                      </h4>
+                      <ul className="space-y-1">
+                        {job.service_type_details.customer_provides.map((item, idx) => (
+                          <li key={idx} className="text-xs text-gray-600 flex items-start gap-1">
+                            <CheckCircle className="h-3 w-3 text-orange-500 mt-0.5 flex-shrink-0" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {/* Materials Needed */}
+                {job.service_type_details.materials_needed && job.service_type_details.materials_needed.length > 0 && (
+                  <div className="bg-purple-50 border border-purple-200 rounded-xl p-3">
+                    <h4 className="font-semibold text-purple-700 text-sm mb-2">📦 Materials That May Be Needed</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {job.service_type_details.materials_needed.map((item, idx) => (
+                        <span key={idx} className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">* Additional materials cost will be informed to customer before purchase</p>
+                  </div>
+                )}
+
+                {/* Duration & Confidence */}
+                {(job.service_type_details.estimated_duration || job.service_type_details.confidence) && (
+                  <div className="flex gap-3">
+                    {job.service_type_details.estimated_duration && (
+                      <div className="flex-1 bg-gray-50 rounded-xl p-3 text-center">
+                        <p className="text-xl font-bold text-emerald-600">~{job.service_type_details.estimated_duration}</p>
+                        <p className="text-xs text-gray-500">min estimated</p>
+                      </div>
+                    )}
+                    {job.service_type_details.confidence && (
+                      <div className="flex-1 bg-gray-50 rounded-xl p-3 text-center">
+                        <p className="text-xl font-bold text-blue-600">{job.service_type_details.confidence}%</p>
+                        <p className="text-xs text-gray-500">AI confidence</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-emerald-50 rounded-xl p-4 text-center">
                 <div className="flex items-center justify-center gap-1 text-emerald-600 font-bold text-xl">
@@ -839,18 +1016,27 @@ export default function HelperJobPage() {
         {/* Work In Progress */}
         {job.work_started_at && !job.work_completed_at && (
           <>
-            {/* Progress Indicator */}
-            <Card className="mb-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+            {/* Progress Indicator with Live Timer */}
+            <Card className="mb-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white overflow-hidden">
               <CardContent className="p-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-                    <Clock className="h-6 w-6 animate-pulse" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                      <Clock className="h-6 w-6 animate-pulse" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-lg">Work In Progress</p>
+                      <p className="text-blue-100 text-sm">
+                        Started {new Date(job.work_started_at).toLocaleTimeString()}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-bold text-lg">Work In Progress</p>
-                    <p className="text-blue-100 text-sm">
-                      Started {new Date(job.work_started_at).toLocaleTimeString()}
-                    </p>
+                  {/* Live Timer */}
+                  <div className="text-right">
+                    <div className="bg-white/20 rounded-xl px-4 py-2 backdrop-blur-sm">
+                      <p className="text-3xl font-mono font-bold tracking-wider">{elapsedTime}</p>
+                      <p className="text-xs text-blue-100 mt-0.5">Time Elapsed</p>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -940,15 +1126,3 @@ export default function HelperJobPage() {
     </div>
   )
 }
-
-  // when videoSrcs change, track them for cleanup
-  useEffect(() => {
-    // revoke previous stored urls when component unmounts
-    return () => {
-      if (videoSrcsRef.current && videoSrcsRef.current.length > 0) {
-        videoSrcsRef.current.forEach(u => {
-          try { URL.revokeObjectURL(u) } catch { }
-        })
-      }
-    }
-  }, [])
