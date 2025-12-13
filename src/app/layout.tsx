@@ -85,7 +85,9 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  userScalable: true,
   themeColor: '#10b981',
+  viewportFit: 'cover', // For iPhone notch support
 }
 
 // JSON-LD Structured Data for SEO - LocalBusiness

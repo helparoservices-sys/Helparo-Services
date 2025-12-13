@@ -299,9 +299,9 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           HERO SECTION - THE WOW FACTOR
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="relative pt-32 lg:pt-40 pb-20 lg:pb-32">
+      <section className="relative pt-28 sm:pt-32 lg:pt-40 pb-16 sm:pb-20 lg:pb-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-20 items-center">
             
             {/* Left: Content */}
             <div className="relative z-10">
@@ -332,7 +332,7 @@ export default function LandingPage() {
               </div>
 
               {/* Main Headline */}
-              <h1 className="text-[3.25rem] sm:text-6xl lg:text-[4.25rem] font-black text-gray-900 leading-[1.05] tracking-tight mb-4">
+              <h1 className="text-[2.5rem] sm:text-5xl md:text-6xl lg:text-[4.25rem] font-black text-gray-900 leading-[1.05] tracking-tight mb-4">
                 Home services
                 <br />
                 <span className="relative">
@@ -570,7 +570,7 @@ export default function LandingPage() {
               <span className="bg-gradient-to-r from-orange-500 to-pink-500 text-white text-xs font-bold px-4 py-2 rounded-full animate-pulse">🇮🇳 INDIA&apos;S FIRST</span>
               <span className="bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold px-4 py-2 rounded-full">REVOLUTIONARY</span>
             </div>
-            <h2 className="text-4xl lg:text-6xl font-black mb-6 leading-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-6xl font-black mb-6 leading-tight">
               AI-Powered Platform Where
               <br />
               <span className="bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-400 bg-clip-text text-transparent">YOU Decide Your Price</span>
@@ -900,7 +900,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.15),transparent_60%)]" />
         
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black mb-6 leading-tight">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-6 leading-tight">
             Ready to experience
             <br />
             <span className="bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent">the magic?</span>
@@ -935,9 +935,9 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           FOOTER - CLEAN & PREMIUM
       ═══════════════════════════════════════════════════════════════════ */}
-      <footer className="bg-gray-950 text-gray-400 pt-20 pb-10 border-t border-white/5">
+      <footer className="bg-gray-950 text-gray-400 pt-16 sm:pt-20 pb-10 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-12 mb-16">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12 mb-12 sm:mb-16">
             <div className="col-span-2 lg:col-span-1">
               <Link href="/" className="flex items-center gap-2.5 mb-6 group">
                 <img src="/logo.svg" alt="Helparo" className="w-10 h-10 rounded-xl shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform" />
