@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -23,8 +23,40 @@ import {
   AlertTriangle,
   Lightbulb,
   CheckCircle2,
-  ChevronDown
+  ChevronDown,
+  Zap,
+  Star,
+  Brain,
+  Upload,
+  FileCheck,
+  PartyPopper,
+  Phone
 } from 'lucide-react'
+
+// Animated counter component
+function AnimatedCounter({ end, duration = 1000, prefix = '', suffix = '' }: { end: number; duration?: number; prefix?: string; suffix?: string }) {
+  const [count, setCount] = useState(0)
+  
+  useEffect(() => {
+    let startTime: number
+    let animationFrame: number
+    
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp
+      const progress = Math.min((timestamp - startTime) / duration, 1)
+      setCount(Math.floor(progress * end))
+      
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate)
+      }
+    }
+    
+    animationFrame = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(animationFrame)
+  }, [end, duration])
+  
+  return <>{prefix}{count.toLocaleString()}{suffix}</>
+}
 
 const categories = [
   { id: 'cleaning', name: 'Cleaning', emoji: '🧹' },
@@ -80,6 +112,7 @@ export default function AIRequestPage() {
     flatNo: '',
     floor: '',
     landmark: '',
+    mobileNumber: '',
     description: '',
     errorCode: '',
     howLong: '',
@@ -262,6 +295,10 @@ export default function AIRequestPage() {
       toast.error('Please describe the problem')
       return
     }
+    if (!formData.mobileNumber || formData.mobileNumber.length < 10) {
+      toast.error('Please enter a valid mobile number')
+      return
+    }
     if (!formData.urgency) {
       toast.error('Please select when you need help')
       return
@@ -380,93 +417,131 @@ export default function AIRequestPage() {
   const selectedHowLong = howLongOptions.find(h => h.id === formData.howLong)
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 relative overflow-hidden">
+      {/* Decorative Background Elements */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-emerald-400/10 to-teal-400/10 rounded-full blur-3xl -translate-y-48 translate-x-48" />
+      <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-blue-400/10 to-purple-400/10 rounded-full blur-3xl translate-y-40 -translate-x-40" />
+      <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-amber-300/5 to-orange-300/5 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2" />
+      
+      {/* Premium Header */}
+      <div className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-white/20 shadow-lg shadow-black/5">
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-4">
           <button 
             onClick={() => step > 1 ? setStep(step - 1) : router.back()}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2.5 hover:bg-gray-100 rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95"
           >
             <ArrowLeft className="w-5 h-5 text-gray-700" />
           </button>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white" />
+          <div className="flex items-center gap-3 flex-1">
+            <div className="relative">
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                <Brain className="w-6 h-6 text-white" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full flex items-center justify-center">
+                <Sparkles className="w-2.5 h-2.5 text-white" />
+              </div>
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">AI Smart Request</h1>
-              <p className="text-xs text-gray-500">Get instant pricing from AI</p>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent">AI Smart Request</h1>
+              <p className="text-sm text-gray-500 flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-amber-500" />
+                Get instant AI-powered pricing
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Progress Steps */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-2xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
+      {/* Premium Progress Steps */}
+      <div className="bg-gradient-to-r from-white/60 via-white/80 to-white/60 backdrop-blur-sm border-b border-gray-100/50">
+        <div className="max-w-2xl mx-auto px-4 py-5">
+          <div className="flex items-center justify-between relative">
+            {/* Progress Line Background */}
+            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-gray-200 rounded-full mx-12" />
+            <div 
+              className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full mx-12 transition-all duration-500"
+              style={{ width: `${((step - 1) / 2) * (100 - 24)}%` }}
+            />
+            
             {[
-              { num: 1, label: 'Upload' },
-              { num: 2, label: 'Review' },
-              { num: 3, label: 'Done' },
-            ].map((s, i) => (
-              <div key={s.num} className="flex items-center">
-                <div className={`flex items-center gap-2 ${step >= s.num ? 'text-emerald-600' : 'text-gray-400'}`}>
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-semibold ${
-                    step > s.num ? 'bg-emerald-500 text-white' :
-                    step === s.num ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'
+              { num: 1, label: 'Upload', icon: Upload, desc: 'Add photos & details' },
+              { num: 2, label: 'Review', icon: FileCheck, desc: 'Verify AI analysis' },
+              { num: 3, label: 'Done', icon: PartyPopper, desc: 'Request posted!' },
+            ].map((s) => {
+              const Icon = s.icon
+              return (
+                <div key={s.num} className="flex flex-col items-center relative z-10">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-lg ${
+                    step > s.num 
+                      ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-500/30 scale-100' 
+                      : step === s.num 
+                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-500/40 scale-110 ring-4 ring-emerald-100' 
+                        : 'bg-white text-gray-400 shadow-gray-200/50 border-2 border-gray-200'
                   }`}>
-                    {step > s.num ? <CheckCircle2 className="w-4 h-4" /> : s.num}
+                    {step > s.num ? <CheckCircle2 className="w-6 h-6" /> : <Icon className="w-6 h-6" />}
                   </div>
-                  <span className={`text-sm font-medium ${step >= s.num ? 'text-gray-900' : 'text-gray-400'}`}>{s.label}</span>
+                  <span className={`mt-2 text-sm font-semibold transition-colors ${step >= s.num ? 'text-gray-900' : 'text-gray-400'}`}>
+                    {s.label}
+                  </span>
+                  <span className={`text-xs transition-colors ${step >= s.num ? 'text-gray-500' : 'text-gray-300'}`}>
+                    {s.desc}
+                  </span>
                 </div>
-                {i < 2 && <div className={`w-16 h-0.5 mx-3 ${step > s.num ? 'bg-emerald-500' : 'bg-gray-200'}`} />}
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </div>
 
       {/* Step 1: Upload Form */}
       {step === 1 && (
-        <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
+        <div className="max-w-2xl mx-auto px-4 py-6 pb-40 space-y-5 relative">
           
-          {/* Photos & Videos */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-3">
-              <label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-emerald-600" />
+          {/* Photos & Videos - Premium Card */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-[28px] p-6 shadow-xl shadow-black/5 border border-white/60 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500">
+            <div className="flex items-center justify-between mb-4">
+              <label className="text-base font-bold text-gray-900 flex items-center gap-2.5">
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                  <ImageIcon className="w-5 h-5 text-white" />
+                </div>
                 Photos & Videos
               </label>
-              <span className="text-xs text-orange-600 font-medium">3-5 photos required</span>
+              <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-3 py-1.5 rounded-full border border-orange-200">
+                3-5 photos required
+              </span>
             </div>
             
-            {/* Upload Buttons */}
-            <div className="flex gap-2 mb-3">
+            {/* Upload Buttons - Premium Style */}
+            <div className="flex gap-3 mb-4">
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading || images.length >= 5}
-                className="flex-1 flex flex-col items-center justify-center gap-1 py-4 px-3 bg-gray-50 text-gray-600 rounded-xl border-2 border-dashed border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 transition-all"
+                className="flex-1 flex flex-col items-center justify-center gap-2 py-5 px-4 bg-gradient-to-br from-gray-50 to-gray-100 text-gray-600 rounded-2xl border-2 border-dashed border-gray-200 hover:border-emerald-400 hover:from-emerald-50 hover:to-teal-50 hover:text-emerald-700 disabled:opacity-50 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group"
               >
-                <ImageIcon className="w-6 h-6" />
-                <span className="text-xs font-medium">Gallery</span>
+                <div className="w-12 h-12 rounded-xl bg-white shadow-md flex items-center justify-center group-hover:shadow-emerald-200 transition-all">
+                  <ImageIcon className="w-6 h-6" />
+                </div>
+                <span className="text-sm font-semibold">Gallery</span>
               </button>
               <button
                 onClick={() => cameraInputRef.current?.click()}
                 disabled={uploading || images.length >= 5}
-                className="flex-1 flex flex-col items-center justify-center gap-1 py-4 px-3 bg-emerald-50 text-emerald-700 rounded-xl border-2 border-dashed border-emerald-200 hover:bg-emerald-100 disabled:opacity-50 transition-all"
+                className="flex-1 flex flex-col items-center justify-center gap-2 py-5 px-4 bg-gradient-to-br from-emerald-50 to-teal-50 text-emerald-700 rounded-2xl border-2 border-dashed border-emerald-300 hover:border-emerald-500 hover:from-emerald-100 hover:to-teal-100 disabled:opacity-50 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-emerald-100 group"
               >
-                <Camera className="w-6 h-6" />
-                <span className="text-xs font-medium">Camera</span>
+                <div className="w-12 h-12 rounded-xl bg-white shadow-md flex items-center justify-center group-hover:shadow-emerald-200 transition-all">
+                  <Camera className="w-6 h-6" />
+                </div>
+                <span className="text-sm font-semibold">Camera</span>
               </button>
               <button
                 onClick={() => videoInputRef.current?.click()}
                 disabled={uploading || videos.length >= 2}
-                className="flex-1 flex flex-col items-center justify-center gap-1 py-4 px-3 bg-gray-50 text-gray-600 rounded-xl border-2 border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50 disabled:opacity-50 transition-all"
+                className="flex-1 flex flex-col items-center justify-center gap-2 py-5 px-4 bg-gradient-to-br from-purple-50 to-pink-50 text-purple-700 rounded-2xl border-2 border-dashed border-purple-200 hover:border-purple-400 hover:from-purple-100 hover:to-pink-100 disabled:opacity-50 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-100 group"
               >
-                <Video className="w-6 h-6" />
-                <span className="text-xs font-medium">Video</span>
+                <div className="w-12 h-12 rounded-xl bg-white shadow-md flex items-center justify-center group-hover:shadow-purple-200 transition-all">
+                  <Video className="w-6 h-6" />
+                </div>
+                <span className="text-sm font-semibold">Video</span>
               </button>
             </div>
 
@@ -474,58 +549,74 @@ export default function AIRequestPage() {
             <button
               onClick={() => videoInputRef.current?.click()}
               disabled={uploading || videos.length >= 2}
-              className="w-full py-2.5 text-sm text-gray-600 bg-gray-50 rounded-xl border border-gray-200 hover:bg-gray-100 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-3 text-sm font-medium text-gray-600 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:from-purple-50 hover:to-pink-50 hover:border-purple-300 hover:text-purple-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all duration-300"
             >
               <Video className="w-4 h-4" />
               Upload Video from Gallery (max 50MB)
             </button>
 
-            {/* Counts */}
-            <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
-              <span>📷 {images.length}/5 photos</span>
-              <span>🎥 {videos.length}/2 videos</span>
+            {/* Counts - Premium Badge Style */}
+            <div className="flex items-center gap-4 mt-4">
+              <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-100">
+                <Camera className="w-4 h-4 text-emerald-600" />
+                <span className="text-sm font-semibold text-emerald-700">{images.length}/5 photos</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 bg-purple-50 rounded-xl border border-purple-100">
+                <Video className="w-4 h-4 text-purple-600" />
+                <span className="text-sm font-semibold text-purple-700">{videos.length}/2 videos</span>
+              </div>
             </div>
 
-            {/* Preview Images */}
+            {/* Preview Images - Enhanced Grid */}
             {images.length > 0 && (
-              <div className="flex gap-2 flex-wrap mt-3">
+              <div className="flex gap-3 flex-wrap mt-4">
                 {images.map((url, idx) => (
-                  <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200">
-                    <img src={url} alt="" className="w-full h-full object-cover" />
+                  <div key={idx} className="relative group">
+                    <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-white shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-300">
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                    </div>
                     <button
                       onClick={() => removeImage(idx)}
-                      className="absolute top-0.5 right-0.5 p-0.5 bg-red-500 text-white rounded-full"
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-red-500 to-rose-600 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
                     >
-                      <X className="w-3 h-3" />
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Preview Videos */}
+            {/* Preview Videos - Enhanced */}
             {videos.length > 0 && (
-              <div className="flex gap-2 flex-wrap mt-2">
+              <div className="flex gap-3 flex-wrap mt-3">
                 {videos.map((url, idx) => (
-                  <div key={idx} className="relative w-20 h-14 rounded-lg overflow-hidden border border-gray-200 bg-gray-900">
-                    <video src={url} className="w-full h-full object-cover" />
+                  <div key={idx} className="relative group">
+                    <div className="w-24 h-16 rounded-2xl overflow-hidden border-2 border-white shadow-lg bg-gray-900 group-hover:shadow-xl group-hover:scale-105 transition-all duration-300">
+                      <video src={url} className="w-full h-full object-cover opacity-80" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
+                          <Video className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                    </div>
                     <button
                       onClick={() => removeVideo(idx)}
-                      className="absolute top-0.5 right-0.5 p-0.5 bg-red-500 text-white rounded-full"
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-red-500 to-rose-600 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
                     >
-                      <X className="w-3 h-3" />
+                      <X className="w-3.5 h-3.5" />
                     </button>
-                    <div className="absolute bottom-0.5 left-0.5 px-1 py-0.5 bg-black/60 rounded text-[8px] text-white">Video</div>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Tip */}
-            <div className="mt-3 p-2.5 bg-amber-50 rounded-xl border border-amber-100">
-              <p className="text-xs text-amber-800 flex items-start gap-2">
-                <Lightbulb className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <span><strong>Tip:</strong> Record a short video explaining the problem with your voice. This helps the helper understand the issue better before arriving.</span>
+            {/* Tip - Premium Style */}
+            <div className="mt-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-200/50">
+              <p className="text-sm text-amber-800 flex items-start gap-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-200">
+                  <Lightbulb className="w-4 h-4 text-white" />
+                </div>
+                <span className="pt-1"><strong className="text-amber-900">Pro Tip:</strong> Record a short video explaining the problem with your voice. This helps the helper understand the issue better before arriving.</span>
               </p>
             </div>
 
@@ -535,24 +626,28 @@ export default function AIRequestPage() {
             <input ref={videoInputRef} type="file" accept="video/*" onChange={handleVideoSelect} className="hidden" />
           </div>
 
-          {/* Service Category */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <label className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-emerald-600" />
-              Service Category <span className="text-red-500">*</span>
+          {/* Service Category - Premium Card */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-[28px] p-6 shadow-xl shadow-black/5 border border-white/60 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500 relative z-50">
+            <label className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2.5">
+              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              Service Category <span className="text-red-500 ml-1">*</span>
             </label>
-            <div className="relative">
+            <div className="relative mt-3">
               <button
                 onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                className="w-full p-3 border border-gray-200 rounded-xl text-left flex items-center justify-between hover:border-emerald-300 transition-colors"
+                className="w-full p-4 bg-gradient-to-r from-gray-50 to-white border-2 border-gray-200 rounded-2xl text-left flex items-center justify-between hover:border-emerald-400 hover:shadow-lg transition-all duration-300 group"
               >
-                <span className={selectedCategory ? 'text-gray-900' : 'text-gray-400'}>
+                <span className={`text-base font-medium ${selectedCategory ? 'text-gray-900' : 'text-gray-400'}`}>
                   {selectedCategory ? `${selectedCategory.emoji} ${selectedCategory.name}` : 'Select a category...'}
                 </span>
-                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showCategoryDropdown ? 'rotate-180' : ''}`} />
+                <div className={`w-8 h-8 rounded-xl bg-gray-100 group-hover:bg-emerald-100 flex items-center justify-center transition-all ${showCategoryDropdown ? 'rotate-180 bg-emerald-100' : ''}`}>
+                  <ChevronDown className="w-5 h-5 text-gray-500 group-hover:text-emerald-600" />
+                </div>
               </button>
               {showCategoryDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 max-h-60 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl border-2 border-gray-100 rounded-2xl shadow-2xl z-[100] max-h-72 overflow-y-auto">
                   {categories.map((cat) => (
                     <button
                       key={cat.id}
@@ -560,12 +655,15 @@ export default function AIRequestPage() {
                         setFormData(prev => ({ ...prev, category: cat.id }))
                         setShowCategoryDropdown(false)
                       }}
-                      className={`w-full p-3 text-left hover:bg-emerald-50 flex items-center gap-2 ${
-                        formData.category === cat.id ? 'bg-emerald-50 text-emerald-700' : ''
+                      className={`w-full p-4 text-left hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 flex items-center gap-3 transition-all first:rounded-t-xl last:rounded-b-xl ${
+                        formData.category === cat.id ? 'bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border-l-4 border-emerald-500' : ''
                       }`}
                     >
-                      <span>{cat.emoji}</span>
-                      <span>{cat.name}</span>
+                      <span className="text-2xl">{cat.emoji}</span>
+                      <span className="font-medium">{cat.name}</span>
+                      {formData.category === cat.id && (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 ml-auto" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -573,96 +671,132 @@ export default function AIRequestPage() {
             </div>
           </div>
 
-          {/* Service Location */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <label className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-emerald-600" />
-              Service Location <span className="text-red-500">*</span>
+          {/* Service Location - Premium Card */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-[28px] p-6 shadow-xl shadow-black/5 border border-white/60 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500">
+            <label className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2.5">
+              <div className="w-10 h-10 bg-gradient-to-br from-rose-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-rose-500/20">
+                <MapPin className="w-5 h-5 text-white" />
+              </div>
+              Service Location <span className="text-red-500 ml-1">*</span>
             </label>
-            <AddressInteractiveMap
-              value={formData.location}
-              onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
-              onAddressSelect={handleAddressSelect}
-              showMap={true}
-              mapHeight="180px"
-            />
-          </div>
-
-          {/* Complete Address */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
-            <h3 className="text-sm font-semibold text-gray-800">Complete Address</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-gray-600 mb-1 block">Flat/House No. <span className="text-red-500">*</span></label>
-                <Input
-                  placeholder="e.g., A-101"
-                  value={formData.flatNo}
-                  onChange={(e) => setFormData(prev => ({ ...prev, flatNo: e.target.value }))}
-                  className="h-10 text-sm"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-gray-600 mb-1 block">Floor</label>
-                <Input
-                  placeholder="e.g., 2nd"
-                  value={formData.floor}
-                  onChange={(e) => setFormData(prev => ({ ...prev, floor: e.target.value }))}
-                  className="h-10 text-sm"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs text-gray-600 mb-1 block">Landmark (optional)</label>
-              <Input
-                placeholder="e.g., Near SBI Bank"
-                value={formData.landmark}
-                onChange={(e) => setFormData(prev => ({ ...prev, landmark: e.target.value }))}
-                className="h-10 text-sm"
+            <div className="mt-3 rounded-2xl overflow-hidden border-2 border-gray-100">
+              <AddressInteractiveMap
+                value={formData.location}
+                onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
+                onAddressSelect={handleAddressSelect}
+                showMap={true}
+                mapHeight="200px"
               />
             </div>
           </div>
 
-          {/* Describe the Problem */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <label className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-orange-500" />
-              Describe the Problem <span className="text-red-500">*</span>
+          {/* Complete Address - Premium Card */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-[28px] p-6 shadow-xl shadow-black/5 border border-white/60 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500 space-y-4">
+            <h3 className="text-base font-bold text-gray-900 flex items-center gap-2.5">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <MapPin className="w-5 h-5 text-white" />
+              </div>
+              Complete Address
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-semibold text-gray-700 mb-2 block">Flat/House No. <span className="text-red-500">*</span></label>
+                <Input
+                  placeholder="e.g., A-101"
+                  value={formData.flatNo}
+                  onChange={(e) => setFormData(prev => ({ ...prev, flatNo: e.target.value }))}
+                  className="h-12 text-base rounded-xl border-2 border-gray-200 focus:border-emerald-400 focus:ring-emerald-100 transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-700 mb-2 block">Floor</label>
+                <Input
+                  placeholder="e.g., 2nd"
+                  value={formData.floor}
+                  onChange={(e) => setFormData(prev => ({ ...prev, floor: e.target.value }))}
+                  className="h-12 text-base rounded-xl border-2 border-gray-200 focus:border-emerald-400 focus:ring-emerald-100 transition-all"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-gray-700 mb-2 block">Landmark (optional)</label>
+              <Input
+                placeholder="e.g., Near SBI Bank"
+                value={formData.landmark}
+                onChange={(e) => setFormData(prev => ({ ...prev, landmark: e.target.value }))}
+                className="h-12 text-base rounded-xl border-2 border-gray-200 focus:border-emerald-400 focus:ring-emerald-100 transition-all"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-gray-700 mb-2 block flex items-center gap-2">
+                <Phone className="w-4 h-4 text-emerald-600" />
+                Mobile Number <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="tel"
+                placeholder="e.g., 9876543210"
+                value={formData.mobileNumber}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '').slice(0, 10)
+                  setFormData(prev => ({ ...prev, mobileNumber: value }))
+                }}
+                className="h-12 text-base rounded-xl border-2 border-gray-200 focus:border-emerald-400 focus:ring-emerald-100 transition-all"
+              />
+              {formData.mobileNumber && formData.mobileNumber.length < 10 && (
+                <p className="text-xs text-orange-600 mt-1">Enter 10 digit mobile number</p>
+              )}
+            </div>
+          </div>
+
+          {/* Describe the Problem - Premium Card */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-[28px] p-6 shadow-xl shadow-black/5 border border-white/60 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500">
+            <label className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2.5">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
+                <AlertTriangle className="w-5 h-5 text-white" />
+              </div>
+              Describe the Problem <span className="text-red-500 ml-1">*</span>
             </label>
             <Textarea
               placeholder="Describe the issue in detail... E.g., AC not cooling, water leaking from pipe, switch giving shock"
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              rows={3}
-              className="text-sm border-gray-200 focus:border-emerald-500 rounded-xl resize-none"
+              rows={4}
+              className="text-base border-2 border-gray-200 focus:border-emerald-400 focus:ring-emerald-100 rounded-2xl resize-none mt-3 p-4"
             />
           </div>
 
-          {/* Additional Details */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+          {/* Additional Details - Premium Card */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-[28px] p-6 shadow-xl shadow-black/5 border border-white/60 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500 space-y-4 relative z-40">
+            <h3 className="text-base font-bold text-gray-900 flex items-center gap-2.5">
+              <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <Lightbulb className="w-5 h-5 text-white" />
+              </div>
+              Additional Details
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-gray-600 mb-1 block">Error Code (if any)</label>
+                <label className="text-sm font-semibold text-gray-700 mb-2 block">Error Code (if any)</label>
                 <Input
                   placeholder="E.g., E1, F03, NA"
                   value={formData.errorCode}
                   onChange={(e) => setFormData(prev => ({ ...prev, errorCode: e.target.value }))}
-                  className="h-10 text-sm"
+                  className="h-12 text-base rounded-xl border-2 border-gray-200 focus:border-emerald-400 focus:ring-emerald-100 transition-all"
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-600 mb-1 block">How long?</label>
+                <label className="text-sm font-semibold text-gray-700 mb-2 block">How long?</label>
                 <div className="relative">
                   <button
                     onClick={() => setShowHowLongDropdown(!showHowLongDropdown)}
-                    className="w-full h-10 px-3 border border-gray-200 rounded-lg text-left flex items-center justify-between text-sm hover:border-emerald-300"
+                    className="w-full h-12 px-4 bg-white border-2 border-gray-200 rounded-xl text-left flex items-center justify-between hover:border-emerald-400 transition-all"
                   >
-                    <span className={selectedHowLong ? 'text-gray-900' : 'text-gray-400'}>
+                    <span className={`font-medium ${selectedHowLong ? 'text-gray-900' : 'text-gray-400'}`}>
                       {selectedHowLong?.label || 'Select...'}
                     </span>
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                    <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showHowLongDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showHowLongDropdown && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                    <div className="absolute bottom-full left-0 right-0 mb-2 bg-white/95 backdrop-blur-xl border-2 border-gray-100 rounded-xl shadow-xl z-[100]">
                       {howLongOptions.map((opt) => (
                         <button
                           key={opt.id}
@@ -670,7 +804,9 @@ export default function AIRequestPage() {
                             setFormData(prev => ({ ...prev, howLong: opt.id }))
                             setShowHowLongDropdown(false)
                           }}
-                          className="w-full p-2.5 text-left text-sm hover:bg-emerald-50"
+                          className={`w-full p-3 text-left text-sm font-medium hover:bg-emerald-50 transition-colors first:rounded-t-xl last:rounded-b-xl ${
+                            formData.howLong === opt.id ? 'bg-emerald-50 text-emerald-700' : ''
+                          }`}
                         >
                           {opt.label}
                         </button>
@@ -681,35 +817,39 @@ export default function AIRequestPage() {
               </div>
             </div>
             <div>
-              <label className="text-xs text-gray-600 mb-1 block">Tried fixing yourself?</label>
+              <label className="text-sm font-semibold text-gray-700 mb-2 block">Tried fixing yourself?</label>
               <Textarea
                 placeholder="What you've tried, or type 'NA'"
                 value={formData.triedFixing}
                 onChange={(e) => setFormData(prev => ({ ...prev, triedFixing: e.target.value }))}
                 rows={2}
-                className="text-sm"
+                className="text-base border-2 border-gray-200 focus:border-emerald-400 focus:ring-emerald-100 rounded-xl resize-none p-3"
               />
             </div>
           </div>
 
-          {/* Urgency */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <label className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-emerald-600" />
+          {/* Urgency - Premium Card */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-[28px] p-6 shadow-xl shadow-black/5 border border-white/60 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500 relative z-50">
+            <label className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2.5">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <Clock className="w-5 h-5 text-white" />
+              </div>
               When do you need help?
             </label>
-            <div className="relative">
+            <div className="relative mt-3">
               <button
                 onClick={() => setShowUrgencyDropdown(!showUrgencyDropdown)}
-                className="w-full p-3 border border-gray-200 rounded-xl text-left flex items-center justify-between hover:border-emerald-300"
+                className="w-full p-4 bg-gradient-to-r from-gray-50 to-white border-2 border-gray-200 rounded-2xl text-left flex items-center justify-between hover:border-emerald-400 hover:shadow-lg transition-all duration-300 group"
               >
-                <span className={selectedUrgency ? 'text-gray-900' : 'text-gray-400'}>
+                <span className={`text-base font-medium ${selectedUrgency ? 'text-gray-900' : 'text-gray-400'}`}>
                   {selectedUrgency?.label || 'Select urgency...'}
                 </span>
-                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showUrgencyDropdown ? 'rotate-180' : ''}`} />
+                <div className={`w-8 h-8 rounded-xl bg-gray-100 group-hover:bg-emerald-100 flex items-center justify-center transition-all ${showUrgencyDropdown ? 'rotate-180 bg-emerald-100' : ''}`}>
+                  <ChevronDown className="w-5 h-5 text-gray-500 group-hover:text-emerald-600" />
+                </div>
               </button>
               {showUrgencyDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10">
+                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white/95 backdrop-blur-xl border-2 border-gray-100 rounded-2xl shadow-2xl z-[100] overflow-hidden">
                   {urgencyOptions.map((opt) => (
                     <button
                       key={opt.id}
@@ -717,12 +857,12 @@ export default function AIRequestPage() {
                         setFormData(prev => ({ ...prev, urgency: opt.id }))
                         setShowUrgencyDropdown(false)
                       }}
-                      className={`w-full p-3 text-left hover:bg-emerald-50 ${
-                        formData.urgency === opt.id ? 'bg-emerald-50 text-emerald-700' : ''
+                      className={`w-full p-4 text-left hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 transition-all ${
+                        formData.urgency === opt.id ? 'bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border-l-4 border-emerald-500' : ''
                       }`}
                     >
-                      <div className="font-medium text-sm">{opt.label}</div>
-                      <div className="text-xs text-gray-500">{opt.description}</div>
+                      <div className="font-semibold text-base">{opt.label}</div>
+                      <div className="text-sm text-gray-500 mt-0.5">{opt.description}</div>
                     </button>
                   ))}
                 </div>
@@ -730,103 +870,165 @@ export default function AIRequestPage() {
             </div>
           </div>
 
-          {/* Analyze Button */}
+          {/* Analyze Button - Premium Style */}
           <Button
             onClick={handleAnalyze}
             disabled={analyzing || uploading}
-            className="w-full h-14 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-base rounded-xl shadow-lg"
+            className="w-full h-16 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white font-bold text-lg rounded-2xl shadow-xl shadow-emerald-500/30 hover:shadow-2xl hover:shadow-emerald-500/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100"
           >
             {analyzing ? (
               <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                AI is analyzing...
+                <div className="w-6 h-6 mr-3 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                AI is analyzing your request...
               </>
             ) : (
               <>
-                <Sparkles className="w-5 h-5 mr-2" />
+                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center mr-3">
+                  <Brain className="w-5 h-5" />
+                </div>
                 Analyze with AI & Get Price
               </>
             )}
           </Button>
 
-          {/* Photos reminder */}
+          {/* Photos reminder - Premium Style */}
           {images.length < 3 && (
-            <p className="text-center text-sm text-orange-600">
-              Upload {3 - images.length} more photo(s)
-            </p>
+            <div className="flex items-center justify-center gap-2 p-3 bg-orange-50 rounded-2xl border border-orange-200">
+              <Camera className="w-4 h-4 text-orange-600" />
+              <p className="text-sm font-medium text-orange-700">
+                Upload {3 - images.length} more photo(s) to continue
+              </p>
+            </div>
           )}
         </div>
       )}
 
-      {/* Step 2: Review */}
+      {/* Step 2: Review - Premium Design */}
       {step === 2 && aiResult && (
-        <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
-          {/* AI Result */}
-          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-white">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-5 h-5" />
-              <span className="font-semibold">AI Estimated Price</span>
-              <span className="ml-auto text-xs bg-white/20 px-2 py-0.5 rounded-full">{aiResult.confidence}% confident</span>
-            </div>
-            <div className="text-4xl font-black mb-1">₹{aiResult.estimatedPrice}</div>
-            <p className="text-emerald-100 text-sm">{aiResult.categoryName} • Final price may vary</p>
-          </div>
-
-          {/* Summary */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
-            <h3 className="font-semibold text-gray-900">Request Summary</h3>
+        <div className="max-w-2xl mx-auto px-4 py-6 space-y-5 relative">
+          {/* AI Result - Premium Gradient Card */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 rounded-[32px] p-6 shadow-2xl shadow-emerald-500/30">
+            {/* Decorative Elements */}
+            <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-2xl -translate-y-20 translate-x-20" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-xl translate-y-16 -translate-x-16" />
             
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Category</span>
-                <span className="font-medium">{selectedCategory?.emoji} {aiResult.categoryName}</span>
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                  <Brain className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <span className="font-bold text-white text-lg">AI Estimated Price</span>
+                  <p className="text-white/70 text-sm">Powered by smart analysis</p>
+                </div>
+                <div className="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl">
+                  <span className="text-white font-bold text-sm">{aiResult.confidence}% confident</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Location</span>
-                <span className="font-medium text-right max-w-[60%] truncate">{formData.flatNo}, {formData.location.split(',')[0]}</span>
+              
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 mb-4">
+                <div className="text-5xl font-black text-white mb-1">
+                  ₹<AnimatedCounter end={aiResult.estimatedPrice} duration={1500} />
+                </div>
+                <p className="text-white/80 text-sm flex items-center gap-2">
+                  <Star className="w-4 h-4 text-amber-300" />
+                  {aiResult.categoryName} • Final price may vary based on actual work
+                </p>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Urgency</span>
-                <span className="font-medium">{selectedUrgency?.label}</span>
+              
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-2 bg-white/20 rounded-xl">
+                  <Shield className="w-4 h-4 text-white" />
+                  <span className="text-white text-sm font-medium">Price Protection</span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-2 bg-white/20 rounded-xl">
+                  <CheckCircle2 className="w-4 h-4 text-white" />
+                  <span className="text-white text-sm font-medium">No Hidden Fees</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Photos/Videos</span>
-                <span className="font-medium">{images.length} photos, {videos.length} videos</span>
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-gray-100">
-              <p className="text-xs text-gray-500 mb-1">Problem</p>
-              <p className="text-sm text-gray-800">{formData.description}</p>
             </div>
           </div>
 
-          {/* Trust badges */}
-          <div className="flex items-center justify-center gap-6 py-2 text-sm text-gray-500">
-            <span className="flex items-center gap-1.5">
-              <Shield className="w-4 h-4 text-emerald-500" />
-              Verified helpers
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-blue-500" />
-              Money-back guarantee
-            </span>
+          {/* Summary - Premium Card */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-[28px] p-6 shadow-xl shadow-black/5 border border-white/60">
+            <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <FileCheck className="w-5 h-5 text-white" />
+              </div>
+              Request Summary
+            </h3>
+            
+            <div className="space-y-3">
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                <span className="text-gray-500 font-medium">Category</span>
+                <span className="font-semibold text-gray-900">{selectedCategory?.emoji} {aiResult.categoryName}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                <span className="text-gray-500 font-medium">Location</span>
+                <span className="font-semibold text-gray-900 text-right max-w-[60%] truncate">{formData.flatNo}, {formData.location.split(',')[0]}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                <span className="text-gray-500 font-medium">Urgency</span>
+                <span className={`font-semibold px-3 py-1 rounded-full text-sm ${
+                  formData.urgency === 'emergency' ? 'bg-red-100 text-red-700' :
+                  formData.urgency === 'urgent' ? 'bg-orange-100 text-orange-700' :
+                  'bg-emerald-100 text-emerald-700'
+                }`}>{selectedUrgency?.label}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                <span className="text-gray-500 font-medium">Mobile</span>
+                <span className="font-semibold text-gray-900 flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-emerald-600" />
+                  +91 {formData.mobileNumber}
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                <span className="text-gray-500 font-medium">Media</span>
+                <div className="flex gap-2">
+                  <span className="font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                    <Camera className="w-3.5 h-3.5" /> {images.length}
+                  </span>
+                  <span className="font-semibold text-purple-700 bg-purple-50 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                    <Video className="w-3.5 h-3.5" /> {videos.length}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-sm font-semibold text-gray-500 mb-2">Problem Description</p>
+              <p className="text-gray-800 bg-gradient-to-r from-gray-50 to-white p-4 rounded-xl border border-gray-100">{formData.description}</p>
+            </div>
           </div>
 
-          {/* Submit Button */}
+          {/* Trust badges - Premium Style */}
+          <div className="flex items-center justify-center gap-4 py-3">
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 rounded-xl border border-emerald-200">
+              <Shield className="w-5 h-5 text-emerald-600" />
+              <span className="text-sm font-semibold text-emerald-700">Verified Helpers</span>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 rounded-xl border border-blue-200">
+              <CheckCircle2 className="w-5 h-5 text-blue-600" />
+              <span className="text-sm font-semibold text-blue-700">Money-back Guarantee</span>
+            </div>
+          </div>
+
+          {/* Submit Button - Premium Style */}
           <Button
             onClick={handleSubmit}
             disabled={loading}
-            className="w-full h-14 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-base rounded-xl shadow-lg"
+            className="w-full h-16 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white font-bold text-lg rounded-2xl shadow-xl shadow-emerald-500/30 hover:shadow-2xl hover:shadow-emerald-500/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100"
           >
             {loading ? (
               <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Posting request...
+                <div className="w-6 h-6 mr-3 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                Posting your request...
               </>
             ) : (
               <>
-                <Send className="w-5 h-5 mr-2" />
+                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center mr-3">
+                  <Send className="w-5 h-5" />
+                </div>
                 Confirm & Post Request
               </>
             )}
@@ -834,17 +1036,52 @@ export default function AIRequestPage() {
         </div>
       )}
 
-      {/* Step 3: Done */}
+      {/* Step 3: Done - Premium Celebration */}
       {step === 3 && (
-        <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+        <div className="max-w-2xl mx-auto px-4 py-16 text-center relative">
+          {/* Celebration Background */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
+            <div className="absolute top-1/3 right-1/4 w-3 h-3 bg-teal-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+            <div className="absolute top-1/2 left-1/3 w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
+            <div className="absolute bottom-1/3 right-1/3 w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0.6s' }} />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Request Posted! 🎉</h2>
-          <p className="text-gray-600 mb-4">Helpers nearby are being notified...</p>
-          <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Redirecting to tracking page...
+          
+          <div className="relative z-10">
+            <div className="w-28 h-28 bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-500 rounded-[32px] flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-emerald-500/40 animate-pulse">
+              <CheckCircle2 className="w-14 h-14 text-white" />
+            </div>
+            
+            <h2 className="text-3xl font-black bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent mb-3">
+              Request Posted! 🎉
+            </h2>
+            
+            <p className="text-gray-600 text-lg mb-6">
+              Nearby verified helpers are being notified now
+            </p>
+            
+            <div className="inline-flex items-center justify-center gap-3 px-6 py-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-200">
+              <div className="w-5 h-5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+              <span className="text-emerald-700 font-semibold">Redirecting to tracking page...</span>
+            </div>
+            
+            <div className="mt-8 flex justify-center gap-4">
+              <div className="px-4 py-2 bg-white rounded-xl shadow-lg border border-gray-100">
+                <div className="text-sm text-gray-500">Estimated</div>
+                <div className="text-xl font-bold text-emerald-600">₹{aiResult?.estimatedPrice || 0}</div>
+              </div>
+              <div className="px-4 py-2 bg-white rounded-xl shadow-lg border border-gray-100">
+                <div className="text-sm text-gray-500">Category</div>
+                <div className="text-xl font-bold text-gray-900">{selectedCategory?.emoji}</div>
+              </div>
+              <div className="px-4 py-2 bg-white rounded-xl shadow-lg border border-gray-100">
+                <div className="text-sm text-gray-500">Urgency</div>
+                <div className={`text-xl font-bold ${
+                  formData.urgency === 'emergency' ? 'text-red-600' :
+                  formData.urgency === 'urgent' ? 'text-orange-600' : 'text-emerald-600'
+                }`}>{selectedUrgency?.label?.split(' ')[0]}</div>
+              </div>
+            </div>
           </div>
         </div>
       )}
