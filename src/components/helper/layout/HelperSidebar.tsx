@@ -141,30 +141,6 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
   ]
 
   const isActive = (href: string) => pathname === href
-    },
-    /* === HIDDEN - VIDEO CALLS ===
-    {
-      label: 'Video Calls',
-      icon: Video,
-      href: '/helper/video-calls',
-      requiresVerification: true
-    },
-    === END HIDDEN VIDEO CALLS === */
-    {
-      label: 'Trust Score',
-      icon: Users,
-      href: '/helper/trust-score',
-      requiresVerification: true
-    },
-    {
-      label: 'Referrals',
-      icon: Gift,
-      href: '/helper/referrals',
-      requiresVerification: false
-    },
-  ]
-
-  const isActive = (href: string) => pathname === href
 
   // Render nav items
   const renderNavItems = (isMobile: boolean = false) => (
