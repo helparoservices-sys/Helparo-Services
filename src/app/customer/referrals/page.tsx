@@ -61,9 +61,16 @@ export default function CustomerReferralsPage() {
       return
     }
 
-    // Generate referral code from user ID
-    const code = `HELP${user.id.substring(0, 8).toUpperCase()}`
-    setReferralCode(code)
+    // Generate/get referral code from database (this creates one if not exists)
+    const { data: generatedCode, error: genError } = await supabase.rpc('generate_referral_code')
+    
+    if (genError) {
+      console.error('Error generating referral code:', genError)
+      // Fallback to user ID based code if RPC fails
+      setReferralCode(`HELP${user.id.substring(0, 8).toUpperCase()}`)
+    } else if (generatedCode) {
+      setReferralCode(generatedCode)
+    }
 
     // Load referrals
     const { data: refData } = await supabase

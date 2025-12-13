@@ -80,18 +80,37 @@ export async function convertReferral(code: string) {
     const { user } = await requireAuth()
     await rateLimit('convert-referral', user.id, RATE_LIMITS.API_MODERATE)
 
-    const safeCode = sanitizeText(code.toUpperCase())
+    // Just uppercase and trim - don't use sanitizeText as it may strip chars
+    const safeCode = code.trim().toUpperCase()
+    
+    console.log('[convertReferral] Input code:', code)
+    console.log('[convertReferral] Safe code:', safeCode)
+    console.log('[convertReferral] User ID:', user.id)
 
     const supabase = await createClient()
     const { data, error } = await supabase.rpc('convert_referral', { 
-      p_referral_code: safeCode 
-    } as any)
+      p_referral_code: safeCode,
+      p_new_user_id: user.id
+    })
     
-    if (error) throw error
+    console.log('[convertReferral] RPC result - data:', data, 'error:', error)
+    
+    if (error) {
+      logger.error('Convert referral RPC error', { error, code: safeCode, userId: user.id })
+      return { error: error.message || 'Failed to apply referral code' }
+    }
 
+    // data is boolean - true if converted, false if not found/already used
+    if (data === false) {
+      console.log('[convertReferral] RPC returned false - invalid code or already used')
+      return { error: 'Invalid referral code or already used' }
+    }
+
+    console.log('[convertReferral] Success!')
     logger.info('Referral converted', { userId: user.id, code: safeCode })
-    return { data }
+    return { data: true, success: true }
   } catch (error: any) {
+    console.error('[convertReferral] Exception:', error)
     logger.error('Convert referral error', { error })
     return handleServerActionError(error)
   }
