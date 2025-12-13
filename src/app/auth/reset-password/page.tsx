@@ -21,7 +21,7 @@ export default function ResetPasswordPage() {
 
   // Password strength validation
   const passwordStrength = {
-    hasLength: password.length >= 12,
+    hasLength: password.length >= 8,
     hasUpper: /[A-Z]/.test(password),
     hasLower: /[a-z]/.test(password),
     hasNumber: /[0-9]/.test(password),
@@ -173,7 +173,7 @@ export default function ResetPasswordPage() {
               {/* Password Requirements */}
               {password && (
                 <div className="space-y-1 text-xs mt-2">
-                  <PasswordRequirement met={passwordStrength.hasLength} text="At least 12 characters" />
+                  <PasswordRequirement met={passwordStrength.hasLength} text="At least 8 characters" />
                   <PasswordRequirement met={passwordStrength.hasUpper} text="One uppercase letter" />
                   <PasswordRequirement met={passwordStrength.hasLower} text="One lowercase letter" />
                   <PasswordRequirement met={passwordStrength.hasNumber} text="One number" />

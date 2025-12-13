@@ -28,8 +28,8 @@ export function ChangePasswordForm() {
     setMessage(null)
     
     // Validation
-    if (passwords.new.length < 12) {
-      setMessage({ type: 'error', text: 'New password must be at least 12 characters' })
+    if (passwords.new.length < 8) {
+      setMessage({ type: 'error', text: 'New password must be at least 8 characters' })
       return
     }
     
@@ -113,7 +113,7 @@ export function ChangePasswordForm() {
                 onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
                 required
                 className="pr-10"
-                placeholder="Enter your new password (min 12 characters)"
+                placeholder="Enter your new password (min 8 characters)"
               />
               <button
                 type="button"
@@ -124,7 +124,7 @@ export function ChangePasswordForm() {
               </button>
             </div>
             <p className="text-xs text-gray-500">
-              Must be at least 12 characters with uppercase, lowercase, numbers, and symbols
+              Must be at least 8 characters with uppercase, lowercase, numbers, and symbols
             </p>
           </div>
 

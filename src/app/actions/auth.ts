@@ -221,7 +221,7 @@ export async function updatePasswordAction(formData: FormData) {
     const password = String(formData.get('password') || '')
     const parsed = passwordSchema.safeParse(password)
     if (!parsed.success) {
-      return { error: 'Password must be at least 12 characters' }
+      return { error: 'Password must be at least 8 characters' }
     }
 
     const supabase = await createClient()
@@ -250,7 +250,7 @@ export async function changePasswordWithReauthAction(formData: FormData) {
     
     const parsedNew = passwordSchema.safeParse(newPassword)
     if (!parsedNew.success) {
-      return { error: 'New password must be at least 12 characters' }
+      return { error: 'New password must be at least 8 characters' }
     }
 
     if (currentPassword === newPassword) {

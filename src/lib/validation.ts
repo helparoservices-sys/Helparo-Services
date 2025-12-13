@@ -15,7 +15,7 @@ export const emailSchema = z
 // Password validation with strong security requirements
 export const passwordSchema = z
   .string()
-  .min(12, 'Password must be at least 12 characters')
+  .min(8, 'Password must be at least 8 characters')
   .max(128, 'Password is too long')
   .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
   .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
