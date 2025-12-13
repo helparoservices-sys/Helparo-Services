@@ -9,6 +9,7 @@ import Breadcrumb from '@/components/admin/layout/Breadcrumb'
 import { ToastProvider } from '@/components/ui/toast-notification'
 import { LocationPermissionPrompt } from '@/components/helper/location-permission'
 import { JobNotificationPopup, useJobNotifications } from '@/components/helper/job-notification-popup'
+import SOSAlertPopup from '@/components/helper/sos-alert-popup'
 import { Toaster } from 'sonner'
 
 interface HelperLayoutProps {
@@ -48,6 +49,9 @@ function HelperLayoutContent({ children }: HelperLayoutProps) {
         onDecline={declineJob}
         onClose={closeNotification}
       />
+
+      {/* SOS Emergency Alert Popup - Persistent with Sound */}
+      <SOSAlertPopup />
     
       {/* Main Layout */}
       <div className="relative z-10">

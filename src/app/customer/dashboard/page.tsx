@@ -26,7 +26,6 @@ import {
   Bell,
   Trophy,
   Target,
-  Lightbulb,
   Flame,
   Award,
   Users,
@@ -85,21 +84,9 @@ export default function CustomerDashboard() {
   const [requests, setRequests] = useState<Array<{ id: string; title: string; status: string; created_at: string; city?: string }>>([])
   const [activeCount, setActiveCount] = useState(0)
   const [completedCount, setCompletedCount] = useState(0)
-  const [currentTip, setCurrentTip] = useState(0)
   const [showReferralModal, setShowReferralModal] = useState(false)
 
   const greeting = getGreeting()
-
-  const tips = [
-    { icon: Lightbulb, text: 'Use AI Smart Request for instant quotes!', color: 'text-amber-500' },
-    { icon: Gift, text: 'Refer friends & earn ₹100 for each signup', color: 'text-pink-500' },
-    { icon: Trophy, text: 'Complete 5 bookings to unlock Gold status', color: 'text-emerald-500' },
-  ]
-
-  useEffect(() => {
-    const interval = setInterval(() => setCurrentTip((p) => (p + 1) % tips.length), 5000)
-    return () => clearInterval(interval)
-  }, [tips.length])
 
   useEffect(() => {
     async function loadData() {
@@ -195,7 +182,7 @@ export default function CustomerDashboard() {
               <p className="text-gray-500 mt-2 text-base sm:text-lg">What do you need help with today?</p>
             </div>
             
-            {/* Quick Stats Pill */}
+{/* === HIDDEN FOR NOW - WALLET & POINTS BUTTONS ===
             <div className="flex items-center gap-2 sm:gap-4">
               <Link href="/customer/wallet" className="group flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-emerald-200 transition-all">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
@@ -216,6 +203,7 @@ export default function CustomerDashboard() {
                 </div>
               </Link>
             </div>
+            === END HIDDEN WALLET & POINTS === */}
           </div>
         </div>
 
@@ -379,6 +367,7 @@ export default function CustomerDashboard() {
             <p className="text-xs sm:text-sm text-gray-500 font-medium">Completed</p>
           </Link>
 
+          {/* === HIDDEN FOR NOW - WALLET BALANCE CARD ===
           <Link href="/customer/wallet" className="group bg-white rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-gray-100 shadow-sm hover:shadow-xl hover:border-blue-200 hover:-translate-y-1 transition-all duration-300">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
               <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
@@ -388,15 +377,16 @@ export default function CustomerDashboard() {
             </p>
             <p className="text-xs sm:text-sm text-gray-500 font-medium">Wallet Balance</p>
           </Link>
+          === END HIDDEN WALLET BALANCE === */}
 
-          <Link href="/customer/referrals" className="group bg-white rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-gray-100 shadow-sm hover:shadow-xl hover:border-purple-200 hover:-translate-y-1 transition-all duration-300">
+          <Link href="/customer/badges" className="group bg-white rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-gray-100 shadow-sm hover:shadow-xl hover:border-purple-200 hover:-translate-y-1 transition-all duration-300">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
-              <Gift className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+              <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
             </div>
             <p className="text-2xl sm:text-3xl font-black text-gray-900">
               <AnimatedCounter end={loyalty?.points_balance || 0} />
             </p>
-            <p className="text-xs sm:text-sm text-gray-500 font-medium">Reward Points</p>
+            <p className="text-xs sm:text-sm text-gray-500 font-medium">Badges</p>
           </Link>
         </div>
 
@@ -491,27 +481,6 @@ export default function CustomerDashboard() {
 
           {/* Quick Actions Sidebar */}
           <div className="space-y-3 sm:space-y-4">
-            {/* Tips Card */}
-            <div className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white shadow-2xl shadow-purple-500/30 overflow-hidden relative">
-              <div className="absolute top-0 right-0 w-24 sm:w-32 h-24 sm:h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-              <div className="relative">
-                <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center">
-                    <Lightbulb className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </div>
-                  <span className="font-bold text-sm sm:text-base">Pro Tip</span>
-                </div>
-                <p className="text-white/90 text-xs sm:text-sm leading-relaxed">
-                  {tips[currentTip].text}
-                </p>
-                <div className="flex gap-1.5 mt-3 sm:mt-4">
-                  {tips.map((_, i) => (
-                    <div key={i} className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all ${i === currentTip ? 'bg-white w-4 sm:w-6' : 'bg-white/30'}`} />
-                  ))}
-                </div>
-              </div>
-            </div>
-
             {/* Quick Links */}
             <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-100 shadow-sm p-4 sm:p-5">
               <h3 className="font-bold text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">Quick Links</h3>

@@ -91,7 +91,7 @@ function JobCompletionModal({
   isOpen: boolean
   job: JobDetails
   onClose: () => void
-  onRateCustomer: (rating: number) => void
+  onRateCustomer: (rating: number) => Promise<boolean>
 }) {
   const [rating, setRating] = useState(0)
   const [hoveredRating, setHoveredRating] = useState(0)
@@ -108,9 +108,17 @@ function JobCompletionModal({
       return
     }
     setSubmitting(true)
-    await onRateCustomer(rating)
-    setSubmitting(false)
-    router.push('/helper/dashboard')
+    try {
+      const success = await onRateCustomer(rating)
+      if (success) {
+        router.push('/helper/dashboard')
+      }
+    } catch (error) {
+      console.error('Rating submission failed:', error)
+      toast.error('Failed to submit rating. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handleSkip = () => {
@@ -613,24 +621,34 @@ export default function HelperJobPage() {
     }
   }
 
-  async function rateCustomer(rating: number) {
-    if (!job?.customer?.id) return
+  async function rateCustomer(rating: number): Promise<boolean> {
+    if (!job?.customer?.id) {
+      toast.error('Customer information not found')
+      return false
+    }
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) {
+        toast.error('Please login to rate')
+        return false
+      }
 
       // Get helper profile
-      const { data: helperProfile } = await supabase
+      const { data: helperProfile, error: profileError } = await supabase
         .from('helper_profiles')
         .select('id')
         .eq('user_id', user.id)
         .single()
 
-      if (!helperProfile) return
+      if (profileError || !helperProfile) {
+        console.error('Helper profile error:', profileError)
+        toast.error('Could not find your helper profile')
+        return false
+      }
 
       // Save customer rating from helper
-      await supabase
+      const { error: ratingError } = await supabase
         .from('customer_ratings')
         .insert({
           customer_id: job.customer.id,
@@ -639,16 +657,24 @@ export default function HelperJobPage() {
           rating: rating,
           created_at: new Date().toISOString()
         })
-        .select()
-        .single()
-        .catch(() => {
-          // Table might not exist, that's okay
-          console.log('customer_ratings table might not exist')
-        })
 
-      toast.success('Thanks for your feedback!')
+      if (ratingError) {
+        console.error('Rating insert error:', ratingError)
+        // If table doesn't exist or other error, still allow user to proceed
+        if (ratingError.code === '42P01') {
+          console.log('customer_ratings table does not exist')
+        } else {
+          toast.error('Could not save rating, but you can continue')
+        }
+      } else {
+        toast.success('Thanks for your feedback!')
+      }
+
+      return true
     } catch (error) {
       console.error('Failed to rate customer:', error)
+      toast.error('Something went wrong')
+      return false
     }
   }
 

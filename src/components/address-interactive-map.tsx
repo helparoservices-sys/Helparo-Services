@@ -178,15 +178,34 @@ export function AddressInteractiveMap({
       markerRef.current.setMap(null)
     }
 
-    // Create new marker
+    // Create floating heart marker SVG (no pin, just heart)
+    const heartMarkerSvg = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+        <defs>
+          <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#FF6B8A"/>
+            <stop offset="100%" style="stop-color:#EF4444"/>
+          </linearGradient>
+          <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#EF4444" flood-opacity="0.4"/>
+          </filter>
+        </defs>
+        <g filter="url(#shadow)">
+          <path d="M24 44C24 44 42 30 42 18C42 10.27 35.73 4 28 4C25.03 4 24 6.5 24 6.5C24 6.5 22.97 4 20 4C12.27 4 6 10.27 6 18C6 30 24 44 24 44Z" fill="url(#heartGrad)" stroke="white" stroke-width="2"/>
+        </g>
+      </svg>
+    `
+
+    // Create new marker with floating heart icon
     markerRef.current = new window.google.maps.Marker({
       position,
       map: googleMapRef.current,
       draggable: true,
       animation: window.google.maps.Animation.DROP,
       icon: {
-        url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-        scaledSize: new window.google.maps.Size(40, 40),
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(heartMarkerSvg),
+        scaledSize: new window.google.maps.Size(48, 48),
+        anchor: new window.google.maps.Point(24, 44),
       },
     })
 

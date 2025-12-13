@@ -59,6 +59,12 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
       requiresVerification: false
     },
     {
+      label: 'Assigned Jobs',
+      icon: Briefcase,
+      href: '/helper/assigned',
+      requiresVerification: true
+    },
+    {
       label: 'Browse Requests',
       icon: Search,
       href: '/helper/requests',

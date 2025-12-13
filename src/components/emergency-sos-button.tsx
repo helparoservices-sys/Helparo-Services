@@ -28,44 +28,78 @@ async function notifyNearbyHelpers(
   alertId: string,
   lat: number,
   lng: number,
-  sosType: string
+  sosType: string,
+  customerName: string,
+  customerPhone: string
 ) {
   try {
-    // Get nearby available helpers (within 15km)
-    const { data: helpers } = await supabase
+    console.log('🚨 SOS: Starting to notify helpers...', { alertId, lat, lng, sosType, customerName })
+    
+    // Get ALL verified helpers - use user_id for notifications (not helper_profiles.id)
+    const { data: helpers, error: helperError } = await supabase
       .from('helper_profiles')
-      .select('id, latitude, longitude, profiles!inner(full_name)')
+      .select('id, user_id, latitude, longitude')
       .eq('verification_status', 'approved')
-      .eq('is_available_now', true)
-      .not('latitude', 'is', null)
-      .not('longitude', 'is', null)
 
-    if (!helpers || helpers.length === 0) {
-      console.log('No nearby helpers found for SOS alert')
+    if (helperError) {
+      console.error('🚨 SOS: Error fetching helpers:', helperError)
       return
     }
 
-    // Filter helpers within 15km radius
-    const nearbyHelpers = helpers.filter(helper => {
-      if (!helper.latitude || !helper.longitude || lat === 0 || lng === 0) return true // Include all if no location
-      const distance = getDistanceKm(lat, lng, helper.latitude, helper.longitude)
-      return distance <= 15 // 15km radius
-    }).slice(0, 10) // Limit to 10 nearest helpers
+    console.log('🚨 SOS: Found helpers:', helpers?.length || 0)
 
-    // Create notifications for each nearby helper
+    if (!helpers || helpers.length === 0) {
+      console.log('🚨 SOS: No verified helpers found')
+      return
+    }
+
+    // Filter helpers within 30km radius - notify ALL helpers in range
+    let nearbyHelpers = helpers
+    
+    if (lat !== 0 && lng !== 0) {
+      nearbyHelpers = helpers.filter(helper => {
+        // If helper has no location, include them anyway for emergencies
+        if (!helper.latitude || !helper.longitude) return true
+        const distance = getDistanceKm(lat, lng, helper.latitude, helper.longitude)
+        console.log(`🚨 SOS: Helper ${helper.user_id} distance: ${distance.toFixed(2)}km`)
+        return distance <= 30 // 30km radius
+      })
+    }
+
+    console.log('🚨 SOS: Nearby helpers to notify:', nearbyHelpers.length)
+
+    // Create notifications for each nearby helper using user_id (NOT helper_profiles.id)
+    // Note: Using 'push' channel since 'sos_emergency' is not in the enum
+    // We identify SOS by the data.is_sos field
     const notifications = nearbyHelpers.map(helper => ({
-      user_id: helper.id,
-      channel: 'push',
-      title: '🚨 EMERGENCY: Customer needs help!',
-      body: `A customer nearby needs ${sosType} assistance. Please respond if you can help.`,
-      data: JSON.stringify({ alert_id: alertId, type: 'sos_alert', link: '/helper/sos' }),
+      user_id: helper.user_id, // IMPORTANT: Use user_id, not id!
+      channel: 'push', // Must use existing enum value
+      title: '🚨 EMERGENCY SOS - Someone Needs Your Help!',
+      body: `${customerName} is in ${sosType} trouble and needs immediate help! 🙏 Everything is not about money - show some humanity.`,
+      data: { 
+        alert_id: alertId, 
+        type: 'sos_alert', 
+        link: `/helper/sos/${alertId}`,
+        is_sos: true,
+        sos_type: sosType,
+        customer_id: customerId,
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        customer_lat: lat,
+        customer_lng: lng,
+        requires_action: true
+      },
       status: 'sent',
       created_at: new Date().toISOString(),
     }))
 
     if (notifications.length > 0) {
-      await supabase.from('notifications').insert(notifications)
-      console.log(`Notified ${notifications.length} helpers about SOS alert`)
+      const { error: insertError } = await supabase.from('notifications').insert(notifications)
+      if (insertError) {
+        console.error('🚨 SOS: Error inserting notifications:', insertError)
+      } else {
+        console.log(`🚨 SOS: Successfully notified ${notifications.length} helpers!`)
+      }
     }
 
     // Also notify admins
@@ -173,6 +207,16 @@ export default function EmergencySOSButton({ requestId, className = '' }: Emerge
         throw new Error('Please log in to send an SOS alert')
       }
 
+      // Get customer profile for name and phone
+      const { data: customerProfile } = await supabase
+        .from('profiles')
+        .select('full_name, phone')
+        .eq('id', user.id)
+        .single()
+
+      const customerName = customerProfile?.full_name || 'A customer'
+      const customerPhone = customerProfile?.phone || ''
+
       // Map SOS type to database alert_type
       const alertTypeMap: Record<string, string> = {
         'safety': 'safety_concern',
@@ -187,17 +231,21 @@ export default function EmergencySOSButton({ requestId, className = '' }: Emerge
         p_longitude: lng,
         p_description: description || `${sosType} emergency - immediate assistance needed`,
         p_request_id: requestId || null,
+        p_contact_phone: customerPhone || null,
       })
 
       if (error) throw error
 
-      // Notify nearby helpers about the emergency
-      await notifyNearbyHelpers(supabase, user.id, alertId, lat, lng, sosType)
+      console.log('🚨 SOS: Alert created with ID:', alertId)
+
+      // Notify nearby helpers about the emergency with customer details
+      await notifyNearbyHelpers(supabase, user.id, alertId, lat || 0, lng || 0, sosType, customerName, customerPhone)
 
       showSuccess('🚨 Emergency Alert Sent', 'Help is on the way!')
       setShowModal(false)
       setDescription('')
     } catch (error) {
+      console.error('🚨 SOS: Error creating alert:', error)
       showError('Alert Failed', (error as Error).message)
     } finally {
       setCreating(false)

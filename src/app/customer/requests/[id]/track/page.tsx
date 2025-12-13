@@ -350,20 +350,29 @@ function LiveTrackingMap({
 
     mapInstanceRef.current = map
 
-    // Customer marker
+    // Customer marker - Floating heart design
     customerMarkerRef.current = new google.maps.Marker({
       position: { lat: customerLat, lng: customerLng },
       map,
       icon: {
         url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-          <svg width="48" height="56" viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M24 0C10.7 0 0 10.7 0 24c0 18 24 32 24 32s24-14 24-32C48 10.7 37.3 0 24 0z" fill="#EF4444"/>
-            <circle cx="24" cy="22" r="14" fill="white"/>
-            <path d="M24 13l-9 7.5v9h5.5v-5h7v5H33v-9L24 13z" fill="#EF4444"/>
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#FF6B8A"/>
+                <stop offset="100%" style="stop-color:#EF4444"/>
+              </linearGradient>
+              <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#EF4444" flood-opacity="0.4"/>
+              </filter>
+            </defs>
+            <g filter="url(#shadow)">
+              <path d="M24 44C24 44 42 30 42 18C42 10.27 35.73 4 28 4C25.03 4 24 6.5 24 6.5C24 6.5 22.97 4 20 4C12.27 4 6 10.27 6 18C6 30 24 44 24 44Z" fill="url(#heartGrad)" stroke="white" stroke-width="2"/>
+            </g>
           </svg>
         `),
-        scaledSize: new google.maps.Size(48, 56),
-        anchor: new google.maps.Point(24, 56),
+        scaledSize: new google.maps.Size(48, 48),
+        anchor: new google.maps.Point(24, 44),
       }
     })
 

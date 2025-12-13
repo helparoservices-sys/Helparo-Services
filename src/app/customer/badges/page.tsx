@@ -614,14 +614,14 @@ export default function CustomerBadgesPage() {
               Every booking brings you closer to exclusive badges and rewards. Start exploring services and watch your achievements grow!
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button asChild size="lg" className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/30">
+          <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+            <Button asChild size="lg" className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/30 whitespace-nowrap">
               <Link href="/customer/requests/ai">
                 <Sparkles className="w-4 h-4 mr-2" />
                 Book a Service
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="border-gray-600 text-white hover:bg-white/10">
+            <Button asChild size="lg" className="bg-white text-gray-900 hover:bg-gray-100 font-semibold shadow-lg whitespace-nowrap">
               <Link href="/customer/referrals">
                 <Users className="w-4 h-4 mr-2" />
                 Refer Friends
