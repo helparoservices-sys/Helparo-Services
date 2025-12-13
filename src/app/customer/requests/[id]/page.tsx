@@ -17,6 +17,7 @@ import {
 
 interface RequestRow { 
   id: string
+  booking_number?: string
   title: string
   description: string
   status: string
@@ -107,7 +108,8 @@ export default function RequestDetailPage() {
     const { data: r, error: rErr } = await supabase
       .from('service_requests')
       .select(`
-        id, 
+        id,
+        booking_number,
         title, 
         description, 
         status,
@@ -343,6 +345,11 @@ export default function RequestDetailPage() {
               {statusConfig[request.status as keyof typeof statusConfig]?.label || request.status}
             </span>
           </div>
+          {request.booking_number && request.assigned_helper_id && (
+            <p className="text-sm font-mono font-semibold text-blue-600 dark:text-blue-400 mb-2">
+              Booking ID: {request.booking_number}
+            </p>
+          )}
           <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
             <div className="flex items-center gap-1">
               <Calendar className="h-4 w-4" />

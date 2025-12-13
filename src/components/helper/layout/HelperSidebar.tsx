@@ -184,10 +184,11 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
             onClick={isMobile ? onMobileClose : undefined}
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
               active
-                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-purple-50 dark:hover:bg-slate-800 hover:text-purple-600 dark:hover:text-purple-400'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-50 dark:hover:bg-slate-800 hover:text-emerald-600 dark:hover:text-emerald-400'
             }`}
             title={collapsed && !isMobile ? item.label : ''}
+          >
           >
             <Icon className={`h-5 w-5 flex-shrink-0 ${active ? 'text-white' : ''}`} />
             {(isMobile || !collapsed) && (

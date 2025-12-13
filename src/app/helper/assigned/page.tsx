@@ -30,6 +30,7 @@ import { createClient } from '@/lib/supabase/client'
 
 interface AssignedJob {
   id: string
+  booking_number: string | null
   title: string
   description: string
   category: string
@@ -247,6 +248,11 @@ export default function HelperAssignedJobsPage() {
                             {job.status.replace('_', ' ')}
                           </Badge>
                         </div>
+                        {job.booking_number && (
+                          <p className="text-sm font-mono font-semibold text-blue-600 dark:text-blue-400 mb-2">
+                            Booking ID: {job.booking_number}
+                          </p>
+                        )}
                         <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
                           <span className="flex items-center gap-1">
                             <Briefcase className="h-4 w-4" />
@@ -427,6 +433,11 @@ export default function HelperAssignedJobsPage() {
                     <div className="flex items-start justify-between gap-4 mb-3">
                       <div className="flex-1">
                         <p className="font-semibold mb-1">{job.title}</p>
+                        {job.booking_number && (
+                          <p className="text-xs font-mono font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                            {job.booking_number}
+                          </p>
+                        )}
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                           {job.customer_name}
                         </p>

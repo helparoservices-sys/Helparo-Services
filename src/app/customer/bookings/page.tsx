@@ -21,6 +21,7 @@ import {
 
 interface Booking {
   id: string
+  booking_number?: string
   title: string
   description: string
   status: string
@@ -67,6 +68,7 @@ export default function CustomerBookingsPage() {
       .from('service_requests')
       .select(`
         id,
+        booking_number,
         title,
         description,
         status,
@@ -275,6 +277,13 @@ export default function CustomerBookingsPage() {
                         {config.label}
                       </span>
                     </div>
+
+                    {/* Booking ID */}
+                    {booking.booking_number && (
+                      <p className="text-xs font-mono font-semibold text-blue-600 mb-2">
+                        {booking.booking_number}
+                      </p>
+                    )}
                     
                     {/* Description */}
                     <p className="text-sm text-gray-600 mb-4 line-clamp-2">

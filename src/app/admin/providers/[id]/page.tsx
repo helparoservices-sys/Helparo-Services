@@ -16,6 +16,7 @@ interface HelperDetail {
   verification_status: string | null
   is_approved: boolean
   service_categories: string[] | null
+  service_category_names?: string[] // Resolved category names
   skills_specialization?: string[] | null
   experience_years: number | null
   hourly_rate?: number | null
@@ -95,6 +96,25 @@ export default function ProviderDetailPage({ params }: { params: { id: string } 
           return
         }
 
+        // Fetch service category names if service_categories array exists
+        let categoryNames: string[] = []
+        if (data.service_categories && data.service_categories.length > 0) {
+          const { data: categories } = await supabase
+            .from('service_categories')
+            .select('id, name')
+            .in('id', data.service_categories)
+            .eq('is_active', true)
+          
+          if (categories) {
+            // Create a map for quick lookup
+            const categoryMap = new Map(categories.map(c => [c.id, c.name]))
+            // Map UUIDs to names in the same order
+            categoryNames = data.service_categories
+              .map((id: string) => categoryMap.get(id))
+              .filter(Boolean) as string[]
+          }
+        }
+
         // Fetch bank account
         const { data: bankData } = await supabase
           .from('helper_bank_accounts')
@@ -128,6 +148,7 @@ export default function ProviderDetailPage({ params }: { params: { id: string } 
 
         setHelper({ 
           ...(data as HelperDetail), 
+          service_category_names: categoryNames,
           bank_account: bankData || null,
           documents: flattenedDocs || []
         })
@@ -249,8 +270,8 @@ export default function ProviderDetailPage({ params }: { params: { id: string } 
           <div>
             <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Service Categories</h3>
             <div className="flex flex-wrap gap-2">
-              {helper.service_categories && helper.service_categories.length > 0 ? (
-                helper.service_categories.map((c, i) => (
+              {helper.service_category_names && helper.service_category_names.length > 0 ? (
+                helper.service_category_names.map((c, i) => (
                   <span key={i} className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{c}</span>
                 ))
               ) : (

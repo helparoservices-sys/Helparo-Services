@@ -148,6 +148,11 @@ const menuItems = [
     icon: BarChart3,
     href: '/admin/analytics',
   },
+  {
+    label: 'User Details',
+    icon: Users,
+    href: '/admin/analytics/user-details',
+  },
 ]
 
 export default function Sidebar({ collapsed, mobileOpen = false, onMobileClose }: SidebarProps) {

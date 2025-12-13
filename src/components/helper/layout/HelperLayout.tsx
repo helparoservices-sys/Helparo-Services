@@ -38,7 +38,7 @@ function HelperLayoutContent({ children }: HelperLayoutProps) {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 dark:from-slate-900 dark:via-indigo-950 dark:to-purple-950 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-slate-900 dark:via-emerald-950 dark:to-teal-950 relative overflow-hidden">
       {/* Location Permission Prompt */}
       <LocationPermissionPrompt />
 
@@ -119,10 +119,10 @@ function HelperLayoutContent({ children }: HelperLayoutProps) {
 
         @keyframes glow-pulse {
           0%, 100% {
-            box-shadow: 0 0 20px rgba(147, 51, 234, 0.5);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
           }
           50% {
-            box-shadow: 0 0 40px rgba(147, 51, 234, 0.8);
+            box-shadow: 0 0 40px rgba(16, 185, 129, 0.8);
           }
         }
 

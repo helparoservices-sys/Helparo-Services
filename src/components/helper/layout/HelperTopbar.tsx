@@ -84,7 +84,7 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
 
           <Link href="/helper/dashboard" className="flex items-center gap-2">
             <img src="/logo.svg" alt="Helparo" className="w-8 h-8 rounded-lg shadow-md" />
-            <span className="font-bold text-lg bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent hidden md:block">
+            <span className="font-bold text-lg bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent hidden md:block">
               Helparo Helper
             </span>
           </Link>
@@ -125,7 +125,7 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center gap-2 p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
             >
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
                 <User className="h-4 w-4 text-white" />
               </div>
               <span className="hidden md:block text-sm font-medium text-slate-700 dark:text-slate-300">
