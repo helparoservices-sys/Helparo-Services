@@ -149,6 +149,13 @@ export default function HelperAchievementsPage() {
       .eq('user_id', user.id)
       .order('unlocked_at', { ascending: false })
 
+    // Load total completed jobs count
+    const { count: jobsCount } = await supabase
+      .from('service_requests')
+      .select('*', { count: 'exact', head: true })
+      .eq('assigned_helper_id', user.id)
+      .eq('status', 'completed')
+
     // Load leaderboard
     const { data: leaderboardData } = await supabase
       .from('gamification_points')
@@ -174,7 +181,9 @@ export default function HelperAchievementsPage() {
       total_points: gamData?.total_points || 0,
       level: gamData?.level || 1,
       achievements_count: achievementsData?.length || 0,
-      leaderboard_rank: (count || 0) + 1
+      leaderboard_rank: (count || 0) + 1,
+      total_jobs: jobsCount || 0,
+      streak_days: 0 // TODO: Calculate from daily activity
     })
 
     setAchievements(achievementsData || [])
@@ -193,6 +202,13 @@ export default function HelperAchievementsPage() {
     setLoading(false)
   }
 
+  // Find current milestone
+  const currentMilestone = milestones.find(m => stats.total_jobs < m.jobs) || milestones[milestones.length - 1]
+  const prevMilestone = milestones[milestones.indexOf(currentMilestone) - 1]
+  const milestoneProgress = prevMilestone 
+    ? ((stats.total_jobs - prevMilestone.jobs) / (currentMilestone.jobs - prevMilestone.jobs)) * 100
+    : (stats.total_jobs / currentMilestone.jobs) * 100
+
   const pointsToNextLevel = Math.ceil(stats.level * 1000 - (stats.total_points % 1000))
   const levelProgress = ((stats.total_points % 1000) / 1000) * 100
 
@@ -205,194 +221,221 @@ export default function HelperAchievementsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6">
-      <div className="mx-auto max-w-7xl space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Gamification & Rewards
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Earn points, unlock achievements, and climb the leaderboard
-          </p>
+    <div className="space-y-6">
+      {/* Header - Ola Style */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 rounded-2xl p-6 text-white">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
+        <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="relative">
+          <div className="flex items-center gap-2 mb-1">
+            <Trophy className="h-6 w-6" />
+            <h1 className="text-2xl font-bold">Achievements</h1>
+          </div>
+          <p className="text-purple-200 text-sm">Complete milestones & earn rewards</p>
         </div>
+      </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-100 text-sm">Total Points</p>
-                  <p className="text-3xl font-bold mt-1">{stats.total_points.toLocaleString()}</p>
-                </div>
-                <Zap className="w-12 h-12 text-purple-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-100 text-sm">Current Level</p>
-                  <p className="text-3xl font-bold mt-1">{stats.level}</p>
-                </div>
-                <Trophy className="w-12 h-12 text-blue-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-yellow-500 to-orange-600 text-white border-0">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-yellow-100 text-sm">Leaderboard Rank</p>
-                  <p className="text-3xl font-bold mt-1">#{stats.leaderboard_rank}</p>
-                </div>
-                <Crown className="w-12 h-12 text-yellow-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100 text-sm">Achievements</p>
-                  <p className="text-3xl font-bold mt-1">{stats.achievements_count}</p>
-                </div>
-                <Award className="w-12 h-12 text-green-200" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Level Progress */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Level Progress
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Level {stats.level}</span>
-                <span>{pointsToNextLevel} points to Level {stats.level + 1}</span>
-              </div>
-              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-4">
-                <div
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 h-4 rounded-full transition-all duration-500 flex items-center justify-end pr-2"
-                  style={{ width: `${levelProgress}%` }}
-                >
-                  <span className="text-xs text-white font-medium">{Math.round(levelProgress)}%</span>
-                </div>
-              </div>
+      {/* Quick Stats - Ola Style Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+              <Zap className="h-4 w-4 text-purple-600" />
             </div>
-          </CardContent>
-        </Card>
+            <span className="text-xs text-slate-500">Points</span>
+          </div>
+          <p className="text-xl font-bold text-slate-900 dark:text-white">{stats.total_points.toLocaleString()}</p>
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Achievements */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Award className="w-5 h-5" />
-                Recent Achievements
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {achievements.length === 0 ? (
-                <div className="text-center py-8">
-                  <Trophy className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                  <p className="text-slate-600 dark:text-slate-400">No achievements yet</p>
-                  <p className="text-sm text-slate-500 mt-1">Complete jobs to unlock achievements</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <Trophy className="h-4 w-4 text-blue-600" />
+            </div>
+            <span className="text-xs text-slate-500">Level</span>
+          </div>
+          <p className="text-xl font-bold text-slate-900 dark:text-white">{stats.level}</p>
+        </div>
+
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+              <Crown className="h-4 w-4 text-amber-600" />
+            </div>
+            <span className="text-xs text-slate-500">Rank</span>
+          </div>
+          <p className="text-xl font-bold text-slate-900 dark:text-white">#{stats.leaderboard_rank}</p>
+        </div>
+
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+              <Flame className="h-4 w-4 text-orange-600" />
+            </div>
+            <span className="text-xs text-slate-500">Streak</span>
+          </div>
+          <p className="text-xl font-bold text-slate-900 dark:text-white">{stats.streak_days} days</p>
+        </div>
+      </div>
+
+      {/* Current Milestone Progress - Like Ola */}
+      <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 rounded-xl p-5 border border-amber-200 dark:border-amber-800">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">{currentMilestone.icon}</span>
+            <div>
+              <h3 className="font-bold text-slate-900 dark:text-white">{currentMilestone.title}</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">Complete {currentMilestone.jobs} jobs</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-sm font-medium text-amber-600">Reward</p>
+            <p className="text-lg font-bold text-slate-900 dark:text-white">₹{currentMilestone.bonus}</p>
+          </div>
+        </div>
+        <div className="space-y-1">
+          <div className="flex justify-between text-sm">
+            <span className="text-slate-600 dark:text-slate-400">{stats.total_jobs} / {currentMilestone.jobs} jobs</span>
+            <span className="font-medium text-amber-600">{Math.round(milestoneProgress)}%</span>
+          </div>
+          <div className="w-full bg-amber-200 dark:bg-amber-900/50 rounded-full h-2.5">
+            <div
+              className="bg-gradient-to-r from-amber-500 to-yellow-500 h-2.5 rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(milestoneProgress, 100)}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Achievement Badges - Ola Style Grid */}
+      <div>
+        <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+          <Award className="h-5 w-5 text-purple-600" />
+          Badges to Unlock
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {achievementBadges.map((badge) => {
+            const isUnlocked = achievements.some(a => a.achievement_type === badge.id)
+            const Icon = badge.icon
+            
+            return (
+              <div
+                key={badge.id}
+                className={`relative rounded-xl p-4 border transition-all ${
+                  isUnlocked 
+                    ? 'bg-white dark:bg-slate-800 border-green-300 dark:border-green-700 shadow-sm' 
+                    : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 opacity-75'
+                }`}
+              >
+                {isUnlocked && (
+                  <div className="absolute -top-2 -right-2">
+                    <CheckCircle className="h-5 w-5 text-green-500 fill-white" />
+                  </div>
+                )}
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${badge.color} flex items-center justify-center mb-3 ${!isUnlocked ? 'grayscale' : ''}`}>
+                  <Icon className="h-6 w-6 text-white" />
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {achievements.slice(0, 5).map((achievement) => (
-                    <div
-                      key={achievement.id}
-                      className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg"
-                    >
-                      <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
-                        <Trophy className="w-5 h-5 text-yellow-600" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h4 className="font-semibold text-sm">{achievement.title}</h4>
-                            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                              {achievement.description}
-                            </p>
-                          </div>
-                          <Badge className="bg-purple-500 text-white">
-                            +{achievement.points} pts
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-2">
-                          Unlocked {new Date(achievement.unlocked_at).toLocaleDateString()}
-                        </p>
-                      </div>
+                <h4 className="font-semibold text-sm text-slate-900 dark:text-white">{badge.title}</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">{badge.description}</p>
+                <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                  <div className="flex items-center gap-1">
+                    <Gift className="h-3 w-3 text-purple-500" />
+                    <span className="text-xs font-medium text-purple-600">{badge.reward}</span>
+                  </div>
+                </div>
+                {!isUnlocked && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-slate-900/5 dark:bg-slate-900/30 rounded-xl">
+                    <Lock className="h-5 w-5 text-slate-400" />
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Milestones Journey */}
+      <div>
+        <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+          <Target className="h-5 w-5 text-emerald-600" />
+          Your Journey
+        </h2>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2">
+            {milestones.map((milestone, index) => {
+              const isCompleted = stats.total_jobs >= milestone.jobs
+              const isCurrent = currentMilestone.jobs === milestone.jobs
+              
+              return (
+                <div key={milestone.jobs} className="flex items-center flex-shrink-0">
+                  <div className={`flex flex-col items-center ${isCurrent ? 'scale-110' : ''}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
+                      isCompleted 
+                        ? 'bg-gradient-to-br from-emerald-500 to-green-500' 
+                        : isCurrent
+                        ? 'bg-gradient-to-br from-amber-500 to-yellow-500 animate-pulse'
+                        : 'bg-slate-200 dark:bg-slate-700'
+                    }`}>
+                      {milestone.icon}
                     </div>
-                  ))}
+                    <span className={`text-xs mt-1 font-medium ${
+                      isCompleted ? 'text-emerald-600' : isCurrent ? 'text-amber-600' : 'text-slate-400'
+                    }`}>
+                      {milestone.jobs}
+                    </span>
+                  </div>
+                  {index < milestones.length - 1 && (
+                    <div className={`w-8 h-0.5 mx-1 ${
+                      stats.total_jobs >= milestones[index + 1].jobs 
+                        ? 'bg-emerald-500' 
+                        : 'bg-slate-200 dark:bg-slate-700'
+                    }`} />
+                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              )
+            })}
+          </div>
+        </div>
+      </div>
 
-          {/* Leaderboard */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Top Helpers Leaderboard
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {leaderboard.length === 0 ? (
-                <div className="text-center py-8">
-                  <Crown className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                  <p className="text-slate-600 dark:text-slate-400">No leaderboard data</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {leaderboard.map((entry) => {
-                    const rankColors = ['text-yellow-600', 'text-slate-400', 'text-orange-600']
-                    const rankBgColors = ['bg-yellow-50', 'bg-slate-50', 'bg-orange-50']
-                    const isTopThree = entry.rank <= 3
-
-                    return (
-                      <div
-                        key={entry.rank}
-                        className={`flex items-center gap-3 p-3 rounded-lg ${
-                          isTopThree ? rankBgColors[entry.rank - 1] : 'bg-slate-50 dark:bg-slate-800'
-                        }`}
-                      >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                          isTopThree ? `${rankColors[entry.rank - 1]}` : 'text-slate-600'
-                        }`}>
-                          {isTopThree && entry.rank === 1 && <Crown className="w-5 h-5" />}
-                          {isTopThree && entry.rank !== 1 && <span>#{entry.rank}</span>}
-                          {!isTopThree && <span className="text-sm">#{entry.rank}</span>}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-semibold text-sm">{entry.full_name}</p>
-                          <p className="text-xs text-slate-500">Level {entry.level}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-purple-600">{entry.total_points.toLocaleString()}</p>
-                          <p className="text-xs text-slate-500">points</p>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+      {/* Leaderboard - Compact */}
+      <div>
+        <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+          <Users className="h-5 w-5 text-blue-600" />
+          Top Helpers This Week
+        </h2>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          {leaderboard.length === 0 ? (
+            <div className="text-center py-8">
+              <Crown className="w-12 h-12 mx-auto text-slate-300 mb-2" />
+              <p className="text-slate-500 text-sm">No leaderboard data yet</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100 dark:divide-slate-700">
+              {leaderboard.slice(0, 5).map((entry) => {
+                const rankColors: Record<number, string> = {
+                  1: 'text-yellow-500',
+                  2: 'text-slate-400',
+                  3: 'text-orange-500'
+                }
+                
+                return (
+                  <div key={entry.rank} className="flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                    <div className={`w-6 h-6 flex items-center justify-center font-bold text-sm ${rankColors[entry.rank] || 'text-slate-500'}`}>
+                      {entry.rank === 1 ? <Crown className="h-5 w-5" /> : `#${entry.rank}`}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm text-slate-900 dark:text-white truncate">{entry.full_name}</p>
+                    </div>
+                    <div className="flex items-center gap-1 text-purple-600">
+                      <Sparkles className="h-3 w-3" />
+                      <span className="font-bold text-sm">{entry.total_points.toLocaleString()}</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>
