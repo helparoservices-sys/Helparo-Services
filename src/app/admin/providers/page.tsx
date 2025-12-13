@@ -20,6 +20,7 @@ export default function ProvidersPage() {
   const { showSuccess, showError } = useToast()
   const [loading, setLoading] = useState(true)
   const [helpers, setHelpers] = useState<any[]>([])
+  const [categories, setCategories] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
   const [verificationFilter, setVerificationFilter] = useState('all')
   const [availabilityFilter, setAvailabilityFilter] = useState('all')
@@ -27,12 +28,25 @@ export default function ProvidersPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchHelpers()
+    fetchData()
   }, [])
 
-  const fetchHelpers = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true)
+
+      // Fetch categories first to create a lookup map
+      const { data: categoriesData } = await supabase
+        .from('service_categories')
+        .select('id, name, slug')
+
+      const categoryMap: Record<string, string> = {}
+      categoriesData?.forEach(cat => {
+        categoryMap[cat.id] = cat.name
+        // Also map by slug in case some helpers have slugs stored
+        if (cat.slug) categoryMap[cat.slug] = cat.name
+      })
+      setCategories(categoryMap)
 
       const { data: helpersData, error: helpersError } = await supabase
         .from('helper_profiles')
@@ -70,6 +84,20 @@ export default function ProvidersPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Helper function to get category display name
+  const getCategoryName = (categoryId: string): string => {
+    // Check if it's already a readable name (slug format like "home-services")
+    if (categories[categoryId]) {
+      return categories[categoryId]
+    }
+    // If it looks like a UUID but not found, show a shortened version
+    if (categoryId.includes('-') && categoryId.length > 30) {
+      return 'Unknown Category'
+    }
+    // Return as-is if it's already a readable slug
+    return categoryId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
   }
 
   if (loading) {
@@ -270,7 +298,7 @@ export default function ProvidersPage() {
               {helper.service_categories && helper.service_categories.length > 0 && (
                 <div className={`space-y-1 mb-4 ${expandedId === helper.id ? '' : 'max-h-16 overflow-hidden'}`}>
                   {helper.service_categories.map((cat: string, i: number) => (
-                    <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 dark:bg-slate-900/40 text-xs text-slate-600 dark:text-slate-300 mr-1 mb-1">{cat}</span>
+                    <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 dark:bg-slate-900/40 text-xs text-slate-600 dark:text-slate-300 mr-1 mb-1">{getCategoryName(cat)}</span>
                   ))}
                 </div>
               )}
