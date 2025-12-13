@@ -36,6 +36,7 @@ import {
   MapPin
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import ReferralCodeModal from '@/components/customer/ReferralCodeModal'
 
 // Animated Counter Component
 function AnimatedCounter({ end, duration = 1500, suffix = '', prefix = '' }: { end: number; duration?: number; suffix?: string; prefix?: string }) {
@@ -85,6 +86,7 @@ export default function CustomerDashboard() {
   const [activeCount, setActiveCount] = useState(0)
   const [completedCount, setCompletedCount] = useState(0)
   const [currentTip, setCurrentTip] = useState(0)
+  const [showReferralModal, setShowReferralModal] = useState(false)
 
   const greeting = getGreeting()
 
@@ -136,6 +138,14 @@ export default function CustomerDashboard() {
       setActiveCount(activeRes.count || 0)
       setCompletedCount(completedRes.count || 0)
       setLoading(false)
+
+      // Check if we should show referral code modal (only for first-time customers)
+      // Show modal if: user has no completed bookings AND hasn't dismissed the modal before
+      const hasSeenReferralPrompt = localStorage.getItem('helparo_referral_prompt_completed')
+      if (!hasSeenReferralPrompt && (completedRes.count || 0) === 0) {
+        // Small delay to let dashboard render first
+        setTimeout(() => setShowReferralModal(true), 1000)
+      }
     }
 
     loadData()
@@ -585,6 +595,12 @@ export default function CustomerDashboard() {
           </div>
         </div>
       </main>
+
+      {/* Referral Code Modal - Shows only for first-time customers */}
+      <ReferralCodeModal 
+        isOpen={showReferralModal} 
+        onClose={() => setShowReferralModal(false)} 
+      />
     </div>
   )
 }
