@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, ReactNode } from 'react'
+import { useState, ReactNode, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { RoleGuard } from '@/components/auth/RoleGuard'
 import CustomerSidebar from './CustomerSidebar'
@@ -16,7 +16,22 @@ interface CustomerLayoutProps {
 
 export default function CustomerLayout({ children }: CustomerLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [pathname])
+
+  // Close mobile menu when clicking outside or pressing escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileMenuOpen(false)
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [])
 
   return (
     <RoleGuard allowedRole="customer">
@@ -28,16 +43,39 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
         {/* Main Layout */}
         <div className="relative z-10">
           <CustomerTopbar 
-            onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onToggleSidebar={() => {
+              // On mobile, toggle the mobile menu
+              if (window.innerWidth < 1024) {
+                setMobileMenuOpen(!mobileMenuOpen)
+              } else {
+                setSidebarCollapsed(!sidebarCollapsed)
+              }
+            }}
           />
           
+          {/* Mobile Overlay */}
+          {mobileMenuOpen && (
+            <div 
+              className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+          )}
+          
           <div className="flex">
-            <CustomerSidebar collapsed={sidebarCollapsed} />
+            {/* Sidebar - Hidden on mobile, shown via overlay when menu is open */}
+            <CustomerSidebar 
+              collapsed={sidebarCollapsed} 
+              mobileOpen={mobileMenuOpen}
+              onMobileClose={() => setMobileMenuOpen(false)}
+            />
             
+            {/* Main content - No left margin on mobile */}
             <main 
-              className={`flex-1 transition-all duration-300 ease-in-out ${
-                sidebarCollapsed ? 'ml-16' : 'ml-60'
-              } pt-14`}
+              className={`flex-1 transition-all duration-300 ease-in-out pt-14 
+                lg:${sidebarCollapsed ? 'ml-16' : 'ml-60'}
+                ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-60'}
+                ml-0
+              `}
             >
               <div className="">
                 {/* Page Content */}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, ReactNode } from 'react'
+import { useState, ReactNode, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { RoleGuard } from '@/components/auth/RoleGuard'
 import HelperSidebar from './HelperSidebar'
@@ -18,8 +18,23 @@ interface HelperLayoutProps {
 // Separate component to use hooks
 function HelperLayoutContent({ children }: HelperLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
   const { notification, acceptJob, declineJob, closeNotification } = useJobNotifications()
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [pathname])
+
+  // Close mobile menu when pressing escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileMenuOpen(false)
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 dark:from-slate-900 dark:via-indigo-950 dark:to-purple-950 relative overflow-hidden">
@@ -37,18 +52,39 @@ function HelperLayoutContent({ children }: HelperLayoutProps) {
       {/* Main Layout */}
       <div className="relative z-10">
         <HelperTopbar 
-          onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+          onToggleSidebar={() => {
+            // On mobile, toggle the mobile menu
+            if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+              setMobileMenuOpen(!mobileMenuOpen)
+            } else {
+              setSidebarCollapsed(!sidebarCollapsed)
+            }
+          }}
         />
         
+        {/* Mobile Overlay */}
+        {mobileMenuOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )}
+        
         <div className="flex">
-          <HelperSidebar collapsed={sidebarCollapsed} />
+          <HelperSidebar 
+            collapsed={sidebarCollapsed} 
+            mobileOpen={mobileMenuOpen}
+            onMobileClose={() => setMobileMenuOpen(false)}
+          />
           
+          {/* Main content - No left margin on mobile */}
           <main 
-            className={`flex-1 transition-all duration-300 ease-in-out ${
-              sidebarCollapsed ? 'ml-20' : 'ml-64'
-            } pt-16`}
+            className={`flex-1 transition-all duration-300 ease-in-out pt-16
+              ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}
+              ml-0
+            `}
           >
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-6">
               <Breadcrumb />
               
               {/* Page Content with Animation */}

@@ -17,15 +17,18 @@ import {
   Gift,
   Phone,
   Lock,
-  DollarSign
+  DollarSign,
+  X
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface HelperSidebarProps {
   collapsed: boolean
+  mobileOpen?: boolean
+  onMobileClose?: () => void
 }
 
-export default function HelperSidebar({ collapsed }: HelperSidebarProps) {
+export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileClose }: HelperSidebarProps) {
   const pathname = usePathname()
   const [isVerified, setIsVerified] = useState(false)
 
@@ -134,61 +137,95 @@ export default function HelperSidebar({ collapsed }: HelperSidebarProps) {
 
   const isActive = (href: string) => pathname === href
 
-  return (
-    <aside
-      className={`fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-all duration-300 ease-in-out z-40 ${
-        collapsed ? 'w-20' : 'w-64'
-      }`}
-    >
-      <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
-        <nav className="p-4 space-y-1">
-          {navItems.map((item) => {
-            const Icon = item.icon
-            const active = isActive(item.href)
-            const isLocked = item.requiresVerification && !isVerified
+  // Render nav items
+  const renderNavItems = (isMobile: boolean = false) => (
+    <nav className="p-4 space-y-1">
+      {navItems.map((item) => {
+        const Icon = item.icon
+        const active = isActive(item.href)
+        const isLocked = item.requiresVerification && !isVerified
 
-            if (isLocked) {
-              return (
-                <div
-                  key={item.href}
-                  className="relative flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-60"
-                  title={collapsed ? `${item.label} - Verification Required` : 'Verification Required'}
-                >
-                  <Icon className="h-5 w-5 flex-shrink-0" />
-                  {!collapsed && (
-                    <>
-                      <span className="text-sm font-medium truncate flex-1">
-                        {item.label}
-                      </span>
-                      <Lock className="h-3 w-3" />
-                    </>
-                  )}
-                </div>
-              )
-            }
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                  active
-                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-purple-50 dark:hover:bg-slate-800 hover:text-purple-600 dark:hover:text-purple-400'
-                }`}
-                title={collapsed ? item.label : ''}
-              >
-                <Icon className={`h-5 w-5 flex-shrink-0 ${active ? 'text-white' : ''}`} />
-                {!collapsed && (
-                  <span className="text-sm font-medium truncate">
+        if (isLocked) {
+          return (
+            <div
+              key={item.href}
+              className="relative flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-60"
+              title={collapsed && !isMobile ? `${item.label} - Verification Required` : 'Verification Required'}
+            >
+              <Icon className="h-5 w-5 flex-shrink-0" />
+              {(isMobile || !collapsed) && (
+                <>
+                  <span className="text-sm font-medium truncate flex-1">
                     {item.label}
                   </span>
-                )}
-              </Link>
-            )
-          })}
-        </nav>
-      </div>
-    </aside>
+                  <Lock className="h-3 w-3" />
+                </>
+              )}
+            </div>
+          )
+        }
+
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={isMobile ? onMobileClose : undefined}
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+              active
+                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-purple-50 dark:hover:bg-slate-800 hover:text-purple-600 dark:hover:text-purple-400'
+            }`}
+            title={collapsed && !isMobile ? item.label : ''}
+          >
+            <Icon className={`h-5 w-5 flex-shrink-0 ${active ? 'text-white' : ''}`} />
+            {(isMobile || !collapsed) && (
+              <span className="text-sm font-medium truncate">
+                {item.label}
+              </span>
+            )}
+          </Link>
+        )
+      })}
+    </nav>
+  )
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside
+        className={`hidden lg:block fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-all duration-300 ease-in-out z-40 ${
+          collapsed ? 'w-20' : 'w-64'
+        }`}
+      >
+        <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
+          {renderNavItems(false)}
+        </div>
+      </aside>
+
+      {/* Mobile Sidebar - Slides in from left */}
+      <aside
+        className={`lg:hidden fixed top-0 left-0 h-full w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {/* Mobile Header */}
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <img src="/logo.svg" alt="Helparo" className="w-9 h-9 rounded-xl" />
+            <span className="text-lg font-bold text-gray-900 dark:text-white">Helparo</span>
+          </div>
+          <button 
+            onClick={onMobileClose}
+            className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 flex items-center justify-center transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          </button>
+        </div>
+
+        <div className="h-[calc(100%-73px)] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
+          {renderNavItems(true)}
+        </div>
+      </aside>
+    </>
   )
 }
