@@ -4,14 +4,11 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { 
   CheckCircle,
   Clock,
   Sparkles,
   ChevronRight,
-  Bell,
-  Wallet,
   IndianRupee,
   Crown,
   Loader2,
@@ -21,7 +18,8 @@ import {
   Heart,
   ArrowRight,
   Plus,
-  Wand2
+  Wand2,
+  Wallet
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -97,44 +95,6 @@ export default function CustomerDashboard() {
         <div className="absolute top-20 right-20 w-96 h-96 bg-emerald-100/50 rounded-full blur-3xl" />
         <div className="absolute bottom-20 left-20 w-80 h-80 bg-teal-100/50 rounded-full blur-3xl" />
       </div>
-
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-                <span className="text-white font-bold">H</span>
-              </div>
-              <span className="text-lg font-bold text-gray-900 hidden sm:block">helparo</span>
-            </Link>
-
-            {/* Right */}
-            <div className="flex items-center gap-3">
-              <Link href="/customer/wallet" className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full font-semibold text-sm border border-emerald-200 hover:bg-emerald-100 transition-colors">
-                <Wallet className="h-4 w-4" />
-                ₹{wallet?.available_balance || 0}
-              </Link>
-
-              <Link href="/customer/notifications" className="relative p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
-                <Bell className="h-5 w-5 text-gray-600" />
-                <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full" />
-              </Link>
-
-              <Link href="/customer/profile" className="h-9 w-9 rounded-full overflow-hidden ring-2 ring-gray-200 hover:ring-emerald-500 transition-all">
-                {profile?.avatar_url ? (
-                  <Image src={profile.avatar_url} alt={firstName} width={36} height={36} className="object-cover w-full h-full" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold text-sm">
-                    {firstName.charAt(0).toUpperCase()}
-                  </div>
-                )}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
 
       <main className="relative max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {/* Welcome */}
@@ -278,16 +238,6 @@ export default function CustomerDashboard() {
             <p className="text-2xl font-bold text-gray-900">₹{wallet?.available_balance || 0}</p>
             <p className="text-sm text-gray-500">Wallet</p>
           </Link>
-
-          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-violet-100 rounded-lg flex items-center justify-center">
-                <Star className="w-5 h-5 text-violet-600" />
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{loyalty?.points_balance || 0}</p>
-            <p className="text-sm text-gray-500">Points</p>
-          </div>
         </div>
 
         {/* Recent Activity */}

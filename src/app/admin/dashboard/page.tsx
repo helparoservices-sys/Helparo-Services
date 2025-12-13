@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import {
   Users,
   UserCheck,
@@ -135,7 +136,7 @@ export default async function AdminDashboard() {
       {/* Stats Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {/* Total Users */}
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow">
+        <Link href="/admin/users" className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Users</p>
@@ -145,10 +146,10 @@ export default async function AdminDashboard() {
               <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Active Users */}
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow">
+        <Link href="/admin/users?status=active" className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Active Users</p>
@@ -162,10 +163,10 @@ export default async function AdminDashboard() {
               <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Suspended Users */}
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow">
+        <Link href="/admin/users?status=suspended" className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Suspended</p>
@@ -179,10 +180,10 @@ export default async function AdminDashboard() {
               <AlertCircle className="h-6 w-6 text-orange-600 dark:text-orange-400" />
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Banned Users */}
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow">
+        <Link href="/admin/users?status=banned" className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Banned Users</p>
@@ -196,10 +197,10 @@ export default async function AdminDashboard() {
               <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Total Customers */}
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow">
+        <Link href="/admin/users?role=customer" className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Customers</p>
@@ -209,10 +210,10 @@ export default async function AdminDashboard() {
               <Users className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Total Helpers */}
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow">
+        <Link href="/admin/users?role=helper" className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Helpers</p>
@@ -222,10 +223,10 @@ export default async function AdminDashboard() {
               <UserCheck className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Total Bookings */}
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow">
+        <Link href="/admin/bookings" className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Bookings</p>
@@ -235,10 +236,10 @@ export default async function AdminDashboard() {
               <ShoppingCart className="h-6 w-6 text-purple-600 dark:text-purple-400" />
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Active Bookings */}
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-shadow">
+        <Link href="/admin/bookings?status=assigned" className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg p-6 border border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Active Bookings</p>
@@ -252,7 +253,7 @@ export default async function AdminDashboard() {
               <Clock className="h-6 w-6 text-orange-600 dark:text-orange-400" />
             </div>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Recent Activity */}

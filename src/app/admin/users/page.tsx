@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { Users as UsersIcon, UserCheck, Shield, Ban, CheckCircle, AlertCircle, MoreVertical, UserPlus, XCircle } from 'lucide-react'
 import { DataTable } from '@/components/admin/DataTable'
 import { Modal, ConfirmDialog } from '@/components/admin/Modal'
@@ -28,13 +29,14 @@ interface User {
 }
 
 export default function AdminUsersPage() {
+  const searchParams = useSearchParams()
   const { showSuccess, showError } = useToast()
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState<User[]>([])
   const [error, setError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [roleFilter, setRoleFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [roleFilter, setRoleFilter] = useState(searchParams.get('role') || 'all')
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [showBanModal, setShowBanModal] = useState(false)
   const [showCreateAdminModal, setShowCreateAdminModal] = useState(false)
@@ -51,9 +53,17 @@ export default function AdminUsersPage() {
     country_code: '+91' // Default to India
   })
 
+  // Update filters when URL params change
+  useEffect(() => {
+    const roleParam = searchParams.get('role')
+    const statusParam = searchParams.get('status')
+    if (roleParam) setRoleFilter(roleParam)
+    if (statusParam) setStatusFilter(statusParam)
+  }, [searchParams])
+
   useEffect(() => {
     loadUsers()
-  }, [roleFilter])
+  }, [roleFilter, statusFilter])
 
   const loadUsers = async () => {
     setLoading(true)
@@ -81,6 +91,15 @@ export default function AdminUsersPage() {
 
       if (roleFilter !== 'all') {
         query = query.eq('role', roleFilter)
+      }
+
+      // Apply status filter from URL
+      if (statusFilter === 'active') {
+        query = query.eq('status', 'active').eq('is_banned', false)
+      } else if (statusFilter === 'suspended') {
+        query = query.eq('status', 'suspended')
+      } else if (statusFilter === 'banned') {
+        query = query.eq('is_banned', true)
       }
 
       const { data, error: fetchError, count } = await query
