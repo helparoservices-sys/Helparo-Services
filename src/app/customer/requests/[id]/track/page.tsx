@@ -191,18 +191,33 @@ function LiveTrackingMap({
   customerLng, 
   helperLat, 
   helperLng,
-  helperName
+  helperName,
+  nearbyHelpers,
+  isBroadcasting
 }: { 
   customerLat: number
   customerLng: number
   helperLat: number | null
   helperLng: number | null
   helperName?: string
+  nearbyHelpers?: Array<{
+    id: string
+    lat: number
+    lng: number
+    name: string
+    rating: number
+    isOnline: boolean
+    isOnJob: boolean
+    distance: number
+  }>
+  isBroadcasting?: boolean
 }) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<google.maps.Map | null>(null)
   const helperMarkerRef = useRef<google.maps.Marker | null>(null)
   const customerMarkerRef = useRef<google.maps.Marker | null>(null)
+  const nearbyMarkersRef = useRef<google.maps.Marker[]>([])
+  const hasFitBoundsRef = useRef(false) // Track if we've already fit bounds
   const [mapLoaded, setMapLoaded] = useState(false)
   
   const hasHelperLocation = helperLat !== null && helperLng !== null && helperLat !== 0 && helperLng !== 0
@@ -236,16 +251,16 @@ function LiveTrackingMap({
     }
   }, [])
 
-  // Initialize map
+  // Initialize map - only once
   useEffect(() => {
     if (!mapLoaded || !mapRef.current || !window.google) return
-
-    const centerLat = hasHelperLocation ? (customerLat + helperLat) / 2 : customerLat
-    const centerLng = hasHelperLocation ? (customerLng + helperLng) / 2 : customerLng
+    
+    // Don't reinitialize if map already exists
+    if (mapInstanceRef.current) return
 
     const map = new google.maps.Map(mapRef.current, {
-      center: { lat: centerLat, lng: centerLng },
-      zoom: hasHelperLocation ? 14 : 15,
+      center: { lat: customerLat, lng: customerLng },
+      zoom: 14, // Start with a reasonable zoom level
       disableDefaultUI: true,
       zoomControl: true,
       styles: [
@@ -284,9 +299,90 @@ function LiveTrackingMap({
       return () => {
         if (customerMarkerRef.current) customerMarkerRef.current.setMap(null)
         if (helperMarkerRef.current) helperMarkerRef.current.setMap(null)
+        // Clear nearby helper markers
+        nearbyMarkersRef.current.forEach(marker => marker.setMap(null))
+        nearbyMarkersRef.current = []
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapLoaded, customerLat, customerLng])  // Update helper marker when location changes
+  }, [mapLoaded, customerLat, customerLng])
+
+  // Show nearby helpers when broadcasting
+  useEffect(() => {
+    if (!mapInstanceRef.current || !window.google || !nearbyHelpers || nearbyHelpers.length === 0) {
+      // Clear existing markers if no nearby helpers
+      nearbyMarkersRef.current.forEach(marker => marker.setMap(null))
+      nearbyMarkersRef.current = []
+      return
+    }
+
+    // Clear existing nearby markers
+    nearbyMarkersRef.current.forEach(marker => marker.setMap(null))
+    nearbyMarkersRef.current = []
+
+    // Create markers for each nearby helper
+    nearbyHelpers.forEach((helper, index) => {
+      // Different colors based on status
+      const isAvailable = helper.isOnline && !helper.isOnJob
+      const markerColor = isAvailable ? '#10B981' : '#6B7280' // Green if available, gray if busy/offline
+      
+      const marker = new google.maps.Marker({
+        position: { lat: helper.lat, lng: helper.lng },
+        map: mapInstanceRef.current!,
+        icon: {
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+              <circle cx="18" cy="18" r="16" fill="${markerColor}" stroke="white" stroke-width="2"/>
+              <g fill="white" transform="translate(8, 10)">
+                <circle cx="3" cy="11" r="2.5" fill="none" stroke="white" stroke-width="1.5"/>
+                <circle cx="17" cy="11" r="2.5" fill="none" stroke="white" stroke-width="1.5"/>
+                <path d="M3 11l3-6h4l2 3h4l-2 3" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M11 8l2 3h4" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                <circle cx="7" cy="3" r="1.5" fill="white"/>
+              </g>
+            </svg>
+          `),
+          scaledSize: new google.maps.Size(36, 36),
+          anchor: new google.maps.Point(18, 18),
+        },
+        title: helper.name,
+        animation: google.maps.Animation.DROP,
+        zIndex: 100 - index // Nearest helpers on top
+      })
+
+      // Add info window
+      const infoContent = `
+        <div style="padding:8px;min-width:120px;">
+          <p style="font-weight:bold;color:#10B981;margin:0 0 4px 0;">🏍️ ${helper.name}</p>
+          <p style="font-size:12px;color:#666;margin:0 0 2px 0;">⭐ ${helper.rating > 0 ? helper.rating.toFixed(1) : 'New'}</p>
+          <p style="font-size:12px;color:#666;margin:0 0 2px 0;">📍 ${helper.distance} km away</p>
+          <p style="font-size:11px;color:${isAvailable ? '#10B981' : '#6B7280'};margin:0;">
+            ${isAvailable ? '🟢 Available' : (helper.isOnJob ? '🟡 On another job' : '⚫ Offline')}
+          </p>
+        </div>
+      `
+      const infoWindow = new google.maps.InfoWindow({ content: infoContent })
+      
+      marker.addListener('click', () => {
+        infoWindow.open(mapInstanceRef.current!, marker)
+      })
+
+      nearbyMarkersRef.current.push(marker)
+    })
+
+    // Fit bounds to show all markers ONLY ONCE on initial load
+    if (isBroadcasting && nearbyHelpers.length > 0 && !hasFitBoundsRef.current) {
+      const bounds = new google.maps.LatLngBounds()
+      bounds.extend({ lat: customerLat, lng: customerLng })
+      nearbyHelpers.forEach(helper => {
+        bounds.extend({ lat: helper.lat, lng: helper.lng })
+      })
+      mapInstanceRef.current.fitBounds(bounds, { top: 80, right: 60, bottom: 80, left: 60 })
+      hasFitBoundsRef.current = true // Mark that we've fit bounds
+    }
+
+  }, [nearbyHelpers, customerLat, customerLng, isBroadcasting])
+
+  // Update helper marker when location changes
   useEffect(() => {
     if (!mapInstanceRef.current || !window.google || !hasHelperLocation) return
 
@@ -304,6 +400,7 @@ function LiveTrackingMap({
               <circle cx="22" cy="22" r="20" fill="#10B981" stroke="white" stroke-width="3"/>
               <g fill="white" transform="translate(10, 12)">
                 <circle cx="4" cy="14" r="3.5" fill="none" stroke="white" stroke-width="2"/>
+
                 <circle cx="20" cy="14" r="3.5" fill="none" stroke="white" stroke-width="2"/>
                 <path d="M4 14l4-8h5l2 4h5l-2 4" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M13 10l3 4h4" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/>
@@ -324,13 +421,16 @@ function LiveTrackingMap({
       helperMarkerRef.current.addListener('click', () => {
         helperInfo.open(mapInstanceRef.current, helperMarkerRef.current)
       })
-    }
 
-    // Fit bounds to show both markers
-    const bounds = new google.maps.LatLngBounds()
-    bounds.extend({ lat: customerLat, lng: customerLng })
-    bounds.extend({ lat: helperLat, lng: helperLng })
-    mapInstanceRef.current.fitBounds(bounds, { top: 60, right: 60, bottom: 60, left: 60 })
+      // Fit bounds ONLY when helper marker is first created (not on every update)
+      if (!hasFitBoundsRef.current) {
+        const bounds = new google.maps.LatLngBounds()
+        bounds.extend({ lat: customerLat, lng: customerLng })
+        bounds.extend({ lat: helperLat, lng: helperLng })
+        mapInstanceRef.current.fitBounds(bounds, { top: 60, right: 60, bottom: 60, left: 60 })
+        hasFitBoundsRef.current = true
+      }
+    }
 
   }, [helperLat, helperLng, hasHelperLocation, customerLat, customerLng, helperName])
 
@@ -393,8 +493,29 @@ function LiveTrackingMap({
             <span className="text-base">🏍️</span>
             <span className="text-xs text-gray-600">Helper</span>
           </div>
+          {isBroadcasting && nearbyHelpers && nearbyHelpers.length > 0 && (
+            <>
+              <div className="border-t border-gray-200 my-1"></div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+                <span className="text-xs text-gray-600">Available</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-gray-400"></span>
+                <span className="text-xs text-gray-600">Busy/Offline</span>
+              </div>
+            </>
+          )}
         </div>
       </div>
+
+      {/* Nearby helpers count badge when broadcasting */}
+      {isBroadcasting && nearbyHelpers && nearbyHelpers.length > 0 && (
+        <div className="absolute top-4 left-4 bg-emerald-500 text-white rounded-full px-3 py-1.5 shadow-lg flex items-center gap-1.5 z-10">
+          <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+          <span className="text-xs font-semibold">{nearbyHelpers.length} helpers nearby</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -457,6 +578,45 @@ export default function JobTrackingPage() {
   const [completionPopupShown, setCompletionPopupShown] = useState(false)
   const [updatingPayment, setUpdatingPayment] = useState(false)
   const [showPaymentOptions, setShowPaymentOptions] = useState(false)
+  const [nearbyHelpers, setNearbyHelpers] = useState<Array<{
+    id: string
+    lat: number
+    lng: number
+    name: string
+    rating: number
+    isOnline: boolean
+    isOnJob: boolean
+    distance: number
+  }>>([])
+
+  // Fetch nearby helpers when broadcasting
+  async function fetchNearbyHelpers(lat: number, lng: number, categoryId?: string) {
+    try {
+      console.log('🔍 Fetching nearby helpers...', { lat, lng, categoryId })
+      const params = new URLSearchParams({
+        lat: lat.toString(),
+        lng: lng.toString(),
+        radius: '50' // 50km radius for better coverage
+      })
+      if (categoryId) {
+        params.append('categoryId', categoryId)
+      }
+
+      const response = await fetch(`/api/helpers/nearby?${params}`)
+      console.log('📡 API Response status:', response.status)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log(`🏍️ Found ${data.count} nearby helpers (total approved: ${data.totalApproved})`, data.helpers)
+        setNearbyHelpers(data.helpers || [])
+      } else {
+        const errorData = await response.json()
+        console.error('❌ API Error:', errorData)
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch nearby helpers:', error)
+    }
+  }
 
   useEffect(() => {
     loadJobDetails()
@@ -534,6 +694,25 @@ export default function JobTrackingPage() {
       }
 
       setJob(transformedData)
+
+      // Fetch nearby helpers when broadcasting (not yet assigned)
+      console.log('📊 Job status:', transformedData.broadcast_status, 'Assigned:', !!transformedData.assigned_helper)
+      if (transformedData.broadcast_status === 'broadcasting' && !transformedData.assigned_helper) {
+        console.log('✅ Broadcasting - fetching nearby helpers')
+        if (transformedData.service_location_lat && transformedData.service_location_lng) {
+          fetchNearbyHelpers(
+            transformedData.service_location_lat,
+            transformedData.service_location_lng,
+            data.category_id // Pass category to filter relevant helpers
+          )
+        } else {
+          console.log('❌ No service location for job')
+        }
+      } else {
+        console.log('ℹ️ Not broadcasting or already assigned - clearing nearby helpers')
+        // Clear nearby helpers once assigned
+        setNearbyHelpers([])
+      }
 
       // Show completion popup when job is completed (only once)
       if (transformedData.status === 'completed' && !completionPopupShown) {
@@ -727,6 +906,7 @@ export default function JobTrackingPage() {
 
   const currentStepIndex = statusSteps.findIndex(s => s.key === job.broadcast_status) || 0
   const isJobActive = !['cancelled', 'completed'].includes(job.broadcast_status)
+  const isBroadcasting = job.broadcast_status === 'broadcasting' && !job.assigned_helper
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -739,6 +919,8 @@ export default function JobTrackingPage() {
             helperLat={job.helper_location_lat}
             helperLng={job.helper_location_lng}
             helperName={job.assigned_helper?.profile?.full_name}
+            nearbyHelpers={isBroadcasting ? nearbyHelpers : undefined}
+            isBroadcasting={isBroadcasting}
           />
         ) : (
           <div className="h-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
@@ -817,6 +999,38 @@ export default function JobTrackingPage() {
                 </div>
                 <p className="text-gray-700 font-semibold mt-4">Finding nearby helpers...</p>
                 <p className="text-sm text-gray-500 mt-1">This usually takes 1-2 minutes</p>
+                
+                {/* Show nearby helpers count */}
+                {nearbyHelpers.length > 0 && (
+                  <div className="mt-4 bg-emerald-50 rounded-xl p-3 inline-block">
+                    <div className="flex items-center gap-2">
+                      <div className="flex -space-x-2">
+                        {nearbyHelpers.slice(0, 4).map((helper, idx) => (
+                          <div 
+                            key={helper.id}
+                            className="w-8 h-8 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white text-xs font-bold"
+                            style={{ zIndex: 4 - idx }}
+                          >
+                            {helper.name.charAt(0)}
+                          </div>
+                        ))}
+                        {nearbyHelpers.length > 4 && (
+                          <div className="w-8 h-8 rounded-full bg-gray-400 border-2 border-white flex items-center justify-center text-white text-xs font-bold">
+                            +{nearbyHelpers.length - 4}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-semibold text-emerald-700">
+                          {nearbyHelpers.filter(h => h.isOnline && !h.isOnJob).length} available nearby
+                        </p>
+                        <p className="text-xs text-emerald-600">
+                          {nearbyHelpers.length} total helpers in your area
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
