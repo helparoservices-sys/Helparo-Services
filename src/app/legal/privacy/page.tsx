@@ -23,6 +23,7 @@ const getLatestPrivacy = unstable_cache(
       .from('legal_documents')
       .select('title, content_md, version, type, is_active, updated_at')
       .eq('type', 'privacy')
+      .eq('audience', 'all')
       .eq('is_active', true)
       .order('version', { ascending: false })
       .limit(1)

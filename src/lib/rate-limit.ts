@@ -115,7 +115,7 @@ export async function rateLimit(
   const result = checkRateLimit(key, limitConfig)
   
   if (!result.allowed) {
-    const resetInSeconds = Math.ceil((result.resetTime - Date.now()) / 1000)
+    // Reset time available in result.resetTime if needed
     throw createRateLimitError()
   }
   

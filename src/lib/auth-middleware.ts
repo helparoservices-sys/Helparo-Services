@@ -4,7 +4,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
-import { UserRole, ErrorCode } from './constants'
+import { UserRole } from './constants'
 import { createUnauthorizedError, createForbiddenError } from './errors'
 import { logger } from './logger'
 
@@ -171,7 +171,7 @@ export async function requireVerifiedEmail(): Promise<AuthResult> {
  * Cache for profile lookups to reduce database queries
  * Simple in-memory cache with TTL
  */
-const profileCache = new Map<string, { profile: any; expires: number }>()
+const profileCache = new Map<string, { profile: Record<string, unknown>; expires: number }>()
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
 export async function getCachedProfile(userId: string, supabase: Awaited<ReturnType<typeof createClient>>) {

@@ -17,7 +17,7 @@ export function measureRender(componentName: string, callback: () => void) {
 }
 
 // Debounce function for search inputs
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -35,7 +35,7 @@ export function debounce<T extends (...args: any[]) => any>(
 }
 
 // Throttle function for scroll/resize events
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {
@@ -76,7 +76,7 @@ export function lazyLoadImage(img: HTMLImageElement) {
 }
 
 // Report Web Vitals
-export function reportWebVitals(metric: any) {
+export function reportWebVitals(metric: { name: string; value: number; id: string }) {
   if (process.env.NODE_ENV === 'development') {
     console.log('📊 Web Vital:', metric)
   }
@@ -107,7 +107,7 @@ interface CacheItem<T> {
   expiry: number
 }
 
-export class CacheWithExpiry<T = any> {
+export class CacheWithExpiry<T = unknown> {
   private cache: Map<string, CacheItem<T>> = new Map()
 
   set(key: string, data: T, ttlMs: number = 5 * 60 * 1000) {
@@ -165,7 +165,9 @@ export async function cachedFetch<T>(
 export function hasSlowConnection(): boolean {
   if (typeof navigator === 'undefined') return false
   
-  const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection
+  type NetworkInfo = { effectiveType?: string; saveData?: boolean }
+  const nav = navigator as { connection?: NetworkInfo; mozConnection?: NetworkInfo; webkitConnection?: NetworkInfo }
+  const connection = nav.connection || nav.mozConnection || nav.webkitConnection
   
   if (!connection) return false
   
@@ -180,8 +182,8 @@ export function shouldLoadHeavyContent(): boolean {
   
   // Check if user prefers reduced data
   if (typeof navigator !== 'undefined') {
-    const connection = (navigator as any).connection
-    if (connection?.saveData) return false
+    const nav = navigator as { connection?: { saveData?: boolean } }
+    if (nav.connection?.saveData) return false
   }
   
   return true

@@ -102,7 +102,7 @@ export async function checkAccountLockout(email: string): Promise<LockoutConfig 
     }
     
     return null // No lockout
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error checking account lockout:', error)
     return null
   }
@@ -111,15 +111,13 @@ export async function checkAccountLockout(email: string): Promise<LockoutConfig 
 /**
  * Clear failed attempts after successful login
  */
-export async function clearFailedAttempts(email: string) {
+export async function clearFailedAttempts(_email: string) {
   try {
-    const supabase = await createClient()
-    
     // We don't delete login_attempts (keep for audit)
     // They'll naturally age out after 15 minutes
     
     return { success: true }
-  } catch (error: any) {
+  } catch (error) {
     return handleServerActionError(error)
   }
 }
@@ -130,7 +128,7 @@ export async function clearFailedAttempts(email: string) {
 export async function temporaryLockAccount(
   email: string,
   hours: number = 24,
-  reason: string = 'Security lockout'
+  _reason: string = 'Security lockout'
 ) {
   try {
     const supabase = await createClient()
@@ -151,7 +149,7 @@ export async function temporaryLockAccount(
       success: true, 
       message: `Account locked for ${hours} hours` 
     }
-  } catch (error: any) {
+  } catch (error) {
     return handleServerActionError(error)
   }
 }

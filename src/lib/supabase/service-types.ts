@@ -66,7 +66,7 @@ export type ServiceTypeDetails =
   | ElectricalDetails 
   | CleaningDetails 
   | VehicleRepairDetails 
-  | Record<string, any>
+  | Record<string, unknown>
 
 // Helper matching result
 export interface NearbyHelper {

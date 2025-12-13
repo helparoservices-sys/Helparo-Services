@@ -6,7 +6,7 @@
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 interface LogContext {
-  [key: string]: any
+  [key: string]: unknown
 }
 
 class Logger {
@@ -57,7 +57,7 @@ class Logger {
     this.log('warn', message, context)
   }
   
-  error(message: string, error?: any, context?: LogContext) {
+  error(message: string, error?: unknown, context?: LogContext) {
     const errorContext: LogContext = {
       ...context,
       error: error instanceof Error ? {
@@ -99,6 +99,6 @@ class Logger {
 export const logger = new Logger()
 
 // Convenience function to replace console.error throughout the codebase
-export function logError(message: string, error?: any, context?: LogContext) {
+export function logError(message: string, error?: unknown, context?: LogContext) {
   logger.error(message, error, context)
 }

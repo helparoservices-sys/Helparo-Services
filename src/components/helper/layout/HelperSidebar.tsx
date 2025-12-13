@@ -189,7 +189,6 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
             }`}
             title={collapsed && !isMobile ? item.label : ''}
           >
-          >
             <Icon className={`h-5 w-5 flex-shrink-0 ${active ? 'text-white' : ''}`} />
             {(isMobile || !collapsed) && (
               <span className="text-sm font-medium truncate">

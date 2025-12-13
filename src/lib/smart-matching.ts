@@ -37,6 +37,23 @@ export interface HelperMatch {
   badges: string[] // "top_rated", "fast_responder", "verified", "background_checked"
 }
 
+// Internal type for database helper records
+interface HelperRecord {
+  user_id: string
+  full_name?: string
+  profile_image_url?: string
+  latitude?: number
+  longitude?: number
+  is_online?: boolean
+  completed_jobs?: number
+  avg_response_time_minutes?: number
+  hourly_rate?: number
+  background_check_verified?: boolean
+  helper_reviews?: { rating: number }[]
+  helper_services?: { availability?: { immediate?: boolean; same_day?: boolean } }[]
+  helper_verifications?: unknown[]
+}
+
 /**
  * CORE MATCHING ALGORITHM
  * Scores helpers based on 12+ factors
@@ -67,7 +84,7 @@ export async function findMatchingHelpers(
 
     // 2. Score each helper
     const scoredHelpers = await Promise.all(
-      helpers.map(async (helper: any) => {
+      helpers.map(async (helper: HelperRecord) => {
         const score = await calculateMatchScore(helper, criteria)
         return score
       })
@@ -97,7 +114,7 @@ export async function findMatchingHelpers(
  * 12 factors weighted by importance
  */
 async function calculateMatchScore(
-  helper: any,
+  helper: HelperRecord,
   criteria: MatchingCriteria
 ): Promise<HelperMatch> {
   let totalScore = 0
@@ -127,7 +144,7 @@ async function calculateMatchScore(
 
   // Factor 3: Rating (15 points max)
   const avgRating = helper.helper_reviews?.length > 0
-    ? helper.helper_reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / helper.helper_reviews.length
+    ? helper.helper_reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / helper.helper_reviews.length
     : 0
   const ratingScore = (avgRating / 5) * 15
   totalScore += ratingScore
@@ -238,9 +255,9 @@ function toRad(degrees: number): number {
 /**
  * Score availability based on urgency
  */
-function calculateAvailabilityScore(helper: any, urgency: string): number {
+function calculateAvailabilityScore(helper: HelperRecord, urgency: string): number {
   const isOnline = helper.is_online
-  const hasImmediateSlot = helper.helper_services[0]?.availability?.immediate
+  const hasImmediateSlot = helper.helper_services?.[0]?.availability?.immediate
 
   if (urgency === 'immediate') {
     return isOnline && hasImmediateSlot ? 20 : 5
@@ -276,10 +293,10 @@ function formatResponseTime(minutes: number): string {
 /**
  * Determine helper availability status
  */
-function determineAvailability(helper: any): 'available_now' | 'available_today' | 'scheduled_only' {
-  if (helper.is_online && helper.helper_services[0]?.availability?.immediate) {
+function determineAvailability(helper: HelperRecord): 'available_now' | 'available_today' | 'scheduled_only' {
+  if (helper.is_online && helper.helper_services?.[0]?.availability?.immediate) {
     return 'available_now'
-  } else if (helper.helper_services[0]?.availability?.same_day) {
+  } else if (helper.helper_services?.[0]?.availability?.same_day) {
     return 'available_today'
   } else {
     return 'scheduled_only'
@@ -290,7 +307,7 @@ function determineAvailability(helper: any): 'available_now' | 'available_today'
  * Determine helper badges
  */
 function determineBadges(
-  helper: any,
+  helper: HelperRecord,
   rating: number,
   completedJobs: number,
   responseTime: number

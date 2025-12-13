@@ -123,7 +123,7 @@ export async function analyzeJobWithAI(
   images: string[], // Base64 encoded images
   description: string,
   categoryName: string,
-  location?: string
+  _location?: string
 ): Promise<AIAnalysisResult> {
   const startTime = Date.now()
   console.log('🔍 [AI] Starting analysis:', { 
@@ -190,11 +190,8 @@ Return JSON only:
     const elapsed = Date.now() - startTime
     console.log(`🤖 [AI] Response received in ${elapsed}ms:`, text.substring(0, 100))
 
-    // Parse JSON response
-    let jsonText = text.trim()
-    
-    // Remove markdown code blocks
-    jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    // Parse JSON response (remove markdown code blocks)
+    const jsonText = text.trim().replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
 
     const analysis: AIAnalysisResult = JSON.parse(jsonText)
 

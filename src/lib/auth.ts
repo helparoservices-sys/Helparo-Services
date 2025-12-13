@@ -10,13 +10,13 @@ import { createUnauthorizedError, createForbiddenError } from './errors'
 /**
  * Profile cache to avoid repeated database queries
  */
-const profileCache = new Map<string, { profile: any; timestamp: number }>()
+const profileCache = new Map<string, { profile: Record<string, unknown>; timestamp: number }>()
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
 /**
  * Get profile from cache or database
  */
-async function getCachedProfile(userId: string, supabase: any) {
+async function getCachedProfile(userId: string, supabase: Awaited<ReturnType<typeof createClient>>) {
   const cached = profileCache.get(userId)
   const now = Date.now()
   

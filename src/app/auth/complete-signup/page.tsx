@@ -17,6 +17,8 @@ interface LegalDoc {
   type: string
 }
 
+type LegalAudience = 'all' | 'customer' | 'helper'
+
 const INVALID_PHONE_PATTERNS = [
   /^(.)\1{9}$/,
   /^0{10}$/,
@@ -167,8 +169,33 @@ export default function CompleteSignupPage() {
     if (!terms || !privacy) {
       setLoadingDocs(true)
       try {
-        const { data: termsData } = await supabase.from('legal_documents').select('title, content_md, version, type').eq('type', 'terms').eq('is_active', true).order('version', { ascending: false }).limit(1).maybeSingle()
-        const { data: privacyData } = await supabase.from('legal_documents').select('title, content_md, version, type').eq('type', 'privacy').eq('is_active', true).order('version', { ascending: false }).limit(1).maybeSingle()
+        const audience: LegalAudience = finalRole === 'helper' ? 'helper' : 'customer'
+        const fetchLatestDoc = async (type: 'terms' | 'privacy') => {
+          const primary = await supabase
+            .from('legal_documents')
+            .select('title, content_md, version, type')
+            .eq('type', type)
+            .eq('audience', audience)
+            .eq('is_active', true)
+            .order('version', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          if (primary.data) return primary.data
+
+          const fallback = await supabase
+            .from('legal_documents')
+            .select('title, content_md, version, type')
+            .eq('type', type)
+            .eq('audience', 'all')
+            .eq('is_active', true)
+            .order('version', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          return fallback.data
+        }
+
+        const termsData = await fetchLatestDoc('terms')
+        const privacyData = await fetchLatestDoc('privacy')
         setTerms(termsData)
         setPrivacy(privacyData)
       } catch (err) { console.error('Error loading legal docs:', err) }
@@ -223,16 +250,60 @@ export default function CompleteSignupPage() {
         }).eq('id', authUser.id)
       }
 
-      const { data: termsDoc } = await supabase.from('legal_documents').select('version').eq('type', 'terms').eq('is_active', true).order('version', { ascending: false }).limit(1).maybeSingle()
-      const { data: privacyDoc } = await supabase.from('legal_documents').select('version').eq('type', 'privacy').eq('is_active', true).order('version', { ascending: false }).limit(1).maybeSingle()
+      const audience: LegalAudience = finalRole === 'helper' ? 'helper' : 'customer'
+
+      const fetchLatestVersion = async (type: 'terms' | 'privacy') => {
+        const primary = await supabase
+          .from('legal_documents')
+          .select('version')
+          .eq('type', type)
+          .eq('audience', audience)
+          .eq('is_active', true)
+          .order('version', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (primary.data?.version) return primary.data
+
+        const fallback = await supabase
+          .from('legal_documents')
+          .select('version')
+          .eq('type', type)
+          .eq('audience', 'all')
+          .eq('is_active', true)
+          .order('version', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        return fallback.data
+      }
+
+      const termsDoc = await fetchLatestVersion('terms')
+      const privacyDoc = await fetchLatestVersion('privacy')
 
       if (termsDoc?.version) {
-        const { data: existing } = await supabase.from('legal_acceptances').select('id').eq('user_id', authUser.id).eq('document_type', 'terms').eq('document_version', termsDoc.version).maybeSingle()
-        if (!existing) await supabase.from('legal_acceptances').insert({ user_id: authUser.id, document_type: 'terms', document_version: termsDoc.version })
+        const { data: existing } = await supabase
+          .from('legal_acceptances')
+          .select('id')
+          .eq('user_id', authUser.id)
+          .eq('document_type', 'terms')
+          .eq('document_audience', audience)
+          .eq('document_version', termsDoc.version)
+          .maybeSingle()
+        if (!existing) await supabase
+          .from('legal_acceptances')
+          .insert({ user_id: authUser.id, document_type: 'terms', document_audience: audience, document_version: termsDoc.version })
       }
       if (privacyDoc?.version) {
-        const { data: existing } = await supabase.from('legal_acceptances').select('id').eq('user_id', authUser.id).eq('document_type', 'privacy').eq('document_version', privacyDoc.version).maybeSingle()
-        if (!existing) await supabase.from('legal_acceptances').insert({ user_id: authUser.id, document_type: 'privacy', document_version: privacyDoc.version })
+        const { data: existing } = await supabase
+          .from('legal_acceptances')
+          .select('id')
+          .eq('user_id', authUser.id)
+          .eq('document_type', 'privacy')
+          .eq('document_audience', audience)
+          .eq('document_version', privacyDoc.version)
+          .maybeSingle()
+        if (!existing) await supabase
+          .from('legal_acceptances')
+          .insert({ user_id: authUser.id, document_type: 'privacy', document_audience: audience, document_version: privacyDoc.version })
       }
 
       const response = await fetch('/api/otp/send', {
@@ -773,7 +844,7 @@ export default function CompleteSignupPage() {
                     activeTab === 'terms' ? 'bg-emerald-100 text-emerald-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
-                  Terms of Service
+                  {finalRole === 'helper' ? 'Helper Terms' : 'Customer Terms'}
                 </button>
                 <button 
                   onClick={() => setActiveTab('privacy')} 
@@ -781,7 +852,7 @@ export default function CompleteSignupPage() {
                     activeTab === 'privacy' ? 'bg-emerald-100 text-emerald-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
-                  Privacy Policy
+                  {finalRole === 'helper' ? 'Helper Privacy' : 'Customer Privacy'}
                 </button>
               </div>
               <button onClick={() => setShowLegalModal(false)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
@@ -862,8 +933,18 @@ export default function CompleteSignupPage() {
               <span className="text-gray-600 text-sm">© 2024 Helparo. All rights reserved.</span>
             </div>
             <div className="flex items-center gap-6 text-sm">
-              <Link href="/legal/terms" className="text-gray-600 hover:text-emerald-600 transition-colors">Terms</Link>
-              <Link href="/legal/privacy" className="text-gray-600 hover:text-emerald-600 transition-colors">Privacy</Link>
+              <Link
+                href={finalRole === 'helper' ? '/legal/helper/terms' : '/legal/customer/terms'}
+                className="text-gray-600 hover:text-emerald-600 transition-colors"
+              >
+                {finalRole === 'helper' ? 'Helper Terms' : 'Customer Terms'}
+              </Link>
+              <Link
+                href={finalRole === 'helper' ? '/legal/helper/privacy' : '/legal/customer/privacy'}
+                className="text-gray-600 hover:text-emerald-600 transition-colors"
+              >
+                {finalRole === 'helper' ? 'Helper Privacy' : 'Customer Privacy'}
+              </Link>
               <Link href="/contact" className="text-gray-600 hover:text-emerald-600 transition-colors">Contact</Link>
             </div>
           </div>

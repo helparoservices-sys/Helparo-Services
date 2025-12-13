@@ -17,6 +17,8 @@ interface LegalDoc {
   type: string
 }
 
+type LegalAudience = 'all' | 'customer' | 'helper'
+
 export default function ConsentPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -54,24 +56,35 @@ export default function ConsentPage() {
         setRole(profile?.role || 'customer')
         setHasPhone(!!(profile?.phone && profile?.phone_verified))
 
-        // Fetch latest legal documents
-        const { data: termsData } = await supabase
-          .from('legal_documents')
-          .select('title, content_md, version, type')
-          .eq('type', 'terms')
-          .eq('is_active', true)
-          .order('version', { ascending: false })
-          .limit(1)
-          .maybeSingle()
+        const audience: LegalAudience = (profile?.role === 'helper' ? 'helper' : 'customer')
 
-        const { data: privacyData } = await supabase
-          .from('legal_documents')
-          .select('title, content_md, version, type')
-          .eq('type', 'privacy')
-          .eq('is_active', true)
-          .order('version', { ascending: false })
-          .limit(1)
-          .maybeSingle()
+        // Fetch latest legal documents
+        const fetchLatestDoc = async (type: 'terms' | 'privacy') => {
+          const primary = await supabase
+            .from('legal_documents')
+            .select('title, content_md, version, type')
+            .eq('type', type)
+            .eq('audience', audience)
+            .eq('is_active', true)
+            .order('version', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          if (primary.data) return primary.data
+
+          const fallback = await supabase
+            .from('legal_documents')
+            .select('title, content_md, version, type')
+            .eq('type', type)
+            .eq('audience', 'all')
+            .eq('is_active', true)
+            .order('version', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          return fallback.data
+        }
+
+        const termsData = await fetchLatestDoc('terms')
+        const privacyData = await fetchLatestDoc('privacy')
 
         setTerms(termsData)
         setPrivacy(privacyData)
@@ -83,6 +96,7 @@ export default function ConsentPage() {
             .select('id')
             .eq('user_id', user.id)
             .eq('document_type', 'terms')
+            .eq('document_audience', audience)
             .eq('document_version', termsData.version)
             .maybeSingle()
           
@@ -95,6 +109,7 @@ export default function ConsentPage() {
             .select('id')
             .eq('user_id', user.id)
             .eq('document_type', 'privacy')
+            .eq('document_audience', audience)
             .eq('document_version', privacyData.version)
             .maybeSingle()
           
@@ -129,6 +144,8 @@ export default function ConsentPage() {
     setError('')
 
     try {
+      const audience: LegalAudience = role === 'helper' ? 'helper' : 'customer'
+
       // Accept terms
       if (terms?.version && !termsAccepted) {
         const { error: termsError } = await supabase
@@ -136,6 +153,7 @@ export default function ConsentPage() {
           .insert({
             user_id: user.id,
             document_type: 'terms',
+            document_audience: audience,
             document_version: terms.version,
           })
 
@@ -151,6 +169,7 @@ export default function ConsentPage() {
           .insert({
             user_id: user.id,
             document_type: 'privacy',
+            document_audience: audience,
             document_version: privacy.version,
           })
 
@@ -181,14 +200,14 @@ export default function ConsentPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-teal-50">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-teal-50">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-white/90 backdrop-blur-xl shadow-sm">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
@@ -211,7 +230,7 @@ export default function ConsentPage() {
       </header>
 
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-purple-600 to-teal-600 text-white py-8">
+      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white py-8">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
@@ -219,8 +238,8 @@ export default function ConsentPage() {
             </div>
             <span className="text-sm uppercase tracking-wider text-white/80 font-medium">Legal Agreement</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Review & Accept Our Terms</h1>
-          <p className="text-white/90">Please review and accept our terms to continue using Helparo</p>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Review & Accept Legal Documents</h1>
+          <p className="text-white/90">Please review and accept to continue using Helparo</p>
         </div>
       </div>
 
@@ -232,7 +251,7 @@ export default function ConsentPage() {
             onClick={() => setActiveTab('terms')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
               activeTab === 'terms'
-                ? 'bg-purple-600 text-white shadow-lg'
+                ? 'bg-emerald-600 text-white shadow-lg'
                 : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
             }`}
           >
@@ -244,7 +263,7 @@ export default function ConsentPage() {
             onClick={() => setActiveTab('privacy')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
               activeTab === 'privacy'
-                ? 'bg-purple-600 text-white shadow-lg'
+                ? 'bg-emerald-600 text-white shadow-lg'
                 : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
             }`}
           >
@@ -259,9 +278,9 @@ export default function ConsentPage() {
           {activeTab === 'terms' && terms && (
             <div className="prose prose-slate max-w-none">
               <div className="flex items-center gap-2 mb-4 pb-4 border-b">
-                <FileText className="h-5 w-5 text-purple-600" />
+                <FileText className="h-5 w-5 text-emerald-600" />
                 <h2 className="text-xl font-bold text-gray-900 m-0">{terms.title}</h2>
-                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">v{terms.version}</span>
+                <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full">v{terms.version}</span>
               </div>
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {terms.content_md}
@@ -271,9 +290,9 @@ export default function ConsentPage() {
           {activeTab === 'privacy' && privacy && (
             <div className="prose prose-slate max-w-none">
               <div className="flex items-center gap-2 mb-4 pb-4 border-b">
-                <Shield className="h-5 w-5 text-purple-600" />
+                <Shield className="h-5 w-5 text-emerald-600" />
                 <h2 className="text-xl font-bold text-gray-900 m-0">{privacy.title}</h2>
-                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">v{privacy.version}</span>
+                <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full">v{privacy.version}</span>
               </div>
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {privacy.content_md}
@@ -293,7 +312,7 @@ export default function ConsentPage() {
         )}
 
         {/* Accept Section */}
-        <div className="bg-gradient-to-r from-purple-50 to-teal-50 rounded-2xl border border-purple-100 p-6">
+        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100 p-6">
           <div className="flex items-start gap-3 mb-4">
             <input
               type="checkbox"
@@ -311,7 +330,7 @@ export default function ConsentPage() {
           <Button
             onClick={handleAccept}
             disabled={accepting}
-            className="w-full bg-gradient-to-r from-purple-600 to-teal-600 hover:from-purple-700 hover:to-teal-700 text-white font-bold text-lg py-6 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300"
+            className="w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-700 hover:via-teal-700 hover:to-cyan-700 text-white font-bold text-lg py-6 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300"
           >
             {accepting ? (
               <>

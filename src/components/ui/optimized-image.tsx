@@ -69,7 +69,7 @@ export function OptimizedImage({
     )
   }
 
-  const imageProps: any = {
+  const imageProps: Record<string, unknown> = {
     src,
     alt,
     className: `${className} ${isLoading ? 'blur-sm' : 'blur-0'} transition-all duration-300`,
@@ -92,7 +92,7 @@ export function OptimizedImage({
 
   return (
     <>
-      <Image {...imageProps} />
+      <Image {...imageProps} alt={alt} />
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -176,7 +176,7 @@ export function ProgressiveImage({
   const [imgSrc, setImgSrc] = useState(placeholderSrc || src)
   const [isLoading, setIsLoading] = useState(true)
 
-  const customLoader = ({ src, width, quality }: any) => {
+  const customLoader = ({ src, width, quality }: { src: string; width: number; quality?: number }) => {
     return `${src}?w=${width}&q=${quality || 75}`
   }
 

@@ -125,7 +125,7 @@ export function LocationPermissionPrompt() {
         </button>
 
         {/* Icon */}
-        <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
           <MapPin className="h-8 w-8 text-white" />
         </div>
 
@@ -138,21 +138,21 @@ export function LocationPermissionPrompt() {
         </p>
 
         {/* Benefits */}
-        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 mb-6 space-y-2">
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-4 mb-6 space-y-2">
           <div className="flex items-start gap-2">
-            <div className="w-1.5 h-1.5 bg-purple-600 rounded-full mt-2"></div>
+            <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full mt-2"></div>
             <p className="text-sm text-slate-700 dark:text-slate-300">
               Get matched with customers in your area
             </p>
           </div>
           <div className="flex items-start gap-2">
-            <div className="w-1.5 h-1.5 bg-purple-600 rounded-full mt-2"></div>
+            <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full mt-2"></div>
             <p className="text-sm text-slate-700 dark:text-slate-300">
               Show accurate service radius to customers
             </p>
           </div>
           <div className="flex items-start gap-2">
-            <div className="w-1.5 h-1.5 bg-purple-600 rounded-full mt-2"></div>
+            <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full mt-2"></div>
             <p className="text-sm text-slate-700 dark:text-slate-300">
               Receive nearby job notifications
             </p>
@@ -170,7 +170,7 @@ export function LocationPermissionPrompt() {
           <button
             onClick={requestLocationPermission}
             disabled={requesting}
-            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:from-slate-400 disabled:to-slate-400 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 disabled:from-slate-400 disabled:to-slate-400 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
           >
             {requesting ? (
               <>

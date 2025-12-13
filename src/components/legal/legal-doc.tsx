@@ -85,7 +85,7 @@ export function LegalDoc({
   const currentYear = new Date().getFullYear()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-slate-900 dark:via-teal-950 dark:to-emerald-950">
       {/* Header with Logo */}
       <header className="sticky top-0 z-50 border-b bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -101,7 +101,7 @@ export function LegalDoc({
                 quality={90}
               />
               <div>
-                <h2 className="text-xl font-bold text-primary-600 dark:text-primary-400">Helparo</h2>
+                <h2 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Helparo</h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">Services Platform</p>
               </div>
             </Link>
@@ -109,14 +109,14 @@ export function LegalDoc({
             <div className="flex items-center gap-3">
               <Link 
                 href="/"
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
               >
                 <Home className="h-4 w-4" />
                 <span className="hidden sm:inline">Home</span>
               </Link>
               <Link 
                 href={backHref}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors shadow-lg"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors shadow-lg"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back
@@ -127,7 +127,7 @@ export function LegalDoc({
       </header>
 
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-primary-600 to-indigo-600 text-white py-12 md:py-16">
+      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white py-12 md:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
@@ -166,7 +166,7 @@ export function LegalDoc({
               {/* Table of Contents */}
               <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <FileText className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                  <FileText className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                   <h3 className="font-semibold text-slate-900 dark:text-white">Table of Contents</h3>
                 </div>
                 {toc.length > 0 ? (
@@ -175,7 +175,7 @@ export function LegalDoc({
                       <li key={item.slug} className={item.level === 3 ? 'pl-4' : ''}>
                         <a 
                           href={`#${item.slug}`} 
-                          className="text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors block py-1"
+                          className="text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors block py-1"
                         >
                           {item.text}
                         </a>
@@ -188,24 +188,24 @@ export function LegalDoc({
               </div>
 
               {/* Quick Links */}
-              <div className="bg-gradient-to-br from-primary-50 to-indigo-50 dark:from-primary-900/20 dark:to-indigo-900/20 rounded-xl border border-primary-100 dark:border-primary-800 p-6">
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/10 dark:to-teal-900/10 rounded-xl border border-emerald-100 dark:border-emerald-800/40 p-6">
                 <h3 className="font-semibold text-slate-900 dark:text-white mb-3">Related Documents</h3>
                 <div className="space-y-2">
                   <Link 
                     href="/legal/terms"
-                    className="block text-sm text-primary-600 dark:text-primary-400 hover:underline"
+                    className="block text-sm text-emerald-700 dark:text-emerald-300 hover:underline"
                   >
                     Terms & Conditions
                   </Link>
                   <Link 
                     href="/legal/privacy"
-                    className="block text-sm text-primary-600 dark:text-primary-400 hover:underline"
+                    className="block text-sm text-emerald-700 dark:text-emerald-300 hover:underline"
                   >
                     Privacy Policy
                   </Link>
                   <Link 
                     href="/legal/consent"
-                    className="block text-sm text-primary-600 dark:text-primary-400 hover:underline"
+                    className="block text-sm text-emerald-700 dark:text-emerald-300 hover:underline"
                   >
                     User Consent
                   </Link>
@@ -217,7 +217,7 @@ export function LegalDoc({
           {/* Main Content */}
           <section className="lg:col-span-9">
             <article className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-6 md:p-10">
-              <div className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:pb-2 prose-h2:border-b prose-h2:border-slate-200 dark:prose-h2:border-slate-700 prose-h3:text-xl prose-h3:mt-6 prose-h3:mb-3 prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-p:leading-relaxed prose-li:text-slate-600 dark:prose-li:text-slate-300 prose-strong:text-slate-900 dark:prose-strong:text-white prose-a:text-primary-600 dark:prose-a:text-primary-400">
+              <div className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:pb-2 prose-h2:border-b prose-h2:border-slate-200 dark:prose-h2:border-slate-700 prose-h3:text-xl prose-h3:mt-6 prose-h3:mb-3 prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-p:leading-relaxed prose-li:text-slate-600 dark:prose-li:text-slate-300 prose-strong:text-slate-900 dark:prose-strong:text-white prose-a:text-emerald-700 dark:prose-a:text-emerald-300">
                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
                   {contentMd}
                 </ReactMarkdown>

@@ -22,7 +22,7 @@ export async function createClient() {
               path: options.path || '/',
             }
             cookieStore.set({ name, value, ...cookieOptions })
-          } catch (error) {
+          } catch {
             // The `set` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
             // user sessions.
@@ -37,7 +37,7 @@ export async function createClient() {
               path: options.path || '/',
             }
             cookieStore.set({ name, value: '', ...cookieOptions })
-          } catch (error) {
+          } catch {
             // The `delete` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
             // user sessions.

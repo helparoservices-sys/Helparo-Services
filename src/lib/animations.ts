@@ -241,7 +241,7 @@ export const durations = {
 
 // ==================== EXPORT ALL ====================
 
-export default {
+const animations = {
   fadeInVariants,
   fadeInUpVariants,
   slideInRightVariants,
@@ -267,3 +267,5 @@ export default {
   easings,
   durations,
 };
+
+export default animations;

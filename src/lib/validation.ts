@@ -270,10 +270,10 @@ export const redeemLoyaltyPointsSchema = z.object({
 export function validateFormData<T>(
   formData: FormData,
   schema: z.ZodSchema<T>
-): { success: true; data: T } | { success: false; error: string; details?: any } {
+): { success: true; data: T } | { success: false; error: string; details?: Record<string, unknown> } {
   try {
     // Convert FormData to object
-    const obj: any = {}
+    const obj: Record<string, unknown> = {}
     
     for (const [key, value] of formData.entries()) {
       // Handle numbers
@@ -305,7 +305,7 @@ export function validateFormData<T>(
       const errors = result.error.flatten()
       const fieldErrorKeys = Object.keys(errors.fieldErrors)
       const firstFieldError = fieldErrorKeys.length > 0 
-        ? (errors.fieldErrors as any)[fieldErrorKeys[0]]?.[0]
+        ? (errors.fieldErrors as Record<string, string[]>)[fieldErrorKeys[0]]?.[0]
         : null
       const firstError = firstFieldError || 
                         errors.formErrors[0] || 
@@ -317,7 +317,7 @@ export function validateFormData<T>(
         details: errors
       }
     }
-  } catch (error: any) {
+  } catch {
     return {
       success: false,
       error: 'Invalid input data'

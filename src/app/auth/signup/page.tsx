@@ -30,6 +30,23 @@ function SignUpForm() {
   const [showPrivacy, setShowPrivacy] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [focusedField, setFocusedField] = useState<string | null>(null)
+  const [emailTouched, setEmailTouched] = useState(false)
+
+  // Email validation
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+  const emailValid = formData.email === '' || isValidEmail(formData.email)
+
+  // Phone number handling - only store 10 digits, display with +91
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Remove all non-digits
+    const digits = e.target.value.replace(/\D/g, '')
+    // Limit to 10 digits
+    const limitedDigits = digits.slice(0, 10)
+    setFormData({ ...formData, phone: limitedDigits })
+  }
 
   const handleGoogleSignUp = async () => {
     setError('')
@@ -80,6 +97,12 @@ function SignUpForm() {
       if (!passwordMatch) {
         throw new Error('Passwords do not match')
       }
+      if (!isValidEmail(formData.email)) {
+        throw new Error('Please enter a valid email address')
+      }
+
+      // Prepend +91 to phone number for storage
+      const fullPhone = formData.phone ? `+91${formData.phone}` : ''
 
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
@@ -87,7 +110,7 @@ function SignUpForm() {
         options: {
           data: {
             full_name: formData.fullName,
-            phone: formData.phone,
+            phone: fullPhone,
             role: formData.role,
           },
           emailRedirectTo: `${window.location.origin}/auth/confirm`,
@@ -115,12 +138,12 @@ function SignUpForm() {
           <p className="text-gray-500 text-lg mb-10">
             We&apos;ve sent a verification link to <strong className="text-emerald-600">{formData.email}</strong>
           </p>
-          <button 
-            className="h-14 px-8 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-2xl transition-all shadow-lg shadow-emerald-500/30 hover:scale-105"
-            onClick={() => router.push('/auth/login')}
+          <Link 
+            href="/auth/login"
+            className="inline-block h-14 px-8 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-2xl transition-all shadow-lg shadow-emerald-500/30 hover:scale-105 leading-[3.5rem]"
           >
             Go to Login
-          </button>
+          </Link>
         </div>
       </div>
     )
@@ -309,30 +332,42 @@ function SignUpForm() {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     onFocus={() => setFocusedField('email')}
-                    onBlur={() => setFocusedField(null)}
+                    onBlur={() => { setFocusedField(null); setEmailTouched(true) }}
                     required
-                    className="w-full h-12 pl-12 pr-4 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
+                    className={`w-full h-12 pl-12 pr-4 bg-gray-50 border-2 rounded-xl text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none transition-all duration-200 ${!emailValid && emailTouched ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-emerald-500'}`}
                   />
                 </div>
+                {!emailValid && emailTouched && (
+                  <p className="text-xs text-red-500 mt-1">Please enter a valid email address</p>
+                )}
               </div>
 
               {/* Phone */}
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-gray-700">Phone number</label>
-                <div className="relative">
-                  <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'phone' ? 'text-emerald-500' : 'text-gray-400'}`}>
-                    <Phone className="w-5 h-5" />
+                <div className="relative flex">
+                  <div className="flex items-center justify-center px-4 bg-gray-100 border-2 border-r-0 border-gray-200 rounded-l-xl text-gray-600 font-medium">
+                    +91
                   </div>
-                  <input
-                    type="tel"
-                    placeholder="+91 9876543210"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    onFocus={() => setFocusedField('phone')}
-                    onBlur={() => setFocusedField(null)}
-                    className="w-full h-12 pl-12 pr-4 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
-                  />
+                  <div className="relative flex-1">
+                    <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'phone' ? 'text-emerald-500' : 'text-gray-400'}`}>
+                      <Phone className="w-5 h-5" />
+                    </div>
+                    <input
+                      type="tel"
+                      placeholder="9876543210"
+                      value={formData.phone}
+                      onChange={handlePhoneChange}
+                      onFocus={() => setFocusedField('phone')}
+                      onBlur={() => setFocusedField(null)}
+                      maxLength={10}
+                      className="w-full h-12 pl-12 pr-4 bg-gray-50 border-2 border-gray-200 rounded-r-xl text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
+                    />
+                  </div>
                 </div>
+                {formData.phone && formData.phone.length < 10 && (
+                  <p className="text-xs text-amber-600 mt-1">Enter 10 digit mobile number ({formData.phone.length}/10)</p>
+                )}
               </div>
 
               {/* Password */}
@@ -457,8 +492,23 @@ function SignUpForm() {
               <button onClick={() => setShowPrivacy(true)} className="text-gray-500 hover:text-emerald-600 transition-colors underline">Privacy Policy</button>
             </p>
 
-            <LegalModal type="terms" open={showTerms} onOpenChange={setShowTerms} />
-            <LegalModal type="privacy" open={showPrivacy} onOpenChange={setShowPrivacy} />
+            <div className="mt-3 flex items-center justify-center gap-4 text-xs">
+              <Link
+                href={formData.role === 'helper' ? '/legal/helper/terms' : '/legal/customer/terms'}
+                className="text-gray-500 hover:text-emerald-700 underline"
+              >
+                View {formData.role === 'helper' ? 'Helper' : 'Customer'} Terms
+              </Link>
+              <Link
+                href={formData.role === 'helper' ? '/legal/helper/privacy' : '/legal/customer/privacy'}
+                className="text-gray-500 hover:text-emerald-700 underline"
+              >
+                View {formData.role === 'helper' ? 'Helper' : 'Customer'} Privacy
+              </Link>
+            </div>
+
+            <LegalModal type="terms" audience={formData.role} open={showTerms} onOpenChange={setShowTerms} />
+            <LegalModal type="privacy" audience={formData.role} open={showPrivacy} onOpenChange={setShowPrivacy} />
           </div>
         </div>
       </div>

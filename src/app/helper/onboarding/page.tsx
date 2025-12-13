@@ -22,9 +22,11 @@ import { toast } from 'sonner'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { uploadOnboardingDocuments } from '@/app/actions/helper-verification'
 import { completeHelperOnboarding } from '@/app/actions/onboarding'
+import { LanguageSelectorModal, LanguageButton } from '@/components/language-selector-modal'
+import { useLanguage, hasSelectedLanguage } from '@/lib/language-context'
 
 // Step 1: Service Details
-function Step1ServiceDetails({ data, onChange, onNext }: any) {
+function Step1ServiceDetails({ data, onChange, onNext, t }: any) {
   const [categories, setCategories] = useState<any[]>([])
   const [subcategories, setSubcategories] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -159,20 +161,20 @@ function Step1ServiceDetails({ data, onChange, onNext }: any) {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-          Service Details
+          {t('onboarding.step1.title')}
         </h2>
         <p className="text-slate-600 dark:text-slate-400">
-          Tell us about the services you provide
+          {t('onboarding.step1.subtitle')}
         </p>
       </div>
 
       {/* Service Categories */}
       <div>
         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-          Service Categories <span className="text-red-500">*</span>
+          {t('onboarding.step1.chooseServices')} <span className="text-red-500">*</span>
         </label>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-          Search and select the services you provide ({selectedCount} selected)
+          {t('onboarding.step1.tapCategories')} ({selectedCount} {t('common.selected')})
         </p>
 
         {/* Search Box */}
@@ -180,10 +182,10 @@ function Step1ServiceDetails({ data, onChange, onNext }: any) {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
           <input
             type="text"
-            placeholder="Search categories or services..."
+            placeholder={t('onboarding.step1.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-slate-800 dark:text-white"
+            className="w-full pl-10 pr-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-slate-800 dark:text-white"
           />
         </div>
 
@@ -191,7 +193,7 @@ function Step1ServiceDetails({ data, onChange, onNext }: any) {
         <div className="border border-slate-200 dark:border-slate-700 rounded-lg max-h-96 overflow-y-auto bg-white dark:bg-slate-800">
           {loading ? (
             <div className="p-8 text-center text-slate-500">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-2"></div>
               Loading categories...
             </div>
           ) : filteredCategories.length === 0 ? (
@@ -219,11 +221,11 @@ function Step1ServiceDetails({ data, onChange, onNext }: any) {
                           type="checkbox"
                           checked={rootSelected}
                           onChange={() => toggleCategory(rootCategory.slug)}
-                          className="h-5 w-5 rounded border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                          className="h-5 w-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
                         />
                         {isPartiallySelected && (
                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="w-2.5 h-0.5 bg-purple-600 rounded"></div>
+                            <div className="w-2.5 h-0.5 bg-emerald-600 rounded"></div>
                           </div>
                         )}
                       </div>
@@ -232,12 +234,12 @@ function Step1ServiceDetails({ data, onChange, onNext }: any) {
                       <button
                         type="button"
                         onClick={() => toggleCategoryExpansion(rootCategory.id)}
-                        className="flex-1 flex items-center justify-between text-left font-semibold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+                        className="flex-1 flex items-center justify-between text-left font-semibold text-slate-800 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                       >
                         <span>{rootCategory.name}</span>
                         <div className="flex items-center gap-2">
                           {selectedSubsCount > 0 && (
-                            <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full font-medium">
+                            <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full font-medium">
                               {selectedSubsCount}/{subs.length}
                             </span>
                           )}
@@ -263,9 +265,9 @@ function Step1ServiceDetails({ data, onChange, onNext }: any) {
                                   type="checkbox"
                                   checked={subSelected}
                                   onChange={() => toggleCategory(sub.slug)}
-                                  className="h-4 w-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
                                 />
-                                <span className="text-sm text-slate-700 dark:text-slate-300 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                                <span className="text-sm text-slate-700 dark:text-slate-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                                   {sub.name}
                                 </span>
                               </label>
@@ -283,9 +285,9 @@ function Step1ServiceDetails({ data, onChange, onNext }: any) {
 
         {/* Selected Categories Summary */}
         {selectedCount > 0 && (
-          <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
-            <p className="text-sm font-medium text-purple-800 dark:text-purple-300 mb-2">
-              Selected Service Categories ({categories.filter(c => (data.service_categories || []).includes(c.slug)).length}):
+          <div className="mt-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+            <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300 mb-2">
+              {t('onboarding.step1.selectedServiceCategories')} ({categories.filter(c => (data.service_categories || []).includes(c.slug)).length}):
             </p>
             <div className="flex flex-wrap gap-2">
               {(data.service_categories || [])
@@ -296,7 +298,7 @@ function Step1ServiceDetails({ data, onChange, onNext }: any) {
                     <span
                       key={slug}
                       onClick={() => toggleCategory(slug)}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-slate-800 border border-purple-300 dark:border-purple-700 rounded-md text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-700 transition-colors"
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 rounded-md text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-700 transition-colors"
                     >
                       {category.name}
                       <X className="h-3 w-3" />
@@ -311,7 +313,7 @@ function Step1ServiceDetails({ data, onChange, onNext }: any) {
       {/* Skills - Auto-populated from selected subcategories */}
       <div>
         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-          Your Skills <span className="text-red-500">*</span>
+          {t('onboarding.step1.yourSkills')} <span className="text-red-500">*</span>
         </label>
         <div className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white min-h-[80px]">
           {(data.skills || []).length > 0 ? (
@@ -319,29 +321,29 @@ function Step1ServiceDetails({ data, onChange, onNext }: any) {
               {(data.skills || []).map((skill: string, idx: number) => (
                 <span
                   key={idx}
-                  className="inline-flex items-center px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm font-medium"
+                  className="inline-flex items-center px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full text-sm font-medium"
                 >
                   {skill}
                 </span>
               ))}
             </div>
           ) : (
-            <p className="text-slate-400 dark:text-slate-500 italic">Select subcategories above to auto-populate skills</p>
+            <p className="text-slate-400 dark:text-slate-500 italic">{t('onboarding.step1.selectSubcategories')}</p>
           )}
         </div>
-        <p className="text-xs text-slate-500 mt-1">Auto-filled from selected subcategories</p>
+        <p className="text-xs text-slate-500 mt-1">{t('onboarding.step1.autoFilled')}</p>
       </div>
 
       {/* Specialization */}
       <div>
         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-          Specialization (Optional)
+          {t('onboarding.step1.specialization')}
         </label>
         <textarea
           value={data.skills_specialization || ''}
           onChange={(e) => onChange({ skills_specialization: e.target.value })}
-          placeholder="e.g., Emergency Repairs, Eco-friendly Solutions, Commercial Projects"
-          className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          placeholder={t('onboarding.step1.specializationPlaceholder')}
+          className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
           rows={2}
         />
       </div>
@@ -349,7 +351,7 @@ function Step1ServiceDetails({ data, onChange, onNext }: any) {
       {/* Experience & Rate */}
       <div>
         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-          Years of Experience <span className="text-red-500">*</span>
+          {t('onboarding.step1.yearsExperience')} <span className="text-red-500">*</span>
         </label>
         <input
           type="number"
@@ -357,7 +359,7 @@ function Step1ServiceDetails({ data, onChange, onNext }: any) {
           onChange={(e) => onChange({ experience_years: parseInt(e.target.value) || 0 })}
           min="0"
           max="50"
-          className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
           placeholder="5"
         />
       </div>
@@ -365,9 +367,9 @@ function Step1ServiceDetails({ data, onChange, onNext }: any) {
       <button
         onClick={onNext}
         disabled={!data.service_categories?.length || !data.skills?.length || !data.experience_years}
-        className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-6 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-6 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-        Continue to Location
+        {t('onboarding.step1.continueToLocation')}
         <ChevronRight className="h-5 w-5" />
       </button>
     </div>
@@ -375,185 +377,20 @@ function Step1ServiceDetails({ data, onChange, onNext }: any) {
 }
 
 // Step 2: Location & Service Area
-function Step2Location({ data, onChange, onNext, onBack }: any) {
+function Step2Location({ data, onChange, onNext, onBack, t }: any) {
   const [detecting, setDetecting] = useState(false)
   const [locationError, setLocationError] = useState('')
   const [validationError, setValidationError] = useState('')
   
-  // Service area state with backend filtering
-  const [states, setStates] = useState<any[]>([])
-  const [districts, setDistricts] = useState<any[]>([])
-  const [cities, setCities] = useState<any[]>([])
-  const [serviceAreas, setServiceAreas] = useState<any[]>([])
-  const [selectedState, setSelectedState] = useState('')
-  const [selectedDistrict, setSelectedDistrict] = useState('')
-  const [selectedCity, setSelectedCity] = useState('')
-  const [selectedServiceAreas, setSelectedServiceAreas] = useState<string[]>([])
-  const [loadingAreas, setLoadingAreas] = useState(false)
-  const supabase = createClient()
-
-  useEffect(() => {
-    loadStates()
-  }, [])
-
-  const loadStates = async () => {
-    setLoadingAreas(true)
-    const { data: statesData } = await supabase
-      .from('service_areas')
-      .select('id, name')
-      .eq('level', 'state')
-      .eq('is_active', true)
-      .is('parent_id', null)
-      .order('display_order')
-    
-    setStates(statesData || [])
-    setLoadingAreas(false)
-  }
-
-  const loadDistricts = async (stateId: string) => {
-    setLoadingAreas(true)
-    
-    // Get all districts for this state
-    const { data: allDistricts } = await supabase
-      .from('service_areas')
-      .select('id, name')
-      .eq('parent_id', stateId)
-      .eq('level', 'district')
-      .eq('is_active', true)
-      .order('display_order')
-    
-    if (!allDistricts) {
-      setDistricts([])
-      setLoadingAreas(false)
-      return
-    }
-    
-    // Filter districts that have at least 1 active city
-    const districtsWithCities = []
-    for (const district of allDistricts) {
-      const { count } = await supabase
-        .from('service_areas')
-        .select('id', { count: 'exact', head: true })
-        .eq('parent_id', district.id)
-        .eq('level', 'city')
-        .eq('is_active', true)
-      
-      if (count && count > 0) {
-        districtsWithCities.push(district)
-      }
-    }
-    
-    setDistricts(districtsWithCities)
-    setLoadingAreas(false)
-  }
-
-  const loadCities = async (districtId: string) => {
-    setLoadingAreas(true)
-    
-    // Get all cities for this district
-    const { data: allCities } = await supabase
-      .from('service_areas')
-      .select('id, name')
-      .eq('parent_id', districtId)
-      .eq('level', 'city')
-      .eq('is_active', true)
-      .order('display_order')
-    
-    if (!allCities) {
-      setCities([])
-      setLoadingAreas(false)
-      return
-    }
-    
-    // Filter cities that have at least 1 active service area
-    const citiesWithAreas = []
-    for (const city of allCities) {
-      const { count } = await supabase
-        .from('service_areas')
-        .select('id', { count: 'exact', head: true })
-        .eq('parent_id', city.id)
-        .eq('level', 'area')
-        .eq('is_active', true)
-      
-      if (count && count > 0) {
-        citiesWithAreas.push(city)
-      }
-    }
-    
-    setCities(citiesWithAreas)
-    setLoadingAreas(false)
-  }
-
-  const loadServiceAreas = async (cityId: string) => {
-    setLoadingAreas(true)
-    const { data: areasData } = await supabase
-      .from('service_areas')
-      .select('id, name')
-      .eq('parent_id', cityId)
-      .eq('level', 'area')
-      .eq('is_active', true)
-      .order('display_order')
-    
-    setServiceAreas(areasData || [])
-    setLoadingAreas(false)
-  }
-
-  const handleStateChange = (stateId: string) => {
-    setSelectedState(stateId)
-    setSelectedDistrict('')
-    setSelectedCity('')
-    setSelectedServiceAreas([])
-    setDistricts([])
-    setCities([])
-    setServiceAreas([])
-    if (stateId) {
-      loadDistricts(stateId)
-    }
-  }
-
-  const handleDistrictChange = (districtId: string) => {
-    setSelectedDistrict(districtId)
-    setSelectedCity('')
-    setSelectedServiceAreas([])
-    setCities([])
-    setServiceAreas([])
-    if (districtId) {
-      loadCities(districtId)
-    }
-  }
-
-  const handleCityChange = (cityId: string) => {
-    setSelectedCity(cityId)
-    setSelectedServiceAreas([])
-    setServiceAreas([])
-    if (cityId) {
-      loadServiceAreas(cityId)
-    }
-  }
-
-  const toggleServiceArea = (areaId: string) => {
-    const updated = selectedServiceAreas.includes(areaId)
-      ? selectedServiceAreas.filter(id => id !== areaId)
-      : [...selectedServiceAreas, areaId]
-    setSelectedServiceAreas(updated)
-    
-    // Also save area names for service_areas field
-    const areaNames = serviceAreas
-      .filter(area => updated.includes(area.id))
-      .map(area => area.name)
-    
-    onChange({ 
-      service_area_ids: updated,
-      service_areas: areaNames
-    })
-  }
+  // Preset radius options (Rapido-style)
+  const radiusOptions = [5, 10, 15, 20, 25, 30]
 
   const detectLocation = async () => {
     setDetecting(true)
     setLocationError('')
 
     if (!navigator.geolocation) {
-      setLocationError('Geolocation is not supported by your browser')
+      setLocationError(t('onboarding.step2.geoNotSupported'))
       setDetecting(false)
       return
     }
@@ -576,13 +413,13 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
               longitude: longitude.toFixed(6)
             })
 
-            toast.success('✓ Location detected successfully!')
+            toast.success(t('onboarding.step2.locationDetected'))
           } else {
             onChange({
               latitude: latitude.toFixed(6),
               longitude: longitude.toFixed(6)
             })
-            toast.success('Coordinates saved! Please enter address manually.')
+            toast.success(t('onboarding.step2.coordsSavedEnterManual'))
           }
         } catch (error) {
           console.error('Geocoding error:', error)
@@ -590,24 +427,24 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
             latitude: latitude.toFixed(6),
             longitude: longitude.toFixed(6)
           })
-          toast.success('Location coordinates saved!')
-          setLocationError('Please enter your address manually in the field below.')
+          toast.success(t('onboarding.step2.coordsSaved'))
+          setLocationError(t('onboarding.step2.enterAddressManually'))
         }
         
         setDetecting(false)
       },
       (error) => {
-        let errorMessage = 'Failed to detect location'
+        let errorMessage = t('onboarding.step2.detectFailed')
         
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage = 'Location permission denied. Please enable location access in your browser settings.'
+            errorMessage = t('onboarding.step2.permissionDenied')
             break
           case error.POSITION_UNAVAILABLE:
-            errorMessage = 'Location information is unavailable.'
+            errorMessage = t('onboarding.step2.positionUnavailable')
             break
           case error.TIMEOUT:
-            errorMessage = 'Location request timed out.'
+            errorMessage = t('onboarding.step2.timeout')
             break
         }
         
@@ -626,20 +463,20 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
     setValidationError('')
     
     if (!data.address?.trim()) {
-      setValidationError('Full Address is required')
-      toast.error('Please enter your full address')
+      setValidationError(t('onboarding.step2.addressRequired'))
+      toast.error(t('onboarding.step2.enterFullAddress'))
       return
     }
     
     if (!data.pincode?.trim()) {
-      setValidationError('Pincode is required')
-      toast.error('Please enter your pincode')
+      setValidationError(t('onboarding.step2.pincodeRequired'))
+      toast.error(t('onboarding.step2.enterPincode'))
       return
     }
     
-    if (!selectedServiceAreas.length) {
-      setValidationError('Please select at least one service area')
-      toast.error('Please select at least one service area where you provide services')
+    if (!data.service_radius_km || data.service_radius_km < 1) {
+      setValidationError(t('onboarding.step2.radiusRequired'))
+      toast.error(t('onboarding.step2.selectRadius'))
       return
     }
     
@@ -650,10 +487,10 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-          Location & Service Area
+          {t('onboarding.step2.title')}
         </h2>
         <p className="text-slate-600 dark:text-slate-400">
-          Where do you provide your services?
+          {t('onboarding.step2.subtitle')}
         </p>
       </div>
 
@@ -672,10 +509,10 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
           </div>
           <div>
             <h3 className="text-lg font-bold text-blue-900 dark:text-blue-300">
-              Your Address
+              {t('onboarding.step2.yourAddress')}
             </h3>
             <p className="text-sm text-blue-700 dark:text-blue-400">
-              Where you are based
+              {t('onboarding.step2.whereYouAreBased')}
             </p>
           </div>
         </div>
@@ -685,10 +522,10 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">
-                Auto-Detect Your Location
+                {t('onboarding.step2.autoDetect')}
               </h4>
               <p className="text-xs text-slate-600 dark:text-slate-400">
-                Uses Google Maps to detect your location. If incorrect, please enter manually below.
+                {t('onboarding.step2.autoDetectDesc')}
               </p>
             </div>
             <button
@@ -700,12 +537,12 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
               {detecting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  Detecting...
+                  {t('onboarding.step2.detecting')}
                 </>
               ) : (
                 <>
                   <MapPin className="h-4 w-4" />
-                  Detect
+                  {t('onboarding.step2.detect')}
                 </>
               )}
             </button>
@@ -720,58 +557,40 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
         {/* Address */}
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Full Address <span className="text-red-500">*</span>
+            {t('onboarding.step2.fullAddress')} <span className="text-red-500">*</span>
           </label>
           <textarea
             value={data.address || ''}
             onChange={(e) => onChange({ address: e.target.value })}
-            placeholder="Enter your complete address (or use auto-detect above)"
+            placeholder={t('onboarding.step2.addressPlaceholder')}
             className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             rows={3}
           />
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            💡 If auto-detect shows wrong location, you can edit it here manually
+            {t('onboarding.step2.addressTip')}
           </p>
         </div>
 
-        {/* Pincode & Service Radius */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Pincode <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={data.pincode || ''}
-              onChange={(e) => onChange({ pincode: e.target.value })}
-              maxLength={10}
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="400001"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Service Radius (km) <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              value={data.service_radius_km || 10}
-              onChange={(e) => onChange({ service_radius_km: parseInt(e.target.value) || 10 })}
-              min="1"
-              max="100"
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="10"
-            />
-            <p className="text-xs text-slate-500 mt-1">How far you can travel for jobs</p>
-          </div>
+        {/* Pincode */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            {t('onboarding.step2.pincode')} <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={data.pincode || ''}
+            onChange={(e) => onChange({ pincode: e.target.value })}
+            maxLength={10}
+            className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="400001"
+          />
         </div>
 
         {/* Coordinates (Optional) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Latitude (Optional)
+              {t('onboarding.step2.latitudeOptional')}
             </label>
             <input
               type="number"
@@ -785,7 +604,7 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
 
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Longitude (Optional)
+              {t('onboarding.step2.longitudeOptional')}
             </label>
             <input
               type="number"
@@ -802,180 +621,97 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
       {/* Divider */}
       <div className="border-t-4 border-dashed border-slate-300 dark:border-slate-600"></div>
 
-      {/* ===== SECTION 2: SERVICE AREAS ===== */}
-      <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-200 dark:border-purple-800 rounded-xl p-6 space-y-6">
+      {/* ===== SECTION 2: SERVICE RADIUS (Rapido-style) ===== */}
+      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border-2 border-emerald-200 dark:border-emerald-800 rounded-xl p-6 space-y-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 bg-purple-600 rounded-lg">
+          <div className="p-2 bg-emerald-600 rounded-lg">
             <MapPin className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-purple-900 dark:text-purple-300">
-              Service Areas
+            <h3 className="text-lg font-bold text-emerald-900 dark:text-emerald-300">
+              {t('onboarding.step2.workRadius')}
             </h3>
-            <p className="text-sm text-purple-700 dark:text-purple-400">
-              Where you provide services (select cities)
+            <p className="text-sm text-emerald-700 dark:text-emerald-400">
+              {t('onboarding.step2.workRadiusDesc')}
             </p>
           </div>
         </div>
 
-        {/* Cascading Selectors */}
-        <div className="space-y-4">
-          {/* State Selector */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Select State <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <select
-                value={selectedState}
-                onChange={(e) => handleStateChange(e.target.value)}
-                disabled={loadingAreas}
-                className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">-- Select State --</option>
-                {states.map((state) => (
-                  <option key={state.id} value={state.id}>{state.name}</option>
-                ))}
-              </select>
-              {loadingAreas && selectedState && !selectedDistrict && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-purple-600 border-t-transparent"></div>
-                </div>
-              )}
+        {/* Radius Info Card */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <div className="p-1.5 bg-blue-600 rounded-full flex-shrink-0">
+              <MapPin className="h-4 w-4 text-white" />
             </div>
-            {loadingAreas && selectedState && !selectedDistrict && (
-              <p className="text-xs text-purple-600 mt-1 flex items-center gap-1">
-                <div className="animate-pulse">Loading districts...</div>
+            <div>
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-300">
+                {t('onboarding.step2.howItWorks')}
               </p>
-            )}
+              <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
+                {t('onboarding.step2.radiusExplanation')}
+              </p>
+            </div>
           </div>
-
-          {/* District Selector (only visible when state selected) */}
-          {selectedState && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Select District <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <select
-                  value={selectedDistrict}
-                  onChange={(e) => handleDistrictChange(e.target.value)}
-                  disabled={loadingAreas || !districts.length}
-                  className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                >
-                  <option value="">-- Select District --</option>
-                  {districts.map((district) => (
-                    <option key={district.id} value={district.id}>{district.name}</option>
-                  ))}
-                </select>
-                {loadingAreas && selectedDistrict && !selectedCity && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-purple-600 border-t-transparent"></div>
-                  </div>
-                )}
-              </div>
-              {loadingAreas && selectedDistrict && !selectedCity ? (
-                <p className="text-xs text-purple-600 mt-1 flex items-center gap-1">
-                  <div className="animate-pulse">Loading cities...</div>
-                </p>
-              ) : !loadingAreas && !districts.length ? (
-                <p className="text-xs text-slate-500 mt-1">No districts available for this state</p>
-              ) : null}
-            </div>
-          )}
-
-          {/* City Selector (only visible when district selected) */}
-          {selectedDistrict && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Select City <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <select
-                  value={selectedCity}
-                  onChange={(e) => handleCityChange(e.target.value)}
-                  disabled={loadingAreas || !cities.length}
-                  className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                >
-                  <option value="">-- Select City --</option>
-                  {cities.map((city) => (
-                    <option key={city.id} value={city.id}>{city.name}</option>
-                  ))}
-                </select>
-                {loadingAreas && selectedCity && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-purple-600 border-t-transparent"></div>
-                  </div>
-                )}
-              </div>
-              {loadingAreas && selectedCity ? (
-                <p className="text-xs text-purple-600 mt-1 flex items-center gap-1">
-                  <div className="animate-pulse">Loading service areas...</div>
-                </p>
-              ) : !loadingAreas && !cities.length ? (
-                <p className="text-xs text-slate-500 mt-1">No cities available for this district</p>
-              ) : null}
-            </div>
-          )}
-
-          {/* Service Area Multi-Selector (only visible when city selected) */}
-          {selectedCity && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Select Service Areas <span className="text-red-500">*</span> ({selectedServiceAreas.length} selected)
-              </label>
-              <div className="max-h-60 overflow-y-auto border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
-                {loadingAreas ? (
-                  <div className="p-4 text-center text-slate-500">
-                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-600 border-t-transparent mx-auto mb-2"></div>
-                    Loading service areas...
-                  </div>
-                ) : serviceAreas.length === 0 ? (
-                  <div className="p-4 text-center text-slate-500">
-                    No service areas available for this city
-                  </div>
-                ) : (
-                  serviceAreas.map((area) => (
-                    <label
-                      key={area.id}
-                      className="flex items-center gap-3 p-3 hover:bg-purple-50 dark:hover:bg-purple-900/20 cursor-pointer transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedServiceAreas.includes(area.id)}
-                        onChange={() => toggleServiceArea(area.id)}
-                        className="h-4 w-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <span className="text-sm text-slate-900 dark:text-white">{area.name}</span>
-                    </label>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Selected Service Areas Summary */}
-        {selectedServiceAreas.length > 0 && (
-          <div className="bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700 rounded-lg p-4">
-            <p className="text-sm font-semibold text-purple-900 dark:text-purple-300 mb-2">
-              ✓ Service Areas Selected ({selectedServiceAreas.length} areas)
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {selectedServiceAreas.map((areaId) => {
-                const area = serviceAreas.find(a => a.id === areaId)
-                return area ? (
-                  <span
-                    key={areaId}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-white dark:bg-slate-800 border border-purple-400 dark:border-purple-600 rounded-full text-xs text-purple-700 dark:text-purple-300 font-medium"
-                  >
-                    {area.name}
-                    <button onClick={() => toggleServiceArea(areaId)} className="hover:text-red-600">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ) : null
-              })}
+        {/* Radius Preset Buttons */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+            {t('onboarding.step2.selectWorkRadius')} <span className="text-red-500">*</span>
+          </label>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+            {radiusOptions.map((radius) => (
+              <button
+                key={radius}
+                type="button"
+                onClick={() => onChange({ service_radius_km: radius })}
+                className={`py-3 px-4 rounded-xl font-semibold text-center transition-all ${
+                  data.service_radius_km === radius
+                    ? 'bg-emerald-600 text-white shadow-lg scale-105 ring-2 ring-emerald-400'
+                    : 'bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                }`}
+              >
+                {radius} {t('onboarding.step2.km')}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Custom Radius Input */}
+        <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            {t('onboarding.step2.orEnterCustom')}
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              value={data.service_radius_km || ''}
+              onChange={(e) => onChange({ service_radius_km: parseInt(e.target.value) || 10 })}
+              min="1"
+              max="100"
+              className="w-32 px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-center font-semibold"
+              placeholder="10"
+            />
+            <span className="text-slate-600 dark:text-slate-400 font-medium">{t('onboarding.step2.kilometers')}</span>
+          </div>
+          <p className="text-xs text-slate-500 mt-2">{t('onboarding.step2.radiusRange')}</p>
+        </div>
+
+        {/* Current Selection Summary */}
+        {data.service_radius_km && (
+          <div className="bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-600 rounded-full">
+                <Check className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-300">
+                  {t('onboarding.step2.radiusSelected', { radius: data.service_radius_km })}
+                </p>
+                <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">
+                  {t('onboarding.step2.radiusSelectedDesc')}
+                </p>
+              </div>
             </div>
           </div>
         )}
@@ -987,13 +723,13 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
           className="flex-1 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 px-6 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
         >
           <ChevronLeft className="h-5 w-5" />
-          Back
+          {t('common.back')}
         </button>
         <button
           onClick={handleNext}
-          className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-6 rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2"
+          className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-6 rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2"
         >
-          Continue to Availability
+          {t('onboarding.step2.continueToAvailability')}
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>
@@ -1002,17 +738,8 @@ function Step2Location({ data, onChange, onNext, onBack }: any) {
 }
 
 // Step 3: Working Hours & Availability
-function Step3Availability({ data, onChange, onNext, onBack }: any) {
+function Step3Availability({ data, onChange, onNext, onBack, t }: any) {
   const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-  const dayLabels: any = {
-    monday: 'Monday',
-    tuesday: 'Tuesday',
-    wednesday: 'Wednesday',
-    thursday: 'Thursday',
-    friday: 'Friday',
-    saturday: 'Saturday',
-    sunday: 'Sunday'
-  }
 
   const defaultHours = {
     available: true,
@@ -1045,10 +772,10 @@ function Step3Availability({ data, onChange, onNext, onBack }: any) {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-          Working Hours & Availability
+          {t('onboarding.step3.title')}
         </h2>
         <p className="text-slate-600 dark:text-slate-400">
-          Set your weekly schedule and availability preferences
+          {t('onboarding.step3.subtitle')}
         </p>
       </div>
 
@@ -1064,30 +791,30 @@ function Step3Availability({ data, onChange, onNext, onBack }: any) {
                     type="checkbox"
                     checked={hours.available !== false}
                     onChange={() => toggleDay(day)}
-                    className="w-5 h-5 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                    className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                   />
-                  <span className="font-medium text-slate-900 dark:text-white">{dayLabels[day]}</span>
+                  <span className="font-medium text-slate-900 dark:text-white">{t(`day.${day}`)}</span>
                 </label>
               </div>
               
               {hours.available !== false && (
                 <div className="grid grid-cols-2 gap-4 ml-8">
                   <div>
-                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Start Time</label>
+                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t('onboarding.step3.startTime')}</label>
                     <input
                       type="time"
                       value={hours.start || '09:00'}
                       onChange={(e) => updateTime(day, 'start', e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">End Time</label>
+                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t('onboarding.step3.endTime')}</label>
                     <input
                       type="time"
                       value={hours.end || '18:00'}
                       onChange={(e) => updateTime(day, 'end', e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -1100,22 +827,22 @@ function Step3Availability({ data, onChange, onNext, onBack }: any) {
       {/* Availability Toggles */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer">
-          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Available Now</span>
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('onboarding.step3.availableNow')}</span>
           <input
             type="checkbox"
             checked={data.is_available_now !== false}
             onChange={(e) => onChange({ is_available_now: e.target.checked })}
-            className="w-5 h-5 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+            className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
           />
         </label>
 
         <label className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer">
-          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Emergency Services</span>
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('onboarding.step3.emergencyAvailability')}</span>
           <input
             type="checkbox"
             checked={data.emergency_availability === true}
             onChange={(e) => onChange({ emergency_availability: e.target.checked })}
-            className="w-5 h-5 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+            className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
           />
         </label>
       </div>
@@ -1126,13 +853,13 @@ function Step3Availability({ data, onChange, onNext, onBack }: any) {
           className="flex-1 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 px-6 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
         >
           <ChevronLeft className="h-5 w-5" />
-          Back
+          {t('common.back')}
         </button>
         <button
           onClick={onNext}
-          className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-6 rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2"
+          className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-6 rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2"
         >
-          Continue to Bank Details
+          {t('onboarding.step3.continueToBankDetails')}
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>
@@ -1141,17 +868,17 @@ function Step3Availability({ data, onChange, onNext, onBack }: any) {
 }
 
 // Step 4: Bank Account Details
-function Step4BankAccount({ data, onChange, onNext, onBack }: any) {
+function Step4BankAccount({ data, onChange, onNext, onBack, t }: any) {
   const [accountType, setAccountType] = useState<'bank' | 'upi'>('bank')
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-          Bank Account Details
+          {t('onboarding.step4.title')}
         </h2>
         <p className="text-slate-600 dark:text-slate-400">
-          Add your bank account to receive payments
+          {t('onboarding.step4.subtitle')}
         </p>
       </div>
 
@@ -1162,10 +889,9 @@ function Step4BankAccount({ data, onChange, onNext, onBack }: any) {
             <AlertCircle className="h-6 w-6" />
           </div>
           <div>
-            <h3 className="font-bold text-lg mb-2">💰 Important: Payment Information</h3>
+            <h3 className="font-bold text-lg mb-2">{t('onboarding.step4.important')}</h3>
             <p className="text-green-50 text-sm leading-relaxed">
-              All your earnings from completed jobs will be <strong>directly credited to this bank account</strong>. 
-              Please ensure the details are accurate to avoid payment delays.
+              {t('onboarding.step4.importantDesc')}
             </p>
           </div>
         </div>
@@ -1174,7 +900,7 @@ function Step4BankAccount({ data, onChange, onNext, onBack }: any) {
       {/* Account Type Selection */}
       <div>
         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-          Preferred Payment Method <span className="text-red-500">*</span>
+          {t('onboarding.step4.paymentMethod')} <span className="text-red-500">*</span>
         </label>
         <div className="grid grid-cols-2 gap-4">
           <button
@@ -1182,24 +908,24 @@ function Step4BankAccount({ data, onChange, onNext, onBack }: any) {
             onClick={() => setAccountType('bank')}
             className={`p-4 rounded-lg border-2 transition-all ${
               accountType === 'bank'
-                ? 'border-purple-600 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400'
-                : 'border-slate-200 dark:border-slate-700 hover:border-purple-300'
+                ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
+                : 'border-slate-200 dark:border-slate-700 hover:border-emerald-300'
             }`}
           >
-            <div className="font-medium">Bank Account</div>
-            <div className="text-xs text-slate-500 mt-1">NEFT/IMPS Transfer</div>
+            <div className="font-medium">{t('onboarding.step4.bankAccount')}</div>
+            <div className="text-xs text-slate-500 mt-1">{t('onboarding.step4.neftImps')}</div>
           </button>
           <button
             type="button"
             onClick={() => setAccountType('upi')}
             className={`p-4 rounded-lg border-2 transition-all ${
               accountType === 'upi'
-                ? 'border-purple-600 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400'
-                : 'border-slate-200 dark:border-slate-700 hover:border-purple-300'
+                ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
+                : 'border-slate-200 dark:border-slate-700 hover:border-emerald-300'
             }`}
           >
-            <div className="font-medium">UPI ID</div>
-            <div className="text-xs text-slate-500 mt-1">Instant Payment</div>
+            <div className="font-medium">{t('onboarding.step4.upiId')}</div>
+            <div className="text-xs text-slate-500 mt-1">{t('onboarding.step4.instantPayment')}</div>
           </button>
         </div>
       </div>
@@ -1209,7 +935,7 @@ function Step4BankAccount({ data, onChange, onNext, onBack }: any) {
           {/* Account Holder Name */}
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Account Holder Name <span className="text-red-500">*</span>
+              {t('onboarding.step4.accountHolderName')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -1217,15 +943,15 @@ function Step4BankAccount({ data, onChange, onNext, onBack }: any) {
               onChange={(e) => onChange({ 
                 bank_account: { ...data.bank_account, account_holder_name: e.target.value }
               })}
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder="As per bank records"
+              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              placeholder={t('onboarding.step4.placeholders.accountHolderName')}
             />
           </div>
 
           {/* Account Number */}
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Account Number <span className="text-red-500">*</span>
+              {t('onboarding.step4.accountNumber')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -1233,15 +959,15 @@ function Step4BankAccount({ data, onChange, onNext, onBack }: any) {
               onChange={(e) => onChange({ 
                 bank_account: { ...data.bank_account, account_number: e.target.value }
               })}
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder="Enter account number"
+              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              placeholder={t('onboarding.step4.placeholders.accountNumber')}
             />
           </div>
 
           {/* IFSC Code */}
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              IFSC Code <span className="text-red-500">*</span>
+              {t('onboarding.step4.ifscCode')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -1250,8 +976,8 @@ function Step4BankAccount({ data, onChange, onNext, onBack }: any) {
                 bank_account: { ...data.bank_account, ifsc_code: e.target.value.toUpperCase() }
               })}
               maxLength={11}
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent uppercase"
-              placeholder="SBIN0001234"
+              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent uppercase"
+              placeholder={t('onboarding.step4.placeholders.ifsc')}
             />
           </div>
 
@@ -1259,7 +985,7 @@ function Step4BankAccount({ data, onChange, onNext, onBack }: any) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Bank Name <span className="text-red-500">*</span>
+                {t('onboarding.step4.bankName')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -1267,14 +993,14 @@ function Step4BankAccount({ data, onChange, onNext, onBack }: any) {
                 onChange={(e) => onChange({ 
                   bank_account: { ...data.bank_account, bank_name: e.target.value }
                 })}
-                className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="State Bank of India"
+                className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                placeholder={t('onboarding.step4.placeholders.bankName')}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Branch Name
+                {t('onboarding.step4.branchName')}
               </label>
               <input
                 type="text"
@@ -1282,8 +1008,8 @@ function Step4BankAccount({ data, onChange, onNext, onBack }: any) {
                 onChange={(e) => onChange({ 
                   bank_account: { ...data.bank_account, branch_name: e.target.value }
                 })}
-                className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="Andheri West"
+                className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                placeholder={t('onboarding.step4.placeholders.branchName')}
               />
             </div>
           </div>
@@ -1291,7 +1017,7 @@ function Step4BankAccount({ data, onChange, onNext, onBack }: any) {
       ) : (
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            UPI ID <span className="text-red-500">*</span>
+            {t('onboarding.step4.upiId')} <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -1299,10 +1025,10 @@ function Step4BankAccount({ data, onChange, onNext, onBack }: any) {
             onChange={(e) => onChange({ 
               bank_account: { ...data.bank_account, upi_id: e.target.value }
             })}
-            className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            placeholder="yourname@paytm"
+            className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            placeholder={t('onboarding.step4.placeholders.upi')}
           />
-          <p className="text-xs text-slate-500 mt-1">Enter your UPI ID (e.g., 9876543210@paytm)</p>
+          <p className="text-xs text-slate-500 mt-1">{t('onboarding.step4.upiHelp')}</p>
         </div>
       )}
 
@@ -1338,7 +1064,7 @@ function Step4BankAccount({ data, onChange, onNext, onBack }: any) {
           className="flex-1 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 px-6 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
         >
           <ChevronLeft className="h-5 w-5" />
-          Back
+          {t('common.back')}
         </button>
         <button
           onClick={onNext}
@@ -1347,9 +1073,9 @@ function Step4BankAccount({ data, onChange, onNext, onBack }: any) {
               ? !data.bank_account?.account_holder_name || !data.bank_account?.account_number || !data.bank_account?.ifsc_code || !data.bank_account?.bank_name
               : !data.bank_account?.upi_id
           }
-          className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-6 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-6 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          Continue to Documents
+          {t('onboarding.step4.continueToDocuments')}
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>
@@ -1358,7 +1084,7 @@ function Step4BankAccount({ data, onChange, onNext, onBack }: any) {
 }
 
 // Step 5: Document Upload
-function Step5Documents({ data, onChange, onSubmit, onBack, submitting }: any) {
+function Step5Documents({ data, onChange, onSubmit, onBack, submitting, t }: any) {
   // Local file states (upload deferred until final submit)
   const [files, setFiles] = useState<Record<string, File | null>>({
     id_proof: null,
@@ -1368,10 +1094,10 @@ function Step5Documents({ data, onChange, onSubmit, onBack, submitting }: any) {
   })
 
   const documentTypes = [
-    { key: 'id_proof', label: 'ID Proof', description: 'Aadhaar, PAN, Driving License (Required)' },
-    { key: 'address_proof', label: 'Address Proof', description: 'Utility bill, Rental agreement (Optional but recommended)' },
-    { key: 'professional_cert', label: 'Professional Certificate', description: 'Trade license, certificates (Optional)' },
-    { key: 'photo', label: 'Profile Photo', description: 'Clear photo of yourself (Required)' },
+    { key: 'id_proof', label: t('onboarding.step5.idProof'), description: t('onboarding.step5.idProofDesc') },
+    { key: 'address_proof', label: t('onboarding.step5.addressProof'), description: t('onboarding.step5.addressProofDesc') },
+    { key: 'professional_cert', label: t('onboarding.step5.professionalCert'), description: t('onboarding.step5.professionalCertDesc') },
+    { key: 'photo', label: t('onboarding.step5.photo'), description: t('onboarding.step5.photoDesc') },
   ]
 
   const handleSelectFile = (docKey: string, file: File) => {
@@ -1384,10 +1110,10 @@ function Step5Documents({ data, onChange, onSubmit, onBack, submitting }: any) {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-          Verification Documents
+          {t('onboarding.step5.title')}
         </h2>
         <p className="text-slate-600 dark:text-slate-400">
-          Upload documents to verify your identity
+          {t('onboarding.step5.subtitle')}
         </p>
       </div>
 
@@ -1410,9 +1136,9 @@ function Step5Documents({ data, onChange, onSubmit, onBack, submitting }: any) {
                   className="hidden"
                   disabled={submitting}
                 />
-                <div className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${files[docType.key] ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-purple-600 text-white hover:bg-purple-700'}`}> 
+                <div className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${files[docType.key] ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}> 
                   <Upload className="h-4 w-4" />
-                  {files[docType.key] ? 'Selected' : 'Select File'}
+                  {files[docType.key] ? t('onboarding.step5.selected') : t('onboarding.step5.selectFile')}
                 </div>
               </label>
             </div>
@@ -1425,7 +1151,7 @@ function Step5Documents({ data, onChange, onSubmit, onBack, submitting }: any) {
 
       <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
         <p className="text-sm text-yellow-800 dark:text-yellow-300">
-          <strong>Note:</strong> At least ID proof and photo are required. Your profile will be reviewed within 24-48 hours.
+          <strong>{t('common.note')}</strong> {t('onboarding.step5.note')}
         </p>
       </div>
 
@@ -1436,7 +1162,7 @@ function Step5Documents({ data, onChange, onSubmit, onBack, submitting }: any) {
           className="flex-1 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 px-6 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <ChevronLeft className="h-5 w-5" />
-          Back
+          {t('common.back')}
         </button>
         <button
           onClick={() => onSubmit(files)}
@@ -1446,12 +1172,12 @@ function Step5Documents({ data, onChange, onSubmit, onBack, submitting }: any) {
           {submitting ? (
             <>
               <LoadingSpinner size="sm" />
-              Submitting...
+              {t('onboarding.step5.submitting')}
             </>
           ) : (
             <>
               <Check className="h-5 w-5" />
-              Complete Onboarding
+              {t('onboarding.step5.completeOnboarding')}
             </>
           )}
         </button>
@@ -1493,6 +1219,15 @@ export default function HelperOnboarding() {
   })
   const [submitting, setSubmitting] = useState(false)
   const [checking, setChecking] = useState(true)
+  const [showLanguageModal, setShowLanguageModal] = useState(false)
+  const { languageInfo, t } = useLanguage()
+
+  // Show language selector popup on first visit
+  useEffect(() => {
+    if (!checking && !hasSelectedLanguage()) {
+      setShowLanguageModal(true)
+    }
+  }, [checking])
 
   useEffect(() => {
     checkOnboardingStatus()
@@ -1534,7 +1269,7 @@ export default function HelperOnboarding() {
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
-      toast.error('Please login to continue')
+      toast.error(t('onboarding.toast.loginRequired'))
       setSubmitting(false)
       return
     }
@@ -1552,7 +1287,7 @@ export default function HelperOnboarding() {
         setSubmitting(false)
         return
       }
-      toast.success('Documents uploaded successfully!')
+      toast.success(t('onboarding.toast.documentsUploaded'))
     }
 
     // Save complete onboarding data
@@ -1581,7 +1316,7 @@ export default function HelperOnboarding() {
       return
     }
 
-    toast.success(result.message || 'Onboarding complete! Our team will verify your details.')
+    toast.success(result.message || t('onboarding.toast.completeDefault'))
     setTimeout(() => {
       router.push('/helper/dashboard')
     }, 2000)
@@ -1589,23 +1324,45 @@ export default function HelperOnboarding() {
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 dark:from-slate-900 dark:via-indigo-950 dark:to-purple-950">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-slate-900 dark:via-teal-950 dark:to-emerald-950">
         <LoadingSpinner size="lg" />
       </div>
     )
   }
 
   const steps = [
-    { number: 1, title: 'Service Details', icon: Briefcase },
-    { number: 2, title: 'Location', icon: MapPin },
-    { number: 3, title: 'Availability', icon: Clock },
-    { number: 4, title: 'Bank Details', icon: CreditCard },
-    { number: 5, title: 'Documents', icon: Upload },
+    { number: 1, title: t('onboarding.steps.serviceDetails'), icon: Briefcase },
+    { number: 2, title: t('onboarding.steps.location'), icon: MapPin },
+    { number: 3, title: t('onboarding.steps.availability'), icon: Clock },
+    { number: 4, title: t('onboarding.steps.bankDetails'), icon: CreditCard },
+    { number: 5, title: t('onboarding.steps.documents'), icon: Upload },
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 dark:from-slate-900 dark:via-indigo-950 dark:to-purple-950 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-slate-900 dark:via-teal-950 dark:to-emerald-950 py-8 px-4">
+      {/* Language Selector Modal - shows on first visit */}
+      {showLanguageModal && (
+        <LanguageSelectorModal 
+          forceShow={true}
+          onClose={() => setShowLanguageModal(false)} 
+        />
+      )}
+
       <div className="max-w-4xl mx-auto">
+        {/* Language Button - top right */}
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={() => setShowLanguageModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm"
+            title={t('language.changeLanguage')}
+          >
+            <span className="text-lg">{languageInfo?.flag}</span>
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              {languageInfo?.nativeName}
+            </span>
+          </button>
+        </div>
+
         {/* Progress Steps */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -1621,13 +1378,13 @@ export default function HelperOnboarding() {
                       isCompleted 
                         ? 'bg-green-600 border-green-600 text-white'
                         : isActive
-                        ? 'bg-purple-600 border-purple-600 text-white'
+                        ? 'bg-emerald-600 border-emerald-600 text-white'
                         : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-400'
                     }`}>
                       {isCompleted ? <Check className="h-6 w-6" /> : <Icon className="h-6 w-6" />}
                     </div>
                     <span className={`text-xs mt-2 font-medium hidden md:block ${
-                      isActive ? 'text-purple-600 dark:text-purple-400' : 'text-slate-500'
+                      isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'
                     }`}>
                       {step.title}
                     </span>
@@ -1650,6 +1407,7 @@ export default function HelperOnboarding() {
               data={formData}
               onChange={updateFormData}
               onNext={() => setCurrentStep(2)}
+              t={t}
             />
           )}
           {currentStep === 2 && (
@@ -1658,6 +1416,7 @@ export default function HelperOnboarding() {
               onChange={updateFormData}
               onNext={() => setCurrentStep(3)}
               onBack={() => setCurrentStep(1)}
+              t={t}
             />
           )}
           {currentStep === 3 && (
@@ -1666,6 +1425,7 @@ export default function HelperOnboarding() {
               onChange={updateFormData}
               onNext={() => setCurrentStep(4)}
               onBack={() => setCurrentStep(2)}
+              t={t}
             />
           )}
           {currentStep === 4 && (
@@ -1674,6 +1434,7 @@ export default function HelperOnboarding() {
               onChange={updateFormData}
               onNext={() => setCurrentStep(5)}
               onBack={() => setCurrentStep(3)}
+              t={t}
             />
           )}
           {currentStep === 5 && (
@@ -1683,6 +1444,7 @@ export default function HelperOnboarding() {
               onSubmit={handleSubmit}
               onBack={() => setCurrentStep(4)}
               submitting={submitting}
+              t={t}
             />
           )}
         </div>

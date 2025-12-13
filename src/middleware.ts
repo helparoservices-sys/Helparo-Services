@@ -115,7 +115,7 @@ export async function middleware(request: NextRequest) {
   )
 
   // Only fetch auth state when necessary to reduce latency on public routes
-  let user: any = null
+  let user: { id: string; email?: string } | null = null
   const needsAuthCheck = isProtectedRoute || request.nextUrl.pathname.startsWith('/auth/login')
 
   if (needsAuthCheck) {
@@ -128,15 +128,11 @@ export async function middleware(request: NextRequest) {
             return request.cookies.get(name)?.value
           },
           set(name: string, value: string, options: CookieOptions) {
+            // Set on both request and response without recreating response
             request.cookies.set({
               name,
               value,
               ...options,
-            })
-            response = NextResponse.next({
-              request: {
-                headers: request.headers,
-              },
             })
             response.cookies.set({
               name,
@@ -145,15 +141,11 @@ export async function middleware(request: NextRequest) {
             })
           },
           remove(name: string, options: CookieOptions) {
+            // Set empty value on both request and response without recreating response
             request.cookies.set({
               name,
               value: '',
               ...options,
-            })
-            response = NextResponse.next({
-              request: {
-                headers: request.headers,
-              },
             })
             response.cookies.set({
               name,
@@ -187,9 +179,11 @@ export async function middleware(request: NextRequest) {
           },
           set(name: string, value: string, options: CookieOptions) {
             request.cookies.set({ name, value, ...options })
+            response.cookies.set({ name, value, ...options })
           },
           remove(name: string, options: CookieOptions) {
             request.cookies.set({ name, value: '', ...options })
+            response.cookies.set({ name, value: '', ...options })
           },
         },
       }
@@ -201,7 +195,7 @@ export async function middleware(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    const userRole = (profile as any)?.role || 'customer'
+    const userRole = (profile as { role?: string } | null)?.role || 'customer'
     const requestedPath = request.nextUrl.pathname
 
     // Check if user is trying to access a route that doesn't match their role
@@ -233,9 +227,11 @@ export async function middleware(request: NextRequest) {
             },
             set(name: string, value: string, options: CookieOptions) {
               request.cookies.set({ name, value, ...options })
+              response.cookies.set({ name, value, ...options })
             },
             remove(name: string, options: CookieOptions) {
               request.cookies.set({ name, value: '', ...options })
+              response.cookies.set({ name, value: '', ...options })
             },
           },
         }
@@ -247,7 +243,7 @@ export async function middleware(request: NextRequest) {
         .eq('id', user.id)
         .single()
 
-      const role = (profile as any)?.role || 'customer'
+      const role = (profile as { role?: string } | null)?.role || 'customer'
       const redirectUrl = new URL(`/${role}/dashboard`, request.url)
       return NextResponse.redirect(redirectUrl)
     } catch {}

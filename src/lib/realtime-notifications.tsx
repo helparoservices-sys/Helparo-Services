@@ -34,6 +34,24 @@ export interface RealtimeNotification {
   read: boolean
 }
 
+export interface Message {
+  id: string
+  conversation_id: string
+  sender_id: string
+  content: string
+  created_at: string
+}
+
+export interface Bid {
+  id: string
+  request_id: string
+  helper_id: string
+  bid_amount: number
+  message?: string
+  status: string
+  created_at: string
+}
+
 /**
  * Real-time notifications hook
  */
@@ -159,8 +177,8 @@ export function useRealtimeNotifications(userId: string | undefined) {
  * Real-time messages hook
  */
 export function useRealtimeMessages(conversationId: string | undefined) {
-  const [messages, setMessages] = useState<any[]>([])
-  const [isTyping, setIsTyping] = useState(false)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [isTyping] = useState(false)
 
   useEffect(() => {
     if (!conversationId) return
@@ -207,7 +225,7 @@ export function useRealtimeMessages(conversationId: string | undefined) {
  * Real-time bid updates hook
  */
 export function useRealtimeBids(requestId: string | undefined) {
-  const [bids, setBids] = useState<any[]>([])
+  const [bids, setBids] = useState<Bid[]>([])
   const [newBidCount, setNewBidCount] = useState(0)
 
   useEffect(() => {
@@ -282,7 +300,8 @@ export async function requestNotificationPermission() {
  */
 function playNotificationSound() {
   try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    const audioContext = new AudioContextClass()
     const oscillator = audioContext.createOscillator()
     const gainNode = audioContext.createGain()
     
@@ -298,7 +317,7 @@ function playNotificationSound() {
     
     oscillator.start(audioContext.currentTime)
     oscillator.stop(audioContext.currentTime + 0.3)
-  } catch (error) {
+  } catch {
     // Ignore errors (browser may block autoplay)
   }
 }

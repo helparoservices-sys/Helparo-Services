@@ -15,7 +15,7 @@ export class AppError extends Error {
     public message: string,
     public userMessage: string,
     public statusCode: number = 400,
-    public details?: any
+    public details?: unknown
   ) {
     super(message)
     this.name = 'AppError'
@@ -70,10 +70,11 @@ const ERROR_MESSAGES: Record<string, string> = {
 /**
  * Convert technical error to user-friendly message
  */
-export function getUserFriendlyError(error: any): string {
+export function getUserFriendlyError(error: unknown): string {
   if (!error) return 'An unexpected error occurred. Please try again.'
   
-  const message = (error.message || error.toString()).toLowerCase()
+  const err = error as { message?: string; code?: string | number; toString?: () => string }
+  const message = (err.message || err.toString?.() || '').toLowerCase()
   
   // Check for specific error patterns
   for (const [key, friendlyMsg] of Object.entries(ERROR_MESSAGES)) {
@@ -83,8 +84,8 @@ export function getUserFriendlyError(error: any): string {
   }
   
   // Check error code
-  if (error.code) {
-    const code = error.code.toString()
+  if (err.code) {
+    const code = err.code.toString()
     if (ERROR_MESSAGES[code]) {
       return ERROR_MESSAGES[code]
     }
@@ -97,11 +98,12 @@ export function getUserFriendlyError(error: any): string {
 /**
  * Format error for logging (includes technical details)
  */
-export function formatErrorForLogging(error: any, context?: Record<string, any>) {
+export function formatErrorForLogging(error: unknown, context?: Record<string, unknown>) {
+  const err = error as { message?: string; code?: string; stack?: string }
   return {
-    message: error.message || 'Unknown error',
-    code: error.code,
-    stack: error.stack,
+    message: err.message || 'Unknown error',
+    code: err.code,
+    stack: err.stack,
     timestamp: new Date().toISOString(),
     context
   }
@@ -110,9 +112,10 @@ export function formatErrorForLogging(error: any, context?: Record<string, any>)
 /**
  * Handle server action error with proper formatting
  */
-export function handleServerActionError(error: any, userContext?: string) {
+export function handleServerActionError(error: unknown, userContext?: string) {
+  const err = error as { message?: string; code?: string; digest?: string }
   // Skip logging for Next.js redirect errors (these are normal control flow)
-  if (error?.message === 'NEXT_REDIRECT' || error?.digest?.startsWith('NEXT_REDIRECT')) {
+  if (err?.message === 'NEXT_REDIRECT' || err?.digest?.startsWith('NEXT_REDIRECT')) {
     throw error // Re-throw to let Next.js handle the redirect
   }
   
@@ -122,14 +125,14 @@ export function handleServerActionError(error: any, userContext?: string) {
   // Return user-friendly error
   return {
     error: getUserFriendlyError(error),
-    code: error.code || ErrorCode.DATABASE_ERROR
+    code: err.code || ErrorCode.DATABASE_ERROR
   }
 }
 
 /**
  * Validation error helper
  */
-export function createValidationError(message: string, details?: any): AppError {
+export function createValidationError(message: string, details?: unknown): AppError {
   return new AppError(
     ErrorCode.VALIDATION_ERROR,
     'Validation failed',
@@ -190,6 +193,6 @@ export function createRateLimitError(): AppError {
 /**
  * Type guard to check if result has error
  */
-export function isErrorResult(result: any): result is { error: string; code?: string } {
-  return result && typeof result === 'object' && 'error' in result
+export function isErrorResult(result: unknown): result is { error: string; code?: string } {
+  return result !== null && typeof result === 'object' && 'error' in result
 }

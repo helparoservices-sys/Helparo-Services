@@ -38,7 +38,7 @@ export function SelectValue({ placeholder }: { placeholder?: string }) {
   return <span>{placeholder}</span>
 }
 
-export function SelectContent({ children, className = '', ...props }: React.HTMLAttributes<HTMLDivElement>) {
+export function SelectContent({ children }: React.HTMLAttributes<HTMLDivElement>) {
   return <>{children}</>
 }
 

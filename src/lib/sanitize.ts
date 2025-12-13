@@ -72,8 +72,8 @@ export function escapeHTML(text: string): string {
  * Sanitize object recursively
  * Use when dealing with complex objects from user input
  */
-export function sanitizeObject<T extends Record<string, any>>(obj: T): T {
-  const sanitized: any = {}
+export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
+  const sanitized: Record<string, unknown> = {}
   
   for (const [key, value] of Object.entries(obj)) {
     if (typeof value === 'string') {

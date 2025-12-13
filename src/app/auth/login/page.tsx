@@ -9,6 +9,7 @@ import { logger } from '@/lib/logger'
 import { createBrowserClient } from '@supabase/ssr'
 
 export default function LoginPage() {
+  const [audience, setAudience] = useState<'customer' | 'helper'>('customer')
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -190,13 +191,45 @@ export default function LoginPage() {
         {/* Form Container */}
         <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
           <div className="w-full max-w-md">
+            {/* Who are you? */}
+            <div className="mb-6 flex items-center justify-center">
+              <div className="inline-flex bg-gray-100 p-1 rounded-2xl border border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setAudience('customer')}
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                    audience === 'customer'
+                      ? 'bg-white shadow text-emerald-700'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Customer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAudience('helper')}
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                    audience === 'helper'
+                      ? 'bg-white shadow text-emerald-700'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Helper
+                </button>
+              </div>
+            </div>
+
             {/* Header */}
             <div className="text-center mb-8">
               <div className="lg:hidden w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/30">
                 <img src="/logo.svg" alt="Helparo" className="w-16 h-16 rounded-2xl" />
               </div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h1>
-              <p className="text-gray-500">Sign in to continue to your account</p>
+              <p className="text-gray-500">
+                {audience === 'helper'
+                  ? 'Sign in to manage jobs, earnings, and your helper profile'
+                  : 'Sign in to book trusted home services'}
+              </p>
             </div>
 
             {/* Google Sign In */}
@@ -326,8 +359,23 @@ export default function LoginPage() {
               <button onClick={() => setShowPrivacy(true)} className="text-gray-500 hover:text-emerald-600 transition-colors underline">Privacy Policy</button>
             </p>
 
-            <LegalModal type="terms" open={showTerms} onOpenChange={setShowTerms} />
-            <LegalModal type="privacy" open={showPrivacy} onOpenChange={setShowPrivacy} />
+            <div className="mt-3 flex items-center justify-center gap-4 text-xs">
+              <Link
+                href={audience === 'helper' ? '/legal/helper/terms' : '/legal/customer/terms'}
+                className="text-gray-500 hover:text-emerald-700 underline"
+              >
+                View {audience === 'helper' ? 'Helper' : 'Customer'} Terms
+              </Link>
+              <Link
+                href={audience === 'helper' ? '/legal/helper/privacy' : '/legal/customer/privacy'}
+                className="text-gray-500 hover:text-emerald-700 underline"
+              >
+                View {audience === 'helper' ? 'Helper' : 'Customer'} Privacy
+              </Link>
+            </div>
+
+            <LegalModal type="terms" audience={audience} open={showTerms} onOpenChange={setShowTerms} />
+            <LegalModal type="privacy" audience={audience} open={showPrivacy} onOpenChange={setShowPrivacy} />
           </div>
         </div>
 
