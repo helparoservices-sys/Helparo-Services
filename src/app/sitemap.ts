@@ -46,8 +46,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const allRoutes = [...mainRoutes, ...serviceRoutes, ...legalRoutes, ...customerRoutes]
 
+  // Remove trailing slash from base URL to prevent double slashes
+  const baseUrl = base.replace(/\/$/, '')
+
   return allRoutes.map((route) => ({
-    url: `${base}${route.path}`,
+    url: `${baseUrl}${route.path}`,
     lastModified,
     changeFrequency: route.changeFrequency,
     priority: route.priority,

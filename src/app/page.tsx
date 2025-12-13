@@ -24,9 +24,12 @@ import {
   Phone,
   MessageCircle,
   IndianRupee,
-  Bot,
   Rocket,
-  Crown
+  Crown,
+  Wand2,
+  Search,
+  UserCheck,
+  PartyPopper
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 
@@ -164,7 +167,7 @@ export default function LandingPage() {
                 {/* Step 3 */}
                 <div className="flex gap-6 items-start p-6 bg-gradient-to-r from-violet-50 to-purple-50 rounded-2xl border border-violet-100">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-violet-500/30">
-                    <Bot className="w-7 h-7 text-white" />
+                    <Wand2 className="w-7 h-7 text-white" />
                   </div>
                   <div>
                     <div className="text-xs font-bold text-violet-600 mb-1">STEP 3 • AI MAGIC</div>
@@ -311,7 +314,7 @@ export default function LandingPage() {
                   <span className="text-sm font-bold">🇮🇳 India&apos;s First</span>
                 </div>
                 <div className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white px-4 py-2 rounded-full shadow-lg shadow-purple-500/25">
-                  <Bot className="w-4 h-4" />
+                  <Sparkles className="w-4 h-4" />
                   <span className="text-sm font-bold">AI-Powered</span>
                 </div>
               </div>
@@ -592,7 +595,7 @@ export default function LandingPage() {
             {/* Feature 2 */}
             <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-8 border border-white/10 hover:border-violet-500/50 hover:bg-white/10 transition-all group">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-6 shadow-xl shadow-violet-500/30 group-hover:scale-110 transition-transform">
-                <Bot className="w-8 h-8 text-white" />
+                <Wand2 className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-2xl font-bold mb-3">AI Smart Matching</h3>
               <p className="text-gray-400 leading-relaxed">Our AI instantly finds verified pros near you who are willing to work at your price. Smart algorithms ensure best match every time.</p>
@@ -728,17 +731,17 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
             {[
-              { step: '01', title: 'Choose Service', desc: 'Pick from 50+ professional services', icon: '📱', color: 'from-blue-500 to-cyan-500' },
-              { step: '02', title: 'Get Matched', desc: 'We find the best pro near you instantly', icon: '🎯', color: 'from-emerald-500 to-teal-500' },
-              { step: '03', title: 'Job Done!', desc: 'Sit back & relax. Pay after service.', icon: '✅', color: 'from-amber-500 to-orange-500' }
+              { step: '01', title: 'Choose Service', desc: 'Pick from 50+ professional services', Icon: Search, color: 'from-blue-500 to-indigo-600' },
+              { step: '02', title: 'Get Matched', desc: 'We find the best pro near you instantly', Icon: UserCheck, color: 'from-emerald-500 to-teal-500' },
+              { step: '03', title: 'Job Done!', desc: 'Sit back & relax. Pay after service.', Icon: PartyPopper, color: 'from-amber-500 to-orange-500' }
             ].map((item, idx) => (
               <div key={item.step} className="relative group">
                 {idx < 2 && (
                   <div className="hidden md:block absolute top-16 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-gray-200 to-transparent" />
                 )}
                 <div className="bg-white rounded-3xl p-8 shadow-lg shadow-gray-100 border border-gray-100 hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
-                  <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center text-4xl mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                    {item.icon}
+                  <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <item.Icon className="w-10 h-10 text-white" strokeWidth={2} />
                   </div>
                   <div className="text-sm font-bold text-emerald-600 mb-2">STEP {item.step}</div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-3">{item.title}</h3>

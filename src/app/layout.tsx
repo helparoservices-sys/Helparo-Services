@@ -62,7 +62,15 @@ export const metadata: Metadata = {
     creator: '@helparo',
   },
   verification: {
-    google: 'your-google-verification-code', // Add your Google Search Console verification
+    // 🔴 IMPORTANT: Replace this with your actual Google Search Console verification code!
+    // 1. Go to: https://search.google.com/search-console/
+    // 2. Add property: helparo.in
+    // 3. Choose "HTML tag" verification method
+    // 4. Copy the content value and paste below
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || 'your-google-verification-code',
+    // Bing Webmaster verification (optional but recommended)
+    // Go to: https://www.bing.com/webmasters/
+    // yandex: 'your-yandex-code',
   },
   alternates: {
     canonical: 'https://helparo.in',
