@@ -95,7 +95,8 @@ We may update these Customer Terms. Continued use after changes means you accept
 ## 15. Contact
 
 For support or legal requests, contact Helparo through the in‑app support channels.
-$$
+$$,
+true
 WHERE NOT EXISTS (
   SELECT 1 FROM legal_documents WHERE type='terms' AND audience='customer' AND version=1
 );
@@ -189,7 +190,8 @@ We may update these Helper Terms. Continued use after changes means you accept t
 ## 14. Contact
 
 For support, contact Helparo through the in‑app support channels.
-$$
+$$,
+true
 WHERE NOT EXISTS (
   SELECT 1 FROM legal_documents WHERE type='terms' AND audience='helper' AND version=1
 );
@@ -248,7 +250,8 @@ Helparo is not intended for children under 18.
 ## 8. Changes
 
 We may update this policy. Continued use means you accept the updated policy.
-$$
+$$,
+true
 WHERE NOT EXISTS (
   SELECT 1 FROM legal_documents WHERE type='privacy' AND audience='customer' AND version=1
 );
@@ -303,7 +306,8 @@ You can update profile information in the app and control device permissions.
 ## 7. Changes
 
 We may update this policy. Continued use means you accept the updated policy.
-$$
+$$,
+true
 WHERE NOT EXISTS (
   SELECT 1 FROM legal_documents WHERE type='privacy' AND audience='helper' AND version=1
 );
