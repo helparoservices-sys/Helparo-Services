@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { 
   LayoutDashboard, 
   Search, 
@@ -26,8 +27,21 @@ interface SidebarProps {
   collapsed: boolean
 }
 
+
 export default function CustomerSidebar({ collapsed }: SidebarProps) {
   const pathname = usePathname()
+  const [trackingStatus, setTrackingStatus] = useState<string | null>(null)
+
+  // Detect if on a tracking page and get status from sessionStorage
+  useEffect(() => {
+    if (pathname.match(/^\/customer\/requests\/[^/]+\/track/)) {
+      // Try to get status from sessionStorage (set by list page)
+      const status = typeof window !== 'undefined' ? window.sessionStorage.getItem('tracking_status') : null
+      setTrackingStatus(status)
+    } else {
+      setTrackingStatus(null)
+    }
+  }, [pathname])
 
   const menuSections = [
     {
@@ -35,7 +49,7 @@ export default function CustomerSidebar({ collapsed }: SidebarProps) {
       items: [
         { icon: LayoutDashboard, label: 'Dashboard', href: '/customer/dashboard' },
         { icon: Radio, label: 'Active Requests', href: '/customer/active-requests' },
-        { icon: ClipboardList, label: 'My Requests', href: '/customer/requests' },
+        { icon: ClipboardList, label: 'Booking History', href: '/customer/requests' },
       ]
     },
     /* === HIDDEN FOR PLAY STORE DEPLOYMENT - PAYMENT FEATURES === 
@@ -96,8 +110,19 @@ export default function CustomerSidebar({ collapsed }: SidebarProps) {
             <ul className="space-y-0.5">
               {section.items.map((item, itemIdx) => {
                 const Icon = item.icon
-                const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-                
+                let isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+
+                // Special logic for tracking page
+                if (pathname.match(/^\/customer\/requests\/[^/]+\/track/)) {
+                  if (item.label === 'Active Requests' && trackingStatus && ['broadcasting','accepted','on_way','arrived','in_progress'].includes(trackingStatus)) {
+                    isActive = true
+                  } else if (item.label === 'Booking History' && trackingStatus && ['completed','cancelled'].includes(trackingStatus)) {
+                    isActive = true
+                  } else if (item.label === 'Active Requests' || item.label === 'Booking History') {
+                    isActive = false
+                  }
+                }
+
                 return (
                   <li key={itemIdx}>
                     <Link

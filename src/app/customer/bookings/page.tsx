@@ -54,7 +54,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: typeof 
 export default function CustomerBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<'all' | 'active' | 'completed' | 'cancelled'>('all')
+  const [filter, setFilter] = useState<'all' | 'completed' | 'cancelled'>('all')
 
   useEffect(() => {
     loadBookings()
@@ -66,6 +66,8 @@ export default function CustomerBookingsPage() {
     const user = authData?.user
     if (!user) return
 
+    // Only fetch completed and cancelled bookings (history)
+    // Active bookings are shown in Active Requests page
     const { data: bookingsData, error } = await supabase
       .from('service_requests')
       .select(`
@@ -73,6 +75,7 @@ export default function CustomerBookingsPage() {
         title,
         description,
         status,
+        broadcast_status,
         created_at,
         assigned_at,
         job_completed_at,
@@ -90,6 +93,7 @@ export default function CustomerBookingsPage() {
         )
       `)
       .eq('customer_id', user.id)
+      .in('broadcast_status', ['completed', 'cancelled'])
       .order('created_at', { ascending: false })
 
     if (!error && bookingsData) {
@@ -106,7 +110,6 @@ export default function CustomerBookingsPage() {
 
   const filteredBookings = bookings.filter(booking => {
     if (filter === 'all') return true
-    if (filter === 'active') return ['open', 'assigned', 'in_progress'].includes(booking.status)
     if (filter === 'completed') return booking.status === 'completed'
     if (filter === 'cancelled') return booking.status === 'cancelled'
     return true
@@ -114,7 +117,6 @@ export default function CustomerBookingsPage() {
 
   const stats = {
     total: bookings.length,
-    active: bookings.filter(b => ['open', 'assigned', 'in_progress'].includes(b.status)).length,
     completed: bookings.filter(b => b.status === 'completed').length,
     cancelled: bookings.filter(b => b.status === 'cancelled').length,
   }
@@ -134,13 +136,13 @@ export default function CustomerBookingsPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              My Bookings
+              Booking History
             </h1>
             <p className="text-slate-600 dark:text-slate-400 mt-1">
-              Track and manage your service bookings
+              View your completed and cancelled bookings
             </p>
           </div>
-          <Link href="/customer/requests/new">
+          <Link href="/customer/requests/ai">
             <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
               <Plus className="w-4 h-4 mr-2" />
               New Booking
@@ -149,27 +151,15 @@ export default function CustomerBookingsPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-800">
             <CardContent className="p-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Total Bookings</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Total History</p>
                   <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
                 </div>
                 <Calendar className="w-8 h-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white dark:bg-slate-800 border-yellow-200 dark:border-yellow-800">
-            <CardContent className="p-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Active</p>
-                  <p className="text-2xl font-bold text-yellow-600">{stats.active}</p>
-                </div>
-                <Clock className="w-8 h-8 text-yellow-600" />
               </div>
             </CardContent>
           </Card>
@@ -207,13 +197,6 @@ export default function CustomerBookingsPage() {
             size="sm"
           >
             All ({stats.total})
-          </Button>
-          <Button
-            variant={filter === 'active' ? 'default' : 'outline'}
-            onClick={() => setFilter('active')}
-            size="sm"
-          >
-            Active ({stats.active})
           </Button>
           <Button
             variant={filter === 'completed' ? 'default' : 'outline'}
@@ -308,12 +291,19 @@ export default function CustomerBookingsPage() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <Link href={`/customer/requests/${booking.id}`}>
-                          <Button variant="outline" size="sm">
-                            <Eye className="w-4 h-4 mr-1" />
-                            View Details
-                          </Button>
-                        </Link>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (typeof window !== 'undefined') {
+                              window.sessionStorage.setItem('tracking_status', booking.status)
+                            }
+                            window.location.href = `/customer/requests/${booking.id}/track`
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          View Details
+                        </Button>
                         
                         {booking.assigned_helper_id && (
                           <Link href={`/customer/requests/${booking.id}/chat`}>

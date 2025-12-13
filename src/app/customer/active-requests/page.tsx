@@ -279,7 +279,12 @@ export default function ActiveRequestsPage() {
           return (
             <div
               key={request.id}
-              onClick={() => router.push(`/customer/requests/${request.id}/track`)}
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.sessionStorage.setItem('tracking_status', request.broadcast_status)
+                }
+                router.push(`/customer/requests/${request.id}/track`)
+              }}
               className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-md transition-all group"
             >
               {/* Status Banner */}
