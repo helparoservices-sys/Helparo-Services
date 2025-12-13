@@ -11,7 +11,14 @@ import {
   TrendingUp, 
   Zap,
   Crown,
-  Users
+  Users,
+  Star,
+  Target,
+  Flame,
+  Gift,
+  CheckCircle,
+  Lock,
+  Sparkles
 } from 'lucide-react'
 
 interface Achievement {
@@ -31,13 +38,89 @@ interface LeaderboardEntry {
   level: number
 }
 
-export default function HelperGamificationPage() {
+// Ola-style achievement badges
+const achievementBadges = [
+  {
+    id: 'first_job',
+    title: 'First Mile',
+    description: 'Complete your first job',
+    icon: Star,
+    requirement: 1,
+    type: 'jobs',
+    reward: '₹50 bonus',
+    color: 'from-blue-500 to-cyan-500'
+  },
+  {
+    id: 'five_star',
+    title: '5-Star Champion',
+    description: 'Get 5 five-star ratings',
+    icon: Star,
+    requirement: 5,
+    type: 'ratings',
+    reward: 'Priority in job matching',
+    color: 'from-yellow-500 to-orange-500'
+  },
+  {
+    id: 'speed_demon',
+    title: 'Speed Demon',
+    description: 'Complete 10 jobs under estimated time',
+    icon: Zap,
+    requirement: 10,
+    type: 'fast_jobs',
+    reward: '₹100 bonus',
+    color: 'from-purple-500 to-pink-500'
+  },
+  {
+    id: 'century',
+    title: 'Century Club',
+    description: 'Complete 100 jobs',
+    icon: Trophy,
+    requirement: 100,
+    type: 'jobs',
+    reward: 'Gold badge + ₹500',
+    color: 'from-amber-500 to-yellow-500'
+  },
+  {
+    id: 'early_bird',
+    title: 'Early Bird',
+    description: 'Accept 20 jobs before 8 AM',
+    icon: Target,
+    requirement: 20,
+    type: 'early_jobs',
+    reward: 'Morning boost multiplier',
+    color: 'from-green-500 to-emerald-500'
+  },
+  {
+    id: 'weekend_warrior',
+    title: 'Weekend Warrior',
+    description: 'Complete 25 weekend jobs',
+    icon: Award,
+    requirement: 25,
+    type: 'weekend_jobs',
+    reward: '₹200 bonus',
+    color: 'from-red-500 to-rose-500'
+  }
+]
+
+// Ola-style milestones
+const milestones = [
+  { jobs: 10, title: 'Rising Star', bonus: 100, icon: '⭐' },
+  { jobs: 25, title: 'Go-Getter', bonus: 250, icon: '🚀' },
+  { jobs: 50, title: 'Pro Helper', bonus: 500, icon: '💪' },
+  { jobs: 100, title: 'Elite Helper', bonus: 1000, icon: '🏆' },
+  { jobs: 250, title: 'Legend', bonus: 2500, icon: '👑' },
+  { jobs: 500, title: 'Hall of Fame', bonus: 5000, icon: '🌟' }
+]
+
+export default function HelperAchievementsPage() {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
     total_points: 0,
     level: 1,
     achievements_count: 0,
-    leaderboard_rank: 0
+    leaderboard_rank: 0,
+    total_jobs: 0,
+    streak_days: 0
   })
   const [achievements, setAchievements] = useState<Achievement[]>([])
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])

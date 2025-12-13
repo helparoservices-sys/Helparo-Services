@@ -60,6 +60,7 @@ export default function ConsentPage() {
 
         // Fetch latest legal documents
         const fetchLatestDoc = async (type: 'terms' | 'privacy') => {
+          // Role-specific first (new schema)
           const primary = await supabase
             .from('legal_documents')
             .select('title, content_md, version, type')
@@ -69,8 +70,10 @@ export default function ConsentPage() {
             .order('version', { ascending: false })
             .limit(1)
             .maybeSingle()
-          if (primary.data) return primary.data
 
+          if (!primary.error && primary.data) return primary.data
+
+          // Fallback to 'all' (new schema)
           const fallback = await supabase
             .from('legal_documents')
             .select('title, content_md, version, type')
@@ -80,7 +83,19 @@ export default function ConsentPage() {
             .order('version', { ascending: false })
             .limit(1)
             .maybeSingle()
-          return fallback.data
+
+          if (!fallback.error) return fallback.data
+
+          // Legacy schema fallback (no `audience` column)
+          const legacy = await supabase
+            .from('legal_documents')
+            .select('title, content_md, version, type')
+            .eq('type', type)
+            .eq('is_active', true)
+            .order('version', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          return legacy.data
         }
 
         const termsData = await fetchLatestDoc('terms')
@@ -91,7 +106,7 @@ export default function ConsentPage() {
 
         // Check if user already accepted
         if (termsData?.version) {
-          const { data: acceptedTerms } = await supabase
+          const attempt = await supabase
             .from('legal_acceptances')
             .select('id')
             .eq('user_id', user.id)
@@ -99,12 +114,24 @@ export default function ConsentPage() {
             .eq('document_audience', audience)
             .eq('document_version', termsData.version)
             .maybeSingle()
-          
-          if (acceptedTerms) setTermsAccepted(true)
+
+          if (!attempt.error && attempt.data) setTermsAccepted(true)
+
+          if (attempt.error) {
+            // Legacy schema fallback (no `document_audience` column)
+            const legacy = await supabase
+              .from('legal_acceptances')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('document_type', 'terms')
+              .eq('document_version', termsData.version)
+              .maybeSingle()
+            if (legacy.data) setTermsAccepted(true)
+          }
         }
 
         if (privacyData?.version) {
-          const { data: acceptedPrivacy } = await supabase
+          const attempt = await supabase
             .from('legal_acceptances')
             .select('id')
             .eq('user_id', user.id)
@@ -112,8 +139,19 @@ export default function ConsentPage() {
             .eq('document_audience', audience)
             .eq('document_version', privacyData.version)
             .maybeSingle()
-          
-          if (acceptedPrivacy) setPrivacyAccepted(true)
+
+          if (!attempt.error && attempt.data) setPrivacyAccepted(true)
+
+          if (attempt.error) {
+            const legacy = await supabase
+              .from('legal_acceptances')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('document_type', 'privacy')
+              .eq('document_version', privacyData.version)
+              .maybeSingle()
+            if (legacy.data) setPrivacyAccepted(true)
+          }
         }
 
         setLoading(false)
@@ -148,7 +186,7 @@ export default function ConsentPage() {
 
       // Accept terms
       if (terms?.version && !termsAccepted) {
-        const { error: termsError } = await supabase
+        const attempt = await supabase
           .from('legal_acceptances')
           .insert({
             user_id: user.id,
@@ -157,14 +195,26 @@ export default function ConsentPage() {
             document_version: terms.version,
           })
 
-        if (termsError && !termsError.message.includes('duplicate')) {
-          throw termsError
+        if (attempt.error) {
+          // Legacy schema fallback (no `document_audience` column)
+          const legacy = await supabase
+            .from('legal_acceptances')
+            .insert({
+              user_id: user.id,
+              document_type: 'terms',
+              document_version: terms.version,
+            })
+
+          const err = legacy.error ?? attempt.error
+          if (err && !err.message.includes('duplicate')) {
+            throw err
+          }
         }
       }
 
       // Accept privacy
       if (privacy?.version && !privacyAccepted) {
-        const { error: privacyError } = await supabase
+        const attempt = await supabase
           .from('legal_acceptances')
           .insert({
             user_id: user.id,
@@ -173,8 +223,19 @@ export default function ConsentPage() {
             document_version: privacy.version,
           })
 
-        if (privacyError && !privacyError.message.includes('duplicate')) {
-          throw privacyError
+        if (attempt.error) {
+          const legacy = await supabase
+            .from('legal_acceptances')
+            .insert({
+              user_id: user.id,
+              document_type: 'privacy',
+              document_version: privacy.version,
+            })
+
+          const err = legacy.error ?? attempt.error
+          if (err && !err.message.includes('duplicate')) {
+            throw err
+          }
         }
       }
 
@@ -222,7 +283,7 @@ export default function ConsentPage() {
                 priority
               />
               <div>
-                <h2 className="text-xl font-bold text-purple-600">Helparo</h2>
+                <h2 className="text-xl font-bold text-emerald-700">Helparo</h2>
               </div>
             </Link>
           </div>
@@ -319,7 +380,7 @@ export default function ConsentPage() {
               id="acceptAll"
               checked={true}
               readOnly
-              className="mt-1 h-5 w-5 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+              className="mt-1 h-5 w-5 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500"
             />
             <label htmlFor="acceptAll" className="text-sm text-gray-700">
               I have read and agree to the <strong>Terms & Conditions</strong> and <strong>Privacy Policy</strong>. 

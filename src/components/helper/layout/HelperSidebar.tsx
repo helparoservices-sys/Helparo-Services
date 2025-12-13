@@ -87,12 +87,14 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
       href: '/helper/bookings',
       requiresVerification: true
     },
+    /* === HIDDEN - TIME TRACKING ===
     {
       label: 'Time Tracking',
       icon: Clock,
       href: '/helper/time-tracking',
       requiresVerification: true
     },
+    === END HIDDEN TIME TRACKING === */
     {
       label: 'Ratings & Reviews',
       icon: Star,
@@ -115,23 +117,26 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
     },
     === END HIDDEN SUBSCRIPTIONS === */
     {
-      label: 'Emergency SOS',
+      label: 'SOS',
       icon: Phone,
       href: '/helper/sos',
-      requiresVerification: true
+      requiresVerification: true,
+      isSmall: true
     },
     {
-      label: 'Gamification',
+      label: 'Achievements',
       icon: Award,
       href: '/helper/gamification',
       requiresVerification: true
     },
+    /* === HIDDEN - VIDEO CALLS ===
     {
       label: 'Video Calls',
       icon: Video,
       href: '/helper/video-calls',
       requiresVerification: true
     },
+    === END HIDDEN VIDEO CALLS === */
     {
       label: 'Trust Score',
       icon: Users,

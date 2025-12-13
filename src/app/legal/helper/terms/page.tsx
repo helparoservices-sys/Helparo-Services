@@ -19,6 +19,19 @@ const getLatestHelperTerms = unstable_cache(
   async (): Promise<LegalDocRow | null> => {
     const supabase = await createClient()
 
+    const fetchLegacy = async (): Promise<LegalDocRow | null> => {
+      const legacy = await supabase
+        .from('legal_documents')
+        .select('title, content_md, version, updated_at')
+        .eq('type', 'terms')
+        .eq('is_active', true)
+        .order('version', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (legacy.error) return null
+      return legacy.data ? (legacy.data as unknown as LegalDocRow) : null
+    }
+
     const primary = await supabase
       .from('legal_documents')
       .select('title, content_md, version, updated_at')
@@ -28,7 +41,12 @@ const getLatestHelperTerms = unstable_cache(
       .order('version', { ascending: false })
       .limit(1)
       .maybeSingle()
-    if (primary.error) throw primary.error
+
+    if (primary.error) {
+      const legacy = await fetchLegacy()
+      if (legacy) return legacy
+      throw primary.error
+    }
     if (primary.data) return primary.data as unknown as LegalDocRow
 
     const fallback = await supabase
@@ -40,7 +58,12 @@ const getLatestHelperTerms = unstable_cache(
       .order('version', { ascending: false })
       .limit(1)
       .maybeSingle()
-    if (fallback.error) throw fallback.error
+
+    if (fallback.error) {
+      const legacy = await fetchLegacy()
+      if (legacy) return legacy
+      throw fallback.error
+    }
     return (fallback.data ? (fallback.data as unknown as LegalDocRow) : null)
   },
   ['legal-terms-helper'],

@@ -19,7 +19,7 @@ type LegalDocRow = Pick<Database['public']['Tables']['legal_documents']['Row'], 
 const getLatestPrivacy = unstable_cache(
   async (): Promise<LegalDocRow | null> => {
     const supabase = await createClient()
-    const { data, error } = await supabase
+    const attempt = await supabase
       .from('legal_documents')
       .select('title, content_md, version, type, is_active, updated_at')
       .eq('type', 'privacy')
@@ -28,8 +28,22 @@ const getLatestPrivacy = unstable_cache(
       .order('version', { ascending: false })
       .limit(1)
       .maybeSingle()
-    if (error) throw error
-    return (data ? (data as LegalDocRow) : null)
+
+    if (!attempt.error) {
+      return (attempt.data ? (attempt.data as LegalDocRow) : null)
+    }
+
+    // Backward compatible: DB may not have `audience` column yet.
+    const legacy = await supabase
+      .from('legal_documents')
+      .select('title, content_md, version, type, is_active, updated_at')
+      .eq('type', 'privacy')
+      .eq('is_active', true)
+      .order('version', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (legacy.error) throw attempt.error
+    return (legacy.data ? (legacy.data as LegalDocRow) : null)
   },
   ['legal-privacy'],
   { tags: ['legal-docs'], revalidate: 3600 }

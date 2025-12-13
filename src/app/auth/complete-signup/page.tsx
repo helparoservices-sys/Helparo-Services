@@ -2,13 +2,18 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
+import { supabase as supabaseRaw } from '@/lib/supabase/client'
 import { Loader2, CheckCircle, FileText, Users, Briefcase, Shield, X, ArrowRight, Phone, AlertCircle, RefreshCw, Lock, Zap, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { auth, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
+
+// NOTE: Supabase types are currently generated as permissive stubs in this repo.
+// To avoid `never` inference breaking builds, we use an `any` alias here until
+// types are regenerated via the Supabase CLI.
+const supabase: any = supabaseRaw
 
 interface LegalDoc {
   title: string
@@ -180,7 +185,8 @@ export default function CompleteSignupPage() {
             .order('version', { ascending: false })
             .limit(1)
             .maybeSingle()
-          if (primary.data) return primary.data
+
+          if (!primary.error && primary.data) return primary.data
 
           const fallback = await supabase
             .from('legal_documents')
@@ -191,7 +197,19 @@ export default function CompleteSignupPage() {
             .order('version', { ascending: false })
             .limit(1)
             .maybeSingle()
-          return fallback.data
+
+          if (!fallback.error) return fallback.data
+
+          // Legacy schema fallback (no `audience` column)
+          const legacy = await supabase
+            .from('legal_documents')
+            .select('title, content_md, version, type')
+            .eq('type', type)
+            .eq('is_active', true)
+            .order('version', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          return legacy.data
         }
 
         const termsData = await fetchLatestDoc('terms')
@@ -262,7 +280,8 @@ export default function CompleteSignupPage() {
           .order('version', { ascending: false })
           .limit(1)
           .maybeSingle()
-        if (primary.data?.version) return primary.data
+
+        if (!primary.error && primary.data?.version) return primary.data
 
         const fallback = await supabase
           .from('legal_documents')
@@ -273,14 +292,26 @@ export default function CompleteSignupPage() {
           .order('version', { ascending: false })
           .limit(1)
           .maybeSingle()
-        return fallback.data
+
+        if (!fallback.error) return fallback.data
+
+        // Legacy schema fallback (no `audience` column)
+        const legacy = await supabase
+          .from('legal_documents')
+          .select('version')
+          .eq('type', type)
+          .eq('is_active', true)
+          .order('version', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        return legacy.data
       }
 
       const termsDoc = await fetchLatestVersion('terms')
       const privacyDoc = await fetchLatestVersion('privacy')
 
       if (termsDoc?.version) {
-        const { data: existing } = await supabase
+        const attempt = await supabase
           .from('legal_acceptances')
           .select('id')
           .eq('user_id', authUser.id)
@@ -288,12 +319,32 @@ export default function CompleteSignupPage() {
           .eq('document_audience', audience)
           .eq('document_version', termsDoc.version)
           .maybeSingle()
-        if (!existing) await supabase
-          .from('legal_acceptances')
-          .insert({ user_id: authUser.id, document_type: 'terms', document_audience: audience, document_version: termsDoc.version })
+
+        let exists = !attempt.error && !!attempt.data
+        if (attempt.error) {
+          const legacy = await supabase
+            .from('legal_acceptances')
+            .select('id')
+            .eq('user_id', authUser.id)
+            .eq('document_type', 'terms')
+            .eq('document_version', termsDoc.version)
+            .maybeSingle()
+          exists = !!legacy.data
+        }
+
+        if (!exists) {
+          const insertAttempt = await supabase
+            .from('legal_acceptances')
+            .insert({ user_id: authUser.id, document_type: 'terms', document_audience: audience, document_version: termsDoc.version })
+          if (insertAttempt.error) {
+            await supabase
+              .from('legal_acceptances')
+              .insert({ user_id: authUser.id, document_type: 'terms', document_version: termsDoc.version })
+          }
+        }
       }
       if (privacyDoc?.version) {
-        const { data: existing } = await supabase
+        const attempt = await supabase
           .from('legal_acceptances')
           .select('id')
           .eq('user_id', authUser.id)
@@ -301,9 +352,29 @@ export default function CompleteSignupPage() {
           .eq('document_audience', audience)
           .eq('document_version', privacyDoc.version)
           .maybeSingle()
-        if (!existing) await supabase
-          .from('legal_acceptances')
-          .insert({ user_id: authUser.id, document_type: 'privacy', document_audience: audience, document_version: privacyDoc.version })
+
+        let exists = !attempt.error && !!attempt.data
+        if (attempt.error) {
+          const legacy = await supabase
+            .from('legal_acceptances')
+            .select('id')
+            .eq('user_id', authUser.id)
+            .eq('document_type', 'privacy')
+            .eq('document_version', privacyDoc.version)
+            .maybeSingle()
+          exists = !!legacy.data
+        }
+
+        if (!exists) {
+          const insertAttempt = await supabase
+            .from('legal_acceptances')
+            .insert({ user_id: authUser.id, document_type: 'privacy', document_audience: audience, document_version: privacyDoc.version })
+          if (insertAttempt.error) {
+            await supabase
+              .from('legal_acceptances')
+              .insert({ user_id: authUser.id, document_type: 'privacy', document_version: privacyDoc.version })
+          }
+        }
       }
 
       const response = await fetch('/api/otp/send', {

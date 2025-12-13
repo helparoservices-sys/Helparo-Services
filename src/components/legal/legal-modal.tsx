@@ -28,7 +28,8 @@ export function LegalModal({
     ;(async () => {
       // Try role-specific doc first; fall back to 'all'
       const fetchDoc = async (aud: LegalAudience) => {
-        return await supabase
+        // Backward compatible: if `audience` column doesn't exist yet, retry without it.
+        const attempt = await supabase
           .from('legal_documents')
           .select('title, content_md')
           .eq('type', type)
@@ -37,6 +38,18 @@ export function LegalModal({
           .order('version', { ascending: false })
           .limit(1)
           .maybeSingle()
+        if (!attempt.error) return attempt
+
+        const fallback = await supabase
+          .from('legal_documents')
+          .select('title, content_md')
+          .eq('type', type)
+          .eq('is_active', true)
+          .order('version', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        return fallback
       }
 
       const primary = await fetchDoc(audience)
