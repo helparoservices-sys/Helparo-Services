@@ -237,9 +237,7 @@ export default function LandingPage() {
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2.5 group">
               <div className="relative">
-                <div className="w-11 h-11 rounded-[14px] bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/40 group-hover:scale-105 transition-all duration-300">
-                  <span className="text-white font-black text-xl">H</span>
-                </div>
+                <img src="/logo.svg" alt="Helparo" className="w-11 h-11 rounded-[14px] shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/40 group-hover:scale-105 transition-all duration-300" />
               </div>
               <div className="flex flex-col">
                 <span className="text-[22px] font-extrabold tracking-tight text-gray-900">helparo</span>
@@ -942,9 +940,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-12 mb-16">
             <div className="col-span-2 lg:col-span-1">
               <Link href="/" className="flex items-center gap-2.5 mb-6 group">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-                  <span className="text-white font-black text-lg">H</span>
-                </div>
+                <img src="/logo.svg" alt="Helparo" className="w-10 h-10 rounded-xl shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform" />
                 <span className="text-xl font-bold text-white">helparo</span>
               </Link>
               <p className="text-sm text-gray-500 mb-6 leading-relaxed">

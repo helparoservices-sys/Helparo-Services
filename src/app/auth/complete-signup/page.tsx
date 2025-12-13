@@ -416,9 +416,7 @@ export default function CompleteSignupPage() {
           {/* Logo */}
           <div className="flex justify-center mb-6">
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/25 group-hover:scale-105 transition-transform">
-                <span className="text-xl font-black text-white">H</span>
-              </div>
+              <img src="/logo.svg" alt="Helparo" className="w-12 h-12 rounded-2xl shadow-lg shadow-emerald-500/25 group-hover:scale-105 transition-transform" />
               <div className="text-left">
                 <span className="text-xl font-bold text-white block">helparo</span>
                 <span className="text-[9px] font-semibold text-emerald-400 tracking-[0.2em] uppercase">Home Services</span>

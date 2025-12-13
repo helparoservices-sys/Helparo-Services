@@ -195,7 +195,7 @@ export default function ConsentPage() {
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <Image 
-                src="/logo.jpg" 
+                src="/logo.svg" 
                 alt="Helparo" 
                 width={40} 
                 height={40} 

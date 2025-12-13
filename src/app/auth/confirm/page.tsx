@@ -142,7 +142,7 @@ function ConfirmEmailContent() {
           <div className="inline-flex items-center gap-2 mb-4">
             <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-primary/10">
               <img
-                src="/logo.jpg"
+                src="/logo.svg"
                 alt="Helparo"
                 className="h-full w-full object-cover"
               />

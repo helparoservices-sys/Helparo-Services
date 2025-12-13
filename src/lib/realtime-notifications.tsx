@@ -251,8 +251,8 @@ function showBrowserNotification(notification: RealtimeNotification) {
   if ('Notification' in window && Notification.permission === 'granted') {
     new Notification(notification.title, {
       body: notification.message,
-      icon: '/logo.png',
-      badge: '/badge.png',
+      icon: '/logo.svg',
+      badge: '/logo.svg',
       tag: notification.id,
     })
   }

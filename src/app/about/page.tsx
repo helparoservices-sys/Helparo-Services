@@ -88,9 +88,7 @@ export default function AboutPage() {
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-10 h-10 rounded-[12px] bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-                <span className="text-white font-black text-lg">H</span>
-              </div>
+              <img src="/logo.svg" alt="Helparo" className="w-10 h-10 rounded-[12px] shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform" />
               <span className="text-xl font-extrabold text-gray-900 hidden sm:block">helparo</span>
             </Link>
 
@@ -436,9 +434,7 @@ export default function AboutPage() {
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-12 mb-16">
             <div className="col-span-2 lg:col-span-1">
               <Link href="/" className="flex items-center gap-2.5 mb-6 group">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-                  <span className="text-white font-black text-lg">H</span>
-                </div>
+                <img src="/logo.svg" alt="Helparo" className="w-10 h-10 rounded-xl shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform" />
                 <span className="text-xl font-bold text-white">helparo</span>
               </Link>
               <p className="text-sm text-gray-500 mb-6 leading-relaxed">

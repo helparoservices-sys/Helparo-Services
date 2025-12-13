@@ -252,9 +252,7 @@ export default function ServicesPage() {
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-10 h-10 rounded-[12px] bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-                <span className="text-white font-black text-lg">H</span>
-              </div>
+              <img src="/logo.svg" alt="Helparo" className="w-10 h-10 rounded-[12px] shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform" />
               <span className="text-xl font-extrabold text-gray-900 hidden sm:block">helparo</span>
             </Link>
 
@@ -491,9 +489,7 @@ export default function ServicesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                <span className="text-white font-black text-sm">H</span>
-              </div>
+              <img src="/logo.svg" alt="Helparo" className="w-8 h-8 rounded-lg" />
               <span className="text-lg font-bold text-gray-900">helparo</span>
             </Link>
             

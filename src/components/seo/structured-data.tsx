@@ -8,7 +8,7 @@ export function OrganizationSchema() {
     "name": "Helparo",
     "description": "On-demand home services platform connecting customers with verified local professionals",
     "url": "https://helparo.in",
-    "logo": "https://helparo.in/logo.png",
+    "logo": "https://helparo.in/logo.svg",
     "sameAs": [
       "https://www.facebook.com/helparo",
       "https://www.instagram.com/helparo",

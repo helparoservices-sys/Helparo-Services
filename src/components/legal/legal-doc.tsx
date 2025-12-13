@@ -92,7 +92,7 @@ export function LegalDoc({
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <Image 
-                src="/logo.jpg" 
+                src="/logo.svg" 
                 alt="Helparo" 
                 width={40} 
                 height={40} 
@@ -228,7 +228,7 @@ export function LegalDoc({
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <Image 
-                      src="/logo.jpg" 
+                      src="/logo.svg" 
                       alt="Helparo" 
                       width={32} 
                       height={32} 
@@ -256,7 +256,7 @@ export function LegalDoc({
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Image 
-                src="/logo.jpg" 
+                src="/logo.svg" 
                 alt="Helparo" 
                 width={36} 
                 height={36} 

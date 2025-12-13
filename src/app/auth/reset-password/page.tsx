@@ -111,7 +111,7 @@ export default function ResetPasswordPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 relative overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <Image src="/logo.jpg" alt="Helparo" width={384} height={384} className="opacity-[0.03] dark:opacity-[0.02] object-contain" />
+          <Image src="/logo.svg" alt="Helparo" width={384} height={384} className="opacity-[0.03] dark:opacity-[0.02] object-contain" />
         </div>
         <div className="w-full max-w-md relative z-10">
           <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/20 dark:border-slate-700/50 shadow-2xl rounded-2xl p-8 text-center space-y-4">
@@ -132,14 +132,14 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 relative overflow-hidden">
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <Image src="/logo.jpg" alt="Helparo" width={384} height={384} className="opacity-[0.03] dark:opacity-[0.02] object-contain" />
+        <Image src="/logo.svg" alt="Helparo" width={384} height={384} className="opacity-[0.03] dark:opacity-[0.02] object-contain" />
       </div>
       <div className="w-full max-w-md relative z-10">
         <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/20 dark:border-slate-700/50 shadow-2xl rounded-2xl p-8">
           <div className="text-center mb-6">
             <div className="inline-flex items-center gap-2 mb-4">
               <div className="relative">
-                <Image src="/logo.jpg" alt="Helparo" width={48} height={48} className="rounded-xl object-cover shadow-lg" />
+                <Image src="/logo.svg" alt="Helparo" width={48} height={48} className="rounded-xl object-cover shadow-lg" />
               </div>
               <span className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">Helparo</span>
             </div>

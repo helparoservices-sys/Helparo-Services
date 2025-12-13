@@ -78,9 +78,7 @@ export default function ForgotPasswordPage() {
         <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/30 transition-all">
-              <span className="text-2xl font-black text-white">H</span>
-            </div>
+            <img src="/logo.svg" alt="Helparo" className="w-12 h-12 rounded-2xl shadow-lg group-hover:scale-105 transition-all" />
             <div>
               <span className="text-2xl font-bold text-white block">helparo</span>
               <span className="text-xs font-semibold text-emerald-200 tracking-wider uppercase">Home Services</span>
@@ -139,9 +137,7 @@ export default function ForgotPasswordPage() {
             <span className="font-medium">Back</span>
           </Link>
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-              <span className="text-lg font-black text-white">H</span>
-            </div>
+            <img src="/logo.svg" alt="Helparo" className="w-9 h-9 rounded-xl" />
             <span className="text-lg font-bold text-gray-900">helparo</span>
           </Link>
           <div className="w-12" />

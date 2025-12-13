@@ -49,9 +49,7 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
           </button>
           
           <Link href="/customer/dashboard" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-xl bg-emerald-500 flex items-center justify-center text-white font-bold text-sm shadow-md">
-              H
-            </div>
+            <img src="/logo.svg" alt="Helparo" className="h-8 w-8 rounded-xl shadow-md" />
             <span className="text-lg font-bold text-gray-900">
               Helparo
             </span>

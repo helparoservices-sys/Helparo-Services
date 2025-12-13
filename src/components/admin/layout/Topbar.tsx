@@ -183,7 +183,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
           <Link href="/admin/dashboard" className="flex items-center gap-2 group">
             <div className="relative w-8 h-8 rounded-lg overflow-hidden shadow-lg group-hover:shadow-xl transition-shadow">
               <Image
-                src="/logo.jpg"
+                src="/logo.svg"
                 alt="Helparo"
                 width={32}
                 height={32}
