@@ -64,41 +64,15 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
       requiresVerification: false
     },
     {
-      label: 'Assigned Jobs',
-      icon: Briefcase,
-      href: '/helper/assigned',
-      requiresVerification: true
-    },
-    {
-      label: 'Browse Requests',
+      label: 'Browse Jobs',
       icon: Search,
       href: '/helper/requests',
       requiresVerification: true
     },
     {
-      label: 'My Bids',
-      icon: DollarSign,
-      href: '/helper/bids',
-      requiresVerification: true
-    },
-    {
       label: 'My Jobs',
       icon: Briefcase,
-      href: '/helper/bookings',
-      requiresVerification: true
-    },
-    /* === HIDDEN - TIME TRACKING ===
-    {
-      label: 'Time Tracking',
-      icon: Clock,
-      href: '/helper/time-tracking',
-      requiresVerification: true
-    },
-    === END HIDDEN TIME TRACKING === */
-    {
-      label: 'Ratings & Reviews',
-      icon: Star,
-      href: '/helper/ratings',
+      href: '/helper/assigned',
       requiresVerification: true
     },
     {
@@ -107,6 +81,46 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
       href: '/helper/services',
       requiresVerification: false
     },
+    {
+      label: 'Ratings',
+      icon: Star,
+      href: '/helper/ratings',
+      requiresVerification: true
+    },
+    /* === HIDDEN - SIMPLIFIED SIDEBAR ===
+    {
+      label: 'My Bids',
+      icon: DollarSign,
+      href: '/helper/bids',
+      requiresVerification: true
+    },
+    {
+      label: 'Achievements',
+      icon: Award,
+      href: '/helper/gamification',
+      requiresVerification: true
+    },
+    {
+      label: 'Trust Score',
+      icon: Users,
+      href: '/helper/trust-score',
+      requiresVerification: true
+    },
+    {
+      label: 'Referrals',
+      icon: Gift,
+      href: '/helper/referrals',
+      requiresVerification: false
+    },
+    === END HIDDEN SIMPLIFIED === */
+    /* === HIDDEN - TIME TRACKING ===
+    {
+      label: 'Time Tracking',
+      icon: Clock,
+      href: '/helper/time-tracking',
+      requiresVerification: true
+    },
+    === END HIDDEN TIME TRACKING === */
     /* === HIDDEN FOR PLAY STORE DEPLOYMENT - SUBSCRIPTIONS ===
     * TODO: Uncomment when payment integration is complete
     {
@@ -116,18 +130,17 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
       requiresVerification: true
     },
     === END HIDDEN SUBSCRIPTIONS === */
+    /* === HIDDEN - VIDEO CALLS ===
     {
-      label: 'SOS',
-      icon: Phone,
-      href: '/helper/sos',
-      requiresVerification: true,
-      isSmall: true
-    },
-    {
-      label: 'Achievements',
-      icon: Award,
-      href: '/helper/gamification',
+      label: 'Video Calls',
+      icon: Video,
+      href: '/helper/video-calls',
       requiresVerification: true
+    },
+    === END HIDDEN VIDEO CALLS === */
+  ]
+
+  const isActive = (href: string) => pathname === href
     },
     /* === HIDDEN - VIDEO CALLS ===
     {
