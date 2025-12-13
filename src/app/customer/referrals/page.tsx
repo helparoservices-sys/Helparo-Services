@@ -37,7 +37,7 @@ const REWARD_CONFIG = {
   dailyLimit: 1000, // ₹1000 per day max
   ordersPerDay: 1, // Only 1 order per day
   sameLocationOnly: true,
-  minDistanceKm: 25, // Referred user must be at least 25km away
+  differentAreaRequired: true, // Referred user must be from different area/locality
 }
 
 export default function CustomerReferralsPage() {
@@ -130,7 +130,7 @@ export default function CustomerReferralsPage() {
           <h1 className="text-3xl md:text-4xl font-black mb-2">Refer 50 Friends,</h1>
           <h2 className="text-2xl md:text-3xl font-bold text-emerald-100">Get 1 Month FREE! 🎉</h2>
           <p className="text-emerald-100 mt-3 max-w-lg">
-            Invite friends from different cities. When 50 friends join & book, enjoy 30 days of free services worth ₹1000/day!
+            Invite friends from different areas. When 50 friends join & book, enjoy 30 days of free services worth ₹1000/day!
           </p>
           
           {/* Quick limits info */}
@@ -439,34 +439,89 @@ export default function CustomerReferralsPage() {
         
         {showTnC && (
           <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500 space-y-2">
-            <p className="font-bold text-gray-700">Campaign Rules:</p>
-            <p>• This referral program is a <strong>limited-time promotional campaign</strong> run by Helparo.</p>
-            <p>• <strong>Helparo reserves the absolute right to modify, suspend, cancel, or terminate this campaign at any time without prior notice or liability.</strong></p>
-            <p>• No rewards will be honored if the campaign is terminated before completion.</p>
+            <p className="p-2 bg-red-100 border border-red-300 rounded text-red-800 text-[11px] font-semibold">
+              ⚠️ READ CAREFULLY: By participating in this program, you agree to ALL terms below. If you do not agree, do NOT participate.
+            </p>
             
-            <p className="font-bold text-gray-700 mt-4">Referral Eligibility:</p>
-            <p>• <strong>Referred users must be located at least 25 kilometers away from the referrer's registered address.</strong></p>
-            <p>• Referred users from the same city, locality, or within 25km radius will NOT be counted.</p>
-            <p>• Each referred friend must sign up using your unique referral code AND complete at least one paid booking.</p>
-            <p>• Fake, duplicate, or fraudulent accounts will be immediately disqualified and may result in permanent ban.</p>
-            <p>• Self-referrals or referrals within the same household are strictly prohibited.</p>
+            <p className="font-bold text-gray-700 mt-3">1. NATURE OF CAMPAIGN:</p>
+            <p>• This referral program is a <strong>voluntary, promotional, non-binding marketing campaign</strong> operated by Helparo at its absolute discretion.</p>
+            <p>• <strong>This is NOT a contract, agreement, promise, or guarantee of any reward.</strong> It is purely a goodwill promotional offer.</p>
+            <p>• Participation is entirely voluntary and at your own risk. No consideration is exchanged.</p>
+            <p>• <strong>Helparo makes NO warranties, representations, or commitments regarding this campaign, express or implied.</strong></p>
             
-            <p className="font-bold text-gray-700 mt-4">Reward Limitations:</p>
-            <p>• Free service is limited to <strong>₹1,000 maximum per day</strong> for <strong>30 consecutive days</strong>.</p>
-            <p>• Only <strong>1 order per day</strong> is allowed under this offer.</p>
-            <p>• Free services are valid <strong>only at your registered address</strong>. Different locations are not covered.</p>
-            <p>• Unused daily limits do NOT carry forward to the next day.</p>
-            <p>• If service cost exceeds ₹1,000, the balance must be paid by the user.</p>
-            <p>• Reward cannot be transferred, exchanged for cash, sold, or combined with other offers.</p>
+            <p className="font-bold text-gray-700 mt-3">2. ABSOLUTE DISCRETION & TERMINATION RIGHTS:</p>
+            <p>• <strong>Helparo reserves the ABSOLUTE, UNCONDITIONAL, and UNRESTRICTED right to modify, suspend, pause, cancel, discontinue, or permanently terminate this campaign at ANY time, for ANY reason or NO reason, with or without prior notice, and WITHOUT any obligation to explain.</strong></p>
+            <p>• <strong>Upon termination, ALL pending rewards, progress, and benefits are IMMEDIATELY forfeited and void, regardless of how close you were to achieving the reward.</strong></p>
+            <p>• Helparo may change reward values, eligibility criteria, or any terms at any time without notice.</p>
+            <p>• <strong>No participant shall have any claim, right, or entitlement to any reward until Helparo, at its sole discretion, explicitly confirms and activates the reward.</strong></p>
             
-            <p className="font-bold text-gray-700 mt-4">General Terms:</p>
-            <p>• Helparo's decision on all matters relating to this program shall be final, binding, and non-contestable.</p>
-            <p>• Service availability depends on helper availability in your area.</p>
-            <p>• Helparo reserves the right to verify all referrals and may reject any suspicious activity.</p>
-            <p>• By participating, you agree to these terms and Helparo's standard Terms of Service.</p>
-            <p>• Violation of any terms will result in immediate disqualification without refund or compensation.</p>
+            <p className="font-bold text-gray-700 mt-3">3. REFERRAL ELIGIBILITY & VERIFICATION:</p>
+            <p>• <strong>Referred users must be from a genuinely different area/locality than the referrer.</strong></p>
+            <p>• Referrals from the same locality, apartment complex, building, street, neighborhood, or PIN code are strictly INVALID.</p>
+            <p>• Each referred person must: (a) be a new user, (b) sign up with your code, (c) verify their identity, (d) complete at least one PAID booking worth minimum ₹200.</p>
+            <p>• <strong>Helparo reserves the right to conduct verification including but not limited to: IP address checks, device fingerprinting, location verification, phone number verification, address proof verification, and any other method deemed necessary.</strong></p>
+            <p>• <strong>Helparo's determination of referral validity is FINAL and NON-APPEALABLE.</strong></p>
+            <p>• Self-referrals, family referrals, referrals from same household, fake accounts, bot-generated referrals, incentivized referrals (paying someone to sign up), or any fraudulent activity will result in IMMEDIATE and PERMANENT disqualification.</p>
             
-            <p className="mt-4 text-[10px] text-gray-400 italic">Last updated: December 2024. Helparo may update these terms at any time.</p>
+            <p className="font-bold text-gray-700 mt-3">4. REWARD LIMITATIONS & CONDITIONS:</p>
+            <p>• Maximum benefit: ₹1,000 per day for 30 consecutive days (total potential value: ₹30,000).</p>
+            <p>• <strong>STRICT LIMITS:</strong> Only 1 order per day. Only at your registered address. No exceptions.</p>
+            <p>• Unused daily limits are permanently forfeited and do NOT carry forward.</p>
+            <p>• If service cost exceeds ₹1,000, participant MUST pay the balance. No credits.</p>
+            <p>• <strong>Reward activation requires Helparo's explicit approval and may take up to 30 days to verify.</strong></p>
+            <p>• Rewards are non-transferable, non-exchangeable, cannot be converted to cash, cannot be sold, and cannot be combined with any other offer, discount, or promotion.</p>
+            <p>• <strong>Helparo may reject reward activation for any reason without explanation.</strong></p>
+            
+            <p className="font-bold text-gray-700 mt-3">5. DISQUALIFICATION & PENALTIES:</p>
+            <p>• <strong>Any violation, suspected violation, or attempted violation of these terms will result in IMMEDIATE disqualification without warning.</strong></p>
+            <p>• Disqualified participants forfeit ALL progress, rewards, and benefits with no recourse.</p>
+            <p>• <strong>Helparo may, at its discretion, permanently ban disqualified users from all Helparo services.</strong></p>
+            <p>• Helparo reserves the right to pursue legal action for fraud, abuse, or damages caused.</p>
+            <p>• <strong>Helparo may disqualify any participant for ANY reason or NO reason, at its sole discretion, without explanation.</strong></p>
+            
+            <p className="font-bold text-gray-700 mt-3">6. COMPLETE WAIVER OF CLAIMS:</p>
+            <p>• <strong>BY PARTICIPATING, YOU IRREVOCABLY AND UNCONDITIONALLY WAIVE:</strong></p>
+            <p className="pl-4">- Any right to sue, claim damages, or seek compensation from Helparo.</p>
+            <p className="pl-4">- Any right to file consumer complaints related to this campaign.</p>
+            <p className="pl-4">- Any claim for breach of contract (this is not a contract).</p>
+            <p className="pl-4">- Any claim for promissory estoppel or detrimental reliance.</p>
+            <p className="pl-4">- Any claim for unjust enrichment or quantum meruit.</p>
+            <p className="pl-4">- Any right to class action or collective legal action.</p>
+            <p>• <strong>You acknowledge that you have NO reasonable expectation of receiving any reward and participate purely on a speculative, hope basis.</strong></p>
+            
+            <p className="font-bold text-gray-700 mt-3">7. LIMITATION OF LIABILITY:</p>
+            <p>• <strong>HELPARO SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, PUNITIVE, OR EXEMPLARY DAMAGES ARISING FROM OR RELATED TO THIS CAMPAIGN.</strong></p>
+            <p>• <strong>IN NO EVENT SHALL HELPARO'S TOTAL LIABILITY EXCEED ₹0 (ZERO RUPEES).</strong></p>
+            <p>• Helparo is not liable for: campaign termination, reward denial, technical errors, verification failures, or any loss suffered due to participation or non-participation.</p>
+            <p>• You participate entirely at your own risk and expense.</p>
+            
+            <p className="font-bold text-gray-700 mt-3">8. INDEMNIFICATION:</p>
+            <p>• <strong>You agree to indemnify, defend, and hold harmless Helparo, its directors, officers, employees, agents, and affiliates from any claims, damages, losses, or expenses arising from your participation or violation of these terms.</strong></p>
+            
+            <p className="font-bold text-gray-700 mt-3">9. DISPUTE RESOLUTION:</p>
+            <p>• <strong>All disputes shall be resolved through BINDING ARBITRATION</strong> under the Arbitration and Conciliation Act, 1996.</p>
+            <p>• Arbitration shall be conducted by a sole arbitrator appointed by Helparo.</p>
+            <p>• Venue: Helparo's registered city. Language: English.</p>
+            <p>• <strong>You waive any right to jury trial or court proceedings.</strong></p>
+            <p>• Each party bears their own costs. Arbitrator's decision is final and binding.</p>
+            <p>• <strong>This agreement is governed by the laws of India.</strong></p>
+            
+            <p className="font-bold text-gray-700 mt-3">10. MISCELLANEOUS:</p>
+            <p>• <strong>Helparo's interpretation of these terms is final and conclusive.</strong></p>
+            <p>• If any provision is found invalid, all other provisions remain in full effect.</p>
+            <p>• Helparo's failure to enforce any term does not waive its right to enforce it later.</p>
+            <p>• These terms constitute the entire agreement regarding this campaign.</p>
+            <p>• <strong>Helparo may amend these terms at any time without notice. Continued participation constitutes acceptance.</strong></p>
+            
+            <p className="mt-4 p-3 bg-red-100 border-2 border-red-400 rounded-lg text-red-800 text-[11px]">
+              <strong>🚨 FINAL WARNING:</strong> This is a PROMOTIONAL CAMPAIGN that may be CANCELLED at ANY MOMENT without notice. You have NO guaranteed right to any reward. Helparo may terminate this campaign when ONE person approaches the reward threshold, or for ANY other reason. <strong>DO NOT rely on this campaign. DO NOT make any decisions based on potential rewards. Participate ONLY if you accept that you may receive NOTHING.</strong>
+            </p>
+            
+            <p className="mt-3 p-2 bg-gray-100 border border-gray-300 rounded text-gray-600 text-[10px]">
+              By sharing your referral code or link, you confirm that you have READ, UNDERSTOOD, and AGREED to ALL terms above. You acknowledge that this campaign offers NO guarantees and can be terminated at Helparo's sole discretion at any time.
+            </p>
+            
+            <p className="mt-2 text-[10px] text-gray-400 italic">Version 2.0 | Last updated: December 13, 2024 | Helparo reserves the right to update these terms at any time without prior notice.</p>
           </div>
         )}
       </div>
