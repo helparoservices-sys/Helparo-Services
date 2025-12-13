@@ -5,34 +5,158 @@ import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { 
   MapPin, 
   Phone, 
   MessageSquare, 
-  IndianRupee, 
-  Clock, 
   Navigation,
   User,
-  CheckCircle,
+  CheckCircle2,
   XCircle,
   AlertCircle,
   Loader2,
   Star,
-  Shield,
   Copy,
-  RefreshCw,
   PartyPopper,
   Banknote,
   CreditCard,
   ThumbsUp,
-  Smartphone,
-  ChevronDown
+  Sparkles,
+  ArrowLeft,
+  BadgeCheck,
+  Timer,
+  Package,
+  Camera,
+  Wrench,
+  FileText,
+  Clock,
+  ChevronDown,
+  ChevronUp,
+  X,
+  Eye,
+  Info
 } from 'lucide-react'
 import { toast } from 'sonner'
 
-// Job Completion Popup for Customer
+// ═══════════════════════════════════════════════════════════════════════════
+// RAPIDO-STYLE SEARCHING ANIMATION - ULTRA PREMIUM
+// ═══════════════════════════════════════════════════════════════════════════
+function SearchingAnimation({ nearbyHelpers }: { nearbyHelpers: any[] }) {
+  const availableCount = nearbyHelpers.filter(h => h.isOnline && !h.isOnJob).length
+  const [dots, setDots] = useState('')
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDots(prev => prev.length >= 3 ? '' : prev + '.')
+    }, 500)
+    return () => clearInterval(interval)
+  }, [])
+
+  return (
+    <div className="relative flex flex-col items-center justify-center py-6">
+      {/* Radar Animation - Like Rapido/Uber */}
+      <div className="relative w-52 h-52 mb-6">
+        {/* Rotating gradient ring */}
+        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-teal-400 via-cyan-400 to-emerald-400 animate-spin" style={{ animationDuration: '3s' }}>
+          <div className="absolute inset-1 rounded-full bg-white" />
+        </div>
+        
+        {/* Pulse rings */}
+        <div className="absolute inset-4 rounded-full border-2 border-teal-300/50 animate-ping" style={{ animationDuration: '2s' }} />
+        <div className="absolute inset-8 rounded-full border-2 border-teal-400/40 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.5s' }} />
+        <div className="absolute inset-12 rounded-full border-2 border-teal-500/30 animate-ping" style={{ animationDuration: '2s', animationDelay: '1s' }} />
+        
+        {/* Center - Main icon */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-28 h-28 rounded-full bg-gradient-to-br from-teal-500 via-emerald-500 to-cyan-500 flex items-center justify-center shadow-2xl shadow-teal-500/40">
+            <div className="w-24 h-24 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center">
+                <svg className="w-8 h-8 text-teal-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Floating helper avatars */}
+        {nearbyHelpers.slice(0, 5).map((helper, idx) => {
+          const angle = (idx * 72 - 90) * (Math.PI / 180)
+          const radius = 90
+          const x = Math.cos(angle) * radius
+          const y = Math.sin(angle) * radius
+          const isAvailable = helper.isOnline && !helper.isOnJob
+          
+          return (
+            <div
+              key={helper.id}
+              className="absolute transition-all duration-500"
+              style={{
+                left: `calc(50% + ${x}px - 18px)`,
+                top: `calc(50% + ${y}px - 18px)`,
+                animation: `float ${2 + idx * 0.3}s ease-in-out infinite`,
+                animationDelay: `${idx * 0.2}s`
+              }}
+            >
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg border-2 border-white ${
+                isAvailable 
+                  ? 'bg-gradient-to-br from-green-400 to-emerald-500' 
+                  : 'bg-gray-400'
+              }`}>
+                {helper.name.charAt(0)}
+              </div>
+              {isAvailable && (
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white animate-pulse" />
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Text */}
+      <h3 className="text-xl font-black text-gray-800 mb-1">
+        Searching for helpers{dots}
+      </h3>
+      <p className="text-gray-500 text-sm mb-5">We&apos;re finding the best match for you</p>
+      
+      {/* Stats Pills */}
+      {nearbyHelpers.length > 0 && (
+        <div className="flex items-center gap-3">
+          <div className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-full px-5 py-2.5 shadow-lg shadow-teal-500/30">
+            <span className="text-2xl font-black">{availableCount}</span>
+            <span className="text-sm ml-1.5 opacity-90">available</span>
+          </div>
+          <div className="bg-gray-100 text-gray-700 rounded-full px-5 py-2.5">
+            <span className="text-2xl font-black">{nearbyHelpers.length}</span>
+            <span className="text-sm ml-1.5 opacity-70">nearby</span>
+          </div>
+        </div>
+      )}
+
+      {/* Loading bar */}
+      <div className="w-48 h-1.5 bg-gray-200 rounded-full mt-6 overflow-hidden">
+        <div className="h-full bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full animate-[loading_2s_ease-in-out_infinite]" />
+      </div>
+
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
+        }
+        @keyframes loading {
+          0% { width: 0%; margin-left: 0; }
+          50% { width: 100%; margin-left: 0; }
+          100% { width: 0%; margin-left: 100%; }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COMPLETION POPUP - CELEBRATION STYLE
+// ═══════════════════════════════════════════════════════════════════════════
 function JobCompletionPopup({
   isOpen,
   job,
@@ -57,126 +181,103 @@ function JobCompletionPopup({
   const helperName = job.assigned_helper?.profile?.full_name || 'Helper'
   const displayRating = hoveredRating || selectedRating
 
-  const handleStarClick = (rating: number) => {
-    setSelectedRating(rating)
-    // Submit quick rating after a small delay
-    setTimeout(() => {
-      onQuickRate(rating)
-    }, 300)
-  }
-
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Popup Card */}
-      <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-        {/* Success Header */}
-        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-8 text-center">
-          <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-            <PartyPopper className="h-10 w-10 text-white" />
+      <div className="relative w-full sm:max-w-md bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl animate-in slide-in-from-bottom-12 duration-500 max-h-[90vh] overflow-auto">
+        {/* Header with confetti */}
+        <div className="relative h-44 bg-gradient-to-br from-teal-400 via-emerald-500 to-cyan-500 rounded-t-[2.5rem] sm:rounded-t-[2.5rem] overflow-hidden">
+          {/* Confetti dots */}
+          {[...Array(40)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full animate-bounce"
+              style={{
+                width: `${4 + Math.random() * 8}px`,
+                height: `${4 + Math.random() * 8}px`,
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                backgroundColor: ['#fff', '#ffd700', '#ff6b6b', '#4ade80', '#60a5fa'][i % 5],
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${0.8 + Math.random() * 0.5}s`,
+                opacity: 0.9
+              }}
+            />
+          ))}
+          
+          {/* Success icon */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-2xl animate-bounce">
+              <PartyPopper className="w-12 h-12 text-teal-500" />
+            </div>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Job Completed! 🎉</h2>
-          <p className="text-emerald-100">
-            Hope you got the help you needed!
-          </p>
         </div>
 
-        {/* Content */}
-        <div className="p-6 space-y-5">
-          {/* Helper Info */}
-          <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
-            <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-              <User className="h-6 w-6 text-emerald-600" />
+        <div className="px-6 py-6 -mt-6 relative bg-white rounded-t-3xl">
+          <h2 className="text-2xl font-black text-center text-gray-800 mb-1">
+            Job Complete! 🎉
+          </h2>
+          <p className="text-center text-gray-500 mb-5 text-sm">
+            Your {job.category?.name?.toLowerCase() || 'service'} has been completed
+          </p>
+
+          {/* Helper */}
+          <div className="flex items-center gap-3 bg-gray-50 rounded-2xl p-3 mb-4">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center">
+              <User className="w-7 h-7 text-white" />
             </div>
-            <div>
-              <p className="font-semibold text-gray-800">{helperName}</p>
-              <p className="text-sm text-gray-500">completed your service</p>
+            <div className="flex-1">
+              <p className="font-bold text-gray-800">{helperName}</p>
+              <p className="text-xs text-gray-500">Completed your service</p>
             </div>
-            <ThumbsUp className="h-6 w-6 text-emerald-500 ml-auto" />
+            <ThumbsUp className="w-6 h-6 text-green-500" />
           </div>
 
-          {/* Payment Info */}
-          <div className={`rounded-xl p-4 ${isCash ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'}`}>
-            <div className="flex items-center gap-2 mb-3">
-              {isCash ? (
-                <Banknote className="h-5 w-5 text-amber-600" />
-              ) : (
-                <CreditCard className="h-5 w-5 text-blue-600" />
-              )}
-              <span className={`text-sm font-medium ${isCash ? 'text-amber-700' : 'text-blue-700'}`}>
-                {isCash ? 'Cash Payment' : 'Online Payment'}
-              </span>
-            </div>
-            
-            <div className="text-center">
-              <p className={`text-sm ${isCash ? 'text-amber-600' : 'text-blue-600'} mb-1`}>
-                {isCash ? 'Please pay cash to the helper' : 'Payment will be processed'}
-              </p>
-              <div className={`flex items-center justify-center gap-1 ${isCash ? 'text-amber-700' : 'text-blue-700'}`}>
-                <IndianRupee className="h-8 w-8" />
-                <span className="text-4xl font-bold">{job.estimated_price}</span>
-              </div>
+          {/* Payment */}
+          <div className={`rounded-2xl p-4 mb-5 text-center ${
+            isCash ? 'bg-amber-50 border-2 border-amber-200' : 'bg-blue-50 border-2 border-blue-200'
+          }`}>
+            <p className={`text-sm font-medium mb-1 ${isCash ? 'text-amber-600' : 'text-blue-600'}`}>
+              {isCash ? 'Pay Cash to Helper' : 'Online Payment'}
+            </p>
+            <div className={`text-4xl font-black ${isCash ? 'text-amber-600' : 'text-blue-600'}`}>
+              ₹{job.estimated_price}
             </div>
           </div>
 
-          {/* Interactive Rating */}
-          <div className="text-center bg-emerald-50 rounded-xl p-4">
-            <p className="text-sm text-gray-600 mb-3">How was your experience?</p>
-            <div className="flex justify-center gap-2 mb-2">
+          {/* Rating */}
+          <div className="text-center mb-5">
+            <p className="text-gray-600 font-medium mb-2 text-sm">How was your experience?</p>
+            <div className="flex justify-center gap-1.5">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
-                  onClick={() => handleStarClick(star)}
+                  onClick={() => { setSelectedRating(star); setTimeout(() => onQuickRate(star), 300) }}
                   onMouseEnter={() => setHoveredRating(star)}
                   onMouseLeave={() => setHoveredRating(0)}
-                  className="focus:outline-none transition-transform hover:scale-125 active:scale-110"
+                  className="transition-transform hover:scale-110 active:scale-95"
                 >
-                  <Star 
-                    className={`h-8 w-8 transition-colors ${
-                      star <= displayRating 
-                        ? 'fill-yellow-400 text-yellow-400' 
-                        : 'fill-gray-200 text-gray-200 hover:fill-yellow-200 hover:text-yellow-200'
-                    }`} 
-                  />
+                  <Star className={`w-9 h-9 ${
+                    star <= displayRating ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'
+                  }`} />
                 </button>
               ))}
             </div>
-            <p className="text-xs text-gray-500">
-              {displayRating === 0 && 'Tap a star to rate'}
-              {displayRating === 5 && '⭐ Excellent!'}
-              {displayRating === 4 && '😊 Great!'}
-              {displayRating === 3 && '👍 Good'}
-              {displayRating === 2 && '😐 Fair'}
-              {displayRating === 1 && '😞 Poor'}
-            </p>
           </div>
 
-          {/* Action Buttons */}
-          <div className="space-y-3">
-            {/* Pay Now Button for Online Payments */}
+          {/* Buttons */}
+          <div className="space-y-2.5">
             {!isCash && onPayNow && (
-              <Button 
-                onClick={onPayNow}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white py-6 text-lg font-semibold rounded-xl"
-              >
-                <CreditCard className="h-5 w-5 mr-2" />
-                Pay ₹{job.estimated_price} Now
+              <Button onClick={onPayNow} className="w-full h-12 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold rounded-xl">
+                <CreditCard className="w-5 h-5 mr-2" /> Pay ₹{job.estimated_price}
               </Button>
             )}
-            <Button 
-              onClick={onRate}
-              className={`w-full ${isCash ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'} py-6 text-lg font-semibold rounded-xl`}
-            >
-              <Star className="h-5 w-5 mr-2" />
-              {selectedRating > 0 ? 'Add Detailed Review' : `Rate ${helperName}`}
+            <Button onClick={onRate} className="w-full h-12 bg-gradient-to-r from-teal-500 to-emerald-600 text-white font-bold rounded-xl">
+              <Star className="w-5 h-5 mr-2" /> Write Review
             </Button>
-            <button
-              onClick={onClose}
-              className="w-full text-gray-500 hover:text-gray-700 text-sm py-2"
-            >
-              Skip for now
+            <button onClick={onClose} className="w-full py-2 text-gray-400 text-sm">
+              Skip
             </button>
           </div>
         </div>
@@ -185,7 +286,9 @@ function JobCompletionPopup({
   )
 }
 
-// Google Maps Live Tracking Component
+// ═══════════════════════════════════════════════════════════════════════════
+// LIVE MAP - CLEAN & MODERN
+// ═══════════════════════════════════════════════════════════════════════════
 function LiveTrackingMap({ 
   customerLat, 
   customerLng, 
@@ -200,16 +303,7 @@ function LiveTrackingMap({
   helperLat: number | null
   helperLng: number | null
   helperName?: string
-  nearbyHelpers?: Array<{
-    id: string
-    lat: number
-    lng: number
-    name: string
-    rating: number
-    isOnline: boolean
-    isOnJob: boolean
-    distance: number
-  }>
+  nearbyHelpers?: any[]
   isBroadcasting?: boolean
 }) {
   const mapRef = useRef<HTMLDivElement>(null)
@@ -217,27 +311,11 @@ function LiveTrackingMap({
   const helperMarkerRef = useRef<google.maps.Marker | null>(null)
   const customerMarkerRef = useRef<google.maps.Marker | null>(null)
   const nearbyMarkersRef = useRef<google.maps.Marker[]>([])
-  const hasFitBoundsRef = useRef(false) // Track if we've already fit bounds
+  const hasFitBoundsRef = useRef(false)
   const [mapLoaded, setMapLoaded] = useState(false)
   
   const hasHelperLocation = helperLat !== null && helperLng !== null && helperLat !== 0 && helperLng !== 0
-  
-  // Calculate distance and ETA
-  let distance = 0
-  let eta = 0
-  if (hasHelperLocation) {
-    const R = 6371
-    const dLat = (helperLat - customerLat) * Math.PI / 180
-    const dLng = (helperLng - customerLng) * Math.PI / 180
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(customerLat * Math.PI / 180) * Math.cos(helperLat * Math.PI / 180) * 
-      Math.sin(dLng/2) * Math.sin(dLng/2)
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
-    distance = R * c
-    eta = Math.max(1, Math.round((distance / 25) * 60)) // Assuming 25 km/h average speed
-  }
 
-  // Load Google Maps script
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.google) {
       const script = document.createElement('script')
@@ -251,275 +329,137 @@ function LiveTrackingMap({
     }
   }, [])
 
-  // Initialize map - only once
   useEffect(() => {
-    if (!mapLoaded || !mapRef.current || !window.google) return
-    
-    // Don't reinitialize if map already exists
-    if (mapInstanceRef.current) return
+    if (!mapLoaded || !mapRef.current || !window.google || mapInstanceRef.current) return
 
     const map = new google.maps.Map(mapRef.current, {
       center: { lat: customerLat, lng: customerLng },
-      zoom: 14, // Start with a reasonable zoom level
+      zoom: 15,
       disableDefaultUI: true,
       zoomControl: true,
       styles: [
-        { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }
+        { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+        { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+        { featureType: 'water', elementType: 'geometry.fill', stylers: [{ color: '#b3e5fc' }] },
+        { featureType: 'landscape', stylers: [{ color: '#f5f5f5' }] },
+        { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
+        { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#e0e0e0' }] },
+        { featureType: 'road.highway', elementType: 'geometry.fill', stylers: [{ color: '#fff3e0' }] }
       ]
     })
 
     mapInstanceRef.current = map
 
-    // Customer marker - Home icon (destination)
+    // Customer marker
     customerMarkerRef.current = new google.maps.Marker({
       position: { lat: customerLat, lng: customerLng },
-      map: map,
+      map,
       icon: {
         url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48">
-            <path d="M20 0C9 0 0 9 0 20c0 15 20 28 20 28s20-13 20-28C40 9 31 0 20 0z" fill="#EF4444"/>
-            <circle cx="20" cy="20" r="16" fill="white"/>
-            <path d="M20 10l-8 7v9h5v-5h6v5h5v-9l-8-7z" fill="#EF4444"/>
+          <svg width="48" height="56" viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M24 0C10.7 0 0 10.7 0 24c0 18 24 32 24 32s24-14 24-32C48 10.7 37.3 0 24 0z" fill="#EF4444"/>
+            <circle cx="24" cy="22" r="14" fill="white"/>
+            <path d="M24 13l-9 7.5v9h5.5v-5h7v5H33v-9L24 13z" fill="#EF4444"/>
           </svg>
         `),
-        scaledSize: new google.maps.Size(40, 48),
-        anchor: new google.maps.Point(20, 48),
-      },
-      title: 'Your Location'
-    })
-
-    // Add info window for customer location
-    const customerInfo = new google.maps.InfoWindow({
-      content: '<div style="padding:4px;font-weight:bold;color:#EF4444">🏠 Service Location</div>'
-    })
-    customerMarkerRef.current.addListener('click', () => {
-      customerInfo.open(map, customerMarkerRef.current)
-    })
-
-      return () => {
-        if (customerMarkerRef.current) customerMarkerRef.current.setMap(null)
-        if (helperMarkerRef.current) helperMarkerRef.current.setMap(null)
-        // Clear nearby helper markers
-        nearbyMarkersRef.current.forEach(marker => marker.setMap(null))
-        nearbyMarkersRef.current = []
+        scaledSize: new google.maps.Size(48, 56),
+        anchor: new google.maps.Point(24, 56),
       }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    })
+
+    return () => {
+      customerMarkerRef.current?.setMap(null)
+      helperMarkerRef.current?.setMap(null)
+      nearbyMarkersRef.current.forEach(m => m.setMap(null))
+    }
   }, [mapLoaded, customerLat, customerLng])
 
-  // Show nearby helpers when broadcasting
+  // Nearby helpers
   useEffect(() => {
-    if (!mapInstanceRef.current || !window.google || !nearbyHelpers || nearbyHelpers.length === 0) {
-      // Clear existing markers if no nearby helpers
-      nearbyMarkersRef.current.forEach(marker => marker.setMap(null))
-      nearbyMarkersRef.current = []
-      return
-    }
-
-    // Clear existing nearby markers
-    nearbyMarkersRef.current.forEach(marker => marker.setMap(null))
+    if (!mapInstanceRef.current || !window.google || !nearbyHelpers) return
+    nearbyMarkersRef.current.forEach(m => m.setMap(null))
     nearbyMarkersRef.current = []
 
-    // Create markers for each nearby helper
-    nearbyHelpers.forEach((helper, index) => {
-      // Different colors based on status
+    nearbyHelpers.forEach((helper, idx) => {
       const isAvailable = helper.isOnline && !helper.isOnJob
-      const markerColor = isAvailable ? '#10B981' : '#6B7280' // Green if available, gray if busy/offline
+      const color = isAvailable ? '#10B981' : '#9CA3AF'
       
       const marker = new google.maps.Marker({
         position: { lat: helper.lat, lng: helper.lng },
         map: mapInstanceRef.current!,
         icon: {
           url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
-              <circle cx="18" cy="18" r="16" fill="${markerColor}" stroke="white" stroke-width="2"/>
-              <g fill="white" transform="translate(8, 10)">
-                <circle cx="3" cy="11" r="2.5" fill="none" stroke="white" stroke-width="1.5"/>
-                <circle cx="17" cy="11" r="2.5" fill="none" stroke="white" stroke-width="1.5"/>
-                <path d="M3 11l3-6h4l2 3h4l-2 3" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M11 8l2 3h4" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-                <circle cx="7" cy="3" r="1.5" fill="white"/>
-              </g>
+            <svg width="36" height="36" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="18" cy="18" r="16" fill="${color}" stroke="white" stroke-width="3"/>
+              <circle cx="18" cy="14" r="4" fill="white"/>
+              <path d="M10 26c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="white" stroke-width="2.5" fill="none"/>
             </svg>
           `),
           scaledSize: new google.maps.Size(36, 36),
           anchor: new google.maps.Point(18, 18),
         },
-        title: helper.name,
-        animation: google.maps.Animation.DROP,
-        zIndex: 100 - index // Nearest helpers on top
+        animation: google.maps.Animation.DROP
       })
-
-      // Add info window
-      const infoContent = `
-        <div style="padding:8px;min-width:120px;">
-          <p style="font-weight:bold;color:#10B981;margin:0 0 4px 0;">🏍️ ${helper.name}</p>
-          <p style="font-size:12px;color:#666;margin:0 0 2px 0;">⭐ ${helper.rating > 0 ? helper.rating.toFixed(1) : 'New'}</p>
-          <p style="font-size:12px;color:#666;margin:0 0 2px 0;">📍 ${helper.distance} km away</p>
-          <p style="font-size:11px;color:${isAvailable ? '#10B981' : '#6B7280'};margin:0;">
-            ${isAvailable ? '🟢 Available' : (helper.isOnJob ? '🟡 On another job' : '⚫ Offline')}
-          </p>
-        </div>
-      `
-      const infoWindow = new google.maps.InfoWindow({ content: infoContent })
-      
-      marker.addListener('click', () => {
-        infoWindow.open(mapInstanceRef.current!, marker)
-      })
-
       nearbyMarkersRef.current.push(marker)
     })
 
-    // Fit bounds to show all markers ONLY ONCE on initial load
     if (isBroadcasting && nearbyHelpers.length > 0 && !hasFitBoundsRef.current) {
       const bounds = new google.maps.LatLngBounds()
       bounds.extend({ lat: customerLat, lng: customerLng })
-      nearbyHelpers.forEach(helper => {
-        bounds.extend({ lat: helper.lat, lng: helper.lng })
-      })
-      mapInstanceRef.current.fitBounds(bounds, { top: 80, right: 60, bottom: 80, left: 60 })
-      hasFitBoundsRef.current = true // Mark that we've fit bounds
+      nearbyHelpers.slice(0, 5).forEach(h => bounds.extend({ lat: h.lat, lng: h.lng }))
+      mapInstanceRef.current.fitBounds(bounds, 60)
+      hasFitBoundsRef.current = true
     }
-
   }, [nearbyHelpers, customerLat, customerLng, isBroadcasting])
 
-  // Update helper marker when location changes
+  // Helper marker
   useEffect(() => {
     if (!mapInstanceRef.current || !window.google || !hasHelperLocation) return
 
     if (helperMarkerRef.current) {
-      // Animate marker to new position
-      helperMarkerRef.current.setPosition({ lat: helperLat, lng: helperLng })
+      helperMarkerRef.current.setPosition({ lat: helperLat!, lng: helperLng! })
     } else {
-      // Create helper marker - Bike icon (moving)
       helperMarkerRef.current = new google.maps.Marker({
-        position: { lat: helperLat, lng: helperLng },
+        position: { lat: helperLat!, lng: helperLng! },
         map: mapInstanceRef.current,
         icon: {
           url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-            <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
-              <circle cx="22" cy="22" r="20" fill="#10B981" stroke="white" stroke-width="3"/>
-              <g fill="white" transform="translate(10, 12)">
-                <circle cx="4" cy="14" r="3.5" fill="none" stroke="white" stroke-width="2"/>
-
-                <circle cx="20" cy="14" r="3.5" fill="none" stroke="white" stroke-width="2"/>
-                <path d="M4 14l4-8h5l2 4h5l-2 4" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M13 10l3 4h4" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                <circle cx="9" cy="4" r="2" fill="white"/>
-              </g>
+            <svg width="52" height="52" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="26" cy="26" r="23" fill="#10B981" stroke="white" stroke-width="4"/>
+              <circle cx="26" cy="20" r="7" fill="white"/>
+              <path d="M14 38c0-6.6 5.4-12 12-12s12 5.4 12 12" stroke="white" stroke-width="3" fill="none"/>
             </svg>
           `),
-          scaledSize: new google.maps.Size(44, 44),
-          anchor: new google.maps.Point(22, 22),
-        },
-        title: helperName || 'Helper'
+          scaledSize: new google.maps.Size(52, 52),
+          anchor: new google.maps.Point(26, 26),
+        }
       })
 
-      // Add info window for helper
-      const helperInfo = new google.maps.InfoWindow({
-        content: `<div style="padding:4px;font-weight:bold;color:#10B981">🏍️ ${helperName || 'Helper'}</div>`
-      })
-      helperMarkerRef.current.addListener('click', () => {
-        helperInfo.open(mapInstanceRef.current, helperMarkerRef.current)
-      })
-
-      // Fit bounds ONLY when helper marker is first created (not on every update)
       if (!hasFitBoundsRef.current) {
         const bounds = new google.maps.LatLngBounds()
         bounds.extend({ lat: customerLat, lng: customerLng })
-        bounds.extend({ lat: helperLat, lng: helperLng })
-        mapInstanceRef.current.fitBounds(bounds, { top: 60, right: 60, bottom: 60, left: 60 })
+        bounds.extend({ lat: helperLat!, lng: helperLng! })
+        mapInstanceRef.current.fitBounds(bounds, 60)
         hasFitBoundsRef.current = true
       }
     }
-
-  }, [helperLat, helperLng, hasHelperLocation, customerLat, customerLng, helperName])
+  }, [helperLat, helperLng, hasHelperLocation, customerLat, customerLng])
 
   return (
-    <div className="h-full w-full relative">
-      {/* Map container */}
-      <div ref={mapRef} className="h-full w-full" />
-      
-      {/* Fallback if map not loaded */}
+    <div className="absolute inset-0">
+      <div ref={mapRef} className="w-full h-full" />
       {!mapLoaded && (
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-100 via-teal-50 to-blue-100 flex items-center justify-center">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin text-emerald-500 mx-auto mb-2" />
-            <p className="text-sm text-gray-600">Loading map...</p>
-          </div>
-        </div>
-      )}
-
-      {/* Live indicator */}
-      {hasHelperLocation && (
-        <div className="absolute top-4 left-4 bg-white/95 rounded-full px-3 py-1.5 shadow-lg flex items-center gap-1.5 z-10">
-          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-xs font-medium text-gray-700">Live Tracking</span>
-        </div>
-      )}
-
-      {/* Distance & ETA overlay */}
-      <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-lg z-10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-              <Navigation className="h-5 w-5 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-800">
-                {hasHelperLocation ? `${distance.toFixed(1)} km away` : 'Waiting for location...'}
-              </p>
-              <p className="text-xs text-gray-500">
-                {hasHelperLocation ? `ETA: ~${eta} min` : 'Helper will share location soon'}
-              </p>
-            </div>
-          </div>
-          {hasHelperLocation && (
-            <div className="text-right">
-              <p className="text-xs text-gray-500">Last updated</p>
-              <p className="text-xs font-medium text-emerald-600">Just now</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="absolute top-4 right-4 bg-white/95 rounded-lg p-2 shadow-lg z-10">
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-2">
-            <span className="text-base">🏠</span>
-            <span className="text-xs text-gray-600">Your Location</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-base">🏍️</span>
-            <span className="text-xs text-gray-600">Helper</span>
-          </div>
-          {isBroadcasting && nearbyHelpers && nearbyHelpers.length > 0 && (
-            <>
-              <div className="border-t border-gray-200 my-1"></div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
-                <span className="text-xs text-gray-600">Available</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-gray-400"></span>
-                <span className="text-xs text-gray-600">Busy/Offline</span>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Nearby helpers count badge when broadcasting */}
-      {isBroadcasting && nearbyHelpers && nearbyHelpers.length > 0 && (
-        <div className="absolute top-4 left-4 bg-emerald-500 text-white rounded-full px-3 py-1.5 shadow-lg flex items-center gap-1.5 z-10">
-          <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-          <span className="text-xs font-semibold">{nearbyHelpers.length} helpers nearby</span>
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center">
+          <Loader2 className="w-10 h-10 text-teal-500 animate-spin" />
         </div>
       )}
     </div>
   )
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════════════════════════════
 interface JobDetails {
   id: string
   title: string
@@ -540,6 +480,18 @@ interface JobDetails {
   helper_accepted_at: string | null
   work_started_at: string | null
   work_completed_at: string | null
+  images?: string[]
+  service_type_details?: {
+    estimated_duration?: number
+    confidence?: number
+    helper_brings?: string[]
+    customer_provides?: string[]
+    work_overview?: string
+    materials_needed?: string[]
+    problem_duration?: string
+    error_code?: string
+    videos?: string[]
+  }
   assigned_helper?: {
     id: string
     user_id: string
@@ -557,15 +509,9 @@ interface JobDetails {
   }
 }
 
-const statusSteps = [
-  { key: 'broadcasting', label: 'Finding Helper', icon: RefreshCw },
-  { key: 'accepted', label: 'Helper Assigned', icon: User },
-  { key: 'on_way', label: 'On the Way', icon: Navigation },
-  { key: 'arrived', label: 'Arrived', icon: MapPin },
-  { key: 'in_progress', label: 'Work Started', icon: Clock },
-  { key: 'completed', label: 'Completed', icon: CheckCircle },
-]
-
+// ═══════════════════════════════════════════════════════════════════════════
+// MAIN PAGE - UBER/RAPIDO STYLE FULL SCREEN MAP + BOTTOM SHEET
+// ═══════════════════════════════════════════════════════════════════════════
 export default function JobTrackingPage() {
   const params = useParams()
   const router = useRouter()
@@ -578,750 +524,596 @@ export default function JobTrackingPage() {
   const [completionPopupShown, setCompletionPopupShown] = useState(false)
   const [updatingPayment, setUpdatingPayment] = useState(false)
   const [showPaymentOptions, setShowPaymentOptions] = useState(false)
-  const [nearbyHelpers, setNearbyHelpers] = useState<Array<{
-    id: string
-    lat: number
-    lng: number
-    name: string
-    rating: number
-    isOnline: boolean
-    isOnJob: boolean
-    distance: number
-  }>>([])
+  const [nearbyHelpers, setNearbyHelpers] = useState<any[]>([])
+  const [activeTab, setActiveTab] = useState<'track' | 'details'>('track')
+  const [showImageModal, setShowImageModal] = useState<string | null>(null)
 
-  // Fetch nearby helpers when broadcasting
   async function fetchNearbyHelpers(lat: number, lng: number, categoryId?: string) {
     try {
-      console.log('🔍 Fetching nearby helpers...', { lat, lng, categoryId })
-      const params = new URLSearchParams({
-        lat: lat.toString(),
-        lng: lng.toString(),
-        radius: '50' // 50km radius for better coverage
-      })
-      if (categoryId) {
-        params.append('categoryId', categoryId)
-      }
-
+      const params = new URLSearchParams({ lat: lat.toString(), lng: lng.toString(), radius: '50' })
+      if (categoryId) params.append('categoryId', categoryId)
       const response = await fetch(`/api/helpers/nearby?${params}`)
-      console.log('📡 API Response status:', response.status)
-      
       if (response.ok) {
         const data = await response.json()
-        console.log(`🏍️ Found ${data.count} nearby helpers (total approved: ${data.totalApproved})`, data.helpers)
         setNearbyHelpers(data.helpers || [])
-      } else {
-        const errorData = await response.json()
-        console.error('❌ API Error:', errorData)
       }
-    } catch (error) {
-      console.error('❌ Failed to fetch nearby helpers:', error)
-    }
+    } catch (err) { console.error(err) }
   }
 
   useEffect(() => {
     loadJobDetails()
-    
-    // Subscribe to real-time updates
     const supabase = createClient()
     const channel = supabase
       .channel(`job-${requestId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'service_requests',
-          filter: `id=eq.${requestId}`
-        },
-        (payload) => {
-          console.log('📍 Real-time update received:', payload)
-          loadJobDetails()
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `id=eq.${requestId}` }, () => loadJobDetails())
       .subscribe()
-
-    // Poll for helper location updates more frequently for live tracking
-    const locationInterval = setInterval(() => {
-      loadJobDetails()
-    }, 5000) // Every 5 seconds for smoother live tracking
-
-    return () => {
-      supabase.removeChannel(channel)
-      clearInterval(locationInterval)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const interval = setInterval(loadJobDetails, 5000)
+    return () => { supabase.removeChannel(channel); clearInterval(interval) }
   }, [requestId])
 
   async function loadJobDetails() {
     try {
-      console.log('🔍 Loading job details for:', requestId)
-      
-      // Use API endpoint to bypass RLS issues
       const response = await fetch(`/api/requests/${requestId}`)
-      
-      if (!response.ok) {
-        const errorData = await response.json()
-        console.error('❌ API Error:', errorData)
-        throw new Error(errorData.error || 'Failed to load job')
-      }
-
+      if (!response.ok) throw new Error('Failed')
       const data = await response.json()
-      console.log('✅ Job loaded:', data)
-
-      // Transform the data with fallbacks for missing fields
-      const transformedData: JobDetails = {
-        id: data.id,
-        title: data.title || 'Service Request',
-        description: data.description || '',
-        status: data.status || 'open',
-        broadcast_status: data.broadcast_status || 'broadcasting',
-        service_address: data.service_address || data.address_line1 || 'Address not available',
-        estimated_price: data.estimated_price || 0,
-        payment_method: data.payment_method || 'cash',
-        start_otp: data.start_otp || null,
-        end_otp: data.end_otp || null,
-        urgency_level: data.urgency_level || 'normal',
+      const transformed: JobDetails = {
+        id: data.id, title: data.title || 'Service Request', description: data.description || '',
+        status: data.status || 'open', broadcast_status: data.broadcast_status || 'broadcasting',
+        service_address: data.service_address || data.address_line1 || '',
+        estimated_price: data.estimated_price || 0, payment_method: data.payment_method || 'cash',
+        start_otp: data.start_otp, end_otp: data.end_otp, urgency_level: data.urgency_level || 'normal',
         service_location_lat: data.service_location_lat || data.latitude || 0,
         service_location_lng: data.service_location_lng || data.longitude || 0,
-        helper_location_lat: data.helper_location_lat || null,
-        helper_location_lng: data.helper_location_lng || null,
-        created_at: data.created_at,
-        helper_accepted_at: data.helper_accepted_at || null,
-        work_started_at: data.work_started_at || null,
-        work_completed_at: data.work_completed_at || null,
-        assigned_helper: data.assigned_helper || null,
-        category: data.category || undefined
+        helper_location_lat: data.helper_location_lat, helper_location_lng: data.helper_location_lng,
+        created_at: data.created_at, helper_accepted_at: data.helper_accepted_at,
+        work_started_at: data.work_started_at, work_completed_at: data.work_completed_at,
+        assigned_helper: data.assigned_helper, category: data.category,
+        images: data.images || [],
+        service_type_details: data.service_type_details || {}
       }
-
-      setJob(transformedData)
-
-      // Fetch nearby helpers when broadcasting (not yet assigned)
-      console.log('📊 Job status:', transformedData.broadcast_status, 'Assigned:', !!transformedData.assigned_helper)
-      if (transformedData.broadcast_status === 'broadcasting' && !transformedData.assigned_helper) {
-        console.log('✅ Broadcasting - fetching nearby helpers')
-        if (transformedData.service_location_lat && transformedData.service_location_lng) {
-          fetchNearbyHelpers(
-            transformedData.service_location_lat,
-            transformedData.service_location_lng,
-            data.category_id // Pass category to filter relevant helpers
-          )
-        } else {
-          console.log('❌ No service location for job')
+      setJob(transformed)
+      
+      if (transformed.broadcast_status === 'broadcasting' && !transformed.assigned_helper) {
+        if (transformed.service_location_lat && transformed.service_location_lng) {
+          fetchNearbyHelpers(transformed.service_location_lat, transformed.service_location_lng, data.category_id)
         }
-      } else {
-        console.log('ℹ️ Not broadcasting or already assigned - clearing nearby helpers')
-        // Clear nearby helpers once assigned
-        setNearbyHelpers([])
-      }
+      } else { setNearbyHelpers([]) }
 
-      // Show completion popup when job is completed (only once)
-      if (transformedData.status === 'completed' && !completionPopupShown) {
+      if (transformed.status === 'completed' && !completionPopupShown) {
         setShowCompletionPopup(true)
         setCompletionPopupShown(true)
       }
-    } catch (error) {
-      console.error('Failed to load job:', error)
-    } finally {
-      setLoading(false)
-    }
+    } catch (err) { console.error(err) }
+    finally { setLoading(false) }
   }
 
   async function cancelJob() {
     if (!job) return
-    
     setCancelling(true)
     try {
       const supabase = createClient()
-      const { error } = await supabase
-        .from('service_requests')
-        .update({
-          status: 'cancelled',
-          broadcast_status: 'cancelled',
-          cancellation_reason: 'Cancelled by customer',
-          cancelled_by: 'customer'
-        })
-        .eq('id', requestId)
-
-      if (error) throw error
-
-      toast.success('Job cancelled successfully')
+      await supabase.from('service_requests').update({
+        status: 'cancelled', broadcast_status: 'cancelled',
+        cancellation_reason: 'Cancelled by customer', cancelled_by: 'customer'
+      }).eq('id', requestId)
+      toast.success('Cancelled')
       router.push('/customer/requests')
-    } catch (error) {
-      console.error('Failed to cancel:', error)
-      toast.error('Failed to cancel job')
-    } finally {
-      setCancelling(false)
-    }
+    } catch { toast.error('Failed') }
+    finally { setCancelling(false) }
   }
 
   async function updatePaymentMethod(method: string) {
-    if (!job || job.work_started_at) {
-      toast.error('Cannot change payment method after work has started')
-      return
-    }
-    
+    if (!job || job.work_started_at) return
     setUpdatingPayment(true)
     try {
       const supabase = createClient()
-      const { error } = await supabase
-        .from('service_requests')
-        .update({ payment_method: method })
-        .eq('id', requestId)
-
-      if (error) throw error
-
+      await supabase.from('service_requests').update({ payment_method: method }).eq('id', requestId)
       setJob(prev => prev ? { ...prev, payment_method: method } : null)
-      toast.success(`Payment method changed to ${method.toUpperCase()}`)
+      toast.success(`Payment: ${method}`)
       setShowPaymentOptions(false)
-    } catch (error) {
-      console.error('Failed to update payment:', error)
-      toast.error('Failed to update payment method')
-    } finally {
-      setUpdatingPayment(false)
-    }
-  }
-
-  // Initiate online payment after job completion
-  async function initiatePayment() {
-    if (!job) return
-    
-    try {
-      // Close the completion popup first
-      setShowCompletionPopup(false)
-      
-      // Redirect to payment page with the request details
-      router.push(`/customer/requests/${requestId}/pay`)
-    } catch (error: any) {
-      console.error('Payment error:', error)
-      toast.error(error.message || 'Failed to initiate payment')
-    }
+    } catch { toast.error('Failed') }
+    finally { setUpdatingPayment(false) }
   }
 
   async function submitQuickRating(rating: number) {
-    if (!job?.assigned_helper) {
-      toast.error('Unable to submit rating')
-      return
-    }
-
+    if (!job?.assigned_helper) return
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
-
-      // Get helper_profiles.id
+      if (!user) return
       let helperProfileId = job.assigned_helper.id
-      
       if (job.assigned_helper.user_id && job.assigned_helper.id === job.assigned_helper.user_id) {
-        const { data: helperProfile } = await supabase
-          .from('helper_profiles')
-          .select('id')
-          .eq('user_id', job.assigned_helper.user_id)
-          .single()
-        
-        if (helperProfile) {
-          helperProfileId = helperProfile.id
-        }
+        const { data } = await supabase.from('helper_profiles').select('id').eq('user_id', job.assigned_helper.user_id).single()
+        if (data) helperProfileId = data.id
       }
-
-      // Insert quick rating
-      const { error } = await supabase
-        .from('reviews')
-        .insert({
-          request_id: requestId,
-          customer_id: user.id,
-          helper_id: helperProfileId,
-          rating: rating,
-          review: null
-        })
-
-      if (error) {
-        // Check if it's a duplicate
-        if (error.code === '23505') {
-          toast.info('You have already rated this job')
-        } else {
-          throw error
-        }
-      } else {
-        // Update helper's average rating
-        try {
-          await supabase.rpc('update_helper_rating', {
-            helper_uuid: helperProfileId
-          })
-        } catch {
-          // Ignore if function doesn't exist
-        }
-
-        toast.success(`Thanks for the ${rating}-star rating! ⭐`)
-      }
-      
+      await supabase.from('reviews').insert({ request_id: requestId, customer_id: user.id, helper_id: helperProfileId, rating })
+      toast.success(`${rating} stars!`)
       setShowCompletionPopup(false)
-    } catch (error) {
-      console.error('Failed to submit rating:', error)
-      toast.error('Failed to submit rating')
-    }
+    } catch { toast.error('Failed') }
   }
 
-  function copyOTP(otp: string) {
-    navigator.clipboard.writeText(otp)
-    toast.success('OTP copied to clipboard')
-  }
+  function copyOTP(otp: string) { navigator.clipboard.writeText(otp); toast.success('Copied!') }
 
-  function callHelper() {
-    if (job?.assigned_helper?.profile?.phone) {
-      window.location.href = `tel:${job.assigned_helper.profile.phone}`
-    }
-  }
-
-  function messageHelper() {
-    // Open chat or WhatsApp
-    if (job?.assigned_helper?.profile?.phone) {
-      window.open(`https://wa.me/91${job.assigned_helper.profile.phone}`, '_blank')
-    }
-  }
-
+  // ═══ LOADING STATE ═══
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="h-screen bg-gradient-to-br from-slate-900 via-teal-900 to-emerald-900 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-10 w-10 animate-spin text-emerald-500 mx-auto mb-3" />
-          <p className="text-gray-600">Loading job details...</p>
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center mx-auto mb-4 animate-pulse shadow-2xl shadow-teal-500/50">
+            <Loader2 className="w-10 h-10 text-white animate-spin" />
+          </div>
+          <p className="text-white/80 font-medium">Loading...</p>
         </div>
       </div>
     )
   }
 
+  // ═══ NOT FOUND STATE ═══
   if (!job) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
-          <p className="text-gray-800 font-semibold">Job not found</p>
-          <Button onClick={() => router.push('/customer/requests')} className="mt-4">
-            Go to Requests
+      <div className="h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-8 shadow-xl text-center max-w-sm">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-xl font-bold mb-2">Not Found</h2>
+          <p className="text-gray-500 mb-6 text-sm">This booking doesn&apos;t exist</p>
+          <Button onClick={() => router.push('/customer/requests')} className="w-full h-11 bg-teal-500 text-white rounded-xl font-semibold">
+            Go Back
           </Button>
         </div>
       </div>
     )
   }
 
-  const currentStepIndex = statusSteps.findIndex(s => s.key === job.broadcast_status) || 0
-  const isJobActive = !['cancelled', 'completed'].includes(job.broadcast_status)
   const isBroadcasting = job.broadcast_status === 'broadcasting' && !job.assigned_helper
+  const isActive = !['cancelled', 'completed'].includes(job.broadcast_status)
+  const hasHelper = job.helper_location_lat && job.helper_location_lng
+  const hasImages = job.images && job.images.length > 0
+  const hasMaterials = job.service_type_details?.materials_needed && job.service_type_details.materials_needed.length > 0
+  const hasHelperBrings = job.service_type_details?.helper_brings && job.service_type_details.helper_brings.length > 0
+  const hasCustomerProvides = job.service_type_details?.customer_provides && job.service_type_details.customer_provides.length > 0
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      {/* Map Section - Larger for live tracking */}
-      <div className="h-80 relative">
-        {job.service_location_lat && job.service_location_lng ? (
-          <LiveTrackingMap
-            customerLat={job.service_location_lat}
-            customerLng={job.service_location_lng}
-            helperLat={job.helper_location_lat}
-            helperLng={job.helper_location_lng}
-            helperName={job.assigned_helper?.profile?.full_name}
-            nearbyHelpers={isBroadcasting ? nearbyHelpers : undefined}
-            isBroadcasting={isBroadcasting}
-          />
-        ) : (
-          <div className="h-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
-            <MapPin className="h-12 w-12 text-emerald-500" />
+    <div className="h-screen flex flex-col bg-gray-100">
+      {/* ═══════════ FULL SCREEN MAP ═══════════ */}
+      <div className={`relative transition-all duration-300 ${activeTab === 'details' ? 'h-32' : 'flex-1'}`} style={{ minHeight: activeTab === 'details' ? '8rem' : '45vh' }}>
+        <LiveTrackingMap
+          customerLat={job.service_location_lat}
+          customerLng={job.service_location_lng}
+          helperLat={job.helper_location_lat}
+          helperLng={job.helper_location_lng}
+          helperName={job.assigned_helper?.profile?.full_name}
+          nearbyHelpers={isBroadcasting ? nearbyHelpers : undefined}
+          isBroadcasting={isBroadcasting}
+        />
+
+        {/* Top Nav */}
+        <div className="absolute top-4 left-4 right-4 flex justify-between z-10">
+          <button onClick={() => router.back()} className="w-11 h-11 bg-white rounded-xl shadow-lg flex items-center justify-center">
+            <ArrowLeft className="w-5 h-5 text-gray-700" />
+          </button>
+          <div className="bg-white rounded-xl shadow-lg px-4 py-2.5">
+            <span className="font-bold text-gray-800 text-sm">{job.category?.name || 'Service'}</span>
+          </div>
+        </div>
+
+        {/* Live Badge */}
+        {hasHelper && activeTab === 'track' && (
+          <div className="absolute top-16 left-4 bg-green-500 text-white rounded-full px-3 py-1.5 shadow-lg flex items-center gap-2 z-10">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+            </span>
+            <span className="text-xs font-bold">LIVE</span>
           </div>
         )}
-        
-        {/* Back Button */}
-        <button
-          onClick={() => router.back()}
-          className="absolute top-4 left-4 bg-white shadow-lg rounded-full p-2 z-20"
-        >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
       </div>
 
-      {/* Content */}
-      <div className="px-4 -mt-8 relative z-10">
-        {/* Status Card */}
-        <Card className="mb-4 shadow-lg">
-          <CardContent className="p-5">
-            {/* Status Badge */}
-            <div className="flex items-center justify-between mb-4">
-              <Badge className={`
-                ${job.broadcast_status === 'broadcasting' ? 'bg-yellow-100 text-yellow-700' : ''}
-                ${job.broadcast_status === 'accepted' ? 'bg-blue-100 text-blue-700' : ''}
-                ${job.broadcast_status === 'completed' ? 'bg-green-100 text-green-700' : ''}
-                ${job.broadcast_status === 'cancelled' ? 'bg-red-100 text-red-700' : ''}
-              `}>
-                {job.broadcast_status === 'broadcasting' && '🔄 Finding Helper...'}
-                {job.broadcast_status === 'accepted' && '✓ Helper Assigned'}
-                {job.broadcast_status === 'completed' && '✓ Completed'}
-                {job.broadcast_status === 'cancelled' && '✗ Cancelled'}
-              </Badge>
-              <span className="text-sm text-gray-500">
-                {job.category?.name}
-              </span>
-            </div>
+      {/* ═══════════ BOTTOM SHEET ═══════════ */}
+      <div className={`bg-white rounded-t-[1.75rem] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] relative -mt-6 z-20 overflow-hidden flex flex-col transition-all duration-300 ${activeTab === 'details' ? 'flex-1' : 'max-h-[55vh]'}`}>
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 bg-gray-300 rounded-full" />
+        </div>
 
-            {/* Progress Steps */}
-            {isJobActive && (
-              <div className="flex items-center justify-between mb-6">
-                {statusSteps.slice(0, 4).map((step, idx) => {
-                  const isActive = idx <= currentStepIndex
-                  const StepIcon = step.icon
-                  return (
-                    <div key={step.key} className="flex flex-col items-center">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        isActive ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-400'
-                      }`}>
-                        <StepIcon className="h-4 w-4" />
-                      </div>
-                      <span className={`text-[10px] mt-1 ${isActive ? 'text-emerald-600' : 'text-gray-400'}`}>
-                        {step.label}
-                      </span>
-                      {idx < 3 && (
-                        <div className={`absolute h-0.5 w-full ${isActive ? 'bg-emerald-500' : 'bg-gray-200'}`} 
-                             style={{ transform: 'translateX(50%)' }} />
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+        {/* Tab Switcher */}
+        <div className="px-5 mb-3">
+          <div className="bg-gray-100 rounded-xl p-1 flex gap-1">
+            <button
+              onClick={() => setActiveTab('track')}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                activeTab === 'track' 
+                  ? 'bg-white text-teal-600 shadow-sm' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Navigation className="w-4 h-4" />
+              Track
+            </button>
+            <button
+              onClick={() => setActiveTab('details')}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                activeTab === 'details' 
+                  ? 'bg-white text-teal-600 shadow-sm' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              Details
+              {(hasImages || hasMaterials) && (
+                <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
+              )}
+            </button>
+          </div>
+        </div>
 
-            {/* Broadcasting Animation */}
-            {job.broadcast_status === 'broadcasting' && (
-              <div className="text-center py-6">
-                <div className="relative inline-block">
-                  <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <RefreshCw className="h-8 w-8 text-emerald-500 animate-spin" />
-                  </div>
-                  <div className="absolute inset-0 rounded-full border-4 border-emerald-300 animate-ping opacity-50" />
-                </div>
-                <p className="text-gray-700 font-semibold mt-4">Finding nearby helpers...</p>
-                <p className="text-sm text-gray-500 mt-1">This usually takes 1-2 minutes</p>
-                
-                {/* Show nearby helpers count */}
-                {nearbyHelpers.length > 0 && (
-                  <div className="mt-4 bg-emerald-50 rounded-xl p-3 inline-block">
-                    <div className="flex items-center gap-2">
-                      <div className="flex -space-x-2">
-                        {nearbyHelpers.slice(0, 4).map((helper, idx) => (
-                          <div 
-                            key={helper.id}
-                            className="w-8 h-8 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white text-xs font-bold"
-                            style={{ zIndex: 4 - idx }}
-                          >
-                            {helper.name.charAt(0)}
-                          </div>
-                        ))}
-                        {nearbyHelpers.length > 4 && (
-                          <div className="w-8 h-8 rounded-full bg-gray-400 border-2 border-white flex items-center justify-center text-white text-xs font-bold">
-                            +{nearbyHelpers.length - 4}
-                          </div>
-                        )}
+        <div className="px-5 pb-6 overflow-y-auto flex-1">
+          {/* ═══════════ TRACK TAB ═══════════ */}
+          {activeTab === 'track' && (
+            <>
+              {/* BROADCASTING */}
+              {isBroadcasting && <SearchingAnimation nearbyHelpers={nearbyHelpers} />}
+
+              {/* HELPER ASSIGNED */}
+              {job.assigned_helper && (
+                <>
+                  {/* Status */}
+                  <div className={`rounded-2xl p-4 mb-4 ${
+                    job.broadcast_status === 'in_progress' ? 'bg-gradient-to-r from-indigo-500 to-purple-600'
+                    : job.broadcast_status === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+                    : 'bg-gradient-to-r from-teal-500 to-emerald-600'
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center">
+                        {job.broadcast_status === 'in_progress' ? <Timer className="w-5 h-5 text-white" />
+                        : job.broadcast_status === 'completed' ? <CheckCircle2 className="w-5 h-5 text-white" />
+                        : <Navigation className="w-5 h-5 text-white" />}
                       </div>
-                      <div className="text-left">
-                        <p className="text-sm font-semibold text-emerald-700">
-                          {nearbyHelpers.filter(h => h.isOnline && !h.isOnJob).length} available nearby
+                      <div>
+                        <p className="text-white font-bold">
+                          {job.broadcast_status === 'accepted' && 'Helper Assigned'}
+                          {job.broadcast_status === 'on_way' && 'On the Way'}
+                          {job.broadcast_status === 'arrived' && 'Arrived'}
+                          {job.broadcast_status === 'in_progress' && 'Working'}
+                          {job.broadcast_status === 'completed' && 'Completed'}
                         </p>
-                        <p className="text-xs text-emerald-600">
-                          {nearbyHelpers.length} total helpers in your area
+                        <p className="text-white/70 text-sm">
+                          {job.broadcast_status === 'accepted' && 'Getting ready'}
+                          {job.broadcast_status === 'on_way' && 'Coming to you'}
+                          {job.broadcast_status === 'arrived' && 'Ready to start'}
+                          {job.broadcast_status === 'in_progress' && 'Service ongoing'}
+                          {job.broadcast_status === 'completed' && 'All done!'}
                         </p>
                       </div>
                     </div>
                   </div>
-                )}
-              </div>
-            )}
 
-            {/* Helper Info (when assigned) */}
-            {job.assigned_helper && (
-              <div className="border-t border-gray-100 pt-4 mt-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-14 h-14 rounded-full bg-gray-100 overflow-hidden relative">
-                      {job.assigned_helper.profile?.avatar_url ? (
-                        <Image 
-                          src={job.assigned_helper.profile.avatar_url} 
-                          alt=""
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <User className="h-6 w-6 text-gray-400" />
+                  {/* Helper Card */}
+                  <div className="bg-gray-50 rounded-2xl p-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center overflow-hidden">
+                          {job.assigned_helper.profile?.avatar_url ? (
+                            <Image src={job.assigned_helper.profile.avatar_url} alt="" fill className="object-cover" />
+                          ) : (
+                            <User className="w-7 h-7 text-white" />
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {job.assigned_helper.profile?.full_name || 'Helper'}
-                      </p>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                          <span>{job.assigned_helper.avg_rating > 0 ? job.assigned_helper.avg_rating.toFixed(1) : 'New'}</span>
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-md flex items-center justify-center border-2 border-white">
+                          <BadgeCheck className="w-3 h-3 text-white" />
                         </div>
-                        <span>•</span>
-                        <span>
-                          {job.assigned_helper.total_jobs_completed > 0 
-                            ? `${job.assigned_helper.total_jobs_completed} jobs` 
-                            : 'New Helper'}
-                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold text-gray-900">{job.assigned_helper.profile?.full_name || 'Helper'}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                          <span className="text-xs font-semibold text-gray-600">{job.assigned_helper.avg_rating > 0 ? job.assigned_helper.avg_rating.toFixed(1) : 'New'}</span>
+                          <span className="text-gray-300">•</span>
+                          <span className="text-xs text-gray-500">{job.assigned_helper.total_jobs_completed || 0} jobs</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <a href={`tel:${job.assigned_helper.profile?.phone}`} className="w-10 h-10 rounded-xl bg-teal-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
+                          <Phone className="w-4 h-4 text-white" />
+                        </a>
+                        <a href={`https://wa.me/91${job.assigned_helper.profile?.phone}`} target="_blank" className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center shadow-lg shadow-green-500/30">
+                          <MessageSquare className="w-4 h-4 text-white" />
+                        </a>
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Contact Buttons */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={callHelper}
-                      className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center hover:bg-emerald-200 transition-colors"
-                    >
-                      <Phone className="h-5 w-5 text-emerald-600" />
-                    </button>
-                    <button
-                      onClick={messageHelper}
-                      className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center hover:bg-blue-200 transition-colors"
-                    >
-                      <MessageSquare className="h-5 w-5 text-blue-600" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
-        {/* OTP Section - Always show both OTPs prominently */}
-        {(job.start_otp || job.end_otp) && (
-          <Card className="mb-4 border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <Shield className="h-5 w-5 text-purple-600" />
-                <span className="font-bold text-purple-800">Your OTP Codes</span>
-              </div>
-              <p className="text-sm text-gray-600 mb-4">
-                Keep these codes safe. Share with helper only when needed.
-              </p>
-              
-              {/* Start OTP */}
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`text-sm font-semibold ${
-                    job.work_started_at ? 'text-gray-400' : 'text-emerald-700'
-                  }`}>
-                    🟢 START OTP {job.work_started_at && '(Used)'}
-                  </span>
-                </div>
-                <div className={`flex items-center justify-between rounded-xl p-4 border-2 ${
-                  job.work_started_at 
-                    ? 'bg-gray-100 border-gray-200' 
-                    : 'bg-white border-emerald-300 shadow-sm'
-                }`}>
-                  <div className={`text-3xl font-bold tracking-[0.4em] ${
-                    job.work_started_at ? 'text-gray-400' : 'text-emerald-600'
-                  }`}>
-                    {job.start_otp || '------'}
-                  </div>
-                  {job.start_otp && !job.work_started_at && (
-                    <button
-                      onClick={() => copyOTP(job.start_otp!)}
-                      className="p-2 hover:bg-emerald-100 rounded-lg transition-colors"
-                    >
-                      <Copy className="h-5 w-5 text-emerald-600" />
-                    </button>
+                  {/* OTPs */}
+                  {(job.start_otp || job.end_otp) && (
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className={`rounded-xl p-3 ${job.work_started_at ? 'bg-gray-100' : 'bg-green-50 border border-green-200'}`}>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <div className={`w-1.5 h-1.5 rounded-full ${job.work_started_at ? 'bg-gray-400' : 'bg-green-500'}`} />
+                          <span className={`text-[10px] font-bold ${job.work_started_at ? 'text-gray-400' : 'text-green-700'}`}>START</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className={`text-xl font-black font-mono tracking-wide ${job.work_started_at ? 'text-gray-400' : 'text-green-600'}`}>{job.start_otp || '----'}</span>
+                          {!job.work_started_at && job.start_otp && (
+                            <button onClick={() => copyOTP(job.start_otp!)} className="p-1.5 bg-green-500 rounded-md">
+                              <Copy className="w-3 h-3 text-white" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className={`rounded-xl p-3 ${job.work_completed_at ? 'bg-gray-100' : !job.work_started_at ? 'bg-gray-100' : 'bg-blue-50 border border-blue-200'}`}>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <div className={`w-1.5 h-1.5 rounded-full ${job.work_completed_at ? 'bg-gray-400' : !job.work_started_at ? 'bg-gray-400' : 'bg-blue-500'}`} />
+                          <span className={`text-[10px] font-bold ${job.work_completed_at ? 'text-gray-400' : !job.work_started_at ? 'text-gray-400' : 'text-blue-700'}`}>END</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className={`text-xl font-black font-mono tracking-wide ${job.work_completed_at ? 'text-gray-400' : !job.work_started_at ? 'text-gray-300' : 'text-blue-600'}`}>{job.end_otp || '----'}</span>
+                          {job.work_started_at && !job.work_completed_at && job.end_otp && (
+                            <button onClick={() => copyOTP(job.end_otp!)} className="p-1.5 bg-blue-500 rounded-md">
+                              <Copy className="w-3 h-3 text-white" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   )}
-                </div>
-                {!job.work_started_at && job.assigned_helper && (
-                  <p className="text-xs text-emerald-600 mt-2">👆 Share this when helper arrives to start work</p>
-                )}
-              </div>
+                </>
+              )}
 
-              {/* End OTP */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`text-sm font-semibold ${
-                    job.work_completed_at ? 'text-gray-400' : !job.work_started_at ? 'text-gray-400' : 'text-blue-700'
-                  }`}>
-                    🔵 END OTP {job.work_completed_at && '(Used)'}
-                  </span>
+              {/* Quick Info */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-4">
+                <div className="p-3 border-b border-gray-100 flex items-center justify-between">
+                  <span className="font-bold text-gray-800 text-sm">Quick Info</span>
+                  <span className="text-2xl font-black text-teal-600">₹{job.estimated_price}</span>
                 </div>
-                <div className={`flex items-center justify-between rounded-xl p-4 border-2 ${
-                  job.work_completed_at 
-                    ? 'bg-gray-100 border-gray-200'
-                    : !job.work_started_at
-                    ? 'bg-gray-50 border-gray-200'
-                    : 'bg-white border-blue-300 shadow-sm'
-                }`}>
-                  <div className={`text-3xl font-bold tracking-[0.4em] ${
-                    job.work_completed_at 
-                      ? 'text-gray-400' 
-                      : !job.work_started_at
-                      ? 'text-gray-400'
-                      : 'text-blue-600'
-                  }`}>
-                    {job.end_otp || '------'}
+                <div className="p-3 space-y-2.5">
+                  <div className="flex items-start gap-2.5">
+                    <MapPin className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700 text-sm">{job.service_address || 'Not set'}</span>
                   </div>
-                  {job.end_otp && job.work_started_at && !job.work_completed_at && (
-                    <button
-                      onClick={() => copyOTP(job.end_otp!)}
-                      className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
-                    >
-                      <Copy className="h-5 w-5 text-blue-600" />
-                    </button>
-                  )}
-                </div>
-                {job.work_started_at && !job.work_completed_at && (
-                  <p className="text-xs text-blue-600 mt-2">👆 Share this when work is done to complete the job</p>
-                )}
-                {!job.work_started_at && (
-                  <p className="text-xs text-gray-400 mt-2">Available after work starts</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Job Details */}
-        <Card className="mb-4">
-          <CardContent className="p-5">
-            <h3 className="font-semibold text-gray-900 mb-3">Job Details</h3>
-            
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Service Address</p>
-                  <p className="text-gray-800">{job.service_address}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <IndianRupee className="h-5 w-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Amount</p>
-                  <p className="text-gray-800 font-semibold">₹{job.estimated_price}</p>
-                </div>
-              </div>
-
-              {/* Payment Method with Change Option */}
-              <div className="flex items-start gap-3">
-                {job.payment_method === 'upi' ? (
-                  <Smartphone className="h-5 w-5 text-gray-400 mt-0.5" />
-                ) : job.payment_method === 'card' ? (
-                  <CreditCard className="h-5 w-5 text-gray-400 mt-0.5" />
-                ) : (
-                  <Banknote className="h-5 w-5 text-gray-400 mt-0.5" />
-                )}
-                <div className="flex-1">
-                  <p className="text-sm text-gray-500">Payment Method</p>
-                  <div className="flex items-center gap-2">
-                    <p className="text-gray-800 capitalize font-medium">{job.payment_method || 'Cash'}</p>
+                  <div className="flex items-center gap-2.5">
+                    {job.payment_method === 'cash' ? <Banknote className="w-4 h-4 text-amber-500" /> : <CreditCard className="w-4 h-4 text-blue-500" />}
+                    <span className="text-gray-700 text-sm capitalize">{job.payment_method || 'Cash'}</span>
                     {!job.work_started_at && (
-                      <button
-                        onClick={() => setShowPaymentOptions(!showPaymentOptions)}
-                        className="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1"
-                      >
-                        Change <ChevronDown className={`h-3 w-3 transition-transform ${showPaymentOptions ? 'rotate-180' : ''}`} />
-                      </button>
+                      <button onClick={() => setShowPaymentOptions(!showPaymentOptions)} className="text-teal-600 text-xs font-semibold ml-auto">Change</button>
                     )}
                   </div>
-                  
-                  {/* Payment Options Dropdown */}
-                  {showPaymentOptions && !job.work_started_at && (
-                    <div className="mt-3 flex gap-2">
-                      <button
-                        onClick={() => updatePaymentMethod('cash')}
-                        disabled={updatingPayment || job.payment_method === 'cash'}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border-2 transition-all ${
-                          job.payment_method === 'cash'
-                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                        }`}
-                      >
-                        <Banknote className="h-4 w-4" />
-                        <span className="text-sm font-medium">Cash</span>
-                      </button>
-                      <button
-                        onClick={() => updatePaymentMethod('upi')}
-                        disabled={updatingPayment || job.payment_method === 'upi'}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border-2 transition-all ${
-                          job.payment_method === 'upi'
-                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                        }`}
-                      >
-                        <Smartphone className="h-4 w-4" />
-                        <span className="text-sm font-medium">UPI</span>
-                      </button>
-                      <button
-                        onClick={() => updatePaymentMethod('card')}
-                        disabled={updatingPayment || job.payment_method === 'card'}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border-2 transition-all ${
-                          job.payment_method === 'card'
-                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                        }`}
-                      >
-                        <CreditCard className="h-4 w-4" />
-                        <span className="text-sm font-medium">Card</span>
-                      </button>
+                  {showPaymentOptions && (
+                    <div className="flex gap-2">
+                      {['cash', 'upi', 'card'].map((m) => (
+                        <button key={m} onClick={() => updatePaymentMethod(m)} className={`flex-1 py-1.5 rounded-lg text-xs font-medium ${job.payment_method === m ? 'bg-teal-500 text-white' : 'bg-gray-100 text-gray-700'}`}>
+                          {m.toUpperCase()}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
               </div>
+
+              {/* View Details Button */}
+              <button 
+                onClick={() => setActiveTab('details')}
+                className="w-full py-3 bg-gray-50 rounded-xl flex items-center justify-center gap-2 text-gray-600 font-medium hover:bg-gray-100 transition-colors mb-4"
+              >
+                <Eye className="w-4 h-4" />
+                View Full Details
+                <ChevronDown className="w-4 h-4" />
+              </button>
+
+              {/* Actions */}
+              {isActive && job.broadcast_status !== 'in_progress' && (
+                <Button variant="outline" onClick={cancelJob} disabled={cancelling} className="w-full h-11 border-red-200 text-red-600 hover:bg-red-50 rounded-xl font-semibold">
+                  {cancelling ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <XCircle className="w-4 h-4 mr-2" />}
+                  Cancel
+                </Button>
+              )}
+              {job.broadcast_status === 'completed' && (
+                <Button onClick={() => router.push(`/customer/requests/${requestId}/rate`)} className="w-full h-11 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-teal-500/30">
+                  <Star className="w-4 h-4 mr-2" /> Rate Helper
+                </Button>
+              )}
+            </>
+          )}
+
+          {/* ═══════════ DETAILS TAB ═══════════ */}
+          {activeTab === 'details' && (
+            <div className="space-y-4">
+              {/* Price & Time Summary */}
+              <div className="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl p-4 text-white">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-white/70 text-sm">Estimated Cost</p>
+                    <p className="text-3xl font-black">₹{job.estimated_price}</p>
+                  </div>
+                  {job.service_type_details?.estimated_duration && (
+                    <div className="text-right">
+                      <p className="text-white/70 text-sm">Est. Duration</p>
+                      <p className="text-2xl font-bold">{job.service_type_details.estimated_duration} min</p>
+                    </div>
+                  )}
+                </div>
+                {job.service_type_details?.confidence && (
+                  <div className="bg-white/20 rounded-lg px-3 py-2 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    <span className="text-sm">AI Confidence: {job.service_type_details.confidence}%</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Uploaded Photos */}
+              {hasImages && (
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="p-3 border-b border-gray-100 flex items-center gap-2">
+                    <Camera className="w-4 h-4 text-blue-500" />
+                    <span className="font-bold text-gray-800 text-sm">Your Photos ({job.images!.length})</span>
+                  </div>
+                  <div className="p-3">
+                    <div className="grid grid-cols-3 gap-2">
+                      {job.images!.map((img, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setShowImageModal(img)}
+                          className="aspect-square rounded-lg overflow-hidden relative bg-gray-100 hover:opacity-90 transition-opacity"
+                        >
+                          <Image src={img} alt={`Photo ${idx + 1}`} fill className="object-cover" />
+                          <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center">
+                            <Eye className="w-5 h-5 text-white opacity-0 hover:opacity-100" />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Problem Description */}
+              {job.description && (
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="p-3 border-b border-gray-100 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-purple-500" />
+                    <span className="font-bold text-gray-800 text-sm">Problem Description</span>
+                  </div>
+                  <div className="p-3">
+                    <p className="text-gray-700 text-sm">{job.description}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Work Overview */}
+              {job.service_type_details?.work_overview && (
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="p-3 border-b border-gray-100 flex items-center gap-2">
+                    <Info className="w-4 h-4 text-teal-500" />
+                    <span className="font-bold text-gray-800 text-sm">Work Overview</span>
+                  </div>
+                  <div className="p-3">
+                    <p className="text-gray-700 text-sm">{job.service_type_details.work_overview}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Materials Needed */}
+              {hasMaterials && (
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="p-3 border-b border-gray-100 flex items-center gap-2">
+                    <Package className="w-4 h-4 text-orange-500" />
+                    <span className="font-bold text-gray-800 text-sm">Materials May Be Needed</span>
+                  </div>
+                  <div className="p-3">
+                    <div className="flex flex-wrap gap-2">
+                      {job.service_type_details!.materials_needed!.map((material, idx) => (
+                        <span key={idx} className="bg-orange-50 text-orange-700 rounded-lg px-3 py-1.5 text-sm font-medium">
+                          {material}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* What Helper Brings */}
+              {hasHelperBrings && (
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="p-3 border-b border-gray-100 flex items-center gap-2">
+                    <Wrench className="w-4 h-4 text-indigo-500" />
+                    <span className="font-bold text-gray-800 text-sm">Helper Will Bring</span>
+                  </div>
+                  <div className="p-3">
+                    <ul className="space-y-2">
+                      {job.service_type_details!.helper_brings!.map((item, idx) => (
+                        <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                          <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* What Customer Should Provide */}
+              {hasCustomerProvides && (
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="p-3 border-b border-gray-100 flex items-center gap-2">
+                    <User className="w-4 h-4 text-blue-500" />
+                    <span className="font-bold text-gray-800 text-sm">You Should Provide</span>
+                  </div>
+                  <div className="p-3">
+                    <ul className="space-y-2">
+                      {job.service_type_details!.customer_provides!.map((item, idx) => (
+                        <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                          <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-xs text-blue-600 font-bold">{idx + 1}</span>
+                          </div>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* Address & Payment Info */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="p-3 border-b border-gray-100 flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-red-500" />
+                  <span className="font-bold text-gray-800 text-sm">Service Location</span>
+                </div>
+                <div className="p-3 space-y-3">
+                  <p className="text-gray-700 text-sm">{job.service_address}</p>
+                  <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                    {job.payment_method === 'cash' ? <Banknote className="w-4 h-4 text-amber-500" /> : <CreditCard className="w-4 h-4 text-blue-500" />}
+                    <span className="text-gray-700 text-sm capitalize">Payment: {job.payment_method}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-500 text-sm">
+                      Requested: {new Date(job.created_at).toLocaleDateString('en-IN', { 
+                        day: 'numeric', 
+                        month: 'short', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Back to Track Button */}
+              <button 
+                onClick={() => setActiveTab('track')}
+                className="w-full py-3 bg-teal-50 rounded-xl flex items-center justify-center gap-2 text-teal-600 font-semibold hover:bg-teal-100 transition-colors"
+              >
+                <ChevronUp className="w-4 h-4" />
+                Back to Tracking
+              </button>
             </div>
-
-            {/* Problem Description */}
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <p className="text-sm text-gray-500 mb-1">Problem</p>
-              <p className="text-gray-800">{job.description}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Cancel Button (only when job is active) */}
-        {isJobActive && job.broadcast_status !== 'in_progress' && (
-          <Button
-            variant="outline"
-            onClick={cancelJob}
-            disabled={cancelling}
-            className="w-full border-red-200 text-red-600 hover:bg-red-50"
-          >
-            {cancelling ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <XCircle className="h-4 w-4 mr-2" />
-            )}
-            Cancel Job
-          </Button>
-        )}
-
-        {/* Rate Helper Button (when completed) */}
-        {job.broadcast_status === 'completed' && (
-          <Button
-            onClick={() => router.push(`/customer/requests/${requestId}/rate`)}
-            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
-          >
-            <Star className="h-4 w-4 mr-2" />
-            Rate Helper
-          </Button>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* Job Completion Popup */}
+      {/* Image Modal */}
+      {showImageModal && (
+        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4" onClick={() => setShowImageModal(null)}>
+          <button className="absolute top-4 right-4 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+            <X className="w-6 h-6 text-white" />
+          </button>
+          <div className="relative w-full max-w-lg aspect-square">
+            <Image src={showImageModal} alt="Full view" fill className="object-contain" />
+          </div>
+        </div>
+      )}
+
+      {/* Completion Popup */}
       {job && (
         <JobCompletionPopup
           isOpen={showCompletionPopup}
           job={job}
-          onRate={() => {
-            setShowCompletionPopup(false)
-            router.push(`/customer/requests/${requestId}/rate`)
-          }}
+          onRate={() => { setShowCompletionPopup(false); router.push(`/customer/requests/${requestId}/rate`) }}
           onClose={() => setShowCompletionPopup(false)}
           onQuickRate={submitQuickRating}
-          onPayNow={job.payment_method !== 'cash' ? initiatePayment : undefined}
+          onPayNow={job.payment_method !== 'cash' ? () => router.push(`/customer/requests/${requestId}/pay`) : undefined}
         />
       )}
     </div>

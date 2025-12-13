@@ -18,7 +18,8 @@ import {
   Package,
   Sparkles,
   ShoppingBag,
-  Video
+  Video,
+  Radio
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -33,6 +34,7 @@ export default function CustomerSidebar({ collapsed }: SidebarProps) {
       title: 'Main',
       items: [
         { icon: LayoutDashboard, label: 'Dashboard', href: '/customer/dashboard' },
+        { icon: Radio, label: 'Active Requests', href: '/customer/active-requests' },
         { icon: ClipboardList, label: 'My Requests', href: '/customer/requests' },
       ]
     },
