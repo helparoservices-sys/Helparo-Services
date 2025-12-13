@@ -500,7 +500,7 @@ export default function CustomerDashboard() {
                   </div>
                   <div className="min-w-0">
                     <p className="font-semibold text-gray-900 text-xs sm:text-sm">Refer & Earn</p>
-                    <p className="text-[10px] sm:text-xs text-gray-500">Get ₹100 per referral</p>
+                    <p className="text-[10px] sm:text-xs text-gray-500">Get 1 month free services</p>
                   </div>
                 </Link>
                 <Link href="/customer/notifications" className="flex items-center gap-3 p-2 sm:p-3 rounded-xl sm:rounded-2xl hover:bg-amber-50 transition-colors group">

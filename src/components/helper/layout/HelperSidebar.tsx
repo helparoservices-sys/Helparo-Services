@@ -30,7 +30,8 @@ interface HelperSidebarProps {
 
 export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileClose }: HelperSidebarProps) {
   const pathname = usePathname()
-  const [isVerified, setIsVerified] = useState(false)
+  const [isVerified, setIsVerified] = useState(true) // Default to true to avoid flash of locked state
+  const [checkingVerification, setCheckingVerification] = useState(true)
 
   useEffect(() => {
     checkVerification()
@@ -40,7 +41,10 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     
-    if (!user) return
+    if (!user) {
+      setCheckingVerification(false)
+      return
+    }
 
     const { data: profile } = await supabase
       .from('helper_profiles')
@@ -49,6 +53,7 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
       .single()
 
     setIsVerified(profile?.is_approved === true)
+    setCheckingVerification(false)
   }
 
   const navItems = [
@@ -149,7 +154,8 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
       {navItems.map((item) => {
         const Icon = item.icon
         const active = isActive(item.href)
-        const isLocked = item.requiresVerification && !isVerified
+        // Only show locked state after verification check completes and user is NOT verified
+        const isLocked = !checkingVerification && item.requiresVerification && !isVerified
 
         if (isLocked) {
           return (
