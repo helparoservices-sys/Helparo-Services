@@ -20,6 +20,7 @@ interface RequestRow {
   title: string
   description: string
   status: string
+  broadcast_status?: string
   created_at: string
   assigned_helper_id: string | null
   service_address?: string
@@ -109,7 +110,8 @@ export default function RequestDetailPage() {
         id, 
         title, 
         description, 
-        status, 
+        status,
+        broadcast_status,
         assigned_helper_id, 
         created_at,
         service_address,
@@ -671,7 +673,12 @@ export default function RequestDetailPage() {
                   </Button>
                 )}
 
-                {request.status !== 'completed' && request.status !== 'cancelled' && (
+                {/* Only show cancel if work hasn't started (not in_progress status and broadcast_status not in_progress) */}
+                {request.status !== 'completed' && 
+                 request.status !== 'cancelled' && 
+                 request.status !== 'in_progress' &&
+                 request.broadcast_status !== 'in_progress' &&
+                 request.broadcast_status !== 'completed' && (
                   <Button
                     onClick={cancelRequest}
                     variant="outline"

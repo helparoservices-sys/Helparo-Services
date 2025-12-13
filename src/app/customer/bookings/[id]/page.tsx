@@ -150,6 +150,17 @@ export default function BookingDetailsPage() {
     try {
       const supabase = createClient()
       
+      // First get the current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        console.error('No authenticated user')
+        setLoading(false)
+        return
+      }
+      
+      console.log('Loading booking:', bookingId, 'for user:', user.id)
+      
+      // Query with explicit customer_id check (in addition to RLS)
       const { data, error } = await supabase
         .from('service_requests')
         .select(`
@@ -159,23 +170,39 @@ export default function BookingDetailsPage() {
             name,
             icon
           ),
-          assigned_helper:assigned_helper_id (
-            id,
-            user_id,
-            avg_rating,
-            total_jobs_completed,
-            years_experience,
-            profile:user_id (
-              full_name,
-              phone,
-              avatar_url
-            )
+          helper_profile:assigned_helper_id (
+            full_name,
+            phone,
+            avatar_url
           )
         `)
         .eq('id', bookingId)
-        .single()
+        .eq('customer_id', user.id)
+        .maybeSingle()
 
-      if (error) throw error
+      console.log('Query result:', { data, error })
+
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
+      
+      if (!data) {
+        console.error('No data found for booking:', bookingId)
+        setLoading(false)
+        return
+      }
+
+      // If there's an assigned helper, fetch their helper_profiles data for ratings
+      let helperProfileData = null
+      if (data.assigned_helper_id) {
+        const { data: hpData } = await supabase
+          .from('helper_profiles')
+          .select('avg_rating, total_jobs_completed, years_experience')
+          .eq('user_id', data.assigned_helper_id)
+          .maybeSingle()
+        helperProfileData = hpData
+      }
 
       const transformed: BookingDetails = {
         id: data.id,
@@ -218,11 +245,16 @@ export default function BookingDetailsPage() {
         
         category: data.category ? (Array.isArray(data.category) ? data.category[0] : data.category) : null,
         
-        assigned_helper: data.assigned_helper ? {
-          ...data.assigned_helper,
-          profile: Array.isArray(data.assigned_helper.profile) 
-            ? data.assigned_helper.profile[0] 
-            : data.assigned_helper.profile
+        // Helper profile is directly joined from profiles table via assigned_helper_id
+        assigned_helper: data.helper_profile ? {
+          id: data.assigned_helper_id,
+          user_id: data.assigned_helper_id,
+          avg_rating: helperProfileData?.avg_rating || 0,
+          total_jobs_completed: helperProfileData?.total_jobs_completed || 0,
+          years_experience: helperProfileData?.years_experience || 0,
+          profile: Array.isArray(data.helper_profile) 
+            ? data.helper_profile[0] 
+            : data.helper_profile
         } : null,
         
         cancellation_reason: data.cancellation_reason,
