@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Base application theme with Guardian Teal branding -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Guardian Teal Design System -->
+        <item name="colorPrimary">@color/guardian_teal</item>
+        <item name="colorPrimaryDark">@color/guardian_teal_dark</item>
+        <item name="colorAccent">@color/aqua_glow</item>
+        
+        <!-- Status bar -->
+        <item name="android:statusBarColor">@color/guardian_teal</item>
+        <item name="android:windowLightStatusBar">false</item>
+        
+        <!-- Navigation bar -->
+        <item name="android:navigationBarColor">@color/white</item>
+    </style>
+
+    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:background">@null</item>
+        
+        <!-- Status bar -->
+        <item name="android:statusBarColor">@color/guardian_teal</item>
+        <item name="android:windowLightStatusBar">false</item>
+        
+        <!-- Navigation bar -->
+        <item name="android:navigationBarColor">@color/white</item>
+    </style>
+
+    <!-- Splash screen theme -->
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="android:background">@drawable/splash</item>
+        <item name="android:statusBarColor">@color/guardian_teal</item>
+    </style>
+</resources>

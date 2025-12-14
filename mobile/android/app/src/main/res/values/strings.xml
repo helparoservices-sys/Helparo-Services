@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Helparo</string>
+    <string name="title_activity_main">Helparo</string>
+    <string name="package_name">in.helparo.app</string>
+    <string name="custom_url_scheme">in.helparo.app</string>
+    
+    <!-- App description -->
+    <string name="app_description">Book trusted home service helpers at your doorstep</string>
+    
+    <!-- Permissions descriptions (for Play Store) -->
+    <string name="location_permission_rationale">Helparo needs your location to find nearby helpers and provide accurate service</string>
+    <string name="camera_permission_rationale">Helparo needs camera access to take photos for service requests</string>
+    <string name="notification_permission_rationale">Helparo needs notification permission to send you booking updates and helper arrivals</string>
+    
+    <!-- Error messages -->
+    <string name="error_no_internet">No internet connection. Please check your network.</string>
+    <string name="error_loading">Something went wrong. Please try again.</string>
+</resources>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Guardian Teal Design System Colors -->
+    <color name="guardian_teal">#00C3B4</color>
+    <color name="guardian_teal_dark">#009C90</color>
+    <color name="deep_navy">#0A1A2F</color>
+    <color name="aqua_glow">#35F1CD</color>
+    
+    <!-- Legacy color names (for compatibility) -->
+    <color name="colorPrimary">#00C3B4</color>
+    <color name="colorPrimaryDark">#009C90</color>
+    <color name="colorAccent">#35F1CD</color>
+    
+    <!-- Splash screen -->
+    <color name="splash_background">#00C3B4</color>
+    
+    <!-- Semantic colors -->
+    <color name="success">#10B981</color>
+    <color name="warning">#F59E0B</color>
+    <color name="error">#EF4444</color>
+    <color name="info">#3B82F6</color>
+    
+    <!-- Base colors -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="gray_50">#F8FFFE</color>
+    <color name="gray_100">#F3F4F6</color>
+    <color name="gray_500">#6B7280</color>
+    <color name="gray_900">#111827</color>
+</resources>

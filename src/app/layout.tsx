@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { PageTransition } from '@/components/page-transition'
 import { LanguageProvider } from '@/lib/language-context'
+import { MobileAppShell } from '@/components/mobile'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://helparo.in'),
@@ -87,7 +88,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: '#10b981',
+  themeColor: '#00C3B4', // Guardian Teal
   viewportFit: 'cover', // For iPhone notch support
 }
 
@@ -285,9 +286,11 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <LanguageProvider>
-          <PageTransition>
-            {children}
-          </PageTransition>
+          <MobileAppShell>
+            <PageTransition>
+              {children}
+            </PageTransition>
+          </MobileAppShell>
         </LanguageProvider>
       </body>
     </html>

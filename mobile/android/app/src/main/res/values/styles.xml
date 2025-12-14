@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Primary brand color -->
+        <item name="colorPrimary">@color/guardian_teal</item>
+        <item name="colorPrimaryDark">@color/guardian_teal_dark</item>
+        <item name="colorAccent">@color/aqua_glow</item>
+        
+        <!-- Status bar -->
+        <item name="android:statusBarColor">@color/guardian_teal</item>
+        <item name="android:windowLightStatusBar">false</item>
+        
+        <!-- Navigation bar -->
+        <item name="android:navigationBarColor">@color/white</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        
+        <!-- Window background -->
+        <item name="android:windowBackground">@color/white</item>
+    </style>
+    
+    <!-- Splash screen theme -->
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/guardian_teal</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash</item>
+        <item name="windowSplashScreenAnimationDuration">1500</item>
+        <item name="postSplashScreenTheme">@style/AppTheme</item>
+        
+        <!-- Status bar for splash -->
+        <item name="android:statusBarColor">@color/guardian_teal</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
