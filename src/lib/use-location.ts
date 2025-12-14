@@ -1,8 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Geolocation } from '@capacitor/geolocation'
-import { Capacitor } from '@capacitor/core'
 
 export interface LocationCoordinates {
   latitude: number
@@ -68,62 +66,30 @@ export const useLocation = () => {
 
   // Request location permission and get current location
   const requestLocation = useCallback(async () => {
+    if (!navigator.geolocation) {
+      setLocation(prev => ({
+        ...prev,
+        error: 'Geolocation is not supported by your browser',
+        hasPermission: false
+      }))
+      return null
+    }
+
     setLocation(prev => ({ ...prev, isLoading: true, error: null }))
 
     try {
-      let coordinates: LocationCoordinates
-
-      // Use Capacitor Geolocation for native apps
-      if (Capacitor.isNativePlatform()) {
-        // Request permission first (this triggers the Android permission dialog)
-        const permStatus = await Geolocation.requestPermissions()
-        
-        if (permStatus.location !== 'granted' && permStatus.coarseLocation !== 'granted') {
-          setLocation(prev => ({
-            ...prev,
-            isLoading: false,
-            error: 'Location permission denied. Please enable location access in app settings.',
-            hasPermission: false
-          }))
-          return null
-        }
-
-        // Get current position
-        const position = await Geolocation.getCurrentPosition({
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
-          timeout: 15000
+          timeout: 10000,
+          maximumAge: 0
         })
+      })
 
-        coordinates = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy
-        }
-      } else {
-        // Web browser fallback
-        if (!navigator.geolocation) {
-          setLocation(prev => ({
-            ...prev,
-            error: 'Geolocation is not supported by your browser',
-            hasPermission: false,
-            isLoading: false
-          }))
-          return null
-        }
-
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
-          })
-        })
-
-        coordinates = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy
-        }
+      const coordinates: LocationCoordinates = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy
       }
 
       setLocation(prev => ({
@@ -138,32 +104,22 @@ export const useLocation = () => {
 
       return coordinates
     } catch (err) {
+      const error = err as GeolocationPositionError
       let errorMessage = 'Failed to get location'
       
-      if (err instanceof Error) {
-        if (err.message.includes('denied') || err.message.includes('permission')) {
-          errorMessage = 'Location permission denied. Please enable location access in settings.'
-        } else if (err.message.includes('unavailable')) {
-          errorMessage = 'Location unavailable. Please check your device settings.'
-        } else if (err.message.includes('timeout')) {
-          errorMessage = 'Location request timeout. Please try again.'
-        }
-      } else if (typeof err === 'object' && err !== null && 'code' in err) {
-        const error = err as GeolocationPositionError
-        if (error.code === 1) {
-          errorMessage = 'Location permission denied. Please enable location access in settings.'
-        } else if (error.code === 2) {
-          errorMessage = 'Location unavailable. Please check your device settings.'
-        } else if (error.code === 3) {
-          errorMessage = 'Location request timeout. Please try again.'
-        }
+      if (error.code === 1) {
+        errorMessage = 'Location permission denied. Please enable location access in your browser settings.'
+      } else if (error.code === 2) {
+        errorMessage = 'Location unavailable. Please check your device settings.'
+      } else if (error.code === 3) {
+        errorMessage = 'Location request timeout. Please try again.'
       }
 
       setLocation(prev => ({
         ...prev,
         isLoading: false,
         error: errorMessage,
-        hasPermission: false
+        hasPermission: error.code === 1 ? false : null
       }))
 
       return null
@@ -209,28 +165,16 @@ export const useLocation = () => {
 
   // Check permission status
   useEffect(() => {
-    const checkPermission = async () => {
-      try {
-        if (Capacitor.isNativePlatform()) {
-          // Use Capacitor for native apps
-          const status = await Geolocation.checkPermissions()
-          setLocation(prev => ({
-            ...prev,
-            hasPermission: status.location === 'granted' || status.coarseLocation === 'granted'
-          }))
-        } else if ('permissions' in navigator) {
-          // Web browser
-          const result = await navigator.permissions.query({ name: 'geolocation' })
-          setLocation(prev => ({
-            ...prev,
-            hasPermission: result.state === 'granted'
-          }))
-        }
-      } catch {
+    if ('permissions' in navigator) {
+      navigator.permissions.query({ name: 'geolocation' }).then(result => {
+        setLocation(prev => ({
+          ...prev,
+          hasPermission: result.state === 'granted'
+        }))
+      }).catch(() => {
         // Permissions API not supported
-      }
+      })
     }
-    checkPermission()
   }, [])
 
   return {
