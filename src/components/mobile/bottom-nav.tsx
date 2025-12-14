@@ -20,7 +20,7 @@ import { motion } from 'framer-motion'
 // Customer navigation items
 const customerNavItems = [
   { href: '/customer/dashboard', icon: Home, label: 'Home' },
-  { href: '/customer/find-helpers', icon: Search, label: 'Find' },
+  // { href: '/customer/find-helpers', icon: Search, label: 'Find' }, // Temporarily disabled
   { href: '/customer/bookings', icon: Calendar, label: 'Bookings' },
   { href: '/customer/notifications', icon: Bell, label: 'Alerts' },
   { href: '/customer/settings', icon: User, label: 'Profile' },

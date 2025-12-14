@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, Suspense, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, CheckCircle, Loader2, ArrowLeft, Mail, Lock, User, Phone, Check, X, ArrowRight, Shield, Star, Sparkles, Zap, Clock } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { LegalModal } from '@/components/legal/legal-modal'
+import { isNativeApp } from '@/lib/capacitor'
 
 function SignUpForm() {
   const router = useRouter()
@@ -31,6 +32,11 @@ function SignUpForm() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [focusedField, setFocusedField] = useState<string | null>(null)
   const [emailTouched, setEmailTouched] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    setIsMobile(isNativeApp())
+  }, [])
 
   // Email validation
   const isValidEmail = (email: string) => {
@@ -56,13 +62,14 @@ function SignUpForm() {
       localStorage.setItem('pendingSignupRole', formData.role)
       localStorage.setItem('roleSelected', 'true')
       
+      // For mobile app, use select_account to show account picker
       const { error: googleError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent',
+            prompt: isMobile ? 'select_account' : 'consent',
           },
         },
       })

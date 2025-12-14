@@ -69,9 +69,9 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
               onMobileClose={() => setMobileMenuOpen(false)}
             />
             
-            {/* Main content - No left margin on mobile */}
+            {/* Main content - No left margin on mobile, with bottom padding for mobile nav */}
             <main 
-              className={`flex-1 transition-all duration-300 ease-in-out pt-14 
+              className={`flex-1 transition-all duration-300 ease-in-out pt-14 pb-20 md:pb-0
                 lg:${sidebarCollapsed ? 'ml-16' : 'ml-60'}
                 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-60'}
                 ml-0
@@ -118,8 +118,8 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
           }
         `}</style>
 
-        {/* Floating SOS Button - Always visible */}
-        <div className="fixed bottom-6 right-6 z-50">
+        {/* Floating SOS Button - Always visible, adjusted for mobile bottom nav */}
+        <div className="fixed bottom-6 right-6 z-50 md:bottom-6 bottom-24">
           <EmergencySOSButton className="shadow-2xl shadow-red-500/30 hover:shadow-red-500/50 animate-pulse hover:animate-none" />
         </div>
       </div>
