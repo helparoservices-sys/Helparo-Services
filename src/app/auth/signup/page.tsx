@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, CheckCircle, Loader2, ArrowLeft, Mail, Lock, User, Phone, Check, X, ArrowRight, Shield, Star, Sparkles, Zap, Clock } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { LegalModal } from '@/components/legal/legal-modal'
+import { isNativeApp } from '@/lib/capacitor'
 
 function SignUpForm() {
   const router = useRouter()
@@ -56,18 +57,57 @@ function SignUpForm() {
       localStorage.setItem('pendingSignupRole', formData.role)
       localStorage.setItem('roleSelected', 'true')
       
-      const { error: googleError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
+      // For native app, use in-app browser
+      if (isNativeApp()) {
+        const { Browser } = await import('@capacitor/browser')
+        
+        const redirectUrl = 'https://helparo.in/auth/callback'
+        
+        const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: redirectUrl,
+            queryParams: {
+              access_type: 'offline',
+              prompt: 'consent',
+            },
+            skipBrowserRedirect: true,
           },
-        },
-      })
+        })
+        
+        if (oauthError) throw oauthError
+        
+        if (data?.url) {
+          await Browser.open({ 
+            url: data.url,
+            windowName: '_self',
+            presentationStyle: 'fullscreen'
+          })
+          
+          Browser.addListener('browserFinished', async () => {
+            const { data: session } = await supabase.auth.getSession()
+            if (session?.session) {
+              const role = localStorage.getItem('pendingSignupRole') || 'customer'
+              window.location.href = role === 'helper' ? '/helper/dashboard' : '/customer/dashboard'
+            }
+            setGoogleLoading(false)
+          })
+        }
+      } else {
+        // Web: normal OAuth flow
+        const { error: googleError } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/auth/callback`,
+            queryParams: {
+              access_type: 'offline',
+              prompt: 'consent',
+            },
+          },
+        })
 
-      if (googleError) throw googleError
+        if (googleError) throw googleError
+      }
       
     } catch (err: unknown) {
       const error = err as { message?: string }

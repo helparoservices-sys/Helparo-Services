@@ -39,7 +39,7 @@ export async function initializeNativePlugins() {
       }, 1500);
     }
 
-    // Initialize App plugin for back button handling
+    // Initialize App plugin for back button handling and deep links
     if (isPluginAvailable('App')) {
       const { App } = await import('@capacitor/app');
       
@@ -56,6 +56,17 @@ export async function initializeNativePlugins() {
       // Handle app state changes
       App.addListener('appStateChange', ({ isActive }) => {
         console.log('App state changed. Is active:', isActive);
+        
+        // When app becomes active again (returning from browser), check auth
+        if (isActive) {
+          checkAuthAfterOAuth();
+        }
+      });
+
+      // Handle deep links (e.g., helparo://auth/callback)
+      App.addListener('appUrlOpen', ({ url }) => {
+        console.log('App opened with URL:', url);
+        handleDeepLink(url);
       });
     }
 
@@ -246,5 +257,69 @@ export async function openExternalUrl(url: string) {
   } catch (error) {
     console.error('Browser error:', error);
     window.open(url, '_blank');
+  }
+}
+
+// Handle deep links from OAuth redirects
+export function handleDeepLink(url: string) {
+  try {
+    const parsedUrl = new URL(url);
+    const path = parsedUrl.pathname;
+    
+    // Handle auth callback
+    if (path.includes('/auth/callback')) {
+      // The WebView should handle this automatically since we're loading from helparo.in
+      // But if using custom scheme, navigate to the callback
+      const code = parsedUrl.searchParams.get('code');
+      if (code) {
+        window.location.href = `/auth/callback?code=${code}`;
+      }
+    }
+    
+    // Handle other deep links
+    if (path.startsWith('/customer/') || path.startsWith('/helper/')) {
+      window.location.href = path;
+    }
+  } catch (error) {
+    console.error('Deep link handling error:', error);
+  }
+}
+
+// Check auth status when returning from OAuth browser
+export async function checkAuthAfterOAuth() {
+  try {
+    // Dynamic import to avoid SSR issues
+    const { createBrowserClient } = await import('@supabase/ssr');
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    
+    const { data: session } = await supabase.auth.getSession();
+    
+    if (session?.session) {
+      // User is logged in, close any open browser
+      if (isPluginAvailable('Browser')) {
+        const { Browser } = await import('@capacitor/browser');
+        await Browser.close();
+      }
+      
+      // Redirect based on role
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.session.user.id)
+        .single();
+      
+      const role = profile?.role || 'customer';
+      const currentPath = window.location.pathname;
+      
+      // Only redirect if on auth pages
+      if (currentPath.includes('/auth/') || currentPath === '/') {
+        window.location.href = `/${role}/dashboard`;
+      }
+    }
+  } catch (error) {
+    console.error('Auth check error:', error);
   }
 }
