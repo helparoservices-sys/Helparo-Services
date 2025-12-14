@@ -194,6 +194,12 @@ export async function GET(
     const helperLocationLng = serviceRequest.helper_location_lng || 
       (assignedHelper?.current_location_lng) || null
 
+    console.log('📍 Helper location data:', {
+      from_request: { lat: serviceRequest.helper_location_lat, lng: serviceRequest.helper_location_lng },
+      from_profile: { lat: assignedHelper?.current_location_lat, lng: assignedHelper?.current_location_lng },
+      final: { lat: helperLocationLat, lng: helperLocationLng }
+    })
+
     const response = {
       ...serviceRequest,
       helper_location_lat: helperLocationLat,

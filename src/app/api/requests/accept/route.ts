@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     // Verify the helper profile belongs to this user
     const { data: helperProfile } = await supabase
       .from('helper_profiles')
-      .select('id, user_id')
+      .select('id, user_id, current_location_lat, current_location_lng')
       .eq('user_id', user.id)
       .single()
 
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Helper profile not found' }, { status: 404 })
     }
 
-    console.log('✅ Helper profile:', helperProfile.id)
+    console.log('✅ Helper profile:', helperProfile.id, 'Location:', helperProfile.current_location_lat, helperProfile.current_location_lng)
 
     // Check if the request is still open for acceptance
     const { data: serviceRequest, error: requestError } = await supabase
@@ -78,7 +78,10 @@ export async function POST(request: NextRequest) {
         assigned_helper_id: user.id, // Use auth user id, not helper_profiles.id
         status: 'assigned',
         broadcast_status: 'accepted',
-        helper_accepted_at: new Date().toISOString()
+        helper_accepted_at: new Date().toISOString(),
+        // Copy helper's current location to the service request for tracking
+        helper_location_lat: helperProfile.current_location_lat || null,
+        helper_location_lng: helperProfile.current_location_lng || null
       })
       .eq('id', requestId)
       .select()

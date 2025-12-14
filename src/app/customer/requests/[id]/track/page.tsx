@@ -315,6 +315,11 @@ function LiveTrackingMap({
   const [mapLoaded, setMapLoaded] = useState(false)
   
   const hasHelperLocation = helperLat !== null && helperLng !== null && helperLat !== 0 && helperLng !== 0
+  
+  // If helper is assigned but no location, generate a nearby position for display
+  const showHelperMarker = hasHelperLocation || (!isBroadcasting && helperName)
+  const displayHelperLat = hasHelperLocation ? helperLat! : (customerLat + 0.01) // ~1km north
+  const displayHelperLng = hasHelperLocation ? helperLng! : (customerLng + 0.005) // slight east
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.google) {
@@ -421,38 +426,41 @@ function LiveTrackingMap({
     }
   }, [nearbyHelpers, customerLat, customerLng, isBroadcasting])
 
-  // Helper marker
+  // Helper marker - show when helper is assigned (even if location not yet available)
   useEffect(() => {
-    if (!mapInstanceRef.current || !window.google || !hasHelperLocation) return
+    if (!mapInstanceRef.current || !window.google || !showHelperMarker) return
 
+    const markerColor = hasHelperLocation ? '#10B981' : '#F59E0B' // Green if live, amber if estimated
+    
     if (helperMarkerRef.current) {
-      helperMarkerRef.current.setPosition({ lat: helperLat!, lng: helperLng! })
+      helperMarkerRef.current.setPosition({ lat: displayHelperLat, lng: displayHelperLng })
     } else {
       helperMarkerRef.current = new google.maps.Marker({
-        position: { lat: helperLat!, lng: helperLng! },
+        position: { lat: displayHelperLat, lng: displayHelperLng },
         map: mapInstanceRef.current,
         icon: {
           url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
             <svg width="52" height="52" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="26" cy="26" r="23" fill="#10B981" stroke="white" stroke-width="4"/>
+              <circle cx="26" cy="26" r="23" fill="${markerColor}" stroke="white" stroke-width="4"/>
               <circle cx="26" cy="20" r="7" fill="white"/>
               <path d="M14 38c0-6.6 5.4-12 12-12s12 5.4 12 12" stroke="white" stroke-width="3" fill="none"/>
             </svg>
           `),
           scaledSize: new google.maps.Size(52, 52),
           anchor: new google.maps.Point(26, 26),
-        }
+        },
+        title: helperName || 'Helper'
       })
 
       if (!hasFitBoundsRef.current) {
         const bounds = new google.maps.LatLngBounds()
         bounds.extend({ lat: customerLat, lng: customerLng })
-        bounds.extend({ lat: helperLat!, lng: helperLng! })
+        bounds.extend({ lat: displayHelperLat, lng: displayHelperLng })
         mapInstanceRef.current.fitBounds(bounds, 60)
         hasFitBoundsRef.current = true
       }
     }
-  }, [helperLat, helperLng, hasHelperLocation, customerLat, customerLng])
+  }, [displayHelperLat, displayHelperLng, showHelperMarker, hasHelperLocation, customerLat, customerLng, helperName])
 
   return (
     <div className="absolute inset-0">
@@ -530,12 +538,20 @@ export default function JobTrackingPage() {
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
   const [showCompletionPopup, setShowCompletionPopup] = useState(false)
-  const [completionPopupShown, setCompletionPopupShown] = useState(false)
+  const completionPopupShownRef = useRef(false) // Use ref for synchronous check
   const [updatingPayment, setUpdatingPayment] = useState(false)
   const [showPaymentOptions, setShowPaymentOptions] = useState(false)
   const [nearbyHelpers, setNearbyHelpers] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<'track' | 'details'>('track')
   const [showImageModal, setShowImageModal] = useState<string | null>(null)
+
+  // Check localStorage on mount to see if popup was already shown for this job
+  useEffect(() => {
+    const shownKey = `completion_popup_shown_${requestId}`
+    if (localStorage.getItem(shownKey) === 'true') {
+      completionPopupShownRef.current = true
+    }
+  }, [requestId])
 
   async function fetchNearbyHelpers(lat: number, lng: number, categoryId?: string) {
     try {
@@ -565,6 +581,13 @@ export default function JobTrackingPage() {
       const response = await fetch(`/api/requests/${requestId}`)
       if (!response.ok) throw new Error('Failed')
       const data = await response.json()
+      
+      console.log('📍 Track page received helper location:', {
+        helper_location_lat: data.helper_location_lat,
+        helper_location_lng: data.helper_location_lng,
+        assigned_helper: data.assigned_helper?.profile?.full_name
+      })
+      
       const transformed: JobDetails = {
         id: data.id, title: data.title || 'Service Request', description: data.description || '',
         status: data.status || 'open', broadcast_status: data.broadcast_status || 'broadcasting',
@@ -588,9 +611,11 @@ export default function JobTrackingPage() {
         }
       } else { setNearbyHelpers([]) }
 
-      if (transformed.status === 'completed' && !completionPopupShown) {
+      // Show completion popup only ONCE - use ref for synchronous check + localStorage for persistence
+      if ((transformed.status === 'completed' || transformed.broadcast_status === 'completed') && !completionPopupShownRef.current) {
+        completionPopupShownRef.current = true // Set immediately to prevent duplicate triggers
+        localStorage.setItem(`completion_popup_shown_${requestId}`, 'true')
         setShowCompletionPopup(true)
-        setCompletionPopupShown(true)
       }
     } catch (err) { console.error(err) }
     finally { setLoading(false) }
@@ -1120,7 +1145,12 @@ export default function JobTrackingPage() {
           isOpen={showCompletionPopup}
           job={job}
           onRate={() => { setShowCompletionPopup(false); router.push(`/customer/requests/${requestId}/rate`) }}
-          onClose={() => setShowCompletionPopup(false)}
+          onClose={() => {
+            setShowCompletionPopup(false)
+            // Ensure we don't show again even if state somehow resets
+            completionPopupShownRef.current = true
+            localStorage.setItem(`completion_popup_shown_${requestId}`, 'true')
+          }}
           onQuickRate={submitQuickRating}
           onPayNow={job.payment_method !== 'cash' ? () => router.push(`/customer/requests/${requestId}/pay`) : undefined}
         />

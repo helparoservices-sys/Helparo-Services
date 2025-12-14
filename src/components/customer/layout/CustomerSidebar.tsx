@@ -52,7 +52,7 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
       items: [
         { icon: LayoutDashboard, label: 'Dashboard', href: '/customer/dashboard' },
         { icon: Radio, label: 'Active Requests', href: '/customer/active-requests' },
-        { icon: ClipboardList, label: 'Booking History', href: '/customer/requests' },
+        { icon: ClipboardList, label: 'Past Bookings', href: '/customer/past-bookings' },
       ]
     },
     /* === HIDDEN FOR PLAY STORE DEPLOYMENT - PAYMENT FEATURES === 
@@ -121,9 +121,9 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
                   if (pathname.match(/^\/customer\/requests\/[^/]+\/track/)) {
                     if (item.label === 'Active Requests' && trackingStatus && ['broadcasting','accepted','on_way','arrived','in_progress'].includes(trackingStatus)) {
                       isActive = true
-                    } else if (item.label === 'Booking History' && trackingStatus && ['completed','cancelled'].includes(trackingStatus)) {
+                    } else if (item.label === 'Past Bookings' && trackingStatus && ['completed','cancelled'].includes(trackingStatus)) {
                       isActive = true
-                    } else if (item.label === 'Active Requests' || item.label === 'Booking History') {
+                    } else if (item.label === 'Active Requests' || item.label === 'Past Bookings') {
                       isActive = false
                     }
                   }
@@ -188,9 +188,9 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
                   if (pathname.match(/^\/customer\/requests\/[^/]+\/track/)) {
                     if (item.label === 'Active Requests' && trackingStatus && ['broadcasting','accepted','on_way','arrived','in_progress'].includes(trackingStatus)) {
                       isActive = true
-                    } else if (item.label === 'Booking History' && trackingStatus && ['completed','cancelled'].includes(trackingStatus)) {
+                    } else if (item.label === 'Past Bookings' && trackingStatus && ['completed','cancelled'].includes(trackingStatus)) {
                       isActive = true
-                    } else if (item.label === 'Active Requests' || item.label === 'Booking History') {
+                    } else if (item.label === 'Active Requests' || item.label === 'Past Bookings') {
                       isActive = false
                     }
                   }

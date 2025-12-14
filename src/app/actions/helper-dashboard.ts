@@ -60,77 +60,45 @@ export async function getHelperDashboardStats() {
     let monthTotal = 0
     let pendingTotal = 0
 
-    // Try helper_earnings table (new system)
-    const { data: helperEarningsToday } = await supabase
-      .from('helper_earnings')
-      .select('amount')
-      .eq('helper_id', user.id)
-      .gte('earned_at', today.toISOString())
-
-    const { data: helperEarningsWeek } = await supabase
-      .from('helper_earnings')
-      .select('amount')
-      .eq('helper_id', user.id)
-      .gte('earned_at', weekAgo.toISOString())
-
-    const { data: helperEarningsMonth } = await supabase
-      .from('helper_earnings')
-      .select('amount')
-      .eq('helper_id', user.id)
-      .gte('earned_at', monthAgo.toISOString())
-
-    const { data: helperEarningsPending } = await supabase
-      .from('helper_earnings')
-      .select('amount')
-      .eq('helper_id', user.id)
-      .eq('status', 'pending')
-
-    if (helperEarningsToday && helperEarningsToday.length > 0) {
-      // Use helper_earnings table
-      todayTotal = helperEarningsToday.reduce((sum, t) => sum + Number(t.amount || 0), 0)
-      weekTotal = helperEarningsWeek?.reduce((sum, t) => sum + Number(t.amount || 0), 0) || 0
-      monthTotal = helperEarningsMonth?.reduce((sum, t) => sum + Number(t.amount || 0), 0) || 0
-      pendingTotal = helperEarningsPending?.reduce((sum, t) => sum + Number(t.amount || 0), 0) || 0
-    } else {
-      // Fallback: Try transactions table
-      const { data: todayEarnings } = await supabase
-        .from('transactions')
+    // Try helper_earnings table (new system) - wrapped in try-catch for safety
+    try {
+      const { data: helperEarningsToday } = await supabase
+        .from('helper_earnings')
         .select('amount')
-        .eq('helper_id', helperId)
-        .eq('transaction_type', 'earning')
-        .eq('status', 'completed')
-        .gte('created_at', today.toISOString())
+        .eq('helper_id', user.id)
+        .gte('earned_at', today.toISOString())
 
-      const { data: weekEarnings } = await supabase
-        .from('transactions')
+      const { data: helperEarningsWeek } = await supabase
+        .from('helper_earnings')
         .select('amount')
-        .eq('helper_id', helperId)
-        .eq('transaction_type', 'earning')
-        .eq('status', 'completed')
-        .gte('created_at', weekAgo.toISOString())
+        .eq('helper_id', user.id)
+        .gte('earned_at', weekAgo.toISOString())
 
-      const { data: monthEarnings } = await supabase
-        .from('transactions')
+      const { data: helperEarningsMonth } = await supabase
+        .from('helper_earnings')
         .select('amount')
-        .eq('helper_id', helperId)
-        .eq('transaction_type', 'earning')
-        .eq('status', 'completed')
-        .gte('created_at', monthAgo.toISOString())
+        .eq('helper_id', user.id)
+        .gte('earned_at', monthAgo.toISOString())
 
-      const { data: pendingEarnings } = await supabase
-        .from('transactions')
+      const { data: helperEarningsPending } = await supabase
+        .from('helper_earnings')
         .select('amount')
-        .eq('helper_id', helperId)
-        .eq('transaction_type', 'earning')
+        .eq('helper_id', user.id)
         .eq('status', 'pending')
 
-      todayTotal = todayEarnings?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0
-      weekTotal = weekEarnings?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0
-      monthTotal = monthEarnings?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0
-      pendingTotal = pendingEarnings?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0
+      if (helperEarningsToday && helperEarningsToday.length > 0) {
+        todayTotal = helperEarningsToday.reduce((sum, t) => sum + Number(t.amount || 0), 0)
+        weekTotal = helperEarningsWeek?.reduce((sum, t) => sum + Number(t.amount || 0), 0) || 0
+        monthTotal = helperEarningsMonth?.reduce((sum, t) => sum + Number(t.amount || 0), 0) || 0
+        pendingTotal = helperEarningsPending?.reduce((sum, t) => sum + Number(t.amount || 0), 0) || 0
+      }
+    } catch (earningsError) {
+      console.log('helper_earnings table query failed, using fallback:', earningsError)
+    }
 
-      // If still no earnings, check completed service_requests
-      if (todayTotal === 0) {
+    // Fallback: Calculate from completed service_requests if no helper_earnings data
+    if (todayTotal === 0) {
+      try {
         const { data: completedToday } = await supabase
           .from('service_requests')
           .select('estimated_price')
@@ -139,9 +107,11 @@ export async function getHelperDashboardStats() {
           .gte('work_completed_at', today.toISOString())
 
         todayTotal = completedToday?.reduce((sum, r) => sum + (r.estimated_price || 0), 0) || 0
-      }
+      } catch {}
+    }
 
-      if (weekTotal === 0) {
+    if (weekTotal === 0) {
+      try {
         const { data: completedWeek } = await supabase
           .from('service_requests')
           .select('estimated_price')
@@ -150,9 +120,11 @@ export async function getHelperDashboardStats() {
           .gte('work_completed_at', weekAgo.toISOString())
 
         weekTotal = completedWeek?.reduce((sum, r) => sum + (r.estimated_price || 0), 0) || 0
-      }
+      } catch {}
+    }
 
-      if (monthTotal === 0) {
+    if (monthTotal === 0) {
+      try {
         const { data: completedMonth } = await supabase
           .from('service_requests')
           .select('estimated_price')
@@ -161,7 +133,7 @@ export async function getHelperDashboardStats() {
           .gte('work_completed_at', monthAgo.toISOString())
 
         monthTotal = completedMonth?.reduce((sum, r) => sum + (r.estimated_price || 0), 0) || 0
-      }
+      } catch {}
     }
 
     // Jobs statistics - use assigned_helper_id (stores user.id)
@@ -190,11 +162,11 @@ export async function getHelperDashboardStats() {
       .select('id')
       .eq('assigned_helper_id', user.id)
 
-    // Rating statistics
+    // Rating statistics - helper_rating_summary uses user.id (profiles.id), not helper_profiles.id
     const { data: ratingData } = await supabase
       .from('helper_rating_summary')
       .select('average_rating, total_reviews')
-      .eq('helper_id', helperId)
+      .eq('helper_id', user.id)
       .maybeSingle()
 
     // Recent jobs (last 5) - use assigned_helper_id

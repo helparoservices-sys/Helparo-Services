@@ -82,6 +82,7 @@ export default function HelperDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeJob, setActiveJob] = useState<AssignedJob | null>(null)
+  const [activeJobChecked, setActiveJobChecked] = useState(false)
   const [error, setError] = useState('')
   const [isAvailableNow, setIsAvailableNow] = useState(false)
   const [togglingAvailability, setTogglingAvailability] = useState(false)
@@ -96,12 +97,17 @@ export default function HelperDashboard() {
   const loadActiveJob = async () => {
     try {
       const result = await getHelperAssignedJobs()
-      if ('jobs' in result) {
-        const job = result.jobs.find((j: AssignedJob) => ['accepted', 'in_progress'].includes(j.status))
+      if (result && Array.isArray(result.jobs)) {
+        // Our DB currently uses status='assigned' after accept (see /api/requests/accept)
+        const job = result.jobs.find((j: AssignedJob) => ['assigned', 'accepted', 'in_progress'].includes(j.status))
         setActiveJob(job || null)
+      } else {
+        setActiveJob(null)
       }
     } catch {
       setActiveJob(null)
+    } finally {
+      setActiveJobChecked(true)
     }
   }
 
@@ -115,7 +121,11 @@ export default function HelperDashboard() {
         schema: 'public',
         table: 'service_requests',
         filter: `assigned_helper_id=eq.${userId}`
-      }, () => loadDashboard())
+      }, () => {
+        // Refresh both stats and active job state (dashboard is locked when active job exists)
+        loadDashboard()
+        loadActiveJob()
+      })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [userId])
@@ -131,22 +141,26 @@ export default function HelperDashboard() {
       }
       setUserId(user.id)
 
-      const { data: userProfile } = await supabase
+      const { data: userProfileRaw } = await supabase
         .from('profiles')
         .select('phone, phone_verified')
         .eq('id', user.id)
         .single()
+
+      const userProfile = userProfileRaw as { phone?: string | null; phone_verified?: boolean | null } | null
 
       if (!userProfile?.phone || !userProfile?.phone_verified) {
         router.push('/auth/complete-signup')
         return
       }
 
-      const { data: profile } = await supabase
+      const { data: profileRaw } = await supabase
         .from('helper_profiles')
         .select('address, service_categories')
         .eq('user_id', user.id)
         .maybeSingle()
+
+      const profile = profileRaw as { address?: string | null; service_categories?: unknown[] | null } | null
 
       if (!profile?.address || !profile?.service_categories?.length) {
         router.push('/helper/onboarding')
@@ -198,6 +212,15 @@ export default function HelperDashboard() {
   }
 
   if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <LoadingSpinner size="lg" />
+      </div>
+    )
+  }
+
+  // Prevent showing the normal dashboard for a split second while the active job is still loading.
+  if (!activeJobChecked) {
     return (
       <div className="flex items-center justify-center py-20">
         <LoadingSpinner size="lg" />
@@ -268,7 +291,7 @@ export default function HelperDashboard() {
                 height="200"
                 className="rounded-lg border"
                 loading="lazy"
-                src={`https://www.google.com/maps/embed/v1/directions?key=YOUR_GOOGLE_MAPS_API_KEY&destination=${activeJob.latitude},${activeJob.longitude}`}
+                src={`https://www.google.com/maps?q=${activeJob.latitude},${activeJob.longitude}&z=16&output=embed`}
                 allowFullScreen
               />
             </div>

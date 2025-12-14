@@ -529,10 +529,19 @@ export function JobNotificationPopup({
 export function useJobNotifications() {
   const [notification, setNotification] = useState<JobNotification | null>(null)
   const [helperProfile, setHelperProfile] = useState<{ id: string } | null>(null)
+  const [authUserId, setAuthUserId] = useState<string | null>(null)
   const [videoUrls, setVideoUrls] = useState<string[]>([])
   const seenNotificationIds = useRef<Set<string>>(new Set())
   const soundIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
+  
+  // Use refs to track current values for realtime callbacks (avoids stale closures)
+  const notificationRef = useRef<JobNotification | null>(null)
+  const authUserIdRef = useRef<string | null>(null)
+  
+  // Keep refs in sync with state
+  useEffect(() => { notificationRef.current = notification }, [notification])
+  useEffect(() => { authUserIdRef.current = authUserId }, [authUserId])
 
   // Function to play alert sound once
   const playAlertSoundOnce = useCallback(() => {
@@ -630,6 +639,8 @@ export function useJobNotifications() {
         return
       }
 
+      setAuthUserId(user.id)
+
       const { data: profile, error } = await supabase
         .from('helper_profiles')
         .select('id')
@@ -641,9 +652,10 @@ export function useJobNotifications() {
         return
       }
 
-      if (profile) {
-        console.log('🔔 Helper profile found:', profile.id)
-        setHelperProfile(profile)
+      const typedProfile = profile as { id: string } | null
+      if (typedProfile) {
+        console.log('🔔 Helper profile found:', typedProfile.id)
+        setHelperProfile(typedProfile)
       }
     }
     getProfile()
@@ -658,7 +670,7 @@ export function useJobNotifications() {
     const checkForNewNotifications = async () => {
       try {
         const supabase = createClient()
-        const { data, error } = await supabase
+        const { data: rawData, error } = await supabase
           .from('broadcast_notifications')
           .select(`
             *,
@@ -687,9 +699,20 @@ export function useJobNotifications() {
           console.log('🔔 Poll check error:', error.message)
           return
         }
+        
+        // Type assertion for the query result
+        const data = rawData as {
+          id: string
+          request_id: string
+          distance_km: string
+          sent_at: string
+          service_request: Record<string, unknown> | null
+        } | null
+        
+        const currentNotification = notificationRef.current
 
         // Skip if already showing a notification or already seen this one
-        if (data && !notification && !seenNotificationIds.current.has(data.id)) {
+        if (data && !currentNotification && !seenNotificationIds.current.has(data.id)) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const req = data.service_request as Record<string, any>
           if (!req) {
@@ -763,16 +786,54 @@ export function useJobNotifications() {
       }
     }
 
+    // Also poll to check if currently shown job was taken by someone else
+    const checkIfJobTaken = async () => {
+      const currentNotification = notificationRef.current
+      if (!currentNotification) return
+      
+      try {
+        const supabase = createClient()
+        const { data: rawRequest } = await supabase
+          .from('service_requests')
+          .select('status, assigned_helper_id')
+          .eq('id', currentNotification.request_id)
+          .single()
+        
+        const request = rawRequest as { status: string; assigned_helper_id: string | null } | null
+        
+        if (request) {
+          const currentUserId = authUserIdRef.current
+          // Job was assigned to someone else
+          if (request.status === 'assigned' && request.assigned_helper_id && request.assigned_helper_id !== currentUserId) {
+            console.log('🔔 [POLL] Job taken by another helper, dismissing')
+            toast.error('Ooops, you are late — better luck next time! 😅')
+            setNotification(null)
+          }
+          // Job was cancelled
+          if (request.status === 'cancelled') {
+            console.log('🔔 [POLL] Job cancelled, dismissing')
+            toast.info('This job has been cancelled by the customer')
+            setNotification(null)
+          }
+        }
+      } catch (err) {
+        console.error('🔔 Error checking job status:', err)
+      }
+    }
+
     // Initial check
     checkForNewNotifications()
 
-    // Poll every 5 seconds
-    const pollInterval = setInterval(checkForNewNotifications, 5000)
+    // Poll every 3 seconds for new notifications and job status
+    const pollInterval = setInterval(() => {
+      checkForNewNotifications()
+      checkIfJobTaken()
+    }, 3000)
 
     return () => {
       clearInterval(pollInterval)
     }
-  }, [helperProfile, notification])
+  }, [helperProfile])
 
   useEffect(() => {
     if (!helperProfile) {
@@ -783,7 +844,7 @@ export function useJobNotifications() {
     console.log('🔔 Setting up realtime subscription for helper:', helperProfile.id)
     const supabase = createClient()
 
-    // Subscribe to real-time notifications
+    // Subscribe to real-time notifications (new job broadcast)
     const channel = supabase
       .channel(`job-notifications-${helperProfile.id}`)
       .on(
@@ -798,7 +859,7 @@ export function useJobNotifications() {
           console.log('🔔 New job notification received:', payload)
           
           // Fetch full notification details
-          const { data, error } = await supabase
+          const { data: rawData, error } = await supabase
             .from('broadcast_notifications')
             .select(`
               *,
@@ -824,6 +885,15 @@ export function useJobNotifications() {
             console.error('🔔 Error fetching notification details:', error)
             return
           }
+          
+          // Type assertion for the query result
+          const data = rawData as {
+            id: string
+            request_id: string
+            distance_km: string
+            sent_at: string
+            service_request: Record<string, unknown> | null
+          } | null
 
           if (data && data.service_request) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -899,7 +969,36 @@ export function useJobNotifications() {
         console.log('🔔 Subscription status:', status)
       })
 
-    // Also subscribe to service_request changes to detect cancellations
+    // If another helper accepts, our broadcast_notification row is marked 'expired'
+    // We must listen to UPDATEs to dismiss any currently open popup.
+    const statusChannel = supabase
+      .channel(`job-notification-status-${helperProfile.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'broadcast_notifications',
+          filter: `helper_id=eq.${helperProfile.id}`
+        },
+        (payload) => {
+          const updated = payload.new as { id?: string; request_id?: string; status?: string }
+          if (!updated?.request_id) return
+          
+          const currentNotification = notificationRef.current
+
+          // If the currently shown job is no longer available for this helper
+          if (currentNotification?.request_id === updated.request_id && updated.status === 'expired') {
+            console.log('🔔 Notification expired (accepted by another helper), dismissing popup')
+            toast.error('Ooops, you are late — better luck next time! 😅')
+            setNotification(null)
+            if (updated.id) seenNotificationIds.current.add(updated.id)
+          }
+        }
+      )
+      .subscribe()
+
+    // Also subscribe to service_request changes to detect cancellations/assignment by others
     const cancellationChannel = supabase
       .channel(`job-cancellations-${helperProfile.id}`)
       .on(
@@ -911,17 +1010,30 @@ export function useJobNotifications() {
         },
         (payload) => {
           console.log('🔔 Service request update received:', payload)
-          const newData = payload.new as { id: string; status: string }
+          const newData = payload.new as { id: string; status?: string; broadcast_status?: string; assigned_helper_id?: string | null }
+          
+          const currentNotification = notificationRef.current
+          const currentUserId = authUserIdRef.current
           
           // Check if this is the currently displayed notification being cancelled
-          setNotification(prev => {
-            if (prev && prev.request_id === newData.id && newData.status === 'cancelled') {
+          if (currentNotification && currentNotification.request_id === newData.id) {
+            if (newData.status === 'cancelled') {
               console.log('🔔 Current notification cancelled, dismissing popup')
               toast.info('This job has been cancelled by the customer')
-              return null
+              setNotification(null)
+              return
             }
-            return prev
-          })
+
+            // If this job was assigned (accepted) and it wasn't assigned to this logged-in helper,
+            // show the "late" message and dismiss.
+            if (newData.status === 'assigned') {
+              if (newData.assigned_helper_id && currentUserId && newData.assigned_helper_id !== currentUserId) {
+                console.log('🔔 Job assigned to another helper, dismissing popup')
+                toast.error('Ooops, you are late — better luck next time! 😅')
+                setNotification(null)
+              }
+            }
+          }
         }
       )
       .subscribe()
@@ -929,6 +1041,7 @@ export function useJobNotifications() {
     return () => {
       console.log('🔔 Cleaning up subscription')
       supabase.removeChannel(channel)
+      supabase.removeChannel(statusChannel)
       supabase.removeChannel(cancellationChannel)
     }
   }, [helperProfile])
@@ -946,6 +1059,12 @@ export function useJobNotifications() {
       const data = await response.json()
 
       if (!response.ok) {
+        // Another helper already took it / job no longer available
+        if (response.status === 409) {
+          toast.error('Ooops, you are late — better luck next time! 😅')
+          setNotification(null)
+          return
+        }
         throw new Error(data.error || 'Failed to accept job')
       }
 
@@ -963,17 +1082,19 @@ export function useJobNotifications() {
   const declineJob = useCallback(async (requestId: string) => {
     if (!helperProfile) return
 
+    // Simply close the notification
+    setNotification(null)
+    
+    // Fire and forget the update
     try {
       const supabase = createClient()
-      await supabase
+      void supabase
         .from('broadcast_notifications')
-        .update({ status: 'declined', responded_at: new Date().toISOString() })
+        .update({ status: 'declined', responded_at: new Date().toISOString() } as never)
         .eq('request_id', requestId)
         .eq('helper_id', helperProfile.id)
-
-      setNotification(null)
-    } catch (error) {
-      console.error('Failed to decline job:', error)
+    } catch {
+      // Ignore errors - just dismiss UI
     }
   }, [helperProfile])
 

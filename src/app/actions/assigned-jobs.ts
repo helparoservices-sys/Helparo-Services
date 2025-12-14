@@ -35,25 +35,22 @@ export async function getHelperAssignedJobs() {
         title,
         description,
         category_id,
-        location_address,
+        service_address,
         latitude,
         longitude,
         scheduled_time,
         status,
+        broadcast_status,
         created_at,
         updated_at,
-        pricing_option,
+        estimated_price,
+        work_started_at,
+        work_completed_at,
         profiles:customer_id(full_name, phone),
-        service_categories(name),
-        time_tracking_logs(
-          started_at,
-          ended_at,
-          total_minutes,
-          is_active
-        )
+        service_categories:category_id(name)
       `)
       .eq('assigned_helper_id', user.id)
-      .in('status', ['accepted', 'in_progress', 'assigned'])
+      .in('status', ['accepted', 'in_progress', 'assigned', 'completed'])
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -67,33 +64,36 @@ export async function getHelperAssignedJobs() {
       title: string | null
       description: string | null
       category_id: string | null
-      location_address: string | null
+      service_address: string | null
       latitude: number | null
       longitude: number | null
       scheduled_time: string | null
       status: string
+      broadcast_status: string | null
       created_at: string
       updated_at: string
-      pricing_option: Record<string, unknown> | null
-      profiles: Array<{ full_name: string | null; phone: string | null }>
-      service_categories: Array<{ name: string | null }>
-      time_tracking_logs: Array<{
-        started_at: string | null
-        ended_at: string | null
-        total_minutes: number
-        is_active: boolean
-      }>
+      estimated_price: number | null
+      work_started_at: string | null
+      work_completed_at: string | null
+      profiles: { full_name: string | null; phone: string | null } | null
+      service_categories: { name: string | null } | null
     }
 
     // Transform jobs
     const transformedJobs = (jobs as unknown as JobWithRelations[]).map(job => {
-      // Get customer profile (first item from array)
-      const customer = job.profiles?.[0]
-      const category = job.service_categories?.[0]
+      // Get customer profile and category (could be object or array)
+      const customer = Array.isArray(job.profiles) ? job.profiles[0] : job.profiles
+      const category = Array.isArray(job.service_categories) ? job.service_categories[0] : job.service_categories
 
-      // Get latest time tracking log
-      const activeLog = job.time_tracking_logs?.find(log => log.is_active)
-      const totalMinutes = job.time_tracking_logs?.reduce((sum, log) => sum + (log.total_minutes || 0), 0) || 0
+      // Calculate time tracking from work_started_at
+      let totalMinutes = 0
+      let isActive = false
+      if (job.work_started_at) {
+        const start = new Date(job.work_started_at).getTime()
+        const end = job.work_completed_at ? new Date(job.work_completed_at).getTime() : Date.now()
+        totalMinutes = Math.floor((end - start) / 60000)
+        isActive = !job.work_completed_at && job.status === 'in_progress'
+      }
 
       return {
         id: job.id,
@@ -103,19 +103,19 @@ export async function getHelperAssignedJobs() {
         category: category?.name || 'Uncategorized',
         customer_name: customer?.full_name || 'Unknown Customer',
         customer_phone: customer?.phone || null,
-        location_address: job.location_address || 'Location not specified',
+        location_address: job.service_address || 'Location not specified',
         latitude: job.latitude,
         longitude: job.longitude,
         scheduled_time: job.scheduled_time,
         status: job.status,
-        amount: (job.pricing_option as { quoted_price?: number })?.quoted_price || 0,
+        amount: job.estimated_price || 0,
         created_at: job.created_at,
         updated_at: job.updated_at,
         time_tracking: {
-          started_at: activeLog?.started_at || null,
-          ended_at: activeLog?.ended_at || null,
+          started_at: job.work_started_at || null,
+          ended_at: job.work_completed_at || null,
           total_minutes: totalMinutes,
-          is_active: !!activeLog,
+          is_active: isActive,
         },
       }
     })

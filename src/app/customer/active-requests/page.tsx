@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { 
@@ -16,7 +15,8 @@ import {
   CheckCircle2,
   Package,
   Wrench,
-  Sparkles
+  Sparkles,
+  Clock
 } from 'lucide-react'
 
 interface ActiveRequest {
@@ -307,11 +307,11 @@ export default function ActiveRequestsPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     {request.images && request.images[0] ? (
-                      <div className="w-14 h-14 rounded-xl overflow-hidden relative bg-gray-100">
-                        <Image src={request.images[0]} alt="" fill className="object-cover" />
+                      <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+                        <img src={request.images[0]} alt="" className="w-full h-full object-cover" />
                       </div>
                     ) : (
-                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-100 to-emerald-100 flex items-center justify-center">
+                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-100 to-emerald-100 flex items-center justify-center flex-shrink-0">
                         <Wrench className="w-6 h-6 text-teal-600" />
                       </div>
                     )}
@@ -340,9 +340,9 @@ export default function ActiveRequestsPage() {
                 {/* Helper Info (if assigned) */}
                 {request.assigned_helper && (
                   <div className="bg-gray-50 rounded-xl p-3 mb-3 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center overflow-hidden">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center overflow-hidden flex-shrink-0">
                       {request.assigned_helper.profile?.avatar_url ? (
-                        <Image src={request.assigned_helper.profile.avatar_url} alt="" fill className="object-cover" />
+                        <img src={request.assigned_helper.profile.avatar_url} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <User className="w-5 h-5 text-white" />
                       )}

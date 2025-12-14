@@ -252,16 +252,41 @@ export async function POST(request: NextRequest) {
       console.log(`   Helper ${h.id}: categories count = ${h.service_categories?.length || 0}`)
     })
 
-    // Filter helpers who:
-    // 1. Have this category (by UUID OR slug) in their service_categories array
-    // 2. Are within reasonable distance (using helper's radius OR a max default)
-    // 3. Helpers without location are included (they might be nearby)
+    // Filter helpers who are within the search radius (50km default)
+    // NOTIFY ALL helpers within radius - category match is preferred but not required
+    const NOTIFICATION_RADIUS_KM = 50 // Search radius from customer location
+    
     let filteredHelpers = relevantHelpers?.filter(helper => {
-      // Check category match by UUID or slug
+      // Check distance from customer location FIRST (use NOTIFICATION_RADIUS_KM)
+      let distance = 0
+      let hasLocation = false
+      
+      if (locationLat && locationLng && helper.current_location_lat && helper.current_location_lng) {
+        hasLocation = true
+        distance = calculateDistanceKm(
+          locationLat,
+          locationLng,
+          helper.current_location_lat,
+          helper.current_location_lng
+        )
+        
+        // Use fixed notification radius - PRIMARY FILTER
+        if (distance > NOTIFICATION_RADIUS_KM) {
+          console.log(`❌ Helper ${helper.id} excluded: ${distance.toFixed(1)}km > ${NOTIFICATION_RADIUS_KM}km notification radius`)
+          return false
+        }
+        
+        console.log(`✅ Helper ${helper.id}: ${distance.toFixed(1)}km within ${NOTIFICATION_RADIUS_KM}km radius`)
+      } else {
+        // If helper has no location set, include them anyway
+        console.log(`✅ Helper ${helper.id}: no location set (will be notified)`)
+      }
+
+      // Check category match by UUID or slug (SECONDARY - for prioritization)
       const categories = helper.service_categories || []
       
       // If helper has NO categories defined, include them (they accept all work)
-      // If helper HAS categories, check if our category matches by UUID or slug
+      // If helper HAS categories, check if our category matches
       const categoryMatch = categories.length === 0 || categories.some((cat: string) => {
         // Match by exact UUID
         if (cat === finalCategoryId) return true
@@ -276,45 +301,41 @@ export async function POST(request: NextRequest) {
         return false
       })
       
-      if (!categoryMatch) {
-        console.log(`❌ Helper ${helper.id} excluded: category mismatch. Has: ${categories.slice(0,3).join(', ')}...`)
-        return false
-      }
-
-      // Check radius if BOTH locations are provided
-      if (locationLat && locationLng && helper.current_location_lat && helper.current_location_lng) {
-        const distance = calculateDistanceKm(
-          locationLat,
-          locationLng,
-          helper.current_location_lat,
-          helper.current_location_lng
-        )
-        const helperRadius = helper.service_radius_km || 50 // Default 50km for testing
-        
-        if (distance > helperRadius) {
-          console.log(`❌ Helper ${helper.id} excluded: ${distance.toFixed(1)}km > ${helperRadius}km radius`)
-          return false
-        }
-        
-        // Attach distance for later use
-        ;(helper as any).distance_km = distance
-        console.log(`✅ Helper ${helper.id} included: ${distance.toFixed(1)}km within ${helperRadius}km radius`)
+      // Log category match status but DON'T exclude based on it
+      if (!categoryMatch && categories.length > 0) {
+        console.log(`⚠️  Helper ${helper.id}: category mismatch but within radius (will notify anyway). Has: ${categories.slice(0,3).join(', ')}`)
       } else {
-        // If helper has no location set, include them with distance 0
-        // They might be nearby and can update their location later
-        ;(helper as any).distance_km = 0
-        console.log(`✅ Helper ${helper.id} included: no location set (will be notified anyway)`)
+        console.log(`✅ Helper ${helper.id}: category match`)
       }
+      
+      // Attach distance and category match for later use
+      ;(helper as any).distance_km = distance
+      ;(helper as any).category_match = categoryMatch
 
-      return true
+      return true // Include ALL helpers within radius
     }) || []
 
-    // FALLBACK: If no helpers matched by category, notify ALL approved helpers
+    // Sort helpers: Category match first, then by distance (closest first)
+    filteredHelpers.sort((a, b) => {
+      const aMatch = (a as any).category_match ? 1 : 0
+      const bMatch = (b as any).category_match ? 1 : 0
+      
+      // If both match or both don't match, sort by distance
+      if (aMatch === bMatch) {
+        return ((a as any).distance_km || 0) - ((b as any).distance_km || 0)
+      }
+      
+      // Otherwise, category match comes first
+      return bMatch - aMatch
+    })
+
+    // FALLBACK: If no helpers found within radius, notify ALL approved helpers
     // This is for testing purposes to ensure at least some helpers get notified
     if (filteredHelpers.length === 0 && relevantHelpers && relevantHelpers.length > 0) {
-      console.log(`⚠️ No category-matched helpers found. Notifying ALL ${relevantHelpers.length} approved helpers.`)
+      console.log(`⚠️ No helpers found within radius. Notifying ALL ${relevantHelpers.length} approved helpers.`)
       filteredHelpers = relevantHelpers.map(helper => {
         ;(helper as any).distance_km = 0
+        ;(helper as any).category_match = false
         return helper
       })
     }

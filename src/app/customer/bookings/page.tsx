@@ -25,6 +25,7 @@ interface Booking {
   title: string
   description: string
   status: string
+  broadcast_status?: string
   created_at: string
   assigned_at: string | null
   job_completed_at: string | null
@@ -62,9 +63,14 @@ export default function CustomerBookingsPage() {
     const supabase = createClient()
     const { data: authData } = await supabase.auth.getUser()
     const user = authData?.user
-    if (!user) return
+    if (!user) {
+      setLoading(false)
+      return
+    }
 
-    const { data: bookingsData, error } = await supabase
+    // Fetch bookings that are completed or cancelled (check both status and broadcast_status)
+    // Fetch ALL user's bookings first, then filter for completed/cancelled
+    const { data: allBookingsData, error } = await supabase
       .from('service_requests')
       .select(`
         id,
@@ -82,22 +88,51 @@ export default function CustomerBookingsPage() {
         service_state,
         service_pincode,
         budget_min,
-        budget_max,
-        helper_profile:assigned_helper_id (
-          full_name,
-          avatar_url,
-          phone
-        )
+        budget_max
       `)
       .eq('customer_id', user.id)
-      .in('broadcast_status', ['completed', 'cancelled'])
       .order('created_at', { ascending: false })
+    
+    // Filter for completed or cancelled (check both status and broadcast_status)
+    const bookingsData = allBookingsData?.filter(b => 
+      b.status === 'completed' || 
+      b.status === 'cancelled' || 
+      b.broadcast_status === 'completed' || 
+      b.broadcast_status === 'cancelled'
+    ) || []
+
+    // Fetch helper profiles for assigned helpers
+    let helperProfiles: Record<string, { full_name: string; avatar_url: string | null; phone: string | null }> = {}
+    
+    if (!error && bookingsData) {
+      const helperIds = bookingsData
+        .map(b => b.assigned_helper_id)
+        .filter((id): id is string => id !== null)
+      
+      if (helperIds.length > 0) {
+        // Get helper info from profiles table (assigned_helper_id references profiles.id)
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url, phone')
+          .in('id', helperIds)
+        
+        if (profiles) {
+          profiles.forEach(p => {
+            helperProfiles[p.id] = {
+              full_name: p.full_name || 'Helper',
+              avatar_url: p.avatar_url,
+              phone: p.phone
+            }
+          })
+        }
+      }
+    }
 
     if (!error && bookingsData) {
       const transformedBookings = bookingsData.map((booking: typeof bookingsData[0]) => ({
         ...booking,
-        helper_profile: Array.isArray(booking.helper_profile) && booking.helper_profile.length > 0
-          ? booking.helper_profile[0]
+        helper_profile: booking.assigned_helper_id 
+          ? helperProfiles[booking.assigned_helper_id]
           : undefined
       }))
       setBookings(transformedBookings as Booking[])
@@ -105,17 +140,25 @@ export default function CustomerBookingsPage() {
     setLoading(false)
   }
 
+  // Helper function to determine if booking is completed or cancelled
+  // Check both status and broadcast_status fields
+  const isCompleted = (booking: Booking) => 
+    booking.status === 'completed' || booking.broadcast_status === 'completed'
+  
+  const isCancelled = (booking: Booking) => 
+    booking.status === 'cancelled' || booking.broadcast_status === 'cancelled'
+
   const filteredBookings = bookings.filter(booking => {
     if (filter === 'all') return true
-    if (filter === 'completed') return booking.status === 'completed'
-    if (filter === 'cancelled') return booking.status === 'cancelled'
+    if (filter === 'completed') return isCompleted(booking)
+    if (filter === 'cancelled') return isCancelled(booking)
     return true
   })
 
   const stats = {
     total: bookings.length,
-    completed: bookings.filter(b => b.status === 'completed').length,
-    cancelled: bookings.filter(b => b.status === 'cancelled').length,
+    completed: bookings.filter(b => isCompleted(b)).length,
+    cancelled: bookings.filter(b => isCancelled(b)).length,
   }
 
   if (loading) {
@@ -241,24 +284,34 @@ export default function CustomerBookingsPage() {
           <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-100 to-slate-100 flex items-center justify-center">
             <Calendar className="w-10 h-10 text-gray-400" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">No bookings found</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">No completed bookings yet</h3>
           <p className="text-gray-500 mb-6">
             {filter === 'all' 
-              ? "You haven't created any bookings yet. Let's fix that!" 
+              ? "Your completed and cancelled bookings will appear here. Check your active requests for ongoing services." 
               : `No ${filter} bookings to show`}
           </p>
-          {filter === 'all' && (
-            <Link href="/customer/requests/new">
-              <button className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl font-semibold transition-all shadow-lg">
-                Create Your First Booking
+          <div className="flex gap-3 justify-center">
+            <Link href="/customer/active-requests">
+              <button className="px-6 py-3 bg-white border-2 border-emerald-500 text-emerald-600 rounded-xl font-semibold transition-all hover:bg-emerald-50">
+                View Active Requests
               </button>
             </Link>
-          )}
+            <Link href="/customer/requests/new">
+              <button className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl font-semibold transition-all shadow-lg">
+                Create New Booking
+              </button>
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
           {filteredBookings.map((booking) => {
-            const config = statusConfig[booking.status] || statusConfig.open
+            // Determine the display status - prioritize broadcast_status if it shows completed/cancelled
+            const displayStatus = 
+              (booking.broadcast_status === 'completed' || booking.broadcast_status === 'cancelled') 
+                ? booking.broadcast_status 
+                : booking.status
+            const config = statusConfig[displayStatus] || statusConfig.open
             const StatusIcon = config.icon
 
             return (
@@ -329,7 +382,7 @@ export default function CustomerBookingsPage() {
                       </button>
                     </Link>
 
-                    {booking.status === 'completed' && (
+                    {isCompleted(booking) && (
                       <Link href={`/customer/requests/${booking.id}/review`} className="flex-1 md:flex-none">
                         <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-xl text-sm font-medium transition-all">
                           <Star className="w-4 h-4" />
