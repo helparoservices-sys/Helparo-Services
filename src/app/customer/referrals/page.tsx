@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { openWhatsApp } from '@/lib/capacitor'
 import { 
   Gift, 
   Users, 
@@ -91,14 +92,14 @@ export default function CustomerReferralsPage() {
   }
 
   const copyReferralLink = () => {
-    const link = `${window.location.origin}/auth/signup?ref=${referralCode}`
+    const link = `https://helparo.in/auth/signup?ref=${referralCode}`
     navigator.clipboard.writeText(link)
     toast.success('Referral link copied!')
   }
 
   const shareOnWhatsApp = () => {
-    const message = `🎉 Join Helparo - India's fastest home service app! Use my code ${referralCode} to sign up and get amazing services. Download now: ${window.location.origin}/auth/signup?ref=${referralCode}`
-    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank')
+    const message = `🎉 Join Helparo - India's fastest home service app! Use my code ${referralCode} to sign up and get amazing services. Download now: https://helparo.in/auth/signup?ref=${referralCode}`
+    openWhatsApp('', message)
   }
 
   // Calculate stats

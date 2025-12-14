@@ -244,7 +244,7 @@ export async function pickPhoto(): Promise<string | null> {
   }
 }
 
-// Open external URLs in browser
+// Open external URLs in browser (for websites, PDFs, etc.)
 export async function openExternalUrl(url: string) {
   if (!isNativeApp() || !isPluginAvailable('Browser')) {
     window.open(url, '_blank');
@@ -257,6 +257,73 @@ export async function openExternalUrl(url: string) {
   } catch (error) {
     console.error('Browser error:', error);
     window.open(url, '_blank');
+  }
+}
+
+// Open WhatsApp with a message
+export async function openWhatsApp(phone: string, message?: string) {
+  const whatsappUrl = message 
+    ? `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
+    : `https://wa.me/${phone.replace(/\D/g, '')}`;
+  
+  if (!isNativeApp()) {
+    window.open(whatsappUrl, '_blank');
+    return;
+  }
+  
+  try {
+    const { Browser } = await import('@capacitor/browser');
+    await Browser.open({ url: whatsappUrl });
+  } catch (error) {
+    window.open(whatsappUrl, '_blank');
+  }
+}
+
+// Make a phone call
+export function makePhoneCall(phoneNumber: string) {
+  const cleanNumber = phoneNumber.replace(/\D/g, '');
+  window.location.href = `tel:${cleanNumber}`;
+}
+
+// Send SMS
+export function sendSMS(phoneNumber: string, message?: string) {
+  const cleanNumber = phoneNumber.replace(/\D/g, '');
+  const smsUrl = message 
+    ? `sms:${cleanNumber}?body=${encodeURIComponent(message)}`
+    : `sms:${cleanNumber}`;
+  window.location.href = smsUrl;
+}
+
+// Send Email
+export function sendEmail(email: string, subject?: string, body?: string) {
+  let mailtoUrl = `mailto:${email}`;
+  const params = [];
+  if (subject) params.push(`subject=${encodeURIComponent(subject)}`);
+  if (body) params.push(`body=${encodeURIComponent(body)}`);
+  if (params.length) mailtoUrl += `?${params.join('&')}`;
+  window.location.href = mailtoUrl;
+}
+
+// Share content using native share or fallback
+export async function shareContent(data: { title?: string; text?: string; url?: string }) {
+  // Use Web Share API if available (works on both web and native)
+  if (navigator.share) {
+    try {
+      await navigator.share(data);
+      return true;
+    } catch (error) {
+      console.log('Share cancelled or failed');
+      return false;
+    }
+  }
+  
+  // Fallback: copy to clipboard
+  const shareText = [data.title, data.text, data.url].filter(Boolean).join('\n');
+  try {
+    await navigator.clipboard.writeText(shareText);
+    return true;
+  } catch {
+    return false;
   }
 }
 

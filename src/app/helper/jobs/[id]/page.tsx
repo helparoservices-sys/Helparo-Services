@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { openWhatsApp, openExternalUrl, makePhoneCall } from '@/lib/capacitor'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -680,21 +681,20 @@ export default function HelperJobPage() {
 
   function callCustomer() {
     if (job?.customer?.phone) {
-      window.location.href = `tel:${job.customer.phone}`
+      makePhoneCall(job.customer.phone)
     }
   }
 
   function messageCustomer() {
     if (job?.customer?.phone) {
-      window.open(`https://wa.me/91${job.customer.phone}`, '_blank')
+      openWhatsApp(`91${job.customer.phone}`)
     }
   }
 
   function openNavigation() {
     if (job?.service_location_lat && job?.service_location_lng) {
-      window.open(
-        `https://www.google.com/maps/dir/?api=1&destination=${job.service_location_lat},${job.service_location_lng}`,
-        '_blank'
+      openExternalUrl(
+        `https://www.google.com/maps/dir/?api=1&destination=${job.service_location_lat},${job.service_location_lng}`
       )
     }
   }

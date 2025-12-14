@@ -153,7 +153,7 @@ function SignUpForm() {
             phone: fullPhone,
             role: formData.role,
           },
-          emailRedirectTo: `${window.location.origin}/auth/confirm`,
+          emailRedirectTo: 'https://helparo.in/auth/confirm',
         },
       })
       

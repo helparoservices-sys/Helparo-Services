@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { openExternalUrl } from '@/lib/capacitor'
 import { 
   AlertTriangle, 
   Phone, 
@@ -116,9 +117,8 @@ export default function SOSResponsePage() {
 
   const openDirections = () => {
     if (alert?.latitude && alert?.longitude) {
-      window.open(
-        `https://www.google.com/maps/dir/?api=1&destination=${alert.latitude},${alert.longitude}`,
-        '_blank'
+      openExternalUrl(
+        `https://www.google.com/maps/dir/?api=1&destination=${alert.latitude},${alert.longitude}`
       )
     }
   }
