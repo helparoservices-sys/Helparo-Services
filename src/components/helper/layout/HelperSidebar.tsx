@@ -65,18 +65,10 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
     },
     {
       label: 'Jobs',
-      icon: Briefcase,
+      icon: Search,
       href: '/helper/jobs',
       requiresVerification: true
     },
-    /* === HIDDEN - BROWSE JOBS ===
-    {
-      label: 'Browse Jobs',
-      icon: Search,
-      href: '/helper/requests',
-      requiresVerification: true
-    },
-    === END HIDDEN === */
     {
       label: 'My Jobs',
       icon: Briefcase,

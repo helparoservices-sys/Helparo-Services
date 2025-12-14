@@ -135,7 +135,6 @@ export default function HelperAssignedJobsPage() {
 
   const handleStatusUpdate = async (jobId: string, newStatus: string) => {
     const confirmMessages: Record<string, string> = {
-      in_progress: 'Mark this job as in progress?',
       completed: 'Mark this job as completed? The customer will be notified.',
       cancelled: 'Cancel this job? This action cannot be undone.',
     }
@@ -151,7 +150,7 @@ export default function HelperAssignedJobsPage() {
     if ('error' in result) {
       toast.error(result.error || 'Failed to update job status')
     } else {
-      toast.success(`Job ${newStatus === 'in_progress' ? 'started' : newStatus}!`)
+      toast.success(`Job ${newStatus}!`)
       loadJobs()
     }
 
@@ -176,10 +175,8 @@ export default function HelperAssignedJobsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'accepted':
+      case 'assigned':
         return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-      case 'in_progress':
-        return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
       case 'completed':
         return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
       case 'cancelled':
@@ -195,6 +192,12 @@ export default function HelperAssignedJobsPage() {
     return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
   }
 
+  const formatScheduledTime = (value: string | null) => {
+    if (!value) return null
+    const parsed = new Date(value)
+    return isNaN(parsed.getTime()) ? value : parsed.toLocaleString()
+  }
+
   if (checkingVerification || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-blue-950 dark:to-indigo-950 flex items-center justify-center">
@@ -203,13 +206,13 @@ export default function HelperAssignedJobsPage() {
     )
   }
 
-  const activeJobs = jobs.filter(job => ['accepted', 'in_progress'].includes(job.status))
+  const activeJobs = jobs.filter(job => job.status === 'assigned')
   const completedJobs = jobs.filter(job => job.status === 'completed')
   const cancelledJobs = jobs.filter(job => job.status === 'cancelled')
 
   return (
     <VerificationGate isVerified={isVerified}>
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-blue-950 dark:to-indigo-950 py-6 px-4">`
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-blue-950 dark:to-indigo-950 py-6 px-4">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-4">
@@ -265,7 +268,7 @@ export default function HelperAssignedJobsPage() {
                           {job.scheduled_time && (
                             <span className="flex items-center gap-1">
                               <Calendar className="h-4 w-4" />
-                              {new Date(job.scheduled_time).toLocaleString()}
+                              {formatScheduledTime(job.scheduled_time)}
                             </span>
                           )}
                         </div>
@@ -371,18 +374,7 @@ export default function HelperAssignedJobsPage() {
                           Chat
                         </Button>
                       </Link>
-                      {job.status === 'accepted' && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleStatusUpdate(job.id, 'in_progress')}
-                          disabled={updatingStatus[job.id]}
-                          className="gap-2"
-                        >
-                          <Play className="h-4 w-4" />
-                          Start Job
-                        </Button>
-                      )}
-                      {job.status === 'in_progress' && (
+                      {job.status === 'assigned' && (
                         <Button
                           size="sm"
                           onClick={() => handleStatusUpdate(job.id, 'completed')}
@@ -390,7 +382,7 @@ export default function HelperAssignedJobsPage() {
                           className="gap-2 bg-green-600 hover:bg-green-700"
                         >
                           <CheckCircle className="h-4 w-4" />
-                          Complete
+                          Complete Job
                         </Button>
                       )}
                     </div>
@@ -409,7 +401,7 @@ export default function HelperAssignedJobsPage() {
               <p className="text-slate-500 dark:text-slate-400 mb-4">
                 No active jobs at the moment
               </p>
-              <Link href="/helper/requests">
+              <Link href="/helper/jobs">
                 <Button className="gap-2">
                   Browse Available Jobs
                   <ChevronRight className="h-4 w-4" />

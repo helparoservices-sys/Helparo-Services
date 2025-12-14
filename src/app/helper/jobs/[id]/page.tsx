@@ -716,7 +716,7 @@ export default function HelperJobPage() {
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
           <p className="text-gray-800 font-semibold">Job not found</p>
-          <Button onClick={() => router.push('/helper/bookings')} className="mt-4">
+          <Button onClick={() => router.push('/helper/assigned')} className="mt-4">
             Go to Jobs
           </Button>
         </div>
@@ -761,7 +761,7 @@ export default function HelperJobPage() {
                 </div>
               </div>
               <Button 
-                onClick={() => router.push('/helper/bookings')} 
+                onClick={() => router.push('/helper/assigned')} 
                 className="w-full mt-4 bg-red-500 hover:bg-red-600 text-white"
               >
                 Return to My Jobs

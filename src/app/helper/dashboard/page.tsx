@@ -93,13 +93,13 @@ export default function HelperDashboard() {
     loadAvailability()
     loadActiveJob()
   }, [])
-  // Load the currently active job (accepted/in_progress)
+  // Load the currently active job (assigned status)
   const loadActiveJob = async () => {
     try {
       const result = await getHelperAssignedJobs()
       if (result && Array.isArray(result.jobs)) {
-        // Our DB currently uses status='assigned' after accept (see /api/requests/accept)
-        const job = result.jobs.find((j: AssignedJob) => ['assigned', 'accepted', 'in_progress'].includes(j.status))
+        // Our DB uses status='assigned' after accept
+        const job = result.jobs.find((j: AssignedJob) => j.status === 'assigned')
         setActiveJob(job || null)
       } else {
         setActiveJob(null)
@@ -430,7 +430,7 @@ export default function HelperDashboard() {
 
       {/* Find Jobs Button */}
       <Link 
-        href={needsVerification ? "#" : "/helper/requests"}
+        href={needsVerification ? "#" : "/helper/jobs"}
         className={`block bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl p-4 ${
           needsVerification ? 'opacity-50 cursor-not-allowed' : 'active:scale-[0.98] transition-transform'
         }`}

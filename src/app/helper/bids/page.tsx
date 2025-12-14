@@ -290,7 +290,7 @@ export default function HelperBidsPage() {
                     : `No ${filter} bids found.`}
                 </p>
                 {filter === 'all' && (
-                  <Link href="/helper/requests">
+                  <Link href="/helper/jobs">
                     <Button className="mt-4">
                       Browse Service Requests
                     </Button>
@@ -396,7 +396,7 @@ export default function HelperBidsPage() {
                         <span className="text-xs text-slate-500">
                           Request Status: <span className="font-medium capitalize">{bid.service_request.status}</span>
                         </span>
-                        <Link href={`/helper/requests`}>
+                      <Link href={`/helper/jobs`}>
                           <Button size="sm" variant="outline">
                             <Eye className="h-4 w-4 mr-1" />
                             View Request

@@ -31,13 +31,16 @@ export async function getHelperAssignedJobs() {
       .from('service_requests')
       .select(`
         id,
+        booking_number,
         title,
         description,
         category_id,
         service_address,
         latitude,
         longitude,
-        scheduled_time,
+        preferred_date,
+        preferred_time_start,
+        preferred_time_end,
         status,
         broadcast_status,
         created_at,
@@ -49,7 +52,7 @@ export async function getHelperAssignedJobs() {
         service_categories:category_id(name)
       `)
       .eq('assigned_helper_id', user.id)
-      .in('status', ['accepted', 'in_progress', 'assigned', 'completed'])
+      .in('status', ['assigned', 'completed'])
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -59,13 +62,16 @@ export async function getHelperAssignedJobs() {
 
     type JobWithRelations = {
       id: string
+      booking_number: string | null
       title: string | null
       description: string | null
       category_id: string | null
       service_address: string | null
       latitude: number | null
       longitude: number | null
-      scheduled_time: string | null
+      preferred_date: string | null
+      preferred_time_start: string | null
+      preferred_time_end: string | null
       status: string
       broadcast_status: string | null
       created_at: string
@@ -78,10 +84,22 @@ export async function getHelperAssignedJobs() {
     }
 
     // Transform jobs
-    const transformedJobs = (jobs as unknown as JobWithRelations[]).map(job => {
+    const transformedJobs = ((jobs ?? []) as unknown as JobWithRelations[]).map(job => {
       // Get customer profile and category (could be object or array)
       const customer = Array.isArray(job.profiles) ? job.profiles[0] : job.profiles
       const category = Array.isArray(job.service_categories) ? job.service_categories[0] : job.service_categories
+
+      // Format scheduled time from preferred_date and preferred_time_start
+      let scheduledTime = null
+      if (job.preferred_date) {
+        scheduledTime = job.preferred_date
+        if (job.preferred_time_start) {
+          scheduledTime += ` ${job.preferred_time_start}`
+          if (job.preferred_time_end) {
+            scheduledTime += ` - ${job.preferred_time_end}`
+          }
+        }
+      }
 
       // Calculate time tracking from work_started_at
       let totalMinutes = 0
@@ -90,11 +108,12 @@ export async function getHelperAssignedJobs() {
         const start = new Date(job.work_started_at).getTime()
         const end = job.work_completed_at ? new Date(job.work_completed_at).getTime() : Date.now()
         totalMinutes = Math.floor((end - start) / 60000)
-        isActive = !job.work_completed_at && job.status === 'in_progress'
+        isActive = !job.work_completed_at && job.status === 'assigned'
       }
 
       return {
         id: job.id,
+        booking_number: job.booking_number,
         title: job.title || 'Untitled Job',
         description: job.description || '',
         category: category?.name || 'Uncategorized',
@@ -103,7 +122,7 @@ export async function getHelperAssignedJobs() {
         location_address: job.service_address || 'Location not specified',
         latitude: job.latitude,
         longitude: job.longitude,
-        scheduled_time: job.scheduled_time,
+        scheduled_time: scheduledTime,
         status: job.status,
         amount: job.estimated_price || 0,
         created_at: job.created_at,
@@ -146,7 +165,7 @@ export async function updateJobStatus(jobId: string, newStatus: string) {
     }
 
     // Validate status transition
-    const validStatuses = ['accepted', 'in_progress', 'completed', 'cancelled']
+    const validStatuses = ['draft', 'open', 'assigned', 'completed', 'cancelled']
     if (!validStatuses.includes(newStatus)) {
       return { error: 'Invalid status' }
     }
@@ -154,7 +173,7 @@ export async function updateJobStatus(jobId: string, newStatus: string) {
     // Check if job exists and belongs to helper
     const { data: job, error: jobError } = await supabase
       .from('service_requests')
-      .select('id, status, helper_id')
+      .select('id, status, helper_id, assigned_helper_id')
       .eq('id', jobId)
       .maybeSingle()
 
@@ -162,7 +181,10 @@ export async function updateJobStatus(jobId: string, newStatus: string) {
       return { error: 'Job not found' }
     }
 
-    if (job.helper_id !== helperProfile.id) {
+    const assignedMatchesUser = job.assigned_helper_id === user.id
+    const helperMatchesProfile = job.helper_id ? job.helper_id === helperProfile.id : false
+
+    if (!assignedMatchesUser && !helperMatchesProfile) {
       return { error: 'You do not have permission to update this job' }
     }
 
@@ -214,11 +236,30 @@ export async function startJobTimer(jobId: string) {
       return { error: 'Helper profile not found' }
     }
 
+    // Ensure the job belongs to the helper (by user id or helper profile)
+    const { data: job, error: jobError } = await supabase
+      .from('service_requests')
+      .select('assigned_helper_id, helper_id')
+      .eq('id', jobId)
+      .maybeSingle()
+
+    if (jobError || !job) {
+      return { error: 'Job not found' }
+    }
+
+    const assignedMatchesUser = job.assigned_helper_id === user.id
+    const helperMatchesProfile = job.helper_id ? job.helper_id === helperProfile.id : false
+
+    if (!assignedMatchesUser && !helperMatchesProfile) {
+      return { error: 'You do not have permission to start this timer' }
+    }
+
     // Check if there's already an active timer
     const { data: activeLog } = await supabase
       .from('time_tracking_logs')
       .select('id')
       .eq('request_id', jobId)
+      .eq('helper_id', helperProfile.id)
       .eq('is_active', true)
       .maybeSingle()
 
@@ -273,6 +314,24 @@ export async function stopJobTimer(jobId: string) {
 
     if (!helperProfile) {
       return { error: 'Helper profile not found' }
+    }
+
+    // Ensure the job belongs to the helper (by user id or helper profile)
+    const { data: job, error: jobError } = await supabase
+      .from('service_requests')
+      .select('assigned_helper_id, helper_id')
+      .eq('id', jobId)
+      .maybeSingle()
+
+    if (jobError || !job) {
+      return { error: 'Job not found' }
+    }
+
+    const assignedMatchesUser = job.assigned_helper_id === user.id
+    const helperMatchesProfile = job.helper_id ? job.helper_id === helperProfile.id : false
+
+    if (!assignedMatchesUser && !helperMatchesProfile) {
+      return { error: 'You do not have permission to stop this timer' }
     }
 
     // Find active timer
