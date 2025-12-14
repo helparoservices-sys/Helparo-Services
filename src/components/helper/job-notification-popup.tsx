@@ -1050,10 +1050,47 @@ export function useJobNotifications() {
     if (!helperProfile) return
 
     try {
+      // Get fresh location before accepting
+      let helperLat: number | null = null
+      let helperLng: number | null = null
+      
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 5000,
+              maximumAge: 0
+            })
+          })
+          helperLat = position.coords.latitude
+          helperLng = position.coords.longitude
+          console.log('📍 Got fresh location for accept:', helperLat, helperLng)
+          
+          // Update helper_profiles with fresh location
+          const supabase = createClient()
+          await supabase
+            .from('helper_profiles')
+            .update({
+              current_location_lat: helperLat,
+              current_location_lng: helperLng,
+              location_updated_at: new Date().toISOString()
+            } as never)
+            .eq('id', helperProfile.id)
+        } catch (err) {
+          console.log('⚠️ Could not get fresh location:', err)
+        }
+      }
+      
       const response = await fetch('/api/requests/accept', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestId, helperId: helperProfile.id })
+        body: JSON.stringify({ 
+          requestId, 
+          helperId: helperProfile.id,
+          helperLat,
+          helperLng
+        })
       })
 
       const data = await response.json()

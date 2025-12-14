@@ -201,7 +201,30 @@ export default function HelperDashboard() {
 
   const handleAvailabilityToggle = async (newValue: boolean) => {
     setTogglingAvailability(true)
-    const result = await toggleHelperAvailability(newValue)
+    
+    // If going online, capture current location
+    let latitude: number | undefined
+    let longitude: number | undefined
+    
+    if (newValue && navigator.geolocation) {
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          })
+        })
+        latitude = position.coords.latitude
+        longitude = position.coords.longitude
+        console.log('📍 Captured location for going online:', latitude, longitude)
+      } catch (err) {
+        console.log('⚠️ Could not get location for going online:', err)
+        // Continue without location - it can be updated later
+      }
+    }
+    
+    const result = await toggleHelperAvailability(newValue, latitude, longitude)
     if ('error' in result) {
       toast.error(result.error)
     } else {

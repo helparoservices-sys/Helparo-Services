@@ -31,7 +31,6 @@ export async function getHelperAssignedJobs() {
       .from('service_requests')
       .select(`
         id,
-        booking_number,
         title,
         description,
         category_id,
@@ -60,7 +59,6 @@ export async function getHelperAssignedJobs() {
 
     type JobWithRelations = {
       id: string
-      booking_number: string | null
       title: string | null
       description: string | null
       category_id: string | null
@@ -97,7 +95,6 @@ export async function getHelperAssignedJobs() {
 
       return {
         id: job.id,
-        booking_number: job.booking_number,
         title: job.title || 'Untitled Job',
         description: job.description || '',
         category: category?.name || 'Uncategorized',

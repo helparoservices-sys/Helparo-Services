@@ -11,19 +11,31 @@ import { revalidatePath } from 'next/cache'
 /**
  * Toggle helper availability status
  */
-export async function toggleHelperAvailability(isAvailable: boolean) {
+export async function toggleHelperAvailability(isAvailable: boolean, latitude?: number, longitude?: number) {
   try {
     const { user } = await requireAuth(UserRole.HELPER)
     await rateLimit('toggle-availability', user.id, RATE_LIMITS.API_MODERATE)
 
     const supabase = await createClient()
 
+    // Build update object
+    const updateData: Record<string, any> = {
+      is_available_now: isAvailable,
+      is_online: isAvailable, // Also update is_online for broadcast queries
+      updated_at: new Date().toISOString()
+    }
+    
+    // If going online and location provided, update current location
+    if (isAvailable && latitude && longitude) {
+      updateData.current_location_lat = latitude
+      updateData.current_location_lng = longitude
+      updateData.location_updated_at = new Date().toISOString()
+      logger.info('Helper going online with location', { userId: user.id, lat: latitude, lng: longitude })
+    }
+
     const { error } = await supabase
       .from('helper_profiles')
-      .update({
-        is_available_now: isAvailable,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('user_id', user.id)
 
     if (error) throw error
@@ -35,6 +47,34 @@ export async function toggleHelperAvailability(isAvailable: boolean) {
     return { success: true, isAvailable }
   } catch (error: any) {
     logger.error('Toggle availability error', { error })
+    return handleServerActionError(error)
+  }
+}
+
+/**
+ * Update helper's current location
+ */
+export async function updateHelperLocation(latitude: number, longitude: number) {
+  try {
+    const { user } = await requireAuth(UserRole.HELPER)
+
+    const supabase = await createClient()
+
+    const { error } = await supabase
+      .from('helper_profiles')
+      .update({
+        current_location_lat: latitude,
+        current_location_lng: longitude,
+        location_updated_at: new Date().toISOString()
+      })
+      .eq('user_id', user.id)
+
+    if (error) throw error
+
+    logger.info('Helper location updated', { userId: user.id, lat: latitude, lng: longitude })
+    return { success: true }
+  } catch (error: any) {
+    logger.error('Update location error', { error })
     return handleServerActionError(error)
   }
 }

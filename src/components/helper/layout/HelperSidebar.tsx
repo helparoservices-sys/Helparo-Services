@@ -63,6 +63,12 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
       href: '/helper/dashboard',
       requiresVerification: false
     },
+    {
+      label: 'Jobs',
+      icon: Briefcase,
+      href: '/helper/jobs',
+      requiresVerification: true
+    },
     /* === HIDDEN - BROWSE JOBS ===
     {
       label: 'Browse Jobs',

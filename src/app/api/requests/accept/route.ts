@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { requestId } = body
+    const { requestId, helperLat, helperLng } = body
 
     if (!requestId) {
       return NextResponse.json({ error: 'Request ID is required' }, { status: 400 })
@@ -32,7 +32,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Helper profile not found' }, { status: 404 })
     }
 
-    console.log('✅ Helper profile:', helperProfile.id, 'Location:', helperProfile.current_location_lat, helperProfile.current_location_lng)
+    // Use fresh location from client if provided, otherwise fall back to stored location
+    const finalHelperLat = helperLat || helperProfile.current_location_lat || null
+    const finalHelperLng = helperLng || helperProfile.current_location_lng || null
+    
+    console.log('✅ Helper profile:', helperProfile.id, 'Location (fresh/stored):', finalHelperLat, finalHelperLng)
 
     // Check if the request is still open for acceptance
     const { data: serviceRequest, error: requestError } = await supabase
@@ -71,6 +75,7 @@ export async function POST(request: NextRequest) {
     // Accept the job - Use user.id (not helper_profiles.id) because foreign key references profiles(id)
     // The assigned_helper_id foreign key points to profiles.id which is the auth user id
     console.log('📝 Assigning to user.id:', user.id, '(helper_profile.id:', helperProfile.id, ')')
+    console.log('📍 Setting helper location:', finalHelperLat, finalHelperLng)
     
     const { data: updatedRequest, error: updateError } = await supabase
       .from('service_requests')
@@ -79,9 +84,10 @@ export async function POST(request: NextRequest) {
         status: 'assigned',
         broadcast_status: 'accepted',
         helper_accepted_at: new Date().toISOString(),
-        // Copy helper's current location to the service request for tracking
-        helper_location_lat: helperProfile.current_location_lat || null,
-        helper_location_lng: helperProfile.current_location_lng || null
+        // Use fresh location from client, or stored location as fallback
+        helper_location_lat: finalHelperLat,
+        helper_location_lng: finalHelperLng,
+        helper_location_updated_at: new Date().toISOString()
       })
       .eq('id', requestId)
       .select()

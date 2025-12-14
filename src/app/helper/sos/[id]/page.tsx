@@ -90,6 +90,8 @@ export default function SOSResponsePage() {
       return
     }
 
+    console.log('Marking SOS as resolved:', { alertId, userId: user.id })
+
     const { error } = await supabase
       .from('sos_alerts')
       .update({
@@ -100,13 +102,16 @@ export default function SOSResponsePage() {
       .eq('id', alertId)
 
     if (error) {
-      toast.error('Failed to mark as resolved')
+      console.error('Error marking SOS as resolved:', error)
+      toast.error(`Failed to mark as resolved: ${error.message}`)
+      setResolving(false)
     } else {
       toast.success('🎉 Thank you! SOS marked as resolved')
-      loadAlert()
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        router.push('/helper/dashboard')
+      }, 1500)
     }
-    
-    setResolving(false)
   }
 
   const openDirections = () => {
