@@ -12,8 +12,16 @@ const config: CapacitorConfig = {
     url: 'https://helparo.in',
     // Clear cache on app start to get latest content
     cleartext: true,
-    // Allow navigation to external URLs
-    allowNavigation: ['*.helparo.in', '*.supabase.co', '*.googleapis.com', '*.cashfree.com']
+    // Allow navigation to external URLs (keep OAuth in WebView)
+    allowNavigation: [
+      '*.helparo.in', 
+      '*.supabase.co', 
+      '*.googleapis.com', 
+      '*.cashfree.com',
+      'accounts.google.com',
+      '*.google.com',
+      '*.gstatic.com'
+    ]
   },
 
   // Android-specific configuration
