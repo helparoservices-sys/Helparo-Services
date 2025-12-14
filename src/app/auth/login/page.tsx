@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { Eye, EyeOff, Loader2, ArrowLeft, Mail, Lock, X, ArrowRight, Shield, Star, Sparkles } from 'lucide-react'
 import { loginAction } from '@/app/actions/auth'
 import { LegalModal } from '@/components/legal/legal-modal'
 import { logger } from '@/lib/logger'
 import { createBrowserClient } from '@supabase/ssr'
-import { isNativeApp } from '@/lib/capacitor'
 
 export default function LoginPage() {
   const [audience, setAudience] = useState<'customer' | 'helper'>('customer')
@@ -33,68 +32,23 @@ export default function LoginPage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       )
       
-      // For native app, use in-app browser and handle redirect properly
-      if (isNativeApp()) {
-        const { Browser } = await import('@capacitor/browser')
-        
-        // Create OAuth URL manually for in-app browser
-        const redirectUrl = 'https://helparo.in/auth/callback'
-        
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: redirectUrl,
-            queryParams: {
-              access_type: 'offline',
-              prompt: 'consent',
-            },
-            skipBrowserRedirect: true, // Don't auto-redirect, we handle it
+      // Use the same OAuth flow for both web and native app
+      // The native app loads helparo.in in WebView, so OAuth will work within the WebView
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: 'https://helparo.in/auth/callback',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
           },
-        })
-        
-        if (error) {
-          logger.error('Google login error', { error })
-          setError(error.message)
-          setGoogleLoading(false)
-          return
-        }
-        
-        if (data?.url) {
-          // Open OAuth URL in in-app browser
-          await Browser.open({ 
-            url: data.url,
-            windowName: '_self',
-            presentationStyle: 'fullscreen'
-          })
-          
-          // Listen for browser close/redirect back
-          Browser.addListener('browserFinished', async () => {
-            // Check if user is now logged in
-            const { data: session } = await supabase.auth.getSession()
-            if (session?.session) {
-              window.location.href = '/customer/dashboard'
-            }
-            setGoogleLoading(false)
-          })
-        }
-      } else {
-        // Web: use normal OAuth flow
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: `${window.location.origin}/auth/callback`,
-            queryParams: {
-              access_type: 'offline',
-              prompt: 'consent',
-            },
-          },
-        })
-        
-        if (error) {
-          logger.error('Google login error', { error })
-          setError(error.message)
-          setGoogleLoading(false)
-        }
+        },
+      })
+      
+      if (error) {
+        logger.error('Google login error', { error })
+        setError(error.message)
+        setGoogleLoading(false)
       }
     } catch (err: unknown) {
       logger.error('Google login error', { error: err })
