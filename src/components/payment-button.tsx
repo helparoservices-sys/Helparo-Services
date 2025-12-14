@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -55,6 +56,7 @@ export function PaymentButton({
   disabled = false,
   className = '',
 }: PaymentButtonProps) {
+  const router = useRouter()
   const [status, setStatus] = useState<PaymentStatus>('idle')
   const [error, setError] = useState<string>('')
   const [sdkLoaded, setSdkLoaded] = useState(false)
@@ -148,7 +150,7 @@ export function PaymentButton({
         setError('Session expired')
         handleError('Session expired - please login again')
         setTimeout(() => {
-          window.location.href = '/auth/login?redirect=' + encodeURIComponent(window.location.pathname)
+          router.push('/auth/login?redirect=' + encodeURIComponent(window.location.pathname))
         }, 2000)
         return
       }
@@ -175,7 +177,7 @@ export function PaymentButton({
         if (response.status === 401) {
           toast.error('Session expired. Redirecting to login...')
           setTimeout(() => {
-            window.location.href = '/auth/login?redirect=' + encodeURIComponent(window.location.pathname)
+            router.push('/auth/login?redirect=' + encodeURIComponent(window.location.pathname))
           }, 1500)
           throw new Error('Session expired - please login again')
         }

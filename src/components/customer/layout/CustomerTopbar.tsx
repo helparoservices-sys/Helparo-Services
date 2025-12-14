@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Menu, Bell, User, LogOut, Settings, Wallet } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
@@ -10,6 +11,7 @@ interface TopbarProps {
 }
 
 export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
+  const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [balance, setBalance] = useState(0)
@@ -33,7 +35,7 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    window.location.href = '/auth/login'
+    router.push('/auth/login')
   }
 
   return (

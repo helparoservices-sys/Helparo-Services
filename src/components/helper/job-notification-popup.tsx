@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
@@ -61,6 +62,7 @@ export function JobNotificationPopup({
   onDecline, 
   onClose 
 }: JobNotificationPopupProps) {
+  const router = useRouter()
   const [accepting, setAccepting] = useState(false)
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null)
   const [videoUrls, setVideoUrls] = useState<string[]>([])
@@ -1109,7 +1111,7 @@ export function useJobNotifications() {
       setNotification(null)
       
       // Redirect to job details
-      window.location.href = `/helper/jobs/${requestId}`
+      router.push(`/helper/jobs/${requestId}`)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to accept job'
       toast.error(message)

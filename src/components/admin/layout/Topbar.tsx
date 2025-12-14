@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import {
   Search,
@@ -30,6 +31,7 @@ interface Notification {
 }
 
 export default function Topbar({ onToggleSidebar }: TopbarProps) {
+  const router = useRouter()
   const { showError } = useToast()
   const [darkMode, setDarkMode] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
@@ -156,8 +158,8 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
       // Small delay to ensure cleanup is complete
       await new Promise(resolve => setTimeout(resolve, 100))
       
-      // Force full page redirect to login (this will refresh the middleware)
-      window.location.href = '/auth/login'
+      // Use router for client-side navigation
+      router.push('/auth/login')
     } catch (error) {
       console.error('Logout error:', error)
       showError('Logout Failed', 'Please try again')

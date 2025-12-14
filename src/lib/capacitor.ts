@@ -245,7 +245,16 @@ export async function pickPhoto(): Promise<string | null> {
 }
 
 // Open external URLs in browser (for websites, PDFs, etc.)
+// For internal helparo.in links, use Next.js router instead
 export async function openExternalUrl(url: string) {
+  // Don't open internal helparo.in links in external browser
+  if (url.includes('helparo.in')) {
+    if (typeof window !== 'undefined') {
+      window.location.href = url;
+    }
+    return;
+  }
+  
   if (!isNativeApp() || !isPluginAvailable('Browser')) {
     window.open(url, '_blank');
     return;

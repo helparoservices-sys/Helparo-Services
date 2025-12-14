@@ -66,7 +66,7 @@ function ConfirmEmailContent() {
         if (type === 'recovery') {
           // Redirect to reset-password page with the hash parameters
           const hash = `#token_hash=${token_hash}&type=recovery`
-          window.location.href = `/auth/reset-password${hash}`
+          router.push(`/auth/reset-password${hash}`)
           return
         }
 

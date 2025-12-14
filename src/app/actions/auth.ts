@@ -177,7 +177,7 @@ export async function sendMagicLinkAction(formData: FormData) {
     const { error } = await supabase.auth.signInWithOtp({
       email: sanitizedEmail,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/confirm`,
+        emailRedirectTo: 'https://helparo.in/auth/confirm',
       },
     })
 
@@ -203,7 +203,7 @@ export async function requestPasswordResetAction(formData: FormData) {
     const supabase = await createClient()
 
     const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/reset-password`,
+      redirectTo: 'https://helparo.in/auth/reset-password',
     })
 
     if (error) {
