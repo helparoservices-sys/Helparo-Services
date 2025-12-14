@@ -56,12 +56,10 @@ function SignUpForm() {
       localStorage.setItem('pendingSignupRole', formData.role)
       localStorage.setItem('roleSelected', 'true')
       
-      // Use the same OAuth flow for both web and native app
-      // The native app loads helparo.in in WebView, so OAuth will work within the WebView
       const { error: googleError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'https://helparo.in/auth/callback',
+          redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -115,7 +113,7 @@ function SignUpForm() {
             phone: fullPhone,
             role: formData.role,
           },
-          emailRedirectTo: 'https://helparo.in/auth/confirm',
+          emailRedirectTo: `${window.location.origin}/auth/confirm`,
         },
       })
       

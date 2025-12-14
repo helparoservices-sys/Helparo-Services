@@ -32,12 +32,10 @@ export default function LoginPage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       )
       
-      // Use the same OAuth flow for both web and native app
-      // The native app loads helparo.in in WebView, so OAuth will work within the WebView
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'https://helparo.in/auth/callback',
+          redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',

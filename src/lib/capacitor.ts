@@ -39,7 +39,7 @@ export async function initializeNativePlugins() {
       }, 1500);
     }
 
-    // Initialize App plugin for back button handling and deep links
+    // Initialize App plugin for back button handling
     if (isPluginAvailable('App')) {
       const { App } = await import('@capacitor/app');
       
@@ -56,17 +56,6 @@ export async function initializeNativePlugins() {
       // Handle app state changes
       App.addListener('appStateChange', ({ isActive }) => {
         console.log('App state changed. Is active:', isActive);
-        
-        // When app becomes active again (returning from browser), check auth
-        if (isActive) {
-          checkAuthAfterOAuth();
-        }
-      });
-
-      // Handle deep links (e.g., helparo://auth/callback)
-      App.addListener('appUrlOpen', ({ url }) => {
-        console.log('App opened with URL:', url);
-        handleDeepLink(url);
       });
     }
 
@@ -244,17 +233,8 @@ export async function pickPhoto(): Promise<string | null> {
   }
 }
 
-// Open external URLs in browser (for websites, PDFs, etc.)
-// For internal helparo.in links, use Next.js router instead
+// Open external URLs in browser
 export async function openExternalUrl(url: string) {
-  // Don't open internal helparo.in links in external browser
-  if (url.includes('helparo.in')) {
-    if (typeof window !== 'undefined') {
-      window.location.href = url;
-    }
-    return;
-  }
-  
   if (!isNativeApp() || !isPluginAvailable('Browser')) {
     window.open(url, '_blank');
     return;
@@ -266,136 +246,5 @@ export async function openExternalUrl(url: string) {
   } catch (error) {
     console.error('Browser error:', error);
     window.open(url, '_blank');
-  }
-}
-
-// Open WhatsApp with a message
-export async function openWhatsApp(phone: string, message?: string) {
-  const whatsappUrl = message 
-    ? `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
-    : `https://wa.me/${phone.replace(/\D/g, '')}`;
-  
-  if (!isNativeApp()) {
-    window.open(whatsappUrl, '_blank');
-    return;
-  }
-  
-  try {
-    const { Browser } = await import('@capacitor/browser');
-    await Browser.open({ url: whatsappUrl });
-  } catch (error) {
-    window.open(whatsappUrl, '_blank');
-  }
-}
-
-// Make a phone call
-export function makePhoneCall(phoneNumber: string) {
-  const cleanNumber = phoneNumber.replace(/\D/g, '');
-  window.location.href = `tel:${cleanNumber}`;
-}
-
-// Send SMS
-export function sendSMS(phoneNumber: string, message?: string) {
-  const cleanNumber = phoneNumber.replace(/\D/g, '');
-  const smsUrl = message 
-    ? `sms:${cleanNumber}?body=${encodeURIComponent(message)}`
-    : `sms:${cleanNumber}`;
-  window.location.href = smsUrl;
-}
-
-// Send Email
-export function sendEmail(email: string, subject?: string, body?: string) {
-  let mailtoUrl = `mailto:${email}`;
-  const params = [];
-  if (subject) params.push(`subject=${encodeURIComponent(subject)}`);
-  if (body) params.push(`body=${encodeURIComponent(body)}`);
-  if (params.length) mailtoUrl += `?${params.join('&')}`;
-  window.location.href = mailtoUrl;
-}
-
-// Share content using native share or fallback
-export async function shareContent(data: { title?: string; text?: string; url?: string }) {
-  // Use Web Share API if available (works on both web and native)
-  if (navigator.share) {
-    try {
-      await navigator.share(data);
-      return true;
-    } catch (error) {
-      console.log('Share cancelled or failed');
-      return false;
-    }
-  }
-  
-  // Fallback: copy to clipboard
-  const shareText = [data.title, data.text, data.url].filter(Boolean).join('\n');
-  try {
-    await navigator.clipboard.writeText(shareText);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// Handle deep links from OAuth redirects
-export function handleDeepLink(url: string) {
-  try {
-    const parsedUrl = new URL(url);
-    const path = parsedUrl.pathname;
-    
-    // Handle auth callback
-    if (path.includes('/auth/callback')) {
-      // The WebView should handle this automatically since we're loading from helparo.in
-      // But if using custom scheme, navigate to the callback
-      const code = parsedUrl.searchParams.get('code');
-      if (code) {
-        window.location.href = `/auth/callback?code=${code}`;
-      }
-    }
-    
-    // Handle other deep links
-    if (path.startsWith('/customer/') || path.startsWith('/helper/')) {
-      window.location.href = path;
-    }
-  } catch (error) {
-    console.error('Deep link handling error:', error);
-  }
-}
-
-// Check auth status when returning from OAuth browser
-export async function checkAuthAfterOAuth() {
-  try {
-    // Dynamic import to avoid SSR issues
-    const { createBrowserClient } = await import('@supabase/ssr');
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    
-    const { data: session } = await supabase.auth.getSession();
-    
-    if (session?.session) {
-      // User is logged in, close any open browser
-      if (isPluginAvailable('Browser')) {
-        const { Browser } = await import('@capacitor/browser');
-        await Browser.close();
-      }
-      
-      // Redirect based on role
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.session.user.id)
-        .single();
-      
-      const role = profile?.role || 'customer';
-      const currentPath = window.location.pathname;
-      
-      // Only redirect if on auth pages
-      if (currentPath.includes('/auth/') || currentPath === '/') {
-        window.location.href = `/${role}/dashboard`;
-      }
-    }
-  } catch (error) {
-    console.error('Auth check error:', error);
   }
 }
