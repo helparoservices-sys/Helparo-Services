@@ -35,6 +35,28 @@ export function MobileAppShell({ children }: MobileAppShellProps) {
     checkMobile()
     window.addEventListener('resize', checkMobile)
 
+    // Handle keyboard show/hide for mobile
+    const setupKeyboardHandling = async () => {
+      if (isNativeApp()) {
+        try {
+          const { Keyboard } = await import('@capacitor/keyboard')
+          
+          Keyboard.addListener('keyboardWillShow', (info: any) => {
+            const keyboardHeight = info.keyboardHeight || 0
+            document.documentElement.style.setProperty('--keyboard-height', `${keyboardHeight}px`)
+          })
+          
+          Keyboard.addListener('keyboardWillHide', () => {
+            document.documentElement.style.setProperty('--keyboard-height', '0px')
+          })
+        } catch (e) {
+          // Keyboard plugin not available
+        }
+      }
+    }
+
+    setupKeyboardHandling()
+
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 

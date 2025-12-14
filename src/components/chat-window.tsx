@@ -297,7 +297,6 @@ export function ChatWindow({ requestId, currentUserId, otherUser }: ChatWindowPr
                       ) : (
                         <a
                           href={msg.attachment_url}
-                          target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-2 p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
                         >

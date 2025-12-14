@@ -61,8 +61,8 @@ export function SOSPageClient({ alerts, stats, error: initialError }: SOSPageCli
   }, [router])
 
   const handleCall = useCallback(() => {
-    // Open in emergency contact or map app
-    window.open(`tel:911`, '_blank')
+    // Use tel: protocol for emergency call
+    window.location.href = `tel:911`
   }, [])
 
   return (

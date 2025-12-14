@@ -308,7 +308,6 @@ export default function CustomerHistoryPage() {
                       {service.service_location_lat && service.service_location_lng && (
                         <a
                           href={`https://www.google.com/maps?q=${service.service_location_lat},${service.service_location_lng}`}
-                          target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
                           className="flex items-center gap-1 px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-all text-sm font-medium"
@@ -353,7 +352,6 @@ export default function CustomerHistoryPage() {
                               </div>
                               <a
                                 href={`https://www.google.com/maps?q=${service.service_location_lat},${service.service_location_lng}`}
-                                target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline"
                               >

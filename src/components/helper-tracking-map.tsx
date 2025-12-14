@@ -221,7 +221,6 @@ export default function HelperTrackingMap({ requestId, helperId, className = '' 
         {getMapUrl() && (
           <a
             href={getMapUrl()!}
-            target="_blank"
             rel="noopener noreferrer"
             className="block w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-center rounded-lg font-medium transition-all"
           >
