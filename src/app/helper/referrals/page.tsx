@@ -2,27 +2,18 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { openWhatsApp } from '@/lib/capacitor'
 import { 
-  Gift, 
   Users, 
   Copy, 
   Check, 
-  Trophy,
   Crown,
   Share2,
   Target,
-  Zap,
   ChevronRight,
-  Clock,
-  Shield,
   Briefcase,
   MessageCircle,
   Info,
-  Star,
-  TrendingUp,
   BadgeCheck,
-  Sparkles,
   IndianRupee
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -99,7 +90,8 @@ export default function HelperReferralsPage() {
 
   const shareOnWhatsApp = () => {
     const message = `🔧 Join Helparo as a Helper!\n\n✅ Get direct customers\n✅ No commission for new joiners\n✅ Daily payments\n\nUse my code: ${referralCode}\n\nSign up now: https://helparo.in/auth/helper-signup?ref=${referralCode}`
-    openWhatsApp('', message)
+    const encodedMessage = encodeURIComponent(message)
+    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank')
   }
 
   // Calculate stats

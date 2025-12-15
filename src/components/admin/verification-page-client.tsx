@@ -4,7 +4,6 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Shield, Clock, CheckCircle, XCircle, FileText, Eye, User, RefreshCw } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
-import { openExternalUrl } from '@/lib/capacitor'
 import { approveHelper, rejectHelper } from '@/app/actions/admin'
 
 interface Document {
@@ -79,7 +78,7 @@ export function VerificationPageClient({
       
       if (error) throw error
       if (data?.signedUrl) {
-        await openExternalUrl(data.signedUrl)
+        window.open(data.signedUrl, '_blank')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load document')

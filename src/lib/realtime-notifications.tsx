@@ -1,7 +1,6 @@
 /**
  * Real-Time Notifications System
  * Live updates for critical user events
- * Supports both web and mobile (Capacitor) platforms
  */
 
 'use client'
@@ -9,7 +8,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { Bell, MessageSquare, DollarSign, AlertCircle, CheckCircle } from 'lucide-react'
-import { isNativeApp, hapticNotification, isPluginAvailable } from '@/lib/capacitor'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -133,11 +131,6 @@ export function useRealtimeNotifications(userId: string | undefined) {
 
           // Play notification sound
           playNotificationSound()
-
-          // Haptic feedback on mobile
-          if (isNativeApp()) {
-            hapticNotification('success')
-          }
         }
       )
       .subscribe()
@@ -278,30 +271,10 @@ export function useRealtimeBids(requestId: string | undefined) {
 }
 
 /**
- * Show browser notification (web) or local notification (mobile)
+ * Show browser notification
  */
 async function showBrowserNotification(notification: RealtimeNotification) {
-  // For native mobile app, use Capacitor Local Notifications
-  if (isNativeApp() && isPluginAvailable('LocalNotifications')) {
-    try {
-      const { LocalNotifications } = await import('@capacitor/local-notifications')
-      await LocalNotifications.schedule({
-        notifications: [
-          {
-            id: Math.floor(Math.random() * 100000),
-            title: notification.title,
-            body: notification.message,
-            smallIcon: 'ic_launcher',
-            largeIcon: 'ic_launcher',
-            sound: 'default',
-            extra: { link: notification.link },
-          },
-        ],
-      })
-    } catch (error) {
-      console.error('Failed to show local notification:', error)
-    }
-  } else if ('Notification' in window && Notification.permission === 'granted') {
+  if ('Notification' in window && Notification.permission === 'granted') {
     // Web browser notification
     new Notification(notification.title, {
       body: notification.message,
@@ -313,36 +286,9 @@ async function showBrowserNotification(notification: RealtimeNotification) {
 }
 
 /**
- * Request notification permission (web and mobile)
+ * Request notification permission (web)
  */
 export async function requestNotificationPermission() {
-  // For native mobile app
-  if (isNativeApp()) {
-    try {
-      // Request push notification permission
-      if (isPluginAvailable('PushNotifications')) {
-        const { PushNotifications } = await import('@capacitor/push-notifications')
-        const result = await PushNotifications.requestPermissions()
-        if (result.receive === 'granted') {
-          await PushNotifications.register()
-          return true
-        }
-      }
-      
-      // Also request local notification permission
-      if (isPluginAvailable('LocalNotifications')) {
-        const { LocalNotifications } = await import('@capacitor/local-notifications')
-        const result = await LocalNotifications.requestPermissions()
-        return result.display === 'granted'
-      }
-      
-      return false
-    } catch (error) {
-      console.error('Failed to request notification permission:', error)
-      return false
-    }
-  }
-  
   // For web browser
   if ('Notification' in window && Notification.permission === 'default') {
     const permission = await Notification.requestPermission()

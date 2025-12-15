@@ -7,28 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit",
-    "mobile:init": "npx cap init Helparo in.helparo.app --web-dir=out",
-    "mobile:build": "next build && npx cap sync",
-    "mobile:android": "npx cap open android",
-    "mobile:sync": "npx cap sync android",
-    "mobile:run": "npx cap run android",
-    "mobile:live": "npx cap run android --livereload --external"
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@capacitor/android": "^6.0.0",
-    "@capacitor/app": "^6.0.0",
-    "@capacitor/browser": "^6.0.0",
-    "@capacitor/camera": "^6.0.0",
-    "@capacitor/core": "^6.0.0",
-    "@capacitor/geolocation": "^6.0.0",
-    "@capacitor/haptics": "^6.0.0",
-    "@capacitor/keyboard": "^6.0.0",
-    "@capacitor/local-notifications": "^6.0.0",
-    "@capacitor/network": "^6.0.0",
-    "@capacitor/push-notifications": "^6.0.0",
-    "@capacitor/splash-screen": "^6.0.0",
-    "@capacitor/status-bar": "^6.0.0",
     "@google/generative-ai": "^0.24.1",
     "@googlemaps/js-api-loader": "^2.0.2",
     "@hookform/resolvers": "^3.9.0",
@@ -73,7 +54,6 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.0.0",
     "@netlify/plugin-nextjs": "^5.14.7",
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/typography": "^0.5.19",

@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { Eye, EyeOff, Loader2, ArrowLeft, Mail, Lock, X, ArrowRight, Shield, Star, Sparkles } from 'lucide-react'
 import { loginAction } from '@/app/actions/auth'
 import { LegalModal } from '@/components/legal/legal-modal'
 import { logger } from '@/lib/logger'
 import { createBrowserClient } from '@supabase/ssr'
-import { isNativeApp } from '@/lib/capacitor'
 
 export default function LoginPage() {
   const [audience, setAudience] = useState<'customer' | 'helper'>('customer')
@@ -22,11 +21,6 @@ export default function LoginPage() {
   const [showPrivacy, setShowPrivacy] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [focusedField, setFocusedField] = useState<string | null>(null)
-  const [isMobile, setIsMobile] = useState(false)
-
-  useEffect(() => {
-    setIsMobile(isNativeApp())
-  }, [])
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true)
@@ -38,15 +32,13 @@ export default function LoginPage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       )
       
-      // For mobile app, use select_account to show account picker
-      // For web, use consent to ensure fresh auth
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: 'offline',
-            prompt: isMobile ? 'select_account' : 'consent',
+            prompt: 'consent',
           },
         },
       })

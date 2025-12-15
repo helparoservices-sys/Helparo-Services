@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { openWhatsApp } from '@/lib/capacitor'
 import { 
   Gift, 
   Users, 
@@ -99,7 +98,8 @@ export default function CustomerReferralsPage() {
 
   const shareOnWhatsApp = () => {
     const message = `🎉 Join Helparo - India's fastest home service app! Use my code ${referralCode} to sign up and get amazing services. Download now: https://helparo.in/auth/signup?ref=${referralCode}`
-    openWhatsApp('', message)
+    const encodedMessage = encodeURIComponent(message)
+    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank')
   }
 
   // Calculate stats

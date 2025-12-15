@@ -7,7 +7,6 @@ import { useLocation } from '@/lib/use-location'
 import { AlertTriangle, Phone, MapPin, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from './ui/toast-notification'
-import { hapticImpact, hapticNotification, isNativeApp } from '@/lib/capacitor'
 
 // Haversine formula to calculate distance between two points
 function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -242,11 +241,6 @@ export default function EmergencySOSButton({ requestId, className = '' }: Emerge
       // Notify nearby helpers about the emergency with customer details
       await notifyNearbyHelpers(supabase, user.id, alertId, lat || 0, lng || 0, sosType, customerName, customerPhone)
 
-      // Haptic success feedback on mobile
-      if (isNativeApp()) {
-        hapticNotification('success')
-      }
-
       showSuccess('🚨 Emergency Alert Sent', 'Help is on the way!')
       setShowModal(false)
       setDescription('')
@@ -412,10 +406,6 @@ export default function EmergencySOSButton({ requestId, className = '' }: Emerge
   return (
     <button
       onClick={() => {
-        // Trigger heavy haptic feedback for SOS on mobile
-        if (isNativeApp()) {
-          hapticImpact('heavy')
-        }
         setShowModal(true)
       }}
       className={`group relative flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-full font-bold shadow-lg hover:shadow-xl transition-all duration-300 ${className}`}

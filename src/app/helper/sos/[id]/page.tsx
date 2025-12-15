@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { openExternalUrl } from '@/lib/capacitor'
 import { 
   AlertTriangle, 
   Phone, 

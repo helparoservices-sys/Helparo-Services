@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { openExternalUrl, makePhoneCall } from '@/lib/capacitor'
 import { 
   MapPin, 
   Clock, 
@@ -171,7 +170,7 @@ export default function HelperAssignedJobsPage() {
 
   const handleNavigate = (latitude: number, longitude: number, address: string) => {
     const url = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`
-    openExternalUrl(url)
+    window.open(url, '_blank')
   }
 
   const getStatusColor = (status: string) => {
@@ -362,7 +361,7 @@ export default function HelperAssignedJobsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => makePhoneCall(job.customer_phone)}
+                          onClick={() => window.location.href = `tel:${job.customer_phone}`}
                           className="gap-2"
                         >
                           <Phone className="h-4 w-4" />

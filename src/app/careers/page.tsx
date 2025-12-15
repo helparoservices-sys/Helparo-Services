@@ -28,7 +28,6 @@ import {
   PartyPopper,
   Target,
   Lightbulb,
-  Shield,
   IndianRupee,
   X,
   Upload,

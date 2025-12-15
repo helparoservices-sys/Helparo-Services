@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { PageTransition } from '@/components/page-transition'
 import { LanguageProvider } from '@/lib/language-context'
-import { MobileAppShell } from '@/components/mobile'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://helparo.in'),
@@ -286,11 +285,9 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <LanguageProvider>
-          <MobileAppShell>
-            <PageTransition>
-              {children}
-            </PageTransition>
-          </MobileAppShell>
+          <PageTransition>
+            {children}
+          </PageTransition>
         </LanguageProvider>
       </body>
     </html>
