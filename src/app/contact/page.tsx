@@ -195,6 +195,139 @@ export default function ContactPage() {
         </div>
       </header>
 
+      {/* Mobile (short) */}
+      <div className="md:hidden">
+        <section className="pt-24 pb-6 bg-white">
+          <div className="max-w-7xl mx-auto px-4">
+            <h1 className="text-3xl font-black text-gray-900 leading-tight">
+              Contact
+            </h1>
+            <p className="text-gray-500 mt-2">
+              Call, email, or message us — we&apos;ll respond soon.
+            </p>
+
+            <div className="mt-5 grid gap-3">
+              {contactMethods.map((method) => (
+                <a
+                  key={method.title}
+                  href={method.action}
+                  className={`flex items-center justify-between rounded-2xl border ${method.borderColor} bg-white px-4 py-4 ${method.hoverBorder} transition-colors`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-11 h-11 bg-gradient-to-br ${method.gradient} rounded-xl flex items-center justify-center`}> 
+                      <method.icon className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 leading-tight">{method.title}</p>
+                      <p className="text-sm text-gray-500 leading-tight">{method.value}</p>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-gray-400" />
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-8 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex items-center gap-2 bg-violet-100 text-violet-700 px-3 py-1.5 rounded-full text-xs font-semibold w-fit">
+              <Send className="w-3.5 h-3.5" />
+              Send a message
+            </div>
+            <h2 className="text-2xl font-black text-gray-900 mt-3">Message us</h2>
+            <p className="text-gray-500 mt-2">
+              Prefer typing? Send a quick note.
+            </p>
+
+            <div className="mt-5 bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              {submitted ? (
+                <div className="text-center py-6">
+                  <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-7 h-7 text-emerald-600" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">Message sent</h3>
+                  <p className="text-gray-500 mt-1">We&apos;ll reply within 24 hours.</p>
+                  <Button onClick={() => setSubmitted(false)} variant="outline" className="rounded-xl mt-4">
+                    Send another
+                  </Button>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Your name</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-violet-500 focus:ring-0 outline-none transition-colors"
+                      placeholder="John"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-violet-500 focus:ring-0 outline-none transition-colors"
+                      placeholder="you@example.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Message</label>
+                    <textarea
+                      required
+                      rows={4}
+                      value={formData.message}
+                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-violet-500 focus:ring-0 outline-none transition-colors resize-none"
+                      placeholder="How can we help?"
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full h-12 bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-xl transition-all disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Sending…' : 'Send'}
+                  </Button>
+                </form>
+              )}
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <Link href="/services" className="flex-1">
+                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold">
+                  Browse services
+                </Button>
+              </Link>
+              <Link href="/auth/signup" className="flex-1">
+                <Button variant="outline" className="w-full rounded-xl font-semibold">
+                  Get started
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        <footer className="bg-white py-8">
+          <div className="max-w-7xl mx-auto px-4">
+            <p className="text-xs text-gray-500">
+              © {new Date().getFullYear()} Helparo Services Pvt. Ltd.
+            </p>
+          </div>
+        </footer>
+      </div>
+
+      {/* Desktop (original long page) */}
+      <div className="hidden md:block">
+
       {/* ═══════════════════════════════════════════════════════════════════
           HERO SECTION - FUN & FRIENDLY
       ═══════════════════════════════════════════════════════════════════ */}
@@ -726,6 +859,7 @@ export default function ContactPage() {
           </div>
         </div>
       </footer>
+      </div>
     </div>
   )
 }

@@ -34,56 +34,77 @@ import {
   ChevronUp,
   X,
   Eye,
-  Info
+  Info,
+  Shield,
+  Zap,
+  MapPinned,
+  CircleDot,
+  Route
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 // ═══════════════════════════════════════════════════════════════════════════
-// RAPIDO-STYLE SEARCHING ANIMATION - ULTRA PREMIUM
+// PREMIUM SEARCHING ANIMATION - ULTRA MODERN WITH 3D FEEL
 // ═══════════════════════════════════════════════════════════════════════════
 function SearchingAnimation({ nearbyHelpers }: { nearbyHelpers: any[] }) {
   const availableCount = nearbyHelpers.filter(h => h.isOnline && !h.isOnJob).length
   const [dots, setDots] = useState('')
+  const [searchPhase, setSearchPhase] = useState(0)
 
   useEffect(() => {
     const interval = setInterval(() => {
       setDots(prev => prev.length >= 3 ? '' : prev + '.')
-    }, 500)
+    }, 400)
     return () => clearInterval(interval)
   }, [])
 
+  useEffect(() => {
+    const phases = ['Scanning area', 'Finding experts', 'Matching skills', 'Almost there']
+    const interval = setInterval(() => {
+      setSearchPhase(prev => (prev + 1) % phases.length)
+    }, 2500)
+    return () => clearInterval(interval)
+  }, [])
+
+  const searchPhrases = ['Scanning area', 'Finding experts', 'Matching skills', 'Almost there']
+
   return (
-    <div className="relative flex flex-col items-center justify-center py-6">
-      {/* Radar Animation - Like Rapido/Uber */}
-      <div className="relative w-52 h-52 mb-6">
-        {/* Rotating gradient ring */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-teal-400 via-cyan-400 to-emerald-400 animate-spin" style={{ animationDuration: '3s' }}>
-          <div className="absolute inset-1 rounded-full bg-white" />
+    <div className="relative flex flex-col items-center justify-center py-4 px-2">
+      {/* Main Radar Animation */}
+      <div className="relative w-48 h-48 mb-5">
+        {/* Outer glow ring */}
+        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-400/20 via-teal-400/20 to-emerald-400/20 blur-xl animate-pulse" />
+        
+        {/* 3D Ring effect */}
+        <div className="absolute inset-1 rounded-full bg-gradient-to-b from-white to-gray-100 shadow-[inset_0_-8px_16px_rgba(0,0,0,0.1)]">
+          {/* Rotating scanner */}
+          <div className="absolute inset-0 animate-spin" style={{ animationDuration: '4s' }}>
+            <div className="absolute top-1/2 left-1/2 w-full h-1 origin-left -translate-y-1/2 bg-gradient-to-r from-teal-500 via-teal-400 to-transparent opacity-60" />
+          </div>
         </div>
         
-        {/* Pulse rings */}
-        <div className="absolute inset-4 rounded-full border-2 border-teal-300/50 animate-ping" style={{ animationDuration: '2s' }} />
-        <div className="absolute inset-8 rounded-full border-2 border-teal-400/40 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.5s' }} />
-        <div className="absolute inset-12 rounded-full border-2 border-teal-500/30 animate-ping" style={{ animationDuration: '2s', animationDelay: '1s' }} />
+        {/* Concentric circles */}
+        <div className="absolute inset-6 rounded-full border border-teal-200/60" />
+        <div className="absolute inset-12 rounded-full border border-teal-300/40" />
+        <div className="absolute inset-[4.5rem] rounded-full border border-teal-400/30" />
         
-        {/* Center - Main icon */}
+        {/* Pulse waves */}
+        <div className="absolute inset-4 rounded-full border-2 border-teal-400/30 animate-ping" style={{ animationDuration: '2s' }} />
+        <div className="absolute inset-8 rounded-full border border-teal-500/20 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.7s' }} />
+
+        {/* Center icon - 3D effect */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-28 h-28 rounded-full bg-gradient-to-br from-teal-500 via-emerald-500 to-cyan-500 flex items-center justify-center shadow-2xl shadow-teal-500/40">
-            <div className="w-24 h-24 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center">
-                <svg className="w-8 h-8 text-teal-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-              </div>
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-teal-400 via-emerald-500 to-cyan-500 flex items-center justify-center shadow-xl shadow-teal-500/40 transform hover:scale-105 transition-transform">
+            <div className="w-16 h-16 rounded-full bg-white/95 flex items-center justify-center shadow-inner">
+              <MapPinned className="w-8 h-8 text-teal-600 animate-bounce" style={{ animationDuration: '2s' }} />
             </div>
           </div>
         </div>
 
-        {/* Floating helper avatars */}
-        {nearbyHelpers.slice(0, 5).map((helper, idx) => {
-          const angle = (idx * 72 - 90) * (Math.PI / 180)
-          const radius = 90
+        {/* Floating helper dots */}
+        {nearbyHelpers.slice(0, 6).map((helper, idx) => {
+          const angle = (idx * 60 - 90) * (Math.PI / 180)
+          const radius = 72
           const x = Math.cos(angle) * radius
           const y = Math.sin(angle) * radius
           const isAvailable = helper.isOnline && !helper.isOnJob
@@ -91,71 +112,66 @@ function SearchingAnimation({ nearbyHelpers }: { nearbyHelpers: any[] }) {
           return (
             <div
               key={helper.id}
-              className="absolute transition-all duration-500"
+              className="absolute animate-bounce"
               style={{
-                left: `calc(50% + ${x}px - 18px)`,
-                top: `calc(50% + ${y}px - 18px)`,
-                animation: `float ${2 + idx * 0.3}s ease-in-out infinite`,
-                animationDelay: `${idx * 0.2}s`
+                left: `calc(50% + ${x}px - 14px)`,
+                top: `calc(50% + ${y}px - 14px)`,
+                animationDelay: `${idx * 0.15}s`,
+                animationDuration: `${1.5 + idx * 0.2}s`
               }}
             >
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg border-2 border-white ${
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md border-2 border-white/80 backdrop-blur-sm ${
                 isAvailable 
-                  ? 'bg-gradient-to-br from-green-400 to-emerald-500' 
+                  ? 'bg-emerald-500' 
                   : 'bg-gray-400'
               }`}>
                 {helper.name.charAt(0)}
               </div>
               {isAvailable && (
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white animate-pulse" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white animate-pulse" />
               )}
             </div>
           )
         })}
       </div>
 
-      {/* Text */}
-      <h3 className="text-xl font-black text-gray-800 mb-1">
-        Searching for helpers{dots}
-      </h3>
-      <p className="text-gray-500 text-sm mb-5">We&apos;re finding the best match for you</p>
+      {/* Text with typing effect */}
+      <div className="text-center mb-4">
+        <h3 className="text-lg font-black text-gray-800 mb-1 flex items-center justify-center gap-2">
+          <Zap className="w-5 h-5 text-amber-500 animate-pulse" />
+          {searchPhrases[searchPhase]}{dots}
+        </h3>
+        <p className="text-gray-500 text-sm">Finding the perfect match for you</p>
+      </div>
       
-      {/* Stats Pills */}
+      {/* Stats Cards - Clean */}
       {nearbyHelpers.length > 0 && (
-        <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-full px-5 py-2.5 shadow-lg shadow-teal-500/30">
-            <span className="text-2xl font-black">{availableCount}</span>
-            <span className="text-sm ml-1.5 opacity-90">available</span>
+        <div className="flex items-center gap-2 w-full max-w-xs">
+          <div className="flex-1 bg-slate-700 text-white rounded-2xl px-4 py-3 shadow-md relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-x-4 -translate-y-8" />
+            <p className="text-xs font-medium text-white/80">Available</p>
+            <p className="text-2xl font-bold">{availableCount}</p>
           </div>
-          <div className="bg-gray-100 text-gray-700 rounded-full px-5 py-2.5">
-            <span className="text-2xl font-black">{nearbyHelpers.length}</span>
-            <span className="text-sm ml-1.5 opacity-70">nearby</span>
+          <div className="flex-1 bg-gray-100 text-gray-800 rounded-2xl px-4 py-3 shadow-sm relative overflow-hidden border border-gray-200">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-gray-200/50 rounded-full -translate-x-4 -translate-y-8" />
+            <p className="text-xs font-medium text-gray-500">Nearby</p>
+            <p className="text-2xl font-bold">{nearbyHelpers.length}</p>
           </div>
         </div>
       )}
 
-      {/* Loading bar */}
-      <div className="w-48 h-1.5 bg-gray-200 rounded-full mt-6 overflow-hidden">
-        <div className="h-full bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full animate-[loading_2s_ease-in-out_infinite]" />
+      {/* Progress bar with shimmer */}
+      <div className="w-full max-w-xs mt-5">
+        <div className="h-2 bg-gray-200 rounded-full overflow-hidden relative">
+          <div className="absolute inset-0 bg-slate-500 rounded-full animate-pulse" />
+        </div>
       </div>
-
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-8px); }
-        }
-        @keyframes loading {
-          0% { width: 0%; margin-left: 0; }
-          50% { width: 100%; margin-left: 0; }
-          100% { width: 0%; margin-left: 100%; }
-        }
-      `}</style>
     </div>
   )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// COMPLETION POPUP - CELEBRATION STYLE
+// COMPLETION POPUP - CELEBRATION STYLE WITH CONFETTI RAIN
 // ═══════════════════════════════════════════════════════════════════════════
 function JobCompletionPopup({
   isOpen,
@@ -183,101 +199,108 @@ function JobCompletionPopup({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
 
-      <div className="relative w-full sm:max-w-md bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl animate-in slide-in-from-bottom-12 duration-500 max-h-[90vh] overflow-auto">
-        {/* Header with confetti */}
-        <div className="relative h-44 bg-gradient-to-br from-teal-400 via-emerald-500 to-cyan-500 rounded-t-[2.5rem] sm:rounded-t-[2.5rem] overflow-hidden">
-          {/* Confetti dots */}
-          {[...Array(40)].map((_, i) => (
+      <div className="relative w-full sm:max-w-md bg-white rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl animate-in slide-in-from-bottom-12 duration-500 max-h-[90vh] overflow-auto">
+        {/* Header with animated confetti */}
+        <div className="relative h-40 bg-gradient-to-br from-slate-600 to-slate-700 rounded-t-[2rem] overflow-hidden">
+          {/* Animated confetti pieces */}
+          {[...Array(50)].map((_, i) => (
             <div
               key={i}
-              className="absolute rounded-full animate-bounce"
+              className="absolute animate-bounce"
               style={{
-                width: `${4 + Math.random() * 8}px`,
-                height: `${4 + Math.random() * 8}px`,
+                width: `${4 + Math.random() * 6}px`,
+                height: `${8 + Math.random() * 8}px`,
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
-                backgroundColor: ['#fff', '#ffd700', '#ff6b6b', '#4ade80', '#60a5fa'][i % 5],
+                backgroundColor: ['#fff', '#ffd700', '#ff6b6b', '#4ade80', '#60a5fa', '#f472b6'][i % 6],
+                borderRadius: Math.random() > 0.5 ? '50%' : '2px',
                 animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${0.8 + Math.random() * 0.5}s`,
+                animationDuration: `${0.6 + Math.random() * 0.4}s`,
                 opacity: 0.9
               }}
             />
           ))}
           
-          {/* Success icon */}
+          {/* Success icon with glow */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-2xl animate-bounce">
-              <PartyPopper className="w-12 h-12 text-teal-500" />
+            <div className="relative">
+              <div className="absolute inset-0 bg-white rounded-full blur-xl opacity-50 animate-pulse" style={{ transform: 'scale(1.5)' }} />
+              <div className="relative w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-2xl animate-bounce">
+                <PartyPopper className="w-10 h-10 text-slate-600" />
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="px-6 py-6 -mt-6 relative bg-white rounded-t-3xl">
-          <h2 className="text-2xl font-black text-center text-gray-800 mb-1">
-            Job Complete! 🎉
+        <div className="px-5 py-5 -mt-5 relative bg-white rounded-t-3xl">
+          <h2 className="text-xl font-black text-center text-gray-800 mb-1">
+            Service Complete! 🎉
           </h2>
-          <p className="text-center text-gray-500 mb-5 text-sm">
+          <p className="text-center text-gray-500 mb-4 text-sm">
             Your {job.category?.name?.toLowerCase() || 'service'} has been completed
           </p>
 
-          {/* Helper */}
-          <div className="flex items-center gap-3 bg-gray-50 rounded-2xl p-3 mb-4">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center">
-              <User className="w-7 h-7 text-white" />
+          {/* Helper - Compact */}
+          <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 mb-3 border border-gray-200">
+            <div className="w-12 h-12 rounded-xl bg-slate-600 flex items-center justify-center shadow-md">
+              <User className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
-              <p className="font-bold text-gray-800">{helperName}</p>
+              <p className="font-bold text-gray-800 text-sm">{helperName}</p>
               <p className="text-xs text-gray-500">Completed your service</p>
             </div>
-            <ThumbsUp className="w-6 h-6 text-green-500" />
+            <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+              <ThumbsUp className="w-5 h-5 text-green-600" />
+            </div>
           </div>
 
-          {/* Payment */}
-          <div className={`rounded-2xl p-4 mb-5 text-center ${
-            isCash ? 'bg-amber-50 border-2 border-amber-200' : 'bg-blue-50 border-2 border-blue-200'
+          {/* Payment - Clean style */}
+          <div className={`rounded-2xl p-4 mb-4 text-center relative overflow-hidden ${
+            isCash ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'
           }`}>
-            <p className={`text-sm font-medium mb-1 ${isCash ? 'text-amber-600' : 'text-blue-600'}`}>
-              {isCash ? 'Pay Cash to Helper' : 'Online Payment'}
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/30 rounded-full -translate-x-8 -translate-y-12" />
+            <p className={`text-xs font-semibold mb-1 ${isCash ? 'text-amber-600' : 'text-blue-600'}`}>
+              {isCash ? '💵 Pay Cash to Helper' : '💳 Online Payment'}
             </p>
-            <div className={`text-4xl font-black ${isCash ? 'text-amber-600' : 'text-blue-600'}`}>
+            <div className={`text-3xl font-black ${isCash ? 'text-amber-600' : 'text-blue-600'}`}>
               ₹{job.estimated_price}
             </div>
           </div>
 
-          {/* Rating */}
-          <div className="text-center mb-5">
+          {/* Rating - Larger stars */}
+          <div className="text-center mb-4">
             <p className="text-gray-600 font-medium mb-2 text-sm">How was your experience?</p>
-            <div className="flex justify-center gap-1.5">
+            <div className="flex justify-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
                   onClick={() => { setSelectedRating(star); setTimeout(() => onQuickRate(star), 300) }}
                   onMouseEnter={() => setHoveredRating(star)}
                   onMouseLeave={() => setHoveredRating(0)}
-                  className="transition-transform hover:scale-110 active:scale-95"
+                  className="transition-all duration-200 hover:scale-125 active:scale-95"
                 >
-                  <Star className={`w-9 h-9 ${
-                    star <= displayRating ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'
+                  <Star className={`w-10 h-10 drop-shadow-sm ${
+                    star <= displayRating ? 'fill-amber-400 text-amber-400' : 'fill-gray-200 text-gray-200'
                   }`} />
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Buttons */}
-          <div className="space-y-2.5">
+          {/* Buttons - Clean styling */}
+          <div className="space-y-2">
             {!isCash && onPayNow && (
-              <Button onClick={onPayNow} className="w-full h-12 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold rounded-xl">
+              <Button onClick={onPayNow} className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm transition-colors">
                 <CreditCard className="w-5 h-5 mr-2" /> Pay ₹{job.estimated_price}
               </Button>
             )}
-            <Button onClick={onRate} className="w-full h-12 bg-gradient-to-r from-teal-500 to-emerald-600 text-white font-bold rounded-xl">
+            <Button onClick={onRate} className="w-full h-12 bg-slate-700 hover:bg-slate-800 text-white font-semibold rounded-xl shadow-sm transition-colors">
               <Star className="w-5 h-5 mr-2" /> Write Review
             </Button>
-            <button onClick={onClose} className="w-full py-2 text-gray-400 text-sm">
-              Skip
+            <button onClick={onClose} className="w-full py-2 text-gray-400 text-sm hover:text-gray-600 transition-colors">
+              Maybe Later
             </button>
           </div>
         </div>
@@ -320,6 +343,18 @@ function LiveTrackingMap({
   const showHelperMarker = hasHelperLocation || (!isBroadcasting && helperName)
   const displayHelperLat = hasHelperLocation ? helperLat! : (customerLat + 0.01) // ~1km north
   const displayHelperLng = hasHelperLocation ? helperLng! : (customerLng + 0.005) // slight east
+
+  // Debug logging
+  useEffect(() => {
+    console.log('🗺️ LiveTrackingMap props:', {
+      customerLat, customerLng,
+      helperLat, helperLng,
+      helperName, isBroadcasting,
+      hasHelperLocation,
+      showHelperMarker,
+      displayHelperLat, displayHelperLng
+    })
+  }, [customerLat, customerLng, helperLat, helperLng, helperName, isBroadcasting, hasHelperLocation, showHelperMarker, displayHelperLat, displayHelperLng])
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.google) {
@@ -395,8 +430,7 @@ function LiveTrackingMap({
     nearbyMarkersRef.current = []
 
     nearbyHelpers.forEach((helper, idx) => {
-      const isAvailable = helper.isOnline && !helper.isOnJob
-      const color = isAvailable ? '#10B981' : '#9CA3AF'
+      const color = '#10B981'
       
       const marker = new google.maps.Marker({
         position: { lat: helper.lat, lng: helper.lng },
@@ -428,9 +462,22 @@ function LiveTrackingMap({
 
   // Helper marker - show when helper is assigned (even if location not yet available)
   useEffect(() => {
-    if (!mapInstanceRef.current || !window.google || !showHelperMarker) return
+    console.log('🚨 Helper marker effect triggered:', { 
+      mapInstance: !!mapInstanceRef.current, 
+      googleLoaded: typeof window !== 'undefined' && !!window.google, 
+      showHelperMarker,
+      mapLoaded,
+      displayHelperLat,
+      displayHelperLng
+    })
+    
+    if (!mapLoaded || !mapInstanceRef.current || typeof window === 'undefined' || !window.google || !showHelperMarker) {
+      console.log('⚠️ Skipping helper marker creation - conditions not met')
+      return
+    }
 
     const markerColor = hasHelperLocation ? '#10B981' : '#F59E0B' // Green if live, amber if estimated
+    console.log('✅ Creating/updating helper marker at:', displayHelperLat, displayHelperLng, 'color:', markerColor)
     
     if (helperMarkerRef.current) {
       helperMarkerRef.current.setPosition({ lat: displayHelperLat, lng: displayHelperLng })
@@ -460,7 +507,7 @@ function LiveTrackingMap({
         hasFitBoundsRef.current = true
       }
     }
-  }, [displayHelperLat, displayHelperLng, showHelperMarker, hasHelperLocation, customerLat, customerLng, helperName])
+  }, [mapLoaded, displayHelperLat, displayHelperLng, showHelperMarker, hasHelperLocation, customerLat, customerLng, helperName])
 
   return (
     <div className="absolute inset-0">
@@ -581,12 +628,32 @@ export default function JobTrackingPage() {
       const response = await fetch(`/api/requests/${requestId}`)
       if (!response.ok) throw new Error('Failed')
       const data = await response.json()
+
+      const toNumberOrNull = (v: any): number | null => {
+        if (v === null || v === undefined) return null
+        if (typeof v === 'number' && Number.isFinite(v)) return v
+        if (typeof v === 'string' && v.trim() !== '') {
+          const n = Number(v)
+          return Number.isFinite(n) ? n : null
+        }
+        return null
+      }
+
+      const toNumberOrZero = (v: any): number => {
+        const n = toNumberOrNull(v)
+        return n ?? 0
+      }
       
       console.log('📍 Track page received helper location:', {
         helper_location_lat: data.helper_location_lat,
         helper_location_lng: data.helper_location_lng,
-        assigned_helper: data.assigned_helper?.profile?.full_name
+        assigned_helper: data.assigned_helper?.profile?.full_name,
+        raw_data_keys: Object.keys(data)
       })
+
+      const helperLatParsed = toNumberOrNull(data.helper_location_lat)
+      const helperLngParsed = toNumberOrNull(data.helper_location_lng)
+      console.log('📍 After parsing:', { helperLatParsed, helperLngParsed })
       
       const transformed: JobDetails = {
         id: data.id, title: data.title || 'Service Request', description: data.description || '',
@@ -594,15 +661,22 @@ export default function JobTrackingPage() {
         service_address: data.service_address || data.address_line1 || '',
         estimated_price: data.estimated_price || 0, payment_method: data.payment_method || 'cash',
         start_otp: data.start_otp, end_otp: data.end_otp, urgency_level: data.urgency_level || 'normal',
-        service_location_lat: data.service_location_lat || data.latitude || 0,
-        service_location_lng: data.service_location_lng || data.longitude || 0,
-        helper_location_lat: data.helper_location_lat, helper_location_lng: data.helper_location_lng,
+        service_location_lat: toNumberOrZero(data.service_location_lat ?? data.latitude),
+        service_location_lng: toNumberOrZero(data.service_location_lng ?? data.longitude),
+        helper_location_lat: helperLatParsed,
+        helper_location_lng: helperLngParsed,
         created_at: data.created_at, helper_accepted_at: data.helper_accepted_at,
         work_started_at: data.work_started_at, work_completed_at: data.work_completed_at,
         assigned_helper: data.assigned_helper, category: data.category,
         images: data.images || [],
         service_type_details: data.service_type_details || {}
       }
+      console.log('📍 Transformed job:', { 
+        helper_location_lat: transformed.helper_location_lat, 
+        helper_location_lng: transformed.helper_location_lng,
+        service_location_lat: transformed.service_location_lat,
+        service_location_lng: transformed.service_location_lng
+      })
       setJob(transformed)
       
       if (transformed.broadcast_status === 'broadcasting' && !transformed.assigned_helper) {
@@ -668,15 +742,36 @@ export default function JobTrackingPage() {
 
   function copyOTP(otp: string) { navigator.clipboard.writeText(otp); toast.success('Copied!') }
 
-  // ═══ LOADING STATE ═══
+  // ═══════════ LOADING STATE - PREMIUM ═══════════
   if (loading) {
     return (
-      <div className="h-screen bg-gradient-to-br from-slate-900 via-teal-900 to-emerald-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center mx-auto mb-4 animate-pulse shadow-2xl shadow-teal-500/50">
-            <Loader2 className="w-10 h-10 text-white animate-spin" />
+      <div className="h-screen bg-gradient-to-br from-slate-900 via-teal-900 to-emerald-900 flex items-center justify-center relative overflow-hidden">
+        {/* Background animated circles */}
+        <div className="absolute inset-0">
+          {[...Array(6)].map((_, i) => (
+            <div 
+              key={i}
+              className="absolute rounded-full bg-teal-500/10 animate-pulse"
+              style={{
+                width: `${100 + i * 50}px`,
+                height: `${100 + i * 50}px`,
+                top: `${20 + Math.random() * 60}%`,
+                left: `${20 + Math.random() * 60}%`,
+                animationDelay: `${i * 0.2}s`,
+                animationDuration: `${2 + i * 0.3}s`
+              }}
+            />
+          ))}
+        </div>
+        <div className="text-center relative z-10">
+          <div className="relative">
+            <div className="absolute inset-0 bg-teal-500 rounded-full blur-2xl opacity-30 animate-pulse" style={{ transform: 'scale(1.5)' }} />
+            <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-teal-500/50 animate-bounce">
+              <Route className="w-10 h-10 text-white" />
+            </div>
           </div>
-          <p className="text-white/80 font-medium">Loading...</p>
+          <p className="text-white/90 font-semibold text-lg">Loading your booking...</p>
+          <p className="text-white/50 text-sm mt-1">Please wait</p>
         </div>
       </div>
     )
@@ -685,14 +780,14 @@ export default function JobTrackingPage() {
   // ═══ NOT FOUND STATE ═══
   if (!job) {
     return (
-      <div className="h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl p-8 shadow-xl text-center max-w-sm">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-8 h-8 text-red-500" />
+      <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-8 shadow-2xl shadow-gray-200/50 text-center max-w-sm border border-gray-100">
+          <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-red-100">
+            <AlertCircle className="w-10 h-10 text-red-500" />
           </div>
-          <h2 className="text-xl font-bold mb-2">Not Found</h2>
-          <p className="text-gray-500 mb-6 text-sm">This booking doesn&apos;t exist</p>
-          <Button onClick={() => router.push('/customer/requests')} className="w-full h-11 bg-teal-500 text-white rounded-xl font-semibold">
+          <h2 className="text-xl font-black mb-2 text-gray-800">Booking Not Found</h2>
+          <p className="text-gray-500 mb-6 text-sm">This booking doesn&apos;t exist or has been removed</p>
+          <Button onClick={() => router.push('/customer/requests')} className="w-full h-12 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-teal-500/30">
             Go Back
           </Button>
         </div>
@@ -702,7 +797,16 @@ export default function JobTrackingPage() {
 
   const isBroadcasting = job.broadcast_status === 'broadcasting' && !job.assigned_helper
   const isActive = !['cancelled', 'completed'].includes(job.broadcast_status)
-  const hasHelper = job.helper_location_lat && job.helper_location_lng
+  const hasHelper = job.helper_location_lat !== null && job.helper_location_lng !== null && job.helper_location_lat !== 0 && job.helper_location_lng !== 0
+  
+  console.log('🎯 Main page computed values:', {
+    isBroadcasting,
+    hasHelper,
+    helper_location_lat: job.helper_location_lat,
+    helper_location_lng: job.helper_location_lng,
+    broadcast_status: job.broadcast_status,
+    assigned_helper: job.assigned_helper?.profile?.full_name
+  })
   const hasImages = job.images && job.images.length > 0
   const hasMaterials = job.service_type_details?.materials_needed && job.service_type_details.materials_needed.length > 0
   const hasHelperBrings = job.service_type_details?.helper_brings && job.service_type_details.helper_brings.length > 0
@@ -711,7 +815,7 @@ export default function JobTrackingPage() {
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       {/* ═══════════ FULL SCREEN MAP ═══════════ */}
-      <div className={`relative transition-all duration-300 ${activeTab === 'details' ? 'h-32' : 'flex-1'}`} style={{ minHeight: activeTab === 'details' ? '8rem' : '45vh' }}>
+      <div className={`relative transition-all duration-500 ease-out ${activeTab === 'details' ? 'h-28' : 'flex-1'}`} style={{ minHeight: activeTab === 'details' ? '7rem' : '40vh' }}>
         <LiveTrackingMap
           customerLat={job.service_location_lat}
           customerLng={job.service_location_lng}
@@ -722,201 +826,291 @@ export default function JobTrackingPage() {
           isBroadcasting={isBroadcasting}
         />
 
-        {/* Top Nav */}
+        {/* Top Nav - Floating glass effect */}
         <div className="absolute top-4 left-4 right-4 flex justify-between z-10">
-          <button onClick={() => router.back()} className="w-11 h-11 bg-white rounded-xl shadow-lg flex items-center justify-center">
+          <button onClick={() => router.back()} className="w-11 h-11 bg-white/90 backdrop-blur-md rounded-xl shadow-lg flex items-center justify-center border border-white/50 active:scale-95 transition-transform">
             <ArrowLeft className="w-5 h-5 text-gray-700" />
           </button>
-          <div className="bg-white rounded-xl shadow-lg px-4 py-2.5">
+          <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-lg px-4 py-2.5 flex items-center gap-2 border border-white/50">
+            <div className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
             <span className="font-bold text-gray-800 text-sm">{job.category?.name || 'Service'}</span>
           </div>
         </div>
 
-        {/* Live Badge */}
+        {/* Live Tracking Badge */}
         {hasHelper && activeTab === 'track' && (
-          <div className="absolute top-16 left-4 bg-green-500 text-white rounded-full px-3 py-1.5 shadow-lg flex items-center gap-2 z-10">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-            </span>
-            <span className="text-xs font-bold">LIVE</span>
+          <div className="absolute top-16 left-4 z-10">
+            <div className="bg-slate-700 text-white rounded-full px-3 py-1.5 shadow-md flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+              </span>
+              <span className="text-xs font-semibold">LIVE</span>
+            </div>
+          </div>
+        )}
+
+        {/* ETA Badge when helper is on way */}
+        {job.broadcast_status === 'on_way' && activeTab === 'track' && (
+          <div className="absolute top-16 right-4 z-10">
+            <div className="bg-white rounded-xl px-3 py-2 shadow-md border border-gray-200">
+              <p className="text-[10px] font-semibold text-gray-500 uppercase">Arriving in</p>
+              <p className="text-lg font-bold text-gray-800">5-10 min</p>
+            </div>
           </div>
         )}
       </div>
 
-      {/* ═══════════ BOTTOM SHEET ═══════════ */}
-      <div className={`bg-white rounded-t-[1.75rem] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] relative -mt-6 z-20 overflow-hidden flex flex-col transition-all duration-300 ${activeTab === 'details' ? 'flex-1' : 'max-h-[55vh]'}`}>
-        {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 bg-gray-300 rounded-full" />
+      {/* ═══════════ BOTTOM SHEET - PREMIUM ═══════════ */}
+      <div className={`bg-white rounded-t-[2rem] shadow-[0_-10px_50px_rgba(0,0,0,0.12)] relative -mt-6 z-20 overflow-hidden flex flex-col transition-all duration-500 ease-out ${activeTab === 'details' ? 'flex-1' : 'max-h-[60vh]'}`}>
+        {/* Handle with subtle animation */}
+        <div className="flex justify-center pt-3 pb-2">
+          <div className="w-12 h-1.5 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded-full" />
         </div>
 
         {/* Tab Switcher */}
-        <div className="px-5 mb-3">
+        <div className="px-4 mb-3">
           <div className="bg-gray-100 rounded-xl p-1 flex gap-1">
             <button
               onClick={() => setActiveTab('track')}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
                 activeTab === 'track' 
-                  ? 'bg-white text-teal-600 shadow-sm' 
+                  ? 'bg-white text-gray-800 shadow-sm' 
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               <Navigation className="w-4 h-4" />
               Track
+              {hasHelper && <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />}
             </button>
             <button
               onClick={() => setActiveTab('details')}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
                 activeTab === 'details' 
-                  ? 'bg-white text-teal-600 shadow-sm' 
+                  ? 'bg-white text-gray-800 shadow-sm' 
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               <FileText className="w-4 h-4" />
               Details
               {(hasImages || hasMaterials) && (
-                <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
+                <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
               )}
             </button>
           </div>
         </div>
 
-        <div className="px-5 pb-6 overflow-y-auto flex-1">
+        <div className="px-4 pb-6 overflow-y-auto flex-1 scrollbar-hide">
           {/* ═══════════ TRACK TAB ═══════════ */}
           {activeTab === 'track' && (
             <>
-              {/* BROADCASTING */}
+              {/* BROADCASTING - Search Animation */}
               {isBroadcasting && <SearchingAnimation nearbyHelpers={nearbyHelpers} />}
 
-              {/* HELPER ASSIGNED */}
+              {/* HELPER ASSIGNED - Premium Card */}
               {job.assigned_helper && (
                 <>
-                  {/* Status */}
-                  <div className={`rounded-2xl p-4 mb-4 ${
-                    job.broadcast_status === 'in_progress' ? 'bg-gradient-to-r from-indigo-500 to-purple-600'
-                    : job.broadcast_status === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-600'
-                    : 'bg-gradient-to-r from-teal-500 to-emerald-600'
+                  {/* Status Banner - Soft gradient */}
+                  <div className={`rounded-2xl p-4 mb-4 relative overflow-hidden ${
+                    job.broadcast_status === 'in_progress' ? 'bg-gradient-to-r from-slate-600 to-slate-700'
+                    : job.broadcast_status === 'completed' ? 'bg-gradient-to-r from-emerald-600 to-teal-600'
+                    : job.broadcast_status === 'arrived' ? 'bg-gradient-to-r from-amber-600 to-orange-600'
+                    : 'bg-gradient-to-r from-teal-600 to-slate-600'
                   }`}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center">
-                        {job.broadcast_status === 'in_progress' ? <Timer className="w-5 h-5 text-white" />
-                        : job.broadcast_status === 'completed' ? <CheckCircle2 className="w-5 h-5 text-white" />
-                        : <Navigation className="w-5 h-5 text-white" />}
+                    {/* Background pattern */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-x-8 -translate-y-16" />
+                    <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/10 rounded-full translate-x-4 translate-y-8" />
+                    
+                    <div className="flex items-center gap-3 relative">
+                      <div className="w-12 h-12 bg-white/25 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                        {job.broadcast_status === 'in_progress' ? <Timer className="w-6 h-6 text-white" />
+                        : job.broadcast_status === 'completed' ? <CheckCircle2 className="w-6 h-6 text-white" />
+                        : job.broadcast_status === 'arrived' ? <MapPin className="w-6 h-6 text-white" />
+                        : <Navigation className="w-6 h-6 text-white" />}
                       </div>
-                      <div>
-                        <p className="text-white font-bold">
-                          {job.broadcast_status === 'accepted' && 'Helper Assigned'}
-                          {job.broadcast_status === 'on_way' && 'On the Way'}
-                          {job.broadcast_status === 'arrived' && 'Arrived'}
-                          {job.broadcast_status === 'in_progress' && 'Working'}
-                          {job.broadcast_status === 'completed' && 'Completed'}
+                      <div className="flex-1">
+                        <p className="text-white font-black text-base">
+                          {job.broadcast_status === 'accepted' && '🚀 Helper Assigned'}
+                          {job.broadcast_status === 'on_way' && '🛵 On the Way'}
+                          {job.broadcast_status === 'arrived' && '📍 Helper Arrived'}
+                          {job.broadcast_status === 'in_progress' && '⚡ Work in Progress'}
+                          {job.broadcast_status === 'completed' && '✅ Job Completed'}
                         </p>
-                        <p className="text-white/70 text-sm">
-                          {job.broadcast_status === 'accepted' && 'Getting ready'}
-                          {job.broadcast_status === 'on_way' && 'Coming to you'}
-                          {job.broadcast_status === 'arrived' && 'Ready to start'}
-                          {job.broadcast_status === 'in_progress' && 'Service ongoing'}
-                          {job.broadcast_status === 'completed' && 'All done!'}
+                        <p className="text-white/80 text-sm">
+                          {job.broadcast_status === 'accepted' && 'Preparing to come to you'}
+                          {job.broadcast_status === 'on_way' && 'Arriving soon at your location'}
+                          {job.broadcast_status === 'arrived' && 'Share START OTP to begin'}
+                          {job.broadcast_status === 'in_progress' && 'Your service is ongoing'}
+                          {job.broadcast_status === 'completed' && 'All done! Rate your experience'}
                         </p>
                       </div>
                     </div>
                   </div>
 
                   {/* Helper Card */}
-                  <div className="bg-gray-50 rounded-2xl p-4 mb-4">
+                  <div className="bg-white rounded-2xl p-4 mb-4 border border-gray-200 shadow-sm">
                     <div className="flex items-center gap-3">
                       <div className="relative">
-                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center overflow-hidden">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center overflow-hidden shadow-md">
                           {job.assigned_helper.profile?.avatar_url ? (
                             <Image src={job.assigned_helper.profile.avatar_url} alt="" fill className="object-cover" />
                           ) : (
-                            <User className="w-7 h-7 text-white" />
+                            <User className="w-8 h-8 text-white" />
                           )}
                         </div>
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-md flex items-center justify-center border-2 border-white">
-                          <BadgeCheck className="w-3 h-3 text-white" />
+                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-lg flex items-center justify-center border-2 border-white">
+                          <BadgeCheck className="w-3.5 h-3.5 text-white" />
                         </div>
                       </div>
                       <div className="flex-1">
-                        <p className="font-bold text-gray-900">{job.assigned_helper.profile?.full_name || 'Helper'}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-                          <span className="text-xs font-semibold text-gray-600">{job.assigned_helper.avg_rating > 0 ? job.assigned_helper.avg_rating.toFixed(1) : 'New'}</span>
-                          <span className="text-gray-300">•</span>
-                          <span className="text-xs text-gray-500">{job.assigned_helper.total_jobs_completed || 0} jobs</span>
+                        <p className="font-black text-gray-900 text-base">{job.assigned_helper.profile?.full_name || 'Helper'}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-lg">
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                            <span className="text-xs font-bold text-amber-600">{job.assigned_helper.avg_rating > 0 ? job.assigned_helper.avg_rating.toFixed(1) : 'New'}</span>
+                          </div>
+                          <div className="flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded-lg">
+                            <Wrench className="w-3 h-3 text-gray-600" />
+                            <span className="text-xs font-semibold text-gray-600">{job.assigned_helper.total_jobs_completed || 0} jobs</span>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <a href={`tel:${job.assigned_helper.profile?.phone}`} className="w-10 h-10 rounded-xl bg-teal-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
-                          <Phone className="w-4 h-4 text-white" />
-                        </a>
-                        <a href={`https://wa.me/91${job.assigned_helper.profile?.phone}`} target="_blank" className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center shadow-lg shadow-green-500/30">
-                          <MessageSquare className="w-4 h-4 text-white" />
-                        </a>
-                      </div>
+                    </div>
+                    
+                    {/* Contact Buttons */}
+                    <div className="flex gap-2 mt-4">
+                      <a href={`tel:${job.assigned_helper.profile?.phone}`} className="flex-1 h-11 rounded-xl bg-slate-700 flex items-center justify-center gap-2 shadow-sm active:scale-[0.98] transition-transform">
+                        <Phone className="w-4 h-4 text-white" />
+                        <span className="text-white text-sm font-semibold">Call</span>
+                      </a>
+                      <a href={`https://wa.me/91${job.assigned_helper.profile?.phone}`} target="_blank" className="flex-1 h-11 rounded-xl bg-emerald-600 flex items-center justify-center gap-2 shadow-sm active:scale-[0.98] transition-transform">
+                        <MessageSquare className="w-4 h-4 text-white" />
+                        <span className="text-white text-sm font-semibold">WhatsApp</span>
+                      </a>
                     </div>
                   </div>
 
-                  {/* OTPs */}
+                  {/* OTP Cards - Premium design */}
                   {(job.start_otp || job.end_otp) && (
                     <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div className={`rounded-xl p-3 ${job.work_started_at ? 'bg-gray-100' : 'bg-green-50 border border-green-200'}`}>
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <div className={`w-1.5 h-1.5 rounded-full ${job.work_started_at ? 'bg-gray-400' : 'bg-green-500'}`} />
-                          <span className={`text-[10px] font-bold ${job.work_started_at ? 'text-gray-400' : 'text-green-700'}`}>START</span>
+                      {/* Start OTP */}
+                      <div className={`rounded-2xl p-3 relative overflow-hidden transition-all duration-300 ${
+                        job.work_started_at 
+                          ? 'bg-gray-100 opacity-60' 
+                          : 'bg-gray-50 border border-gray-200'
+                      }`}>
+                        <div className="absolute top-0 right-0 w-16 h-16 bg-gray-100 rounded-full -translate-x-4 -translate-y-8" />
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <CircleDot className={`w-4 h-4 ${job.work_started_at ? 'text-gray-400' : 'text-slate-600'}`} />
+                          <span className={`text-xs font-bold uppercase tracking-wider ${job.work_started_at ? 'text-gray-400' : 'text-slate-700'}`}>Start OTP</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className={`text-xl font-black font-mono tracking-wide ${job.work_started_at ? 'text-gray-400' : 'text-green-600'}`}>{job.start_otp || '----'}</span>
+                          <span className={`text-2xl font-black font-mono tracking-widest ${job.work_started_at ? 'text-gray-400' : 'text-slate-800'}`}>{job.start_otp || '----'}</span>
                           {!job.work_started_at && job.start_otp && (
-                            <button onClick={() => copyOTP(job.start_otp!)} className="p-1.5 bg-green-500 rounded-md">
-                              <Copy className="w-3 h-3 text-white" />
+                            <button onClick={() => copyOTP(job.start_otp!)} className="p-2 bg-slate-600 rounded-xl shadow-sm active:scale-95 transition-transform">
+                              <Copy className="w-4 h-4 text-white" />
                             </button>
                           )}
                         </div>
+                        {job.work_started_at && (
+                          <div className="flex items-center gap-1 mt-2">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-gray-400" />
+                            <span className="text-[10px] text-gray-400 font-medium">Verified</span>
+                          </div>
+                        )}
                       </div>
-                      <div className={`rounded-xl p-3 ${job.work_completed_at ? 'bg-gray-100' : !job.work_started_at ? 'bg-gray-100' : 'bg-blue-50 border border-blue-200'}`}>
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <div className={`w-1.5 h-1.5 rounded-full ${job.work_completed_at ? 'bg-gray-400' : !job.work_started_at ? 'bg-gray-400' : 'bg-blue-500'}`} />
-                          <span className={`text-[10px] font-bold ${job.work_completed_at ? 'text-gray-400' : !job.work_started_at ? 'text-gray-400' : 'text-blue-700'}`}>END</span>
+                      
+                      {/* End OTP */}
+                      <div className={`rounded-2xl p-3 relative overflow-hidden transition-all duration-300 ${
+                        job.work_completed_at 
+                          ? 'bg-gray-100 opacity-60' 
+                          : !job.work_started_at 
+                            ? 'bg-gray-100 opacity-50' 
+                            : 'bg-slate-50 border border-slate-200'
+                      }`}>
+                        <div className="absolute top-0 right-0 w-16 h-16 bg-slate-100/50 rounded-full -translate-x-4 -translate-y-8" />
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <CheckCircle2 className={`w-4 h-4 ${job.work_completed_at ? 'text-gray-400' : !job.work_started_at ? 'text-gray-400' : 'text-slate-600'}`} />
+                          <span className={`text-xs font-bold uppercase tracking-wider ${job.work_completed_at ? 'text-gray-400' : !job.work_started_at ? 'text-gray-400' : 'text-slate-700'}`}>End OTP</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className={`text-xl font-black font-mono tracking-wide ${job.work_completed_at ? 'text-gray-400' : !job.work_started_at ? 'text-gray-300' : 'text-blue-600'}`}>{job.end_otp || '----'}</span>
+                          <span className={`text-2xl font-black font-mono tracking-widest ${job.work_completed_at ? 'text-gray-400' : !job.work_started_at ? 'text-gray-300' : 'text-slate-800'}`}>{job.end_otp || '----'}</span>
                           {job.work_started_at && !job.work_completed_at && job.end_otp && (
-                            <button onClick={() => copyOTP(job.end_otp!)} className="p-1.5 bg-blue-500 rounded-md">
-                              <Copy className="w-3 h-3 text-white" />
+                            <button onClick={() => copyOTP(job.end_otp!)} className="p-2 bg-slate-600 rounded-xl shadow-sm active:scale-95 transition-transform">
+                              <Copy className="w-4 h-4 text-white" />
                             </button>
                           )}
                         </div>
+                        {job.work_completed_at && (
+                          <div className="flex items-center gap-1 mt-2">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-gray-400" />
+                            <span className="text-[10px] text-gray-400 font-medium">Verified</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
                 </>
               )}
 
-              {/* Quick Info */}
-              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-4">
-                <div className="p-3 border-b border-gray-100 flex items-center justify-between">
-                  <span className="font-bold text-gray-800 text-sm">Quick Info</span>
-                  <span className="text-2xl font-black text-teal-600">₹{job.estimated_price}</span>
-                </div>
-                <div className="p-3 space-y-2.5">
-                  <div className="flex items-start gap-2.5">
-                    <MapPin className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700 text-sm">{job.service_address || 'Not set'}</span>
+              {/* Quick Info - Modern card */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-4">
+                {/* Price header */}
+                <div className="p-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-gray-600" />
+                    </div>
+                    <span className="font-semibold text-gray-600 text-sm">Service Fee</span>
                   </div>
-                  <div className="flex items-center gap-2.5">
-                    {job.payment_method === 'cash' ? <Banknote className="w-4 h-4 text-amber-500" /> : <CreditCard className="w-4 h-4 text-blue-500" />}
-                    <span className="text-gray-700 text-sm capitalize">{job.payment_method || 'Cash'}</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-black text-gray-800">₹{job.estimated_price}</span>
+                  </div>
+                </div>
+                
+                <div className="p-4 space-y-3">
+                  {/* Location */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-4 h-4 text-red-500" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Location</p>
+                      <p className="text-gray-700 text-sm font-medium">{job.service_address || 'Not set'}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Payment */}
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${job.payment_method === 'cash' ? 'bg-amber-100' : 'bg-blue-100'}`}>
+                      {job.payment_method === 'cash' ? <Banknote className="w-4 h-4 text-amber-500" /> : <CreditCard className="w-4 h-4 text-blue-500" />}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Payment</p>
+                      <p className="text-gray-700 text-sm font-medium capitalize">{job.payment_method || 'Cash'}</p>
+                    </div>
                     {!job.work_started_at && (
-                      <button onClick={() => setShowPaymentOptions(!showPaymentOptions)} className="text-teal-600 text-xs font-semibold ml-auto">Change</button>
+                      <button onClick={() => setShowPaymentOptions(!showPaymentOptions)} className="text-gray-600 text-xs font-semibold bg-gray-100 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-colors">
+                        Change
+                      </button>
                     )}
                   </div>
+                  
+                  {/* Payment Options */}
                   {showPaymentOptions && (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 pt-2">
                       {['cash', 'upi', 'card'].map((m) => (
-                        <button key={m} onClick={() => updatePaymentMethod(m)} className={`flex-1 py-1.5 rounded-lg text-xs font-medium ${job.payment_method === m ? 'bg-teal-500 text-white' : 'bg-gray-100 text-gray-700'}`}>
-                          {m.toUpperCase()}
+                        <button 
+                          key={m} 
+                          onClick={() => updatePaymentMethod(m)} 
+                          disabled={updatingPayment}
+                          className={`flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                            job.payment_method === m 
+                              ? 'bg-slate-700 text-white' 
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {m === 'cash' && '💵'} {m === 'upi' && '📱'} {m === 'card' && '💳'} {m.toUpperCase()}
                         </button>
                       ))}
                     </div>
@@ -927,59 +1121,79 @@ export default function JobTrackingPage() {
               {/* View Details Button */}
               <button 
                 onClick={() => setActiveTab('details')}
-                className="w-full py-3 bg-gray-50 rounded-xl flex items-center justify-center gap-2 text-gray-600 font-medium hover:bg-gray-100 transition-colors mb-4"
+                className="w-full py-3 bg-gray-100 rounded-xl flex items-center justify-center gap-2 text-gray-600 font-medium hover:bg-gray-200 transition-all mb-4 border border-gray-200"
               >
                 <Eye className="w-4 h-4" />
                 View Full Details
                 <ChevronDown className="w-4 h-4" />
               </button>
 
-              {/* Actions */}
+              {/* Cancel Button - Only when appropriate */}
               {isActive && job.broadcast_status !== 'in_progress' && (
-                <Button variant="outline" onClick={cancelJob} disabled={cancelling} className="w-full h-11 border-red-200 text-red-600 hover:bg-red-50 rounded-xl font-semibold">
+                <Button 
+                  variant="outline" 
+                  onClick={cancelJob} 
+                  disabled={cancelling} 
+                  className="w-full h-12 border-2 border-red-200 text-red-500 hover:bg-red-50 rounded-xl font-bold transition-colors"
+                >
                   {cancelling ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <XCircle className="w-4 h-4 mr-2" />}
-                  Cancel
+                  Cancel Booking
                 </Button>
               )}
               {job.broadcast_status === 'completed' && (
-                <Button onClick={() => router.push(`/customer/requests/${requestId}/rate`)} className="w-full h-11 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-teal-500/30">
-                  <Star className="w-4 h-4 mr-2" /> Rate Helper
+                <Button onClick={() => router.push(`/customer/requests/${requestId}/rate`)} className="w-full h-12 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-teal-500/30 hover:shadow-teal-500/40 transition-shadow">
+                  <Star className="w-4 h-4 mr-2" /> Rate Your Helper
                 </Button>
               )}
             </>
           )}
 
-          {/* ═══════════ DETAILS TAB ═══════════ */}
+          {/* ═══════════ DETAILS TAB - PREMIUM ═══════════ */}
           {activeTab === 'details' && (
             <div className="space-y-4">
-              {/* Price & Time Summary */}
-              <div className="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl p-4 text-white">
-                <div className="flex items-center justify-between mb-3">
+              {/* Price & Time Summary - Premium gradient card */}
+              <div className="bg-gradient-to-br from-teal-500 via-emerald-500 to-cyan-600 rounded-2xl p-5 text-white relative overflow-hidden shadow-xl shadow-teal-500/30">
+                {/* Background decoration */}
+                <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-x-10 -translate-y-20" />
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-x-4 translate-y-8" />
+                
+                <div className="flex items-center justify-between mb-4 relative">
                   <div>
-                    <p className="text-white/70 text-sm">Estimated Cost</p>
-                    <p className="text-3xl font-black">₹{job.estimated_price}</p>
+                    <p className="text-white/70 text-xs font-semibold uppercase tracking-wide">Estimated Cost</p>
+                    <p className="text-4xl font-black">₹{job.estimated_price}</p>
                   </div>
                   {job.service_type_details?.estimated_duration && (
-                    <div className="text-right">
-                      <p className="text-white/70 text-sm">Est. Duration</p>
-                      <p className="text-2xl font-bold">{job.service_type_details.estimated_duration} min</p>
+                    <div className="text-right bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2">
+                      <p className="text-white/70 text-xs font-semibold uppercase tracking-wide">Duration</p>
+                      <p className="text-2xl font-black">{job.service_type_details.estimated_duration} <span className="text-sm font-medium">min</span></p>
                     </div>
                   )}
                 </div>
                 {job.service_type_details?.confidence && (
-                  <div className="bg-white/20 rounded-lg px-3 py-2 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    <span className="text-sm">AI Confidence: {job.service_type_details.confidence}%</span>
+                  <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2.5 flex items-center gap-2 relative">
+                    <Sparkles className="w-5 h-5 text-amber-300" />
+                    <span className="text-sm font-semibold">AI Confidence: {job.service_type_details.confidence}%</span>
+                    <div className="flex-1 h-2 bg-white/20 rounded-full ml-2 overflow-hidden">
+                      <div 
+                        className="h-full bg-amber-300 rounded-full" 
+                        style={{ width: `${job.service_type_details.confidence}%` }}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Uploaded Photos */}
+              {/* Uploaded Photos - Gallery style */}
               {hasImages && (
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                  <div className="p-3 border-b border-gray-100 flex items-center gap-2">
-                    <Camera className="w-4 h-4 text-blue-500" />
-                    <span className="font-bold text-gray-800 text-sm">Your Photos ({job.images!.length})</span>
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="p-4 border-b border-gray-100 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center">
+                      <Camera className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-gray-800 text-sm">Your Photos</span>
+                      <p className="text-xs text-gray-500">{job.images!.length} images attached</p>
+                    </div>
                   </div>
                   <div className="p-3">
                     <div className="grid grid-cols-3 gap-2">
@@ -987,11 +1201,11 @@ export default function JobTrackingPage() {
                         <button
                           key={idx}
                           onClick={() => setShowImageModal(img)}
-                          className="aspect-square rounded-lg overflow-hidden relative bg-gray-100 hover:opacity-90 transition-opacity"
+                          className="aspect-square rounded-xl overflow-hidden relative bg-gray-100 hover:opacity-90 transition-all hover:scale-[1.02] shadow-sm"
                         >
                           <Image src={img} alt={`Photo ${idx + 1}`} fill className="object-cover" />
-                          <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center">
-                            <Eye className="w-5 h-5 text-white opacity-0 hover:opacity-100" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 hover:opacity-100 transition-opacity flex items-end justify-center pb-2">
+                            <Eye className="w-5 h-5 text-white" />
                           </div>
                         </button>
                       ))}
@@ -1002,41 +1216,50 @@ export default function JobTrackingPage() {
 
               {/* Problem Description */}
               {job.description && (
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                  <div className="p-3 border-b border-gray-100 flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-purple-500" />
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="p-4 border-b border-gray-100 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-purple-600" />
+                    </div>
                     <span className="font-bold text-gray-800 text-sm">Problem Description</span>
                   </div>
-                  <div className="p-3">
-                    <p className="text-gray-700 text-sm">{job.description}</p>
+                  <div className="p-4">
+                    <p className="text-gray-700 text-sm leading-relaxed">{job.description}</p>
                   </div>
                 </div>
               )}
 
               {/* Work Overview */}
               {job.service_type_details?.work_overview && (
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                  <div className="p-3 border-b border-gray-100 flex items-center gap-2">
-                    <Info className="w-4 h-4 text-teal-500" />
-                    <span className="font-bold text-gray-800 text-sm">Work Overview</span>
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="p-4 border-b border-gray-100 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center">
+                      <Info className="w-5 h-5 text-gray-600" />
+                    </div>
+                    <span className="font-bold text-gray-800 text-sm">AI Work Overview</span>
                   </div>
-                  <div className="p-3">
-                    <p className="text-gray-700 text-sm">{job.service_type_details.work_overview}</p>
+                  <div className="p-4">
+                    <p className="text-gray-700 text-sm leading-relaxed">{job.service_type_details.work_overview}</p>
                   </div>
                 </div>
               )}
 
               {/* Materials Needed */}
               {hasMaterials && (
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                  <div className="p-3 border-b border-gray-100 flex items-center gap-2">
-                    <Package className="w-4 h-4 text-orange-500" />
-                    <span className="font-bold text-gray-800 text-sm">Materials May Be Needed</span>
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="p-4 border-b border-gray-100 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center">
+                      <Package className="w-5 h-5 text-orange-600" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-gray-800 text-sm">Materials May Be Needed</span>
+                      <p className="text-xs text-gray-500">Additional items for the job</p>
+                    </div>
                   </div>
-                  <div className="p-3">
+                  <div className="p-4">
                     <div className="flex flex-wrap gap-2">
                       {job.service_type_details!.materials_needed!.map((material, idx) => (
-                        <span key={idx} className="bg-orange-50 text-orange-700 rounded-lg px-3 py-1.5 text-sm font-medium">
+                        <span key={idx} className="bg-orange-50 text-orange-700 border border-orange-200 rounded-xl px-3 py-2 text-sm font-medium">
                           {material}
                         </span>
                       ))}
@@ -1047,17 +1270,24 @@ export default function JobTrackingPage() {
 
               {/* What Helper Brings */}
               {hasHelperBrings && (
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                  <div className="p-3 border-b border-gray-100 flex items-center gap-2">
-                    <Wrench className="w-4 h-4 text-indigo-500" />
-                    <span className="font-bold text-gray-800 text-sm">Helper Will Bring</span>
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="p-4 border-b border-gray-100 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center">
+                      <Wrench className="w-5 h-5 text-indigo-600" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-gray-800 text-sm">Helper Will Bring</span>
+                      <p className="text-xs text-gray-500">Tools and equipment</p>
+                    </div>
                   </div>
-                  <div className="p-3">
-                    <ul className="space-y-2">
+                  <div className="p-4">
+                    <ul className="space-y-2.5">
                       {job.service_type_details!.helper_brings!.map((item, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
-                          <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          {item}
+                        <li key={idx} className="flex items-start gap-3 text-sm text-gray-700">
+                          <div className="w-5 h-5 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                          </div>
+                          <span className="font-medium">{item}</span>
                         </li>
                       ))}
                     </ul>
@@ -1067,19 +1297,24 @@ export default function JobTrackingPage() {
 
               {/* What Customer Should Provide */}
               {hasCustomerProvides && (
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                  <div className="p-3 border-b border-gray-100 flex items-center gap-2">
-                    <User className="w-4 h-4 text-blue-500" />
-                    <span className="font-bold text-gray-800 text-sm">You Should Provide</span>
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="p-4 border-b border-gray-100 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center">
+                      <User className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-gray-800 text-sm">You Should Provide</span>
+                      <p className="text-xs text-gray-500">Items to keep ready</p>
+                    </div>
                   </div>
-                  <div className="p-3">
-                    <ul className="space-y-2">
+                  <div className="p-4">
+                    <ul className="space-y-2.5">
                       {job.service_type_details!.customer_provides!.map((item, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
-                          <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <li key={idx} className="flex items-start gap-3 text-sm text-gray-700">
+                          <div className="w-5 h-5 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                             <span className="text-xs text-blue-600 font-bold">{idx + 1}</span>
                           </div>
-                          {item}
+                          <span className="font-medium">{item}</span>
                         </li>
                       ))}
                     </ul>
@@ -1088,28 +1323,31 @@ export default function JobTrackingPage() {
               )}
 
               {/* Address & Payment Info */}
-              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                <div className="p-3 border-b border-gray-100 flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-red-500" />
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-gray-100 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-red-500" />
+                  </div>
                   <span className="font-bold text-gray-800 text-sm">Service Location</span>
                 </div>
-                <div className="p-3 space-y-3">
-                  <p className="text-gray-700 text-sm">{job.service_address}</p>
-                  <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-                    {job.payment_method === 'cash' ? <Banknote className="w-4 h-4 text-amber-500" /> : <CreditCard className="w-4 h-4 text-blue-500" />}
-                    <span className="text-gray-700 text-sm capitalize">Payment: {job.payment_method}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-500 text-sm">
-                      Requested: {new Date(job.created_at).toLocaleDateString('en-IN', { 
-                        day: 'numeric', 
-                        month: 'short', 
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
+                <div className="p-4 space-y-4">
+                  <p className="text-gray-700 text-sm font-medium">{job.service_address}</p>
+                  <div className="flex flex-wrap gap-3">
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded-xl ${job.payment_method === 'cash' ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'}`}>
+                      {job.payment_method === 'cash' ? <Banknote className="w-4 h-4 text-amber-500" /> : <CreditCard className="w-4 h-4 text-blue-500" />}
+                      <span className={`text-sm font-semibold capitalize ${job.payment_method === 'cash' ? 'text-amber-700' : 'text-blue-700'}`}>{job.payment_method}</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200">
+                      <Clock className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-600 text-sm">
+                        {new Date(job.created_at).toLocaleDateString('en-IN', { 
+                          day: 'numeric', 
+                          month: 'short', 
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1117,9 +1355,9 @@ export default function JobTrackingPage() {
               {/* Back to Track Button */}
               <button 
                 onClick={() => setActiveTab('track')}
-                className="w-full py-3 bg-teal-50 rounded-xl flex items-center justify-center gap-2 text-teal-600 font-semibold hover:bg-teal-100 transition-colors"
+                className="w-full py-4 bg-slate-700 rounded-2xl flex items-center justify-center gap-2 text-white font-semibold shadow-sm hover:bg-slate-800 transition-all active:scale-[0.98]"
               >
-                <ChevronUp className="w-4 h-4" />
+                <ChevronUp className="w-5 h-5" />
                 Back to Tracking
               </button>
             </div>
@@ -1127,14 +1365,14 @@ export default function JobTrackingPage() {
         </div>
       </div>
 
-      {/* Image Modal */}
+      {/* Image Modal - Premium fullscreen */}
       {showImageModal && (
-        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4" onClick={() => setShowImageModal(null)}>
-          <button className="absolute top-4 right-4 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+        <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4" onClick={() => setShowImageModal(null)}>
+          <button className="absolute top-5 right-5 w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/20 transition-colors">
             <X className="w-6 h-6 text-white" />
           </button>
-          <div className="relative w-full max-w-lg aspect-square">
-            <Image src={showImageModal} alt="Full view" fill className="object-contain" />
+          <div className="relative w-full max-w-lg aspect-square animate-in zoom-in-95 duration-300">
+            <Image src={showImageModal} alt="Full view" fill className="object-contain rounded-2xl" />
           </div>
         </div>
       )}

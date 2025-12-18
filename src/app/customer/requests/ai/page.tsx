@@ -378,6 +378,34 @@ export default function AIRequestPage() {
     setVideos(prev => prev.filter((_, i) => i !== index))
   }
 
+  const handleCustomPriceFlow = () => {
+    if (!formData.category || !formData.description || !formData.location) {
+      toast.error('Please fill category, description, and location first')
+      return
+    }
+
+    const fallbackPayload = {
+      category: formData.category,
+      description: formData.description,
+      title: formData.description?.slice(0, 80) || 'Service request',
+      location: formData.location,
+      latitude: formData.latitude,
+      longitude: formData.longitude,
+      images,
+      videos,
+      urgency: formData.urgency,
+      estimatedPrice: aiResult?.estimatedPrice,
+    }
+
+    try {
+      localStorage.setItem('aiFallbackRequest', JSON.stringify(fallbackPayload))
+    } catch (error) {
+      console.error('Failed to store fallback request', error)
+    }
+
+    router.push('/customer/requests/new')
+  }
+
   // Simple category detection fallback
   const detectCategory = (text: string) => {
     const lower = text.toLowerCase()
@@ -672,59 +700,54 @@ export default function AIRequestPage() {
               </span>
             </div>
             
-            {/* Upload Buttons - Premium Style */}
-            <div className="flex gap-3 mb-4">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading || images.length >= 5}
-                className="flex-1 flex flex-col items-center justify-center gap-2 py-5 px-4 bg-gradient-to-br from-gray-50 to-gray-100 text-gray-600 rounded-2xl border-2 border-dashed border-gray-200 hover:border-emerald-400 hover:from-emerald-50 hover:to-teal-50 hover:text-emerald-700 disabled:opacity-50 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group"
-              >
-                <div className="w-12 h-12 rounded-xl bg-white shadow-md flex items-center justify-center group-hover:shadow-emerald-200 transition-all">
-                  <ImageIcon className="w-6 h-6" />
-                </div>
-                <span className="text-sm font-semibold">Gallery</span>
-              </button>
+            {/* Upload Buttons - Compact Tiles */}
+            <div className="grid grid-cols-3 gap-3 mb-3">
               <button
                 onClick={() => cameraInputRef.current?.click()}
                 disabled={uploading || images.length >= 5}
-                className="flex-1 flex flex-col items-center justify-center gap-2 py-5 px-4 bg-gradient-to-br from-emerald-50 to-teal-50 text-emerald-700 rounded-2xl border-2 border-dashed border-emerald-300 hover:border-emerald-500 hover:from-emerald-100 hover:to-teal-100 disabled:opacity-50 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-emerald-100 group"
+                className="h-28 w-full rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50/60 flex flex-col items-center justify-center gap-2 text-emerald-700 hover:border-emerald-400 hover:bg-emerald-50 disabled:opacity-50 transition-all"
               >
-                <div className="w-12 h-12 rounded-xl bg-white shadow-md flex items-center justify-center group-hover:shadow-emerald-200 transition-all">
+                <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center">
                   <Camera className="w-6 h-6" />
                 </div>
                 <span className="text-sm font-semibold">Camera</span>
               </button>
               <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading || images.length >= 5}
+                className="h-28 w-full rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/60 flex flex-col items-center justify-center gap-2 text-blue-700 hover:border-blue-400 hover:bg-blue-50 disabled:opacity-50 transition-all"
+              >
+                <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center">
+                  <ImageIcon className="w-6 h-6" />
+                </div>
+                <span className="text-sm font-semibold">Gallery</span>
+              </button>
+              <button
                 onClick={() => videoInputRef.current?.click()}
                 disabled={uploading || videos.length >= 2}
-                className="flex-1 flex flex-col items-center justify-center gap-2 py-5 px-4 bg-gradient-to-br from-purple-50 to-pink-50 text-purple-700 rounded-2xl border-2 border-dashed border-purple-200 hover:border-purple-400 hover:from-purple-100 hover:to-pink-100 disabled:opacity-50 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-100 group"
+                className="h-28 w-full rounded-2xl border-2 border-dashed border-purple-200 bg-purple-50/60 flex flex-col items-center justify-center gap-2 text-purple-700 hover:border-purple-400 hover:bg-purple-50 disabled:opacity-50 transition-all"
               >
-                <div className="w-12 h-12 rounded-xl bg-white shadow-md flex items-center justify-center group-hover:shadow-purple-200 transition-all">
+                <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center">
                   <Video className="w-6 h-6" />
                 </div>
                 <span className="text-sm font-semibold">Video</span>
               </button>
             </div>
 
-            {/* Video from gallery */}
-            <button
-              onClick={() => videoInputRef.current?.click()}
-              disabled={uploading || videos.length >= 2}
-              className="w-full py-3 text-sm font-medium text-gray-600 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:from-purple-50 hover:to-pink-50 hover:border-purple-300 hover:text-purple-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all duration-300"
-            >
-              <Video className="w-4 h-4" />
-              Upload Video from Gallery (max 50MB)
-            </button>
+            <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-2">
+              <Video className="w-3 h-3 text-purple-500" />
+              <span>Max 50MB per video (up to 2)</span>
+            </div>
 
-            {/* Counts - Premium Badge Style */}
-            <div className="flex items-center gap-4 mt-4">
-              <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-100">
+            {/* Counts - Compact Badges */}
+            <div className="flex items-center gap-3 mt-3 flex-wrap">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-lg border border-emerald-100">
                 <Camera className="w-4 h-4 text-emerald-600" />
-                <span className="text-sm font-semibold text-emerald-700">{images.length}/5 photos</span>
+                <span className="text-xs font-semibold text-emerald-700">{images.length}/5 photos</span>
               </div>
-              <div className="flex items-center gap-2 px-3 py-2 bg-purple-50 rounded-xl border border-purple-100">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 rounded-lg border border-purple-100">
                 <Video className="w-4 h-4 text-purple-600" />
-                <span className="text-sm font-semibold text-purple-700">{videos.length}/2 videos</span>
+                <span className="text-xs font-semibold text-purple-700">{videos.length}/2 videos</span>
               </div>
             </div>
 
@@ -859,7 +882,7 @@ export default function AIRequestPage() {
               </div>
               Complete Address
             </h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-semibold text-gray-700 mb-2 block">Flat/House No. <span className="text-red-500">*</span></label>
                 <Input
@@ -934,7 +957,7 @@ export default function AIRequestPage() {
               </div>
               Additional Details
             </h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-semibold text-gray-700 mb-2 block">Error Code (if any)</label>
                 <Input
@@ -1207,15 +1230,15 @@ export default function AIRequestPage() {
             </h3>
             
             <div className="space-y-3">
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 p-3 bg-gray-50 rounded-xl">
                 <span className="text-gray-500 font-medium">Category</span>
-                <span className="font-semibold text-gray-900">{selectedCategory?.emoji} {aiResult.categoryName}</span>
+                <span className="font-semibold text-gray-900 break-words sm:text-right">{selectedCategory?.emoji} {aiResult.categoryName}</span>
               </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 p-3 bg-gray-50 rounded-xl">
                 <span className="text-gray-500 font-medium">Location</span>
-                <span className="font-semibold text-gray-900 text-right max-w-[60%] truncate">{formData.flatNo}, {formData.location.split(',')[0]}</span>
+                <span className="font-semibold text-gray-900 break-words sm:text-right">{formData.flatNo}, {formData.location.split(',')[0]}</span>
               </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 p-3 bg-gray-50 rounded-xl">
                 <span className="text-gray-500 font-medium">Urgency</span>
                 <span className={`font-semibold px-3 py-1 rounded-full text-sm ${
                   formData.urgency === 'emergency' ? 'bg-red-100 text-red-700' :
@@ -1223,16 +1246,16 @@ export default function AIRequestPage() {
                   'bg-emerald-100 text-emerald-700'
                 }`}>{selectedUrgency?.label}</span>
               </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 p-3 bg-gray-50 rounded-xl">
                 <span className="text-gray-500 font-medium">Mobile</span>
-                <span className="font-semibold text-gray-900 flex items-center gap-2">
+                <span className="font-semibold text-gray-900 flex items-center gap-2 sm:justify-end">
                   <Phone className="w-4 h-4 text-emerald-600" />
                   +91 {formData.mobileNumber}
                 </span>
               </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 p-3 bg-gray-50 rounded-xl">
                 <span className="text-gray-500 font-medium">Media</span>
-                <div className="flex gap-2">
+                <div className="flex gap-2 sm:justify-end">
                   <span className="font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                     <Camera className="w-3.5 h-3.5" /> {images.length}
                   </span>
@@ -1250,7 +1273,7 @@ export default function AIRequestPage() {
           </div>
 
           {/* Trust badges - Premium Style */}
-          <div className="flex items-center justify-center gap-4 py-3 flex-wrap">
+            <div className="flex items-center justify-center gap-3 sm:gap-4 py-3 flex-wrap">
             <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 rounded-xl border border-emerald-200">
               <Shield className="w-5 h-5 text-emerald-600" />
               <span className="text-sm font-semibold text-emerald-700">Verified Helpers</span>
@@ -1280,6 +1303,14 @@ export default function AIRequestPage() {
                 Confirm & Post Request
               </>
             )}
+          </Button>
+
+          <Button
+            onClick={handleCustomPriceFlow}
+            variant="outline"
+            className="w-full h-12 mt-3 border-emerald-200 text-emerald-700 bg-white hover:bg-emerald-50"
+          >
+            Still doubt our AI pricing? Decide your own price
           </Button>
         </div>
       )}

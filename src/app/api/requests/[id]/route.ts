@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+function toNumberOrNull(value: unknown): number | null {
+  if (value === null || value === undefined) return null
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+  return null
+}
+
+function toNumberOrFallback(value: unknown, fallback: unknown, defaultValue = 0): number {
+  const first = toNumberOrNull(value)
+  if (first !== null) return first
+  const second = toNumberOrNull(fallback)
+  if (second !== null) return second
+  return defaultValue
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -189,10 +207,14 @@ export async function GET(
     }
 
     // Build response - use helper profile location as fallback if service_request doesn't have it
-    const helperLocationLat = serviceRequest.helper_location_lat || 
-      (assignedHelper?.current_location_lat) || null
-    const helperLocationLng = serviceRequest.helper_location_lng || 
-      (assignedHelper?.current_location_lng) || null
+    const helperLocationLat =
+      toNumberOrNull(serviceRequest.helper_location_lat) ??
+      toNumberOrNull(assignedHelper?.current_location_lat) ??
+      null
+    const helperLocationLng =
+      toNumberOrNull(serviceRequest.helper_location_lng) ??
+      toNumberOrNull(assignedHelper?.current_location_lng) ??
+      null
 
     console.log('📍 Helper location data:', {
       from_request: { lat: serviceRequest.helper_location_lat, lng: serviceRequest.helper_location_lng },
@@ -202,6 +224,8 @@ export async function GET(
 
     const response = {
       ...serviceRequest,
+      service_location_lat: toNumberOrFallback(serviceRequest.service_location_lat, serviceRequest.latitude, 0),
+      service_location_lng: toNumberOrFallback(serviceRequest.service_location_lng, serviceRequest.longitude, 0),
       helper_location_lat: helperLocationLat,
       helper_location_lng: helperLocationLng,
       assigned_helper: assignedHelper,

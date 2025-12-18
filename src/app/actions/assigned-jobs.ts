@@ -154,11 +154,13 @@ export async function updateJobStatus(jobId: string, newStatus: string) {
     const supabase = await createClient()
 
     // Get helper profile
-    const { data: helperProfile } = await supabase
+    const { data: helperProfileRaw } = await supabase
       .from('helper_profiles')
       .select('id')
       .eq('user_id', user.id)
       .maybeSingle()
+
+    const helperProfile = helperProfileRaw as unknown as { id: string } | null
 
     if (!helperProfile) {
       return { error: 'Helper profile not found' }
@@ -171,11 +173,18 @@ export async function updateJobStatus(jobId: string, newStatus: string) {
     }
 
     // Check if job exists and belongs to helper
-    const { data: job, error: jobError } = await supabase
+    const { data: jobRaw, error: jobError } = await supabase
       .from('service_requests')
       .select('id, status, helper_id, assigned_helper_id')
       .eq('id', jobId)
       .maybeSingle()
+
+    const job = jobRaw as unknown as {
+      id: string
+      status: string
+      helper_id: string | null
+      assigned_helper_id: string | null
+    } | null
 
     if (jobError || !job) {
       return { error: 'Job not found' }
@@ -194,12 +203,20 @@ export async function updateJobStatus(jobId: string, newStatus: string) {
       .update({
         status: newStatus,
         updated_at: new Date().toISOString(),
-      })
+      } as never)
       .eq('id', jobId)
 
     if (updateError) {
       logger.error('Failed to update job status', { error: updateError })
       return { error: 'Failed to update job status' }
+    }
+
+    // If job is completed/cancelled, helper is no longer on a job
+    if (newStatus === 'completed' || newStatus === 'cancelled') {
+      await supabase
+        .from('helper_profiles')
+        .update({ is_on_job: false } as never)
+        .eq('id', helperProfile.id)
     }
 
     logger.info('Job status updated', {
@@ -226,22 +243,29 @@ export async function startJobTimer(jobId: string) {
     const supabase = await createClient()
 
     // Get helper profile
-    const { data: helperProfile } = await supabase
+    const { data: helperProfileRaw } = await supabase
       .from('helper_profiles')
       .select('id')
       .eq('user_id', user.id)
       .maybeSingle()
+
+    const helperProfile = helperProfileRaw as unknown as { id: string } | null
 
     if (!helperProfile) {
       return { error: 'Helper profile not found' }
     }
 
     // Ensure the job belongs to the helper (by user id or helper profile)
-    const { data: job, error: jobError } = await supabase
+    const { data: jobRaw, error: jobError } = await supabase
       .from('service_requests')
       .select('assigned_helper_id, helper_id')
       .eq('id', jobId)
       .maybeSingle()
+
+    const job = jobRaw as unknown as {
+      assigned_helper_id: string | null
+      helper_id: string | null
+    } | null
 
     if (jobError || !job) {
       return { error: 'Job not found' }
@@ -255,13 +279,15 @@ export async function startJobTimer(jobId: string) {
     }
 
     // Check if there's already an active timer
-    const { data: activeLog } = await supabase
+    const { data: activeLogRaw } = await supabase
       .from('time_tracking_logs')
       .select('id')
       .eq('request_id', jobId)
       .eq('helper_id', helperProfile.id)
       .eq('is_active', true)
       .maybeSingle()
+
+    const activeLog = activeLogRaw as unknown as { id: string } | null
 
     if (activeLog) {
       return { error: 'Timer is already running for this job' }
@@ -276,7 +302,7 @@ export async function startJobTimer(jobId: string) {
         started_at: new Date().toISOString(),
         is_active: true,
         total_minutes: 0,
-      })
+      } as never)
 
     if (insertError) {
       logger.error('Failed to start job timer', { error: insertError })
@@ -306,22 +332,29 @@ export async function stopJobTimer(jobId: string) {
     const supabase = await createClient()
 
     // Get helper profile
-    const { data: helperProfile } = await supabase
+    const { data: helperProfileRaw } = await supabase
       .from('helper_profiles')
       .select('id')
       .eq('user_id', user.id)
       .maybeSingle()
+
+    const helperProfile = helperProfileRaw as unknown as { id: string } | null
 
     if (!helperProfile) {
       return { error: 'Helper profile not found' }
     }
 
     // Ensure the job belongs to the helper (by user id or helper profile)
-    const { data: job, error: jobError } = await supabase
+    const { data: jobRaw, error: jobError } = await supabase
       .from('service_requests')
       .select('assigned_helper_id, helper_id')
       .eq('id', jobId)
       .maybeSingle()
+
+    const job = jobRaw as unknown as {
+      assigned_helper_id: string | null
+      helper_id: string | null
+    } | null
 
     if (jobError || !job) {
       return { error: 'Job not found' }
@@ -335,13 +368,15 @@ export async function stopJobTimer(jobId: string) {
     }
 
     // Find active timer
-    const { data: activeLog, error: logError } = await supabase
+    const { data: activeLogRaw, error: logError } = await supabase
       .from('time_tracking_logs')
       .select('id, started_at')
       .eq('request_id', jobId)
       .eq('helper_id', helperProfile.id)
       .eq('is_active', true)
       .maybeSingle()
+
+    const activeLog = activeLogRaw as unknown as { id: string; started_at: string | null } | null
 
     if (logError || !activeLog) {
       return { error: 'No active timer found for this job' }
@@ -360,7 +395,7 @@ export async function stopJobTimer(jobId: string) {
         ended_at: endTime.toISOString(),
         total_minutes: totalMinutes,
         is_active: false,
-      })
+      } as never)
       .eq('id', activeLog.id)
 
     if (updateError) {

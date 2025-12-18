@@ -14,7 +14,12 @@ import {
   MessageCircle,
   Info,
   BadgeCheck,
-  IndianRupee
+  IndianRupee,
+  Gift,
+  Sparkles,
+  Star,
+  Zap,
+  TrendingUp
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -32,7 +37,7 @@ interface ReferredHelper {
 const REWARD_CONFIG = {
   helpersNeeded: 5,
   jobsPerHelper: 5,
-  totalJobsNeeded: 25, // 5 helpers × 5 jobs
+  totalJobsNeeded: 25,
   reward: '1 Year 0% Commission',
   rewardDescription: 'No platform fees for 12 months!',
 }
@@ -47,6 +52,7 @@ export default function HelperReferralsPage() {
 
   useEffect(() => {
     loadReferralData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadReferralData = async () => {
@@ -58,18 +64,15 @@ export default function HelperReferralsPage() {
       return
     }
 
-    // Generate referral code from user ID
     const code = `HPRO${user.id.substring(0, 6).toUpperCase()}`
     setReferralCode(code)
 
-    // Load referred helpers
     const { data: refData } = await supabase
       .from('helper_referrals')
       .select('*')
       .eq('referrer_id', user.id)
       .order('created_at', { ascending: false })
 
-    // Mock data for demo - in production this comes from DB
     const mockReferrals: ReferredHelper[] = refData || []
     setReferrals(mockReferrals)
     setLoading(false)
@@ -99,9 +102,7 @@ export default function HelperReferralsPage() {
   const totalJobsFromReferrals = referrals.reduce((sum, r) => sum + (r.jobs_completed || 0), 0)
   const totalHelpers = referrals.length
   
-  // Progress calculation
   const helperProgress = Math.min((qualifiedHelpers / REWARD_CONFIG.helpersNeeded) * 100, 100)
-  const jobsProgress = Math.min((totalJobsFromReferrals / REWARD_CONFIG.totalJobsNeeded) * 100, 100)
   const isUnlocked = qualifiedHelpers >= REWARD_CONFIG.helpersNeeded
   const helpersRemaining = Math.max(REWARD_CONFIG.helpersNeeded - qualifiedHelpers, 0)
 
@@ -109,306 +110,305 @@ export default function HelperReferralsPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-slate-600">Loading...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600 mx-auto"></div>
+          <p className="mt-3 text-slate-600 text-sm">Loading...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 space-y-6">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 rounded-3xl p-8 text-white">
-        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+    <div className="space-y-4 px-1 pb-6">
+      {/* Hero Header - Emerald Theme */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 rounded-2xl p-5 text-white">
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-teal-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
+        <div className="absolute top-4 right-4 opacity-20">
+          <Sparkles className="w-8 h-8" />
+        </div>
         
         <div className="relative">
-          <div className="flex items-center gap-2 mb-2">
-            <Crown className="w-8 h-8 text-yellow-400" />
-            <span className="px-3 py-1 bg-yellow-400/20 text-yellow-300 rounded-full text-xs font-bold">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 bg-yellow-400/20 rounded-lg">
+              <Crown className="w-5 h-5 text-yellow-300" />
+            </div>
+            <span className="px-2.5 py-1 bg-yellow-400/20 text-yellow-200 rounded-full text-[10px] font-bold tracking-wide">
               HELPER EXCLUSIVE
             </span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-black mb-2">Refer 5 Helpers,</h1>
-          <h2 className="text-2xl md:text-3xl font-bold text-blue-200">Go Commission FREE! 🚀</h2>
-          <p className="text-blue-100 mt-3 max-w-lg">
-            Invite fellow helpers to join Helparo. When 5 of them complete 5 jobs each, you'll never pay commission again!
+          
+          <h1 className="text-2xl font-black mb-1 leading-tight">
+            Refer 5 Helpers,
+            <br />
+            <span className="text-emerald-200">Go Commission FREE!</span>
+          </h1>
+          
+          <p className="text-emerald-100 text-xs mt-2 leading-relaxed">
+            Invite fellow helpers to join Helparo. When 5 of them complete 5 jobs each, enjoy 1 year of zero commission!
           </p>
           
-          {/* Quick info */}
-          <div className="mt-4 flex flex-wrap gap-2">
-            <span className="px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-lg text-xs">
-              👥 5 Helpers Needed
+          {/* Floating badges */}
+          <div className="flex flex-wrap gap-1.5 mt-4">
+            <span className="px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] font-medium flex items-center gap-1">
+              <Users className="w-3 h-3" /> 5 Helpers
             </span>
-            <span className="px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-lg text-xs">
-              ✅ 5 Jobs Each
+            <span className="px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] font-medium flex items-center gap-1">
+              <Briefcase className="w-3 h-3" /> 5 Jobs Each
             </span>
-            <span className="px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-lg text-xs">
-              🎯 25 Total Jobs
+            <span className="px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] font-medium flex items-center gap-1">
+              <Gift className="w-3 h-3" /> 0% Fee
             </span>
           </div>
         </div>
       </div>
 
-      {/* Progress Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl p-4 shadow-md border border-gray-100 text-center">
-          <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-blue-100 flex items-center justify-center">
-            <Users className="w-6 h-6 text-blue-600" />
+      {/* Quick Stats - 2x2 Grid */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="p-1.5 bg-emerald-50 rounded-lg">
+              <Users className="w-4 h-4 text-emerald-600" />
+            </div>
+            <span className="text-[10px] text-slate-500 font-medium">Invited</span>
           </div>
-          <p className="text-3xl font-black text-gray-900">{totalHelpers}</p>
-          <p className="text-xs text-gray-500 font-medium">Helpers Invited</p>
+          <p className="text-2xl font-black text-slate-900">{totalHelpers}</p>
         </div>
         
-        <div className="bg-white rounded-2xl p-4 shadow-md border border-gray-100 text-center">
-          <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-green-100 flex items-center justify-center">
-            <BadgeCheck className="w-6 h-6 text-green-600" />
+        <div className="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="p-1.5 bg-green-50 rounded-lg">
+              <BadgeCheck className="w-4 h-4 text-green-600" />
+            </div>
+            <span className="text-[10px] text-slate-500 font-medium">Qualified</span>
           </div>
-          <p className="text-3xl font-black text-green-600">{qualifiedHelpers}</p>
-          <p className="text-xs text-gray-500 font-medium">Qualified (5+ jobs)</p>
+          <p className="text-2xl font-black text-green-600">{qualifiedHelpers}</p>
         </div>
         
-        <div className="bg-white rounded-2xl p-4 shadow-md border border-gray-100 text-center">
-          <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-purple-100 flex items-center justify-center">
-            <Briefcase className="w-6 h-6 text-purple-600" />
+        <div className="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="p-1.5 bg-blue-50 rounded-lg">
+              <Briefcase className="w-4 h-4 text-blue-600" />
+            </div>
+            <span className="text-[10px] text-slate-500 font-medium">Jobs Done</span>
           </div>
-          <p className="text-3xl font-black text-gray-900">{totalJobsFromReferrals}</p>
-          <p className="text-xs text-gray-500 font-medium">Total Jobs Done</p>
+          <p className="text-2xl font-black text-slate-900">{totalJobsFromReferrals}</p>
         </div>
         
-        <div className="bg-white rounded-2xl p-4 shadow-md border border-gray-100 text-center">
-          <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-amber-100 flex items-center justify-center">
-            <Target className="w-6 h-6 text-amber-600" />
+        <div className="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="p-1.5 bg-amber-50 rounded-lg">
+              <Target className="w-4 h-4 text-amber-600" />
+            </div>
+            <span className="text-[10px] text-slate-500 font-medium">Need More</span>
           </div>
-          <p className="text-3xl font-black text-amber-600">{helpersRemaining}</p>
-          <p className="text-xs text-gray-500 font-medium">More Needed</p>
+          <p className="text-2xl font-black text-amber-600">{helpersRemaining}</p>
         </div>
       </div>
 
       {/* Progress Card */}
-      <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-100">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900">Your Progress</h3>
-          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-            isUnlocked ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-emerald-600" />
+            <h3 className="text-sm font-bold text-slate-900">Your Progress</h3>
+          </div>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+            isUnlocked ? 'bg-green-100 text-green-700' : 'bg-emerald-100 text-emerald-700'
           }`}>
-            {isUnlocked ? '🎉 UNLOCKED!' : `${qualifiedHelpers}/${REWARD_CONFIG.helpersNeeded} Helpers`}
+            {isUnlocked ? '🎉 UNLOCKED!' : `${qualifiedHelpers}/${REWARD_CONFIG.helpersNeeded}`}
           </span>
         </div>
         
-        {/* Helper Progress */}
-        <div className="mb-4">
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-600">Qualified Helpers</span>
-            <span className="font-bold text-blue-600">{qualifiedHelpers} / {REWARD_CONFIG.helpersNeeded}</span>
-          </div>
-          <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
-            <div 
-              className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${
-                isUnlocked 
-                  ? 'bg-gradient-to-r from-green-500 to-emerald-500' 
-                  : 'bg-gradient-to-r from-blue-500 to-indigo-500'
-              }`}
-              style={{ width: `${helperProgress}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Jobs Progress */}
-        <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-600">Total Jobs Completed</span>
-            <span className="font-bold text-purple-600">{totalJobsFromReferrals} / {REWARD_CONFIG.totalJobsNeeded}</span>
-          </div>
-          <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
-            <div 
-              className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500"
-              style={{ width: `${jobsProgress}%` }}
-            />
-          </div>
+        {/* Progress circles */}
+        <div className="flex items-center justify-between mb-4">
+          {[1, 2, 3, 4, 5].map((num) => (
+            <div key={num} className="flex flex-col items-center">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                num <= qualifiedHelpers 
+                  ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-200' 
+                  : 'bg-slate-100 text-slate-400 border-2 border-dashed border-slate-200'
+              }`}>
+                {num <= qualifiedHelpers ? <Check className="w-5 h-5" /> : num}
+              </div>
+              <span className="text-[9px] text-slate-500 mt-1">Helper {num}</span>
+            </div>
+          ))}
         </div>
         
-        <p className="text-center text-sm text-gray-600 mt-4">
+        {/* Progress bar */}
+        <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div 
+            className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full transition-all duration-700"
+            style={{ width: `${helperProgress}%` }}
+          />
+        </div>
+        
+        <p className="text-center text-xs text-slate-600 mt-3">
           {isUnlocked ? (
-            <span className="text-green-600 font-bold">🎉 Congratulations! You've unlocked 1 Year 0% Commission!</span>
+            <span className="text-green-600 font-bold flex items-center justify-center gap-1">
+              <Sparkles className="w-4 h-4" /> You&apos;ve unlocked 1 Year 0% Commission!
+            </span>
           ) : (
             <>
-              Need <span className="font-bold text-blue-600">{helpersRemaining} more helpers</span> with 5+ jobs each to unlock <span className="font-bold text-blue-600">1 Year 0% Commission</span>
+              <span className="font-bold text-emerald-600">{helpersRemaining} more</span> qualified helpers to unlock reward
             </>
           )}
         </p>
       </div>
 
-      {/* The Reward Card */}
-      <div className="relative bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 rounded-3xl p-6 border-2 border-yellow-300 shadow-lg">
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="px-4 py-1.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg">
-            🏆 THE ULTIMATE REWARD
-          </span>
-        </div>
+      {/* The Reward Card - Compact */}
+      <div className="relative bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 rounded-xl p-4 border border-amber-200/50 overflow-hidden">
+        <div className="absolute -top-6 -right-6 w-24 h-24 bg-yellow-300/20 rounded-full blur-2xl" />
         
-        <div className="text-center pt-4">
-          <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-xl">
-            <Crown className="w-10 h-10 text-white" />
+        <div className="relative flex items-center gap-3">
+          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg flex-shrink-0">
+            <Crown className="w-7 h-7 text-white" />
           </div>
           
-          <h3 className="text-2xl font-black text-gray-900 mb-1">1 YEAR</h3>
-          <p className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-600 to-orange-600 mb-2">0% Commission</p>
-          <p className="text-gray-600 mb-4">No platform fees for 12 months!</p>
-          
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="bg-white rounded-xl p-3 shadow-sm">
-              <p className="text-xl font-black text-blue-600">5</p>
-              <p className="text-[10px] text-gray-500 font-medium">Helpers</p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">REWARD</span>
             </div>
-            <div className="bg-white rounded-xl p-3 shadow-sm">
-              <p className="text-xl font-black text-purple-600">5</p>
-              <p className="text-[10px] text-gray-500 font-medium">Jobs Each</p>
-            </div>
-            <div className="bg-white rounded-xl p-3 shadow-sm">
-              <p className="text-xl font-black text-green-600">25</p>
-              <p className="text-[10px] text-gray-500 font-medium">Total Jobs</p>
-            </div>
-          </div>
-          
-          <div className="p-3 bg-green-50 border border-green-200 rounded-xl">
-            <p className="text-sm text-green-800 flex items-center justify-center gap-2">
-              <IndianRupee className="w-4 h-4" />
-              <span><strong>Save ₹15,000</strong> in commission fees!</span>
+            <p className="text-lg font-black text-slate-900 leading-tight">1 Year 0% Commission</p>
+            <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
+              <IndianRupee className="w-3 h-3" /> Save up to ₹15,000 in fees
             </p>
           </div>
         </div>
       </div>
 
       {/* Referral Code Card */}
-      <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 rounded-3xl p-6 text-white shadow-xl">
+      <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-4 text-white shadow-lg shadow-emerald-200/50">
         <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-            <Share2 className="w-8 h-8" />
+          <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+            <Share2 className="w-6 h-6" />
           </div>
-          <h3 className="text-xl font-bold mb-1">Your Referral Code</h3>
-          <p className="text-blue-200 text-sm mb-4">Share this code with fellow helpers</p>
+          <h3 className="text-base font-bold mb-0.5">Your Referral Code</h3>
+          <p className="text-emerald-100 text-[10px] mb-3">Share with fellow helpers</p>
           
-          <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 mb-4">
-            <div className="flex items-center justify-center gap-3">
-              <span className="text-2xl md:text-3xl font-mono font-black tracking-widest">{referralCode}</span>
+          <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 mb-3">
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-xl font-mono font-black tracking-widest">{referralCode}</span>
               <button
                 onClick={copyReferralCode}
-                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
               >
-                {copied ? <Check className="w-5 h-5 text-green-300" /> : <Copy className="w-5 h-5" />}
+                {copied ? <Check className="w-4 h-4 text-green-300" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex gap-2">
             <button
               onClick={shareOnWhatsApp}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 rounded-xl font-semibold transition-all shadow-lg"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-green-500 hover:bg-green-600 rounded-lg text-xs font-semibold transition-all shadow-lg"
             >
-              <MessageCircle className="w-5 h-5" />
-              Share on WhatsApp
+              <MessageCircle className="w-4 h-4" />
+              WhatsApp
             </button>
             <button
               onClick={copyReferralLink}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-white/20 hover:bg-white/30 rounded-xl font-semibold transition-all"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-semibold transition-all"
             >
-              <Copy className="w-5 h-5" />
+              <Copy className="w-4 h-4" />
               Copy Link
             </button>
           </div>
         </div>
       </div>
 
-      {/* How It Works */}
-      <div className="bg-white rounded-3xl p-6 shadow-md border border-gray-100">
-        <h3 className="text-xl font-bold text-gray-900 mb-6">How It Works</h3>
-        <div className="grid md:grid-cols-4 gap-4">
-          <div className="text-center">
-            <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-blue-100 flex items-center justify-center">
-              <Share2 className="w-7 h-7 text-blue-600" />
+      {/* How It Works - Horizontal Steps */}
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+        <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+          <Zap className="w-4 h-4 text-emerald-600" />
+          How It Works
+        </h3>
+        
+        <div className="space-y-3">
+          {[
+            { icon: Share2, color: 'emerald', title: 'Share Code', desc: 'Send to electricians, plumbers, etc.' },
+            { icon: Users, color: 'blue', title: 'They Join', desc: 'Helpers sign up & get verified' },
+            { icon: Briefcase, color: 'purple', title: '5 Jobs Each', desc: 'Each completes 5 paid jobs' },
+            { icon: Crown, color: 'amber', title: 'Go FREE!', desc: '1 year 0% commission unlocked' },
+          ].map((step, idx) => (
+            <div key={idx} className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                step.color === 'emerald' ? 'bg-emerald-100' :
+                step.color === 'blue' ? 'bg-blue-100' :
+                step.color === 'purple' ? 'bg-purple-100' : 'bg-amber-100'
+              }`}>
+                <step.icon className={`w-5 h-5 ${
+                  step.color === 'emerald' ? 'text-emerald-600' :
+                  step.color === 'blue' ? 'text-blue-600' :
+                  step.color === 'purple' ? 'text-purple-600' : 'text-amber-600'
+                }`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className={`w-5 h-5 rounded-full text-white flex items-center justify-center text-[10px] font-bold ${
+                    step.color === 'emerald' ? 'bg-emerald-600' :
+                    step.color === 'blue' ? 'bg-blue-600' :
+                    step.color === 'purple' ? 'bg-purple-600' : 'bg-amber-600'
+                  }`}>
+                    {idx + 1}
+                  </span>
+                  <h4 className="text-xs font-bold text-slate-900">{step.title}</h4>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-0.5 pl-7">{step.desc}</p>
+              </div>
             </div>
-            <div className="w-8 h-8 mx-auto -mt-6 mb-2 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold">1</div>
-            <h4 className="font-bold text-gray-900 mb-1">Share Code</h4>
-            <p className="text-xs text-gray-500">Share your referral code with electricians, plumbers, etc.</p>
-          </div>
-          
-          <div className="text-center">
-            <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-green-100 flex items-center justify-center">
-              <Users className="w-7 h-7 text-green-600" />
-            </div>
-            <div className="w-8 h-8 mx-auto -mt-6 mb-2 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-bold">2</div>
-            <h4 className="font-bold text-gray-900 mb-1">They Join</h4>
-            <p className="text-xs text-gray-500">Helpers sign up & get verified on Helparo</p>
-          </div>
-          
-          <div className="text-center">
-            <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-purple-100 flex items-center justify-center">
-              <Briefcase className="w-7 h-7 text-purple-600" />
-            </div>
-            <div className="w-8 h-8 mx-auto -mt-6 mb-2 rounded-full bg-purple-600 text-white flex items-center justify-center text-sm font-bold">3</div>
-            <h4 className="font-bold text-gray-900 mb-1">5 Jobs Each</h4>
-            <p className="text-xs text-gray-500">Each helper completes 5 paid jobs</p>
-          </div>
-          
-          <div className="text-center">
-            <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-amber-100 flex items-center justify-center">
-              <Crown className="w-7 h-7 text-amber-600" />
-            </div>
-            <div className="w-8 h-8 mx-auto -mt-6 mb-2 rounded-full bg-amber-600 text-white flex items-center justify-center text-sm font-bold">4</div>
-            <h4 className="font-bold text-gray-900 mb-1">Go FREE!</h4>
-            <p className="text-xs text-gray-500">Unlock 1 year 0% commission</p>
-          </div>
+          ))}
         </div>
       </div>
 
       {/* Referred Helpers List */}
-      <div className="bg-white rounded-3xl p-6 shadow-md border border-gray-100">
-        <h3 className="text-xl font-bold text-gray-900 mb-4">Your Referrals</h3>
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+        <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+          <Star className="w-4 h-4 text-emerald-600" />
+          Your Referrals
+        </h3>
         
         {referrals.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
-              <Users className="w-8 h-8 text-gray-400" />
+          <div className="text-center py-6">
+            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-slate-100 flex items-center justify-center">
+              <Users className="w-6 h-6 text-slate-400" />
             </div>
-            <p className="text-gray-500 font-medium">No referrals yet</p>
-            <p className="text-sm text-gray-400 mt-1">Start sharing your code to bring helpers onboard!</p>
+            <p className="text-slate-600 font-medium text-sm">No referrals yet</p>
+            <p className="text-[10px] text-slate-400 mt-1">Start sharing your code above!</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {referrals.map((ref) => (
-              <div key={ref.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+              <div key={ref.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold text-white ${
                     ref.jobs_completed >= 5 
-                      ? 'bg-gradient-to-br from-green-400 to-emerald-500' 
-                      : 'bg-gradient-to-br from-gray-300 to-gray-400'
+                      ? 'bg-gradient-to-br from-emerald-500 to-green-600' 
+                      : 'bg-gradient-to-br from-slate-400 to-slate-500'
                   }`}>
-                    <span className="text-white font-bold text-lg">
-                      {ref.helper_name?.charAt(0) || 'H'}
-                    </span>
+                    {ref.helper_name?.charAt(0) || 'H'}
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900">{ref.helper_name || 'Helper'}</p>
-                    <p className="text-xs text-gray-500">
-                      Joined {new Date(ref.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                    <p className="text-xs font-bold text-slate-900">{ref.helper_name || 'Helper'}</p>
+                    <p className="text-[10px] text-slate-500">
+                      {new Date(ref.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                     </p>
                   </div>
                 </div>
                 
                 <div className="text-right">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-lg font-bold ${ref.jobs_completed >= 5 ? 'text-green-600' : 'text-gray-600'}`}>
+                  <div className="flex items-center gap-1">
+                    <span className={`text-sm font-black ${ref.jobs_completed >= 5 ? 'text-green-600' : 'text-slate-600'}`}>
                       {ref.jobs_completed}/5
                     </span>
-                    <span className="text-xs text-gray-500">jobs</span>
                   </div>
                   {ref.jobs_completed >= 5 ? (
-                    <span className="text-xs text-green-600 font-semibold">✓ Qualified</span>
+                    <span className="text-[10px] text-green-600 font-semibold flex items-center gap-0.5 justify-end">
+                      <Check className="w-3 h-3" /> Done
+                    </span>
                   ) : (
-                    <span className="text-xs text-gray-400">{5 - ref.jobs_completed} more needed</span>
+                    <span className="text-[10px] text-slate-400">{5 - ref.jobs_completed} more</span>
                   )}
                 </div>
               </div>
@@ -417,85 +417,52 @@ export default function HelperReferralsPage() {
         )}
       </div>
 
-      {/* Terms & Conditions */}
-      <div className="bg-gray-50 rounded-2xl p-4 border border-gray-200">
+      {/* Terms & Conditions - Compact */}
+      <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
         <button 
           onClick={() => setShowTnC(!showTnC)}
-          className="w-full flex items-center justify-between text-sm text-gray-600"
+          className="w-full flex items-center justify-between text-xs text-slate-600"
         >
-          <span className="flex items-center gap-2">
-            <Info className="w-4 h-4" />
-            Terms & Conditions (Important - Please Read)
+          <span className="flex items-center gap-1.5">
+            <Info className="w-3.5 h-3.5" />
+            Terms & Conditions
           </span>
           <ChevronRight className={`w-4 h-4 transition-transform ${showTnC ? 'rotate-90' : ''}`} />
         </button>
         
         {showTnC && (
-          <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500 space-y-2">
-            <p className="p-2 bg-red-100 border border-red-300 rounded text-red-800 text-[11px] font-semibold">
-              ⚠️ READ CAREFULLY: By participating in this program, you agree to ALL terms below. If you do not agree, do NOT participate.
+          <div className="mt-3 pt-3 border-t border-slate-200 text-[10px] text-slate-500 space-y-2">
+            <p className="p-2 bg-red-50 border border-red-200 rounded-lg text-red-700 font-medium">
+              ⚠️ READ CAREFULLY: By participating, you agree to ALL terms below.
             </p>
             
-            <p className="font-bold text-gray-700 mt-3">1. NATURE OF PROGRAM:</p>
-            <p>• This referral program is a <strong>voluntary, promotional, non-binding marketing initiative</strong> operated by Helparo at its absolute discretion.</p>
-            <p>• <strong>This is NOT a contract, agreement, or guarantee of any reward.</strong> It is purely a goodwill promotional offer.</p>
-            <p>• Participation is entirely voluntary and at your own risk.</p>
+            <p className="font-bold text-slate-700">1. NATURE OF PROGRAM:</p>
+            <p>• This is a <strong>voluntary, promotional, non-binding</strong> initiative.</p>
+            <p>• <strong>NOT a contract or guarantee</strong> of any reward.</p>
             
-            <p className="font-bold text-gray-700 mt-3">2. ABSOLUTE DISCRETION & TERMINATION RIGHTS:</p>
-            <p>• <strong>Helparo reserves the ABSOLUTE, UNCONDITIONAL, and UNRESTRICTED right to modify, suspend, pause, cancel, discontinue, or permanently terminate this program at ANY time, for ANY reason or NO reason, with or without prior notice.</strong></p>
-            <p>• <strong>Upon termination, ALL pending rewards and benefits are IMMEDIATELY forfeited and void, regardless of progress.</strong></p>
-            <p>• Helparo may change reward criteria, eligibility rules, or any terms at any time without notice.</p>
-            <p>• <strong>"1 Year" benefit starts from the date of approval and expires exactly 365 days later.</strong></p>
+            <p className="font-bold text-slate-700 mt-2">2. DISCRETION & TERMINATION:</p>
+            <p>• Helparo may <strong>modify, suspend, or terminate</strong> this program at any time.</p>
+            <p>• Upon termination, all pending rewards are <strong>void</strong>.</p>
+            <p>• &quot;1 Year&quot; benefit starts from approval date and expires after 365 days.</p>
             
-            <p className="font-bold text-gray-700 mt-3">3. REFERRAL ELIGIBILITY & VERIFICATION:</p>
-            <p>• Referred helpers must be <strong>completely new to Helparo</strong> (never registered before).</p>
-            <p>• Each referred helper must pass <strong>full verification</strong> (ID proof, address, skill verification).</p>
-            <p>• Each referred helper must complete <strong>minimum 5 PAID jobs</strong> (cancelled jobs don't count).</p>
-            <p>• <strong>Fake accounts, self-referrals, family members, or duplicate registrations will result in PERMANENT DISQUALIFICATION.</strong></p>
-            <p>• Helparo reserves the right to verify all referrals using IP checks, device fingerprinting, and other methods.</p>
+            <p className="font-bold text-slate-700 mt-2">3. ELIGIBILITY:</p>
+            <p>• Referred helpers must be <strong>completely new</strong> to Helparo.</p>
+            <p>• Each must pass <strong>full verification</strong> and complete <strong>5 PAID jobs</strong>.</p>
+            <p>• Fake accounts or self-referrals = <strong>PERMANENT DISQUALIFICATION</strong>.</p>
             
-            <p className="font-bold text-gray-700 mt-3">4. REWARD CONDITIONS:</p>
-            <p>• <strong>0% commission benefit applies ONLY to jobs booked through Helparo platform.</strong></p>
-            <p>• <strong>Reward activation requires Helparo's explicit verification and approval (up to 30 days).</strong></p>
-            <p>• Referrer must remain <strong>active on platform</strong> (minimum 1 job per month) to maintain benefit.</p>
-            <p>• Benefit is <strong>non-transferable</strong> and applies only to the referrer's account.</p>
-            <p>• <strong>Benefit expires automatically after 365 days. No extension guaranteed.</strong>
-            <p>• Helparo may revoke this benefit early if terms are violated.</p></p>
+            <p className="font-bold text-slate-700 mt-2">4. REWARD CONDITIONS:</p>
+            <p>• 0% commission applies <strong>only to Helparo platform jobs</strong>.</p>
+            <p>• Requires Helparo&apos;s <strong>explicit approval</strong> (up to 30 days).</p>
+            <p>• Must remain <strong>active</strong> (min 1 job/month) to maintain benefit.</p>
+            <p>• <strong>Non-transferable</strong> and expires after 365 days.</p>
             
-            <p className="font-bold text-gray-700 mt-3">5. DISQUALIFICATION & PENALTIES:</p>
-            <p>• Any violation or suspected violation will result in <strong>IMMEDIATE disqualification</strong> without warning.</p>
-            <p>• Disqualified participants forfeit ALL progress and benefits with no recourse.</p>
-            <p>• <strong>Helparo may permanently ban disqualified users from the platform.</strong></p>
+            <p className="font-bold text-slate-700 mt-2">5. LIABILITY:</p>
+            <p>• By participating, you <strong>waive all claims</strong> against Helparo.</p>
+            <p>• Helparo&apos;s liability is <strong>₹0 (zero)</strong>.</p>
             
-            <p className="font-bold text-gray-700 mt-3">6. WAIVER OF CLAIMS:</p>
-            <p>• <strong>BY PARTICIPATING, YOU WAIVE:</strong></p>
-            <p className="pl-4">- Any right to sue or claim damages from Helparo</p>
-            <p className="pl-4">- Any right to file complaints related to this program</p>
-            <p className="pl-4">- Any claim for breach of contract (this is not a contract)</p>
-            <p className="pl-4">- Any expectation of receiving the reward</p>
-            
-            <p className="font-bold text-gray-700 mt-3">7. LIMITATION OF LIABILITY:</p>
-            <p>• <strong>HELPARO SHALL NOT BE LIABLE FOR ANY DAMAGES ARISING FROM THIS PROGRAM.</strong></p>
-            <p>• <strong>IN NO EVENT SHALL HELPARO'S LIABILITY EXCEED ₹0 (ZERO).</strong></p>
-            
-            <p className="font-bold text-gray-700 mt-3">8. REVENUE IMPACT CLAUSE:</p>
-            <p>• <strong>Helparo reserves the right to immediately terminate this program if it negatively impacts business revenue or operations.</strong></p>
-            <p>• No prior notice is required for termination under this clause.</p>
-            <p>• Existing benefits may be converted to alternative rewards at Helparo's discretion.</p>
-            
-            <p className="font-bold text-gray-700 mt-3">9. GOVERNING LAW:</p>
-            <p>• All disputes shall be resolved through <strong>binding arbitration</strong> under Indian Arbitration Act, 1996.</p>
-            <p>• Venue: Helparo's registered city. Arbitrator's decision is final.</p>
-            
-            <p className="mt-4 p-3 bg-red-100 border-2 border-red-400 rounded-lg text-red-800 text-[11px]">
-              <strong>🚨 IMPORTANT:</strong> This program may be modified or cancelled at any time if it affects Helparo's revenue. The 1-year benefit starts from approval date and expires after exactly 365 days. <strong>Program rules may change. Helparo's decision is final.</strong>
+            <p className="mt-2 p-2 bg-slate-100 border border-slate-300 rounded text-slate-600 text-[9px]">
+              By sharing your code, you confirm agreement to all terms. Helparo&apos;s decision is final.
             </p>
-            
-            <p className="mt-3 p-2 bg-gray-100 border border-gray-300 rounded text-gray-600 text-[10px]">
-              By sharing your referral code, you confirm that you have READ, UNDERSTOOD, and AGREED to ALL terms above.
-            </p>
-            
-            <p className="mt-2 text-[10px] text-gray-400 italic">Version 1.0 | Last updated: December 13, 2024 | Helparo reserves the right to update these terms at any time.</p>
           </div>
         )}
       </div>

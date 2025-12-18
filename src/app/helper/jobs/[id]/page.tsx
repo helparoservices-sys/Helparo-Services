@@ -447,19 +447,24 @@ export default function HelperJobPage() {
       async (position) => {
         try {
           console.log('📍 Location update:', position.coords.latitude, position.coords.longitude)
-          
-          // Update helper location in service_requests for this job
-          const { error: reqError } = await supabase
-            .from('service_requests')
-            .update({
-              helper_location_lat: position.coords.latitude,
-              helper_location_lng: position.coords.longitude,
-              helper_location_updated_at: new Date().toISOString()
-            })
-            .eq('id', requestId)
 
-          if (reqError) {
-            console.error('Error updating service_requests location:', reqError)
+          // Update helper location in service_requests for this job via API (bypasses RLS safely)
+          try {
+            const res = await fetch(`/api/requests/${requestId}/location`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+              }),
+            })
+
+            if (!res.ok) {
+              const payload = await res.json().catch(() => ({}))
+              console.error('Error updating service_requests location (API):', payload?.error || res.statusText)
+            }
+          } catch (err) {
+            console.error('Error updating service_requests location (API):', err)
           }
 
           // Also update helper_profiles current location (for future jobs/fallback)
@@ -501,10 +506,18 @@ export default function HelperJobPage() {
         }
       },
       (error) => {
-        console.error('Location error:', error.message)
-        toast.error('Please enable location access for live tracking')
+        console.error('Location error:', {
+          code: error.code,
+          message: error.message,
+        })
+
+        // Only show the "enable location" message when the browser explicitly denies permission.
+        // Other errors (timeout/position unavailable) can happen even when permission is granted.
+        if (error.code === error.PERMISSION_DENIED) {
+          toast.error('Please enable location access for live tracking')
+        }
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 30000, maximumAge: 10000 }
     )
 
     setLocationWatchId(watchId)
@@ -584,7 +597,8 @@ export default function HelperJobPage() {
             .from('helper_profiles')
             .update({
               total_earnings: (helperProfile.total_earnings || 0) + job.estimated_price,
-              total_jobs_completed: (helperProfile.total_jobs_completed || 0) + 1
+              total_jobs_completed: (helperProfile.total_jobs_completed || 0) + 1,
+              is_on_job: false
             })
             .eq('user_id', user.id)
 

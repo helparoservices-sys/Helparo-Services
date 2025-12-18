@@ -393,24 +393,6 @@ export default function HelperAssignedJobsPage() {
           </div>
         )}
 
-        {/* Empty State for Active Jobs */}
-        {activeJobs.length === 0 && (
-          <Card className="shadow-lg">
-            <CardContent className="py-12 text-center">
-              <Briefcase className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-500 dark:text-slate-400 mb-4">
-                No active jobs at the moment
-              </p>
-              <Link href="/helper/jobs">
-                <Button className="gap-2">
-                  Browse Available Jobs
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Completed Jobs */}
         {completedJobs.length > 0 && (
           <div className="space-y-4">

@@ -16,7 +16,6 @@ import {
   Sparkles,
   Send,
   Shield,
-  Star,
   Users,
   CheckCircle2,
   Camera,
@@ -29,8 +28,6 @@ import {
   Zap,
   Award,
   BadgeCheck,
-  Timer,
-  Heart,
   ArrowRight,
   ChevronRight,
   Check,
@@ -56,19 +53,6 @@ const urgencyOptions = [
   { id: 'emergency', label: 'ASAP', description: 'Under 1 hr', icon: '⚡', color: 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100', selected: 'border-red-500 bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg shadow-red-500/30' },
 ]
 
-// Animated Stats Component
-function AnimatedStat({ value, label, icon }: { value: string; label: string; icon: React.ReactNode }) {
-  return (
-    <div className="text-center">
-      <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm mb-2">
-        {icon}
-      </div>
-      <div className="text-2xl font-black text-white">{value}</div>
-      <div className="text-xs text-white/80">{label}</div>
-    </div>
-  )
-}
-
 export default function NewRequestPage() {
   const router = useRouter()
   const supabase = createClient()
@@ -92,6 +76,53 @@ export default function NewRequestPage() {
     urgency: 'medium',
     paymentMethod: 'cash',
   })
+
+  const mapAiUrgencyToManual = (aiUrgency?: string) => {
+    switch (aiUrgency) {
+      case 'flexible':
+        return 'low'
+      case 'today':
+        return 'medium'
+      case 'urgent':
+        return 'high'
+      case 'emergency':
+        return 'emergency'
+      default:
+        return 'medium'
+    }
+  }
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('aiFallbackRequest')
+      if (!raw) return
+
+      const data = JSON.parse(raw)
+
+      setFormData(prev => ({
+        ...prev,
+        category: data.category || prev.category,
+        description: data.description || prev.description,
+        title: data.title || data.description || prev.title,
+        location: data.location || prev.location,
+        latitude: data.latitude ?? prev.latitude,
+        longitude: data.longitude ?? prev.longitude,
+        urgency: mapAiUrgencyToManual(data.urgency),
+        budget: data.estimatedPrice ? String(data.estimatedPrice) : prev.budget,
+      }))
+
+      if (Array.isArray(data.images)) {
+        setImages(data.images)
+      }
+      if (Array.isArray(data.videos)) {
+        setVideos(data.videos)
+      }
+    } catch (error) {
+      console.error('Failed to load AI fallback request', error)
+    } finally {
+      localStorage.removeItem('aiFallbackRequest')
+    }
+  }, [])
 
   // Calculate form progress
   const calculateProgress = () => {
@@ -199,8 +230,8 @@ export default function NewRequestPage() {
     setUploading(true)
     try {
       const file = files[0]
-      if (file.size > 20 * 1024 * 1024) {
-        toast.error('Video too large (max 20MB)')
+      if (file.size > 50 * 1024 * 1024) {
+        toast.error('Video too large (max 50MB)')
         return
       }
       // Convert to base64 data URL
@@ -361,18 +392,6 @@ export default function NewRequestPage() {
         </div>
       </div>
 
-      {/* Hero Stats Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 py-6">
-        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
-        <div className="max-w-3xl mx-auto px-4">
-          <div className="grid grid-cols-3 gap-4">
-            <AnimatedStat value="10K+" label="Happy Customers" icon={<Heart className="w-4 h-4 text-white" />} />
-            <AnimatedStat value="15 min" label="Avg Response" icon={<Timer className="w-4 h-4 text-white" />} />
-            <AnimatedStat value="4.9★" label="Service Rating" icon={<Star className="w-4 h-4 text-white" />} />
-          </div>
-        </div>
-      </div>
-
       {/* Main Form Content */}
       <div className="relative max-w-3xl mx-auto px-4 py-6 space-y-5">
         
@@ -506,6 +525,11 @@ export default function NewRequestPage() {
               </div>
               <span className="text-sm font-semibold">Video</span>
             </button>
+          </div>
+
+          <div className="flex items-center gap-2 text-[11px] text-gray-500 mb-2">
+            <Video className="w-3 h-3 text-purple-500" />
+            <span>Max 50MB per video (up to 2)</span>
           </div>
 
           {/* Hidden Inputs */}

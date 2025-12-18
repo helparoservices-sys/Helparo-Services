@@ -112,6 +112,105 @@ export default function AboutPage() {
         </div>
       </header>
 
+      {/* Mobile (short) */}
+      <div className="md:hidden">
+        <section className="pt-24 pb-8 bg-white">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full text-xs font-semibold">
+              <Sparkles className="w-3.5 h-3.5" />
+              About Helparo
+            </div>
+            <h1 className="text-3xl font-black text-gray-900 leading-tight mt-3">
+              Revolutionizing
+              <span className="text-emerald-600"> Home Services</span>
+            </h1>
+            <p className="text-gray-500 mt-3 leading-relaxed">
+              India&apos;s first AI-powered home services platform where you decide your price — matched with verified pros.
+            </p>
+
+            <div className="mt-6 flex flex-col gap-3">
+              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl h-12 font-semibold shadow-lg shadow-emerald-500/20" asChild>
+                <Link href="/auth/signup">
+                  Get Started
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Link>
+              </Button>
+              <Button variant="outline" className="rounded-2xl h-12 font-semibold border-2" asChild>
+                <Link href="/helper/register">Become a Partner</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-8 bg-gray-50 border-y border-gray-100">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white rounded-2xl border border-gray-100 p-4">
+                <p className="text-2xl font-black text-gray-900">50,000+</p>
+                <p className="text-xs text-gray-500 font-medium mt-1">Happy Customers</p>
+              </div>
+              <div className="bg-white rounded-2xl border border-gray-100 p-4">
+                <p className="text-2xl font-black text-gray-900">10,000+</p>
+                <p className="text-xs text-gray-500 font-medium mt-1">Verified Pros</p>
+              </div>
+              <div className="bg-white rounded-2xl border border-gray-100 p-4">
+                <p className="text-2xl font-black text-gray-900">30 min</p>
+                <p className="text-xs text-gray-500 font-medium mt-1">Instant Matching</p>
+              </div>
+              <div className="bg-white rounded-2xl border border-gray-100 p-4">
+                <p className="text-2xl font-black text-gray-900">100%</p>
+                <p className="text-xs text-gray-500 font-medium mt-1">Verified & Safe</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-8 bg-white">
+          <div className="max-w-7xl mx-auto px-4">
+            <h2 className="text-2xl font-black text-gray-900">Why people choose us</h2>
+            <div className="mt-4 grid gap-3">
+              {[
+                { icon: IndianRupee, title: 'You decide your price', desc: 'Tell us your budget. We match pros who accept.' },
+                { icon: BadgeCheck, title: 'Verified professionals', desc: 'Aadhaar verification, background checks, skill tests.' },
+                { icon: Bot, title: 'AI-powered matching', desc: 'Fast, smart matching by location, rating, and availability.' },
+              ].map((item) => (
+                <div key={item.title} className="bg-white rounded-2xl border border-gray-100 p-4 flex gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                    <item.icon className="w-5 h-5 text-emerald-700" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 leading-tight">{item.title}</p>
+                    <p className="text-sm text-gray-500 mt-1 leading-relaxed">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <Link href="/services" className="flex-1">
+                <Button className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-semibold">
+                  Browse services
+                </Button>
+              </Link>
+              <Link href="/contact" className="flex-1">
+                <Button variant="outline" className="w-full rounded-xl font-semibold">
+                  Contact
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        <footer className="bg-white py-8">
+          <div className="max-w-7xl mx-auto px-4">
+            <p className="text-xs text-gray-500">© {new Date().getFullYear()} Helparo. All rights reserved.</p>
+          </div>
+        </footer>
+      </div>
+
+      {/* Desktop (original long page) */}
+      <div className="hidden md:block">
+
       {/* ═══════════════════════════════════════════════════════════════════
           HERO SECTION - STUNNING
       ═══════════════════════════════════════════════════════════════════ */}
@@ -467,6 +566,8 @@ export default function AboutPage() {
           </div>
         </div>
       </footer>
+
+      </div>
 
       {/* Animations */}
       <style jsx global>{`

@@ -12,6 +12,13 @@ function SignUpForm() {
   const searchParams = useSearchParams()
   const defaultRole = searchParams.get('role') || 'customer'
   const serviceParam = searchParams.get('service')
+
+  const goBackOrHome = () => {
+    if (typeof window === 'undefined') return
+
+    if (window.history.length > 1) router.back()
+    else router.push('/')
+  }
   
   const [formData, setFormData] = useState({
     email: '',
@@ -162,11 +169,10 @@ function SignUpForm() {
         
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
-          {/* Logo */}
+          {/* Brand */}
           <Link href="/" className="flex items-center gap-3 group">
-            <img src="/logo.svg" alt="Helparo" className="w-12 h-12 rounded-2xl shadow-lg group-hover:scale-105 transition-all" />
             <div>
-              <span className="text-2xl font-bold text-white block">helparo</span>
+              <span className="text-2xl font-black text-white font-heading block tracking-tight">helparo</span>
               <span className="text-xs font-semibold text-emerald-200 tracking-wider uppercase">Home Services</span>
             </div>
           </Link>
@@ -237,37 +243,36 @@ function SignUpForm() {
       <div className="flex-1 flex flex-col">
         {/* Mobile Header */}
         <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-100">
-          <Link href="/" className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors">
+          <button type="button" onClick={goBackOrHome} className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors">
             <ArrowLeft className="w-5 h-5" />
             <span className="font-medium">Back</span>
-          </Link>
+          </button>
           <Link href="/" className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Helparo" className="w-9 h-9 rounded-xl" />
-            <span className="text-lg font-bold text-gray-900">helparo</span>
+            <span className="text-lg font-black text-gray-900 font-heading tracking-tight">helparo</span>
           </Link>
           <div className="w-12" />
         </div>
 
         {/* Desktop Back Button */}
         <div className="hidden lg:flex items-center p-6">
-          <Link href="/" className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors group">
+          <button type="button" onClick={goBackOrHome} className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors group">
             <div className="w-10 h-10 rounded-xl bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </div>
             <span className="font-medium">Back to home</span>
-          </Link>
+          </button>
         </div>
 
         {/* Form Container */}
-        <div className="flex-1 flex items-center justify-center p-6 lg:p-12 overflow-y-auto">
+        <div className="flex-1 flex items-start lg:items-center justify-center p-4 lg:p-12 overflow-y-auto">
           <div className="w-full max-w-md">
-            {/* Header */}
-            <div className="text-center mb-6">
-              <div className="lg:hidden w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/30">
-                <img src="/logo.svg" alt="Helparo" className="w-16 h-16 rounded-2xl" />
+            {/* Header - compact for mobile */}
+            <div className="text-center mb-4 lg:mb-6">
+              <div className="hidden lg:flex items-center justify-center mx-auto mb-6">
+                <span className="text-3xl font-black text-emerald-700 font-heading tracking-tight">helparo</span>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Create account</h1>
-              <p className="text-gray-500">Get started with your free account</p>
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">Create account</h1>
+              <p className="text-sm text-gray-500">Join 50K+ users on Helparo</p>
             </div>
 
             {/* Google Sign Up */}
@@ -275,7 +280,7 @@ function SignUpForm() {
               type="button"
               onClick={handleGoogleSignUp}
               disabled={googleLoading || loading}
-              className="w-full h-14 flex items-center justify-center gap-3 bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 rounded-2xl font-semibold text-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              className="w-full h-12 lg:h-14 flex items-center justify-center gap-3 bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 rounded-xl lg:rounded-2xl font-semibold text-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               {googleLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
@@ -291,20 +296,20 @@ function SignUpForm() {
             </button>
 
             {/* Divider */}
-            <div className="flex items-center gap-4 my-6">
+            <div className="flex items-center gap-4 my-4 lg:my-6">
               <div className="flex-1 h-px bg-gray-200" />
-              <span className="text-sm text-gray-400 font-medium">or</span>
+              <span className="text-xs text-gray-400 font-medium">or</span>
               <div className="flex-1 h-px bg-gray-200" />
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3 lg:space-y-4">
               {/* Full Name */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">Full name</label>
+              <div className="space-y-1">
+                <label className="text-xs lg:text-sm font-medium text-gray-700">Full name</label>
                 <div className="relative">
-                  <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'name' ? 'text-emerald-500' : 'text-gray-400'}`}>
-                    <User className="w-5 h-5" />
+                  <div className={`absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'name' ? 'text-emerald-500' : 'text-gray-400'}`}>
+                    <User className="w-4 h-4 lg:w-5 lg:h-5" />
                   </div>
                   <input
                     type="text"
@@ -314,17 +319,17 @@ function SignUpForm() {
                     onFocus={() => setFocusedField('name')}
                     onBlur={() => setFocusedField(null)}
                     required
-                    className="w-full h-12 pl-12 pr-4 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
+                    className="w-full h-11 lg:h-12 pl-10 lg:pl-12 pr-4 bg-gray-50 border-2 border-gray-200 rounded-xl text-sm lg:text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
                   />
                 </div>
               </div>
 
               {/* Email */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">Email address</label>
+              <div className="space-y-1">
+                <label className="text-xs lg:text-sm font-medium text-gray-700">Email address</label>
                 <div className="relative">
-                  <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'email' ? 'text-emerald-500' : 'text-gray-400'}`}>
-                    <Mail className="w-5 h-5" />
+                  <div className={`absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'email' ? 'text-emerald-500' : 'text-gray-400'}`}>
+                    <Mail className="w-4 h-4 lg:w-5 lg:h-5" />
                   </div>
                   <input
                     type="email"
@@ -334,24 +339,24 @@ function SignUpForm() {
                     onFocus={() => setFocusedField('email')}
                     onBlur={() => { setFocusedField(null); setEmailTouched(true) }}
                     required
-                    className={`w-full h-12 pl-12 pr-4 bg-gray-50 border-2 rounded-xl text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none transition-all duration-200 ${!emailValid && emailTouched ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-emerald-500'}`}
+                    className={`w-full h-11 lg:h-12 pl-10 lg:pl-12 pr-4 bg-gray-50 border-2 rounded-xl text-sm lg:text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none transition-all duration-200 ${!emailValid && emailTouched ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-emerald-500'}`}
                   />
                 </div>
                 {!emailValid && emailTouched && (
-                  <p className="text-xs text-red-500 mt-1">Please enter a valid email address</p>
+                  <p className="text-xs text-red-500 mt-0.5">Please enter a valid email address</p>
                 )}
               </div>
 
               {/* Phone */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">Phone number</label>
+              <div className="space-y-1">
+                <label className="text-xs lg:text-sm font-medium text-gray-700">Phone number</label>
                 <div className="relative flex">
-                  <div className="flex items-center justify-center px-4 bg-gray-100 border-2 border-r-0 border-gray-200 rounded-l-xl text-gray-600 font-medium">
+                  <div className="flex items-center justify-center px-3 lg:px-4 bg-gray-100 border-2 border-r-0 border-gray-200 rounded-l-xl text-sm text-gray-600 font-medium">
                     +91
                   </div>
                   <div className="relative flex-1">
-                    <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'phone' ? 'text-emerald-500' : 'text-gray-400'}`}>
-                      <Phone className="w-5 h-5" />
+                    <div className={`absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'phone' ? 'text-emerald-500' : 'text-gray-400'}`}>
+                      <Phone className="w-4 h-4 lg:w-5 lg:h-5" />
                     </div>
                     <input
                       type="tel"
@@ -361,21 +366,21 @@ function SignUpForm() {
                       onFocus={() => setFocusedField('phone')}
                       onBlur={() => setFocusedField(null)}
                       maxLength={10}
-                      className="w-full h-12 pl-12 pr-4 bg-gray-50 border-2 border-gray-200 rounded-r-xl text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
+                      className="w-full h-11 lg:h-12 pl-10 lg:pl-12 pr-4 bg-gray-50 border-2 border-gray-200 rounded-r-xl text-sm lg:text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
                     />
                   </div>
                 </div>
                 {formData.phone && formData.phone.length < 10 && (
-                  <p className="text-xs text-amber-600 mt-1">Enter 10 digit mobile number ({formData.phone.length}/10)</p>
+                  <p className="text-xs text-amber-600 mt-0.5">Enter 10 digit mobile number ({formData.phone.length}/10)</p>
                 )}
               </div>
 
               {/* Password */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">Password</label>
+              <div className="space-y-1">
+                <label className="text-xs lg:text-sm font-medium text-gray-700">Password</label>
                 <div className="relative">
-                  <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'password' ? 'text-emerald-500' : 'text-gray-400'}`}>
-                    <Lock className="w-5 h-5" />
+                  <div className={`absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'password' ? 'text-emerald-500' : 'text-gray-400'}`}>
+                    <Lock className="w-4 h-4 lg:w-5 lg:h-5" />
                   </div>
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -385,34 +390,34 @@ function SignUpForm() {
                     onFocus={() => setFocusedField('password')}
                     onBlur={() => setFocusedField(null)}
                     required
-                    className="w-full h-12 pl-12 pr-12 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
+                    className="w-full h-11 lg:h-12 pl-10 lg:pl-12 pr-10 lg:pr-12 bg-gray-50 border-2 border-gray-200 rounded-xl text-sm lg:text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
                 
-                {/* Password Requirements */}
+                {/* Password Requirements - Inline */}
                 {formData.password && (
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <div className={`flex items-center gap-1.5 text-xs ${passwordChecks.length ? 'text-emerald-600' : 'text-gray-400'}`}>
-                      <Check className="w-3.5 h-3.5" />
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
+                    <div className={`flex items-center gap-1 text-[10px] lg:text-xs ${passwordChecks.length ? 'text-emerald-600' : 'text-gray-400'}`}>
+                      <Check className="w-3 h-3" />
                       <span>8+ chars</span>
                     </div>
-                    <div className={`flex items-center gap-1.5 text-xs ${passwordChecks.upper ? 'text-emerald-600' : 'text-gray-400'}`}>
-                      <Check className="w-3.5 h-3.5" />
+                    <div className={`flex items-center gap-1 text-[10px] lg:text-xs ${passwordChecks.upper ? 'text-emerald-600' : 'text-gray-400'}`}>
+                      <Check className="w-3 h-3" />
                       <span>Uppercase</span>
                     </div>
-                    <div className={`flex items-center gap-1.5 text-xs ${passwordChecks.lower ? 'text-emerald-600' : 'text-gray-400'}`}>
-                      <Check className="w-3.5 h-3.5" />
+                    <div className={`flex items-center gap-1 text-[10px] lg:text-xs ${passwordChecks.lower ? 'text-emerald-600' : 'text-gray-400'}`}>
+                      <Check className="w-3 h-3" />
                       <span>Lowercase</span>
                     </div>
-                    <div className={`flex items-center gap-1.5 text-xs ${passwordChecks.number ? 'text-emerald-600' : 'text-gray-400'}`}>
-                      <Check className="w-3.5 h-3.5" />
+                    <div className={`flex items-center gap-1 text-[10px] lg:text-xs ${passwordChecks.number ? 'text-emerald-600' : 'text-gray-400'}`}>
+                      <Check className="w-3 h-3" />
                       <span>Number</span>
                     </div>
                   </div>
@@ -420,11 +425,11 @@ function SignUpForm() {
               </div>
 
               {/* Confirm Password */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">Confirm password</label>
+              <div className="space-y-1">
+                <label className="text-xs lg:text-sm font-medium text-gray-700">Confirm password</label>
                 <div className="relative">
-                  <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'confirm' ? 'text-emerald-500' : 'text-gray-400'}`}>
-                    <Lock className="w-5 h-5" />
+                  <div className={`absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'confirm' ? 'text-emerald-500' : 'text-gray-400'}`}>
+                    <Lock className="w-4 h-4 lg:w-5 lg:h-5" />
                   </div>
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -434,14 +439,14 @@ function SignUpForm() {
                     onFocus={() => setFocusedField('confirm')}
                     onBlur={() => setFocusedField(null)}
                     required
-                    className="w-full h-12 pl-12 pr-12 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
+                    className="w-full h-11 lg:h-12 pl-10 lg:pl-12 pr-10 lg:pr-12 bg-gray-50 border-2 border-gray-200 rounded-xl text-sm lg:text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
                   />
                   {formData.confirmPassword && (
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                    <div className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2">
                       {passwordMatch ? (
-                        <Check className="w-5 h-5 text-emerald-500" />
+                        <Check className="w-4 h-4 lg:w-5 lg:h-5 text-emerald-500" />
                       ) : (
-                        <X className="w-5 h-5 text-red-500" />
+                        <X className="w-4 h-4 lg:w-5 lg:h-5 text-red-500" />
                       )}
                     </div>
                   )}
@@ -460,7 +465,7 @@ function SignUpForm() {
               <button
                 type="submit"
                 disabled={loading || !passwordValid || !passwordMatch}
-                className="w-full h-14 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-2xl transition-all duration-300 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2 mt-6"
+                className="w-full h-12 lg:h-14 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl lg:rounded-2xl transition-all duration-300 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2 mt-4 lg:mt-6"
               >
                 {loading ? (
                   <>
@@ -477,22 +482,22 @@ function SignUpForm() {
             </form>
 
             {/* Sign In */}
-            <p className="text-center text-gray-500 mt-6">
+            <p className="text-center text-sm text-gray-500 mt-4 lg:mt-6">
               Already have an account?{' '}
               <Link href="/auth/login" className="font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
                 Sign in
               </Link>
             </p>
 
-            {/* Legal */}
-            <p className="text-center text-xs text-gray-400 mt-4">
-              By creating an account, you agree to our{' '}
+            {/* Legal - more compact on mobile */}
+            <p className="text-center text-[10px] lg:text-xs text-gray-400 mt-3 lg:mt-4">
+              By signing up, you agree to our{' '}
               <button onClick={() => setShowTerms(true)} className="text-gray-500 hover:text-emerald-600 transition-colors underline">Terms</button>
-              {' '}and{' '}
-              <button onClick={() => setShowPrivacy(true)} className="text-gray-500 hover:text-emerald-600 transition-colors underline">Privacy Policy</button>
+              {' '}&{' '}
+              <button onClick={() => setShowPrivacy(true)} className="text-gray-500 hover:text-emerald-600 transition-colors underline">Privacy</button>
             </p>
 
-            <div className="mt-3 flex items-center justify-center gap-4 text-xs">
+            <div className="hidden lg:flex mt-3 items-center justify-center gap-4 text-xs">
               <Link
                 href={formData.role === 'helper' ? '/legal/helper/terms' : '/legal/customer/terms'}
                 className="text-gray-500 hover:text-emerald-700 underline"

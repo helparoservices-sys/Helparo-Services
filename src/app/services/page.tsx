@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { 
   Search,
@@ -22,7 +23,8 @@ import {
   Dog,
   Shirt,
   Heart,
-  ArrowRight
+  ArrowRight,
+  ArrowLeft
 } from 'lucide-react'
 
 // Service categories with icons and colors
@@ -222,8 +224,21 @@ const serviceCategories = [
 ]
 
 export default function ServicesPage() {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [isScrolled, setIsScrolled] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  const goBack = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('hp_role')
+    }
+    if (window.history.length > 1) {
+      router.back()
+    } else {
+      router.push('/')
+    }
+  }
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20)
@@ -250,11 +265,27 @@ export default function ServicesPage() {
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <img src="/logo.svg" alt="Helparo" className="w-10 h-10 rounded-[12px] shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform" />
-              <span className="text-xl font-extrabold text-gray-900 hidden sm:block">helparo</span>
-            </Link>
+            {/* Back button + Logo */}
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={goBack}
+                className="md:hidden w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                aria-label="Go back"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-700" />
+              </button>
+              <Link 
+                href="/" 
+                className="flex items-center gap-2.5 group"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    localStorage.removeItem('hp_role')
+                  }
+                }}
+              >
+                <span className="text-xl font-black text-gray-900 group-hover:text-emerald-600 transition-colors">helparo</span>
+              </Link>
+            </div>
 
             {/* Search Bar - Desktop */}
             <div className="hidden md:flex flex-1 max-w-xl mx-8">
@@ -284,26 +315,24 @@ export default function ServicesPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="pt-28 lg:pt-36 pb-12 lg:pb-16 bg-gradient-to-b from-emerald-50/50 to-white relative overflow-hidden">
+      <section className="pt-24 lg:pt-32 pb-10 lg:pb-14 bg-gradient-to-b from-emerald-50/50 to-white relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(16,185,129,0.1),transparent)]" />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="text-center max-w-3xl mx-auto">
             {/* Breadcrumb */}
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-500 mb-6">
-              <Link href="/" className="hover:text-emerald-600 transition-colors">Home</Link>
-              <ChevronRight className="w-4 h-4" />
-              <span className="text-gray-900 font-medium">All Services</span>
+            <div className="flex items-baseline justify-center gap-2 text-base text-gray-600 mb-6">
+              <Link href="/" className="hover:text-emerald-600 transition-colors leading-none">Home</Link>
+              <ChevronRight className="w-4 h-4 text-gray-400 translate-y-[2px]" />
+              <span className="text-gray-900 font-semibold leading-none">All Services</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 mb-6 leading-tight">
-              Find the perfect
-              <br />
-              <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">service for you</span>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 mb-4 leading-tight">
+              Find the perfect <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">service</span>
             </h1>
             
-            <p className="text-lg sm:text-xl text-gray-500 mb-10 max-w-2xl mx-auto">
-              Explore 50+ services delivered by verified professionals. Book in seconds, get help in minutes.
+            <p className="text-base sm:text-lg text-gray-500 mb-8 max-w-2xl mx-auto">
+              50+ verified services. One-tap booking. Help arrives in minutes.
             </p>
 
             {/* Mobile Search */}
@@ -318,114 +347,112 @@ export default function ServicesPage() {
               />
             </div>
 
-            {/* Trust Badges */}
-            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
-              <div className="flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-sm border border-gray-100">
-                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-                  <Shield className="w-4 h-4 text-emerald-600" />
-                </div>
-                <span className="text-sm font-semibold text-gray-700">SSL Secured</span>
-              </div>
-              <div className="flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-sm border border-gray-100">
-                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <CreditCard className="w-4 h-4 text-blue-600" />
-                </div>
-                <span className="text-sm font-semibold text-gray-700">Payment Protected</span>
-              </div>
-              <div className="flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-sm border border-gray-100">
-                <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-                  <Star className="w-4 h-4 text-amber-600 fill-amber-600" />
-                </div>
-                <span className="text-sm font-semibold text-gray-700">4.9 Rating</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Quick Stats */}
-      <section className="py-6 border-y border-gray-100 bg-gray-50/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-center justify-center gap-8 lg:gap-16 text-center">
-            <div>
-              <p className="text-2xl lg:text-3xl font-black text-gray-900">50+</p>
-              <p className="text-sm text-gray-500 font-medium">Services</p>
-            </div>
-            <div className="hidden sm:block w-px h-10 bg-gray-200" />
-            <div>
-              <p className="text-2xl lg:text-3xl font-black text-gray-900">10K+</p>
-              <p className="text-sm text-gray-500 font-medium">Verified Pros</p>
-            </div>
-            <div className="hidden sm:block w-px h-10 bg-gray-200" />
-            <div>
-              <p className="text-2xl lg:text-3xl font-black text-emerald-600">30 min</p>
-              <p className="text-sm text-gray-500 font-medium">Avg. Arrival</p>
-            </div>
-            <div className="hidden sm:block w-px h-10 bg-gray-200" />
-            <div>
-              <p className="text-2xl lg:text-3xl font-black text-gray-900">98%</p>
-              <p className="text-sm text-gray-500 font-medium">Satisfaction</p>
-            </div>
           </div>
         </div>
       </section>
 
       {/* Services Grid */}
-      <section className="py-16 lg:py-24">
+      <section className="py-10 lg:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
-          <div className="flex items-center justify-between mb-12">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">All Categories</h2>
-              <p className="text-gray-500">Browse {filteredCategories.length} service categories</p>
+              <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">All Categories</h2>
+              <p className="text-gray-500 text-sm">Browse {filteredCategories.length} service categories</p>
             </div>
           </div>
 
-          {/* Categories Grid */}
+          {/* Categories: mobile accordions, desktop grid */}
           {filteredCategories.length > 0 ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCategories.map((category) => {
-                const IconComponent = category.icon
-                return (
-                  <div 
-                    key={category.id}
-                    className={`group relative bg-white rounded-3xl p-6 border-2 ${category.borderColor} hover:border-transparent hover:shadow-2xl hover:shadow-gray-200/50 transition-all duration-300 hover:-translate-y-1`}
-                  >
-                    {/* Icon */}
-                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${category.color} flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                      <IconComponent className="w-7 h-7 text-white" />
+            <>
+              {/* Mobile Accordion */}
+              <div className="md:hidden space-y-3">
+                {filteredCategories.map((category) => {
+                  const IconComponent = category.icon
+                  const isOpen = expandedId === category.id
+                  return (
+                    <div key={category.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedId(isOpen ? null : category.id)}
+                        className="w-full flex items-center justify-between p-4"
+                      >
+                        <div className="flex items-center gap-3 text-left">
+                          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center text-white`}>{<IconComponent className="w-5 h-5" />}</div>
+                          <div>
+                            <p className="text-base font-semibold text-gray-900">{category.name}</p>
+                            <p className="text-xs text-gray-500">{category.services.length} services</p>
+                          </div>
+                        </div>
+                        <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+                      </button>
+                      {isOpen && (
+                        <div className="px-4 pb-4 pt-1 space-y-2">
+                          <p className="text-xs text-gray-500">{category.description}</p>
+                          <div className="grid grid-cols-1 gap-2">
+                            {category.services.map((service) => (
+                              <Link
+                                key={service}
+                                href={`/auth/signup?service=${encodeURIComponent(service.toLowerCase())}`}
+                                className="flex items-center justify-between text-sm text-gray-700 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 hover:border-emerald-200 hover:bg-emerald-50 transition-colors"
+                              >
+                                <span className="flex items-center gap-2"><ChevronRight className="w-4 h-4 text-emerald-500" />{service}</span>
+                                <ArrowRight className="w-4 h-4 text-gray-400" />
+                              </Link>
+                            ))}
+                          </div>
+                          <Link
+                            href={`/auth/signup?category=${encodeURIComponent(category.name.toLowerCase())}`}
+                            className="inline-flex items-center text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                          >
+                            Book in {category.name}
+                            <ArrowRight className="w-4 h-4 ml-1" />
+                          </Link>
+                        </div>
+                      )}
                     </div>
+                  )
+                })}
+              </div>
 
-                    {/* Category Info */}
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">{category.name}</h3>
-                    <p className="text-sm text-gray-500 mb-5">{category.description}</p>
-
-                    {/* Services List */}
-                    <div className="space-y-2 mb-6">
-                      {category.services.map((service) => (
-                        <Link
-                          key={service}
-                          href={`/auth/signup?service=${encodeURIComponent(service.toLowerCase())}`}
-                          className="flex items-center text-sm text-gray-600 hover:text-emerald-600 transition-colors group/link"
-                        >
-                          <ChevronRight className="w-4 h-4 mr-1 text-gray-300 group-hover/link:text-emerald-500 group-hover/link:translate-x-1 transition-all" />
-                          {service}
-                        </Link>
-                      ))}
-                    </div>
-
-                    {/* View All Link */}
-                    <Link
-                      href={`/auth/signup?category=${encodeURIComponent(category.name.toLowerCase())}`}
-                      className="inline-flex items-center text-sm font-semibold text-emerald-600 hover:text-emerald-700 group/btn"
+              {/* Desktop Grid */}
+              <div className="hidden md:grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredCategories.map((category) => {
+                  const IconComponent = category.icon
+                  return (
+                    <div 
+                      key={category.id}
+                      className={`group relative bg-white rounded-3xl p-6 border-2 ${category.borderColor} hover:border-transparent hover:shadow-2xl hover:shadow-gray-200/50 transition-all duration-300 hover:-translate-y-1`}
                     >
-                      View all services
-                      <ArrowRight className="w-4 h-4 ml-1 group-hover/btn:translate-x-1 transition-transform" />
-                    </Link>
-                  </div>
-                )
-              })}
-            </div>
+                      <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${category.color} flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                        <IconComponent className="w-7 h-7 text-white" />
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">{category.name}</h3>
+                      <p className="text-sm text-gray-500 mb-5">{category.description}</p>
+                      <div className="space-y-2 mb-6">
+                        {category.services.map((service) => (
+                          <Link
+                            key={service}
+                            href={`/auth/signup?service=${encodeURIComponent(service.toLowerCase())}`}
+                            className="flex items-center text-sm text-gray-600 hover:text-emerald-600 transition-colors group/link"
+                          >
+                            <ChevronRight className="w-4 h-4 mr-1 text-gray-300 group-hover/link:text-emerald-500 group-hover/link:translate-x-1 transition-all" />
+                            {service}
+                          </Link>
+                        ))}
+                      </div>
+                      <Link
+                        href={`/auth/signup?category=${encodeURIComponent(category.name.toLowerCase())}`}
+                        className="inline-flex items-center text-sm font-semibold text-emerald-600 hover:text-emerald-700 group/btn"
+                      >
+                        View all services
+                        <ArrowRight className="w-4 h-4 ml-1 group-hover/btn:translate-x-1 transition-transform" />
+                      </Link>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
           ) : (
             <div className="text-center py-20">
               <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">

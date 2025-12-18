@@ -257,6 +257,12 @@ export async function POST(request: NextRequest) {
     const NOTIFICATION_RADIUS_KM = 50 // Search radius from customer location
     
     let filteredHelpers = relevantHelpers?.filter(helper => {
+      // Helpers currently on a job should not receive new job notifications
+      if (helper.is_on_job) {
+        console.log(`❌ Helper ${helper.id} excluded: currently on a job`)
+        return false
+      }
+
       // Check distance from customer location FIRST (use NOTIFICATION_RADIUS_KM)
       let distance = 0
       let hasLocation = false
@@ -332,8 +338,9 @@ export async function POST(request: NextRequest) {
     // FALLBACK: If no helpers found within radius, notify ALL approved helpers
     // This is for testing purposes to ensure at least some helpers get notified
     if (filteredHelpers.length === 0 && relevantHelpers && relevantHelpers.length > 0) {
-      console.log(`⚠️ No helpers found within radius. Notifying ALL ${relevantHelpers.length} approved helpers.`)
-      filteredHelpers = relevantHelpers.map(helper => {
+      const notOnJob = relevantHelpers.filter(h => !h.is_on_job)
+      console.log(`⚠️ No helpers found within radius. Notifying ALL ${notOnJob.length} approved helpers (excluding on-job helpers).`)
+      filteredHelpers = notOnJob.map(helper => {
         ;(helper as any).distance_km = 0
         ;(helper as any).category_match = false
         return helper

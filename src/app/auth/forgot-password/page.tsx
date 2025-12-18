@@ -2,16 +2,22 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Mail, Loader2, ArrowLeft, CheckCircle, X, ArrowRight, Shield, KeyRound, Sparkles } from 'lucide-react'
 import { logger } from '@/lib/logger'
 import { requestPasswordResetAction } from '@/app/actions/auth'
 
 export default function ForgotPasswordPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
   const [isFocused, setIsFocused] = useState(false)
+
+  const handleBack = () => {
+    router.replace('/auth/login')
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -76,11 +82,10 @@ export default function ForgotPasswordPage() {
         
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
-          {/* Logo */}
+          {/* Brand */}
           <Link href="/" className="flex items-center gap-3 group">
-            <img src="/logo.svg" alt="Helparo" className="w-12 h-12 rounded-2xl shadow-lg group-hover:scale-105 transition-all" />
             <div>
-              <span className="text-2xl font-bold text-white block">helparo</span>
+              <span className="text-2xl font-black text-white font-heading block tracking-tight">helparo</span>
               <span className="text-xs font-semibold text-emerald-200 tracking-wider uppercase">Home Services</span>
             </div>
           </Link>
@@ -132,25 +137,24 @@ export default function ForgotPasswordPage() {
       <div className="flex-1 flex flex-col">
         {/* Mobile Header */}
         <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-100">
-          <Link href="/auth/login" className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors">
+          <button type="button" onClick={handleBack} className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors">
             <ArrowLeft className="w-5 h-5" />
             <span className="font-medium">Back</span>
-          </Link>
+          </button>
           <Link href="/" className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Helparo" className="w-9 h-9 rounded-xl" />
-            <span className="text-lg font-bold text-gray-900">helparo</span>
+            <span className="text-lg font-black text-gray-900 font-heading tracking-tight">helparo</span>
           </Link>
           <div className="w-12" />
         </div>
 
         {/* Desktop Back Button */}
         <div className="hidden lg:flex items-center p-6">
-          <Link href="/auth/login" className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors group">
+          <button type="button" onClick={handleBack} className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors group">
             <div className="w-10 h-10 rounded-xl bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </div>
             <span className="font-medium">Back to login</span>
-          </Link>
+          </button>
         </div>
 
         {/* Form Container */}

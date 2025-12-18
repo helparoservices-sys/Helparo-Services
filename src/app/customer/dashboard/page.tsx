@@ -84,6 +84,7 @@ export default function CustomerDashboard() {
   const [requests, setRequests] = useState<Array<{ id: string; title: string; status: string; created_at: string; city?: string }>>([])
   const [activeCount, setActiveCount] = useState(0)
   const [completedCount, setCompletedCount] = useState(0)
+  const [badgeCount, setBadgeCount] = useState(0)
   const [showReferralModal, setShowReferralModal] = useState(false)
 
   const greeting = getGreeting()
@@ -111,12 +112,13 @@ export default function CustomerDashboard() {
 
       setProfile(userProfile)
 
-      const [walletRes, loyaltyRes, requestsRes, activeRes, completedRes] = await Promise.all([
+      const [walletRes, loyaltyRes, requestsRes, activeRes, completedRes, badgesRes] = await Promise.all([
         supabase.from('wallet_accounts').select('available_balance').eq('user_id', user.id).single(),
         supabase.from('loyalty_points').select('points_balance').eq('user_id', user.id).single(),
-        supabase.from('service_requests').select('id, title, status, created_at, city').eq('customer_id', user.id).order('created_at', { ascending: false }).limit(5),
-        supabase.from('service_requests').select('id', { count: 'exact', head: true }).eq('customer_id', user.id).in('status', ['open', 'assigned', 'in_progress']),
-        supabase.from('service_requests').select('id', { count: 'exact', head: true }).eq('customer_id', user.id).eq('status', 'completed'),
+        supabase.from('service_requests').select('id, title, status, broadcast_status, created_at, city').eq('customer_id', user.id).order('created_at', { ascending: false }).limit(5),
+        supabase.from('service_requests').select('id', { count: 'exact', head: true }).eq('customer_id', user.id).in('broadcast_status', ['broadcasting', 'accepted', 'on_way', 'arrived', 'in_progress']),
+        supabase.from('service_requests').select('id', { count: 'exact', head: true }).eq('customer_id', user.id).eq('broadcast_status', 'completed'),
+        supabase.from('user_badges').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
       ])
 
       setWallet(walletRes.data)
@@ -124,6 +126,7 @@ export default function CustomerDashboard() {
       setRequests(requestsRes.data || [])
       setActiveCount(activeRes.count || 0)
       setCompletedCount(completedRes.count || 0)
+      setBadgeCount(badgesRes.count || 0)
       setLoading(false)
 
       // Check if we should show referral code modal (only for first-time customers)
@@ -347,7 +350,7 @@ export default function CustomerDashboard() {
             STATS OVERVIEW SECTION
         ═══════════════════════════════════════════════════════════════════ */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <Link href="/customer/bookings?tab=active" className="group bg-white rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-gray-100 shadow-sm hover:shadow-xl hover:border-amber-200 hover:-translate-y-1 transition-all duration-300">
+          <Link href="/customer/active-requests" className="group bg-white rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-gray-100 shadow-sm hover:shadow-xl hover:border-amber-200 hover:-translate-y-1 transition-all duration-300">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
               <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
             </div>
@@ -384,7 +387,7 @@ export default function CustomerDashboard() {
               <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
             </div>
             <p className="text-2xl sm:text-3xl font-black text-gray-900">
-              <AnimatedCounter end={loyalty?.points_balance || 0} />
+              <AnimatedCounter end={badgeCount} />
             </p>
             <p className="text-xs sm:text-sm text-gray-500 font-medium">Badges</p>
           </Link>

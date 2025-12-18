@@ -62,21 +62,8 @@ export function JobNotificationPopup({
   onDecline, 
   onClose 
 }: JobNotificationPopupProps) {
-  const router = useRouter()
   const [accepting, setAccepting] = useState(false)
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null)
-  const [videoUrls, setVideoUrls] = useState<string[]>([])
-
-  // Cleanup blob URLs when notification changes or component unmounts
-  useEffect(() => {
-    return () => {
-      if (videoUrls && videoUrls.length > 0) {
-        videoUrls.forEach(u => {
-          try { URL.revokeObjectURL(u) } catch { }
-        })
-      }
-    }
-  }, [videoUrls])
 
   // No timer - helper can take their time to decide
   if (!notification) return null
@@ -295,14 +282,14 @@ export function JobNotificationPopup({
             )}
 
             {/* Customer Videos with Audio */}
-            {(videoUrls.length > 0 || (notification.videos && notification.videos.length > 0)) && (
+            {(notification.videos && notification.videos.length > 0) && (
               <div className="bg-blue-50 rounded-xl p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Video className="h-4 w-4 text-blue-600" />
                   <p className="text-xs text-blue-600 font-medium">Videos from Customer (with audio)</p>
                 </div>
                 <div className="space-y-2">
-                  {(videoUrls.length > 0 ? videoUrls : (notification.videos || [])).map((video, idx) => (
+                  {notification.videos.map((video, idx) => (
                     <div key={idx} className="relative rounded-lg overflow-hidden bg-black">
                       <video
                         src={video}
@@ -529,9 +516,11 @@ export function JobNotificationPopup({
 
 // Hook to listen for job notifications in real-time
 export function useJobNotifications() {
+  const router = useRouter()
   const [notification, setNotification] = useState<JobNotification | null>(null)
   const [helperProfile, setHelperProfile] = useState<{ id: string } | null>(null)
   const [authUserId, setAuthUserId] = useState<string | null>(null)
+  const [isOnJob, setIsOnJob] = useState(false)
   const [videoUrls, setVideoUrls] = useState<string[]>([])
   const seenNotificationIds = useRef<Set<string>>(new Set())
   const soundIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -540,10 +529,12 @@ export function useJobNotifications() {
   // Use refs to track current values for realtime callbacks (avoids stale closures)
   const notificationRef = useRef<JobNotification | null>(null)
   const authUserIdRef = useRef<string | null>(null)
+  const isOnJobRef = useRef<boolean>(false)
   
   // Keep refs in sync with state
   useEffect(() => { notificationRef.current = notification }, [notification])
   useEffect(() => { authUserIdRef.current = authUserId }, [authUserId])
+  useEffect(() => { isOnJobRef.current = isOnJob }, [isOnJob])
 
   // Function to play alert sound once
   const playAlertSoundOnce = useCallback(() => {
@@ -645,7 +636,7 @@ export function useJobNotifications() {
 
       const { data: profile, error } = await supabase
         .from('helper_profiles')
-        .select('id')
+        .select('id, is_on_job')
         .eq('user_id', user.id)
         .single()
 
@@ -654,18 +645,47 @@ export function useJobNotifications() {
         return
       }
 
-      const typedProfile = profile as { id: string } | null
+      const typedProfile = profile as { id: string; is_on_job?: boolean | null } | null
       if (typedProfile) {
         console.log('🔔 Helper profile found:', typedProfile.id)
         setHelperProfile(typedProfile)
+        setIsOnJob(typedProfile.is_on_job === true)
       }
     }
     getProfile()
   }, [])
 
-  // Poll for new notifications as backup (every 5 seconds)
+  // Keep on-job status in sync via realtime updates
   useEffect(() => {
     if (!helperProfile) return
+
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`helper-on-job-${helperProfile.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'helper_profiles',
+          filter: `id=eq.${helperProfile.id}`
+        },
+        (payload) => {
+          const next = (payload.new as any)?.is_on_job === true
+          setIsOnJob(next)
+          if (next) setNotification(null)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [helperProfile])
+
+  // Poll for new notifications as backup (every 5 seconds)
+  useEffect(() => {
+    if (!helperProfile || isOnJob) return
 
     console.log('🔔 Starting polling fallback for helper:', helperProfile.id)
 
@@ -835,11 +855,17 @@ export function useJobNotifications() {
     return () => {
       clearInterval(pollInterval)
     }
-  }, [helperProfile])
+  }, [helperProfile, isOnJob])
 
   useEffect(() => {
     if (!helperProfile) {
       console.log('🔔 No helper profile yet, not subscribing')
+      return
+    }
+
+    if (isOnJob) {
+      console.log('🔕 Helper is on a job; suppressing new job notifications')
+      setNotification(null)
       return
     }
     
@@ -859,6 +885,11 @@ export function useJobNotifications() {
         },
         async (payload) => {
           console.log('🔔 New job notification received:', payload)
+
+          if (isOnJobRef.current) {
+            console.log('🔕 Ignoring notification (helper is on a job)')
+            return
+          }
           
           // Fetch full notification details
           const { data: rawData, error } = await supabase
@@ -1046,7 +1077,7 @@ export function useJobNotifications() {
       supabase.removeChannel(statusChannel)
       supabase.removeChannel(cancellationChannel)
     }
-  }, [helperProfile])
+  }, [helperProfile, isOnJob])
 
   const acceptJob = useCallback(async (requestId: string) => {
     if (!helperProfile) return
@@ -1109,6 +1140,9 @@ export function useJobNotifications() {
 
       toast.success('🎉 Job accepted! Contact details shared.')
       setNotification(null)
+
+      // Helper is now on a job; suppress future notifications until cleared
+      setIsOnJob(true)
       
       // Redirect to job details
       router.push(`/helper/jobs/${requestId}`)
@@ -1116,7 +1150,7 @@ export function useJobNotifications() {
       const message = error instanceof Error ? error.message : 'Failed to accept job'
       toast.error(message)
     }
-  }, [helperProfile])
+  }, [helperProfile, router])
 
   const declineJob = useCallback(async (requestId: string) => {
     if (!helperProfile) return

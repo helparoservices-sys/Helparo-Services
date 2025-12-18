@@ -202,16 +202,22 @@ export async function requestPasswordResetAction(formData: FormData) {
     const sanitizedEmail = sanitizeEmail(parsed.data)
     const supabase = await createClient()
 
+    // Use dynamic URL based on environment
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://helparo.in'
+    const redirectUrl = `${baseUrl}/auth/reset-password`
+
     const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
-      redirectTo: 'https://helparo.in/auth/reset-password',
+      redirectTo: redirectUrl,
     })
 
     if (error) {
+      console.error('Password reset error:', error)
       return { error: 'Failed to send reset email. Try again.' }
     }
 
     return { success: true }
   } catch (error: any) {
+    console.error('Password reset exception:', error)
     return handleServerActionError(error)
   }
 }

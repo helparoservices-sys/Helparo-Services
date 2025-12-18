@@ -21,7 +21,13 @@ const auth = getAuth(app)
 //
 // The appVerificationDisabledForTesting flag only disables reCAPTCHA verification,
 // but you still need test phone numbers for localhost.
-if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+// NOTE: In Capacitor production builds, the app origin can be `capacitor://localhost`.
+// Never enable test mode in production, otherwise real users could bypass verification.
+if (
+  typeof window !== 'undefined' &&
+  window.location.hostname === 'localhost' &&
+  process.env.NODE_ENV !== 'production'
+) {
   auth.settings.appVerificationDisabledForTesting = true
   console.log('🔧 Firebase: Test mode enabled for localhost')
   console.log('📱 Use test phone numbers from Firebase Console for OTP testing')

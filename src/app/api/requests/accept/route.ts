@@ -23,13 +23,21 @@ export async function POST(request: NextRequest) {
     // Verify the helper profile belongs to this user
     const { data: helperProfile } = await supabase
       .from('helper_profiles')
-      .select('id, user_id, current_location_lat, current_location_lng')
+      .select('id, user_id, current_location_lat, current_location_lng, is_on_job')
       .eq('user_id', user.id)
       .single()
 
     if (!helperProfile) {
       console.log('❌ Helper profile not found for user:', user.id)
       return NextResponse.json({ error: 'Helper profile not found' }, { status: 404 })
+    }
+
+    // Do not allow a helper to accept a new job while already working
+    if ((helperProfile as any).is_on_job === true) {
+      return NextResponse.json(
+        { error: 'You are currently on a job and cannot accept a new one.' },
+        { status: 409 }
+      )
     }
 
     // Use fresh location from client if provided, otherwise fall back to stored location

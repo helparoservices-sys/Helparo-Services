@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { logger } from './lib/logger'
-import { timingSafeEqual } from 'crypto'
 
 // Generate CSRF token using Web Crypto API (Edge Runtime compatible)
 function generateCSRFToken(): string {
@@ -16,14 +15,13 @@ function verifyCSRFToken(token: string, headerToken: string | null): boolean {
   if (!token || !headerToken || token.length !== headerToken.length) {
     return false
   }
-  
-  try {
-    const tokenBuffer = Buffer.from(token)
-    const headerBuffer = Buffer.from(headerToken)
-    return timingSafeEqual(tokenBuffer, headerBuffer)
-  } catch {
-    return false
+
+  // Edge-runtime compatible timing-safe string compare (constant time vs. content)
+  let result = 0
+  for (let i = 0; i < token.length; i++) {
+    result |= token.charCodeAt(i) ^ headerToken.charCodeAt(i)
   }
+  return result === 0
 }
 
 export async function middleware(request: NextRequest) {
@@ -53,7 +51,7 @@ export async function middleware(request: NextRequest) {
     "img-src 'self' data: https: blob: https://*.googleapis.com https://*.gstatic.com https://*.cashfree.com; " +
     "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com; " +
     "media-src 'self' data: blob: https:; " +
-    "connect-src 'self' https://opnjibjsddwyojrerbll.supabase.co wss://opnjibjsddwyojrerbll.supabase.co https://vercel.live wss://*.vercel.live https://*.googleapis.com https://*.gstatic.com https://www.google.com https://api.cashfree.com https://sandbox.cashfree.com https://*.cashfree.com; " +
+    "connect-src 'self' https://opnjibjsddwyojrerbll.supabase.co wss://opnjibjsddwyojrerbll.supabase.co https://vercel.live wss://*.vercel.live https://*.googleapis.com https://*.gstatic.com https://www.google.com https://api.cashfree.com https://sandbox.cashfree.com https://*.cashfree.com https://ipapi.co https://ipinfo.io https://freeipapi.com https://nominatim.openstreetmap.org; " +
     "frame-src 'self' https://www.google.com https://maps.google.com https://*.cashfree.com; " +
     "frame-ancestors 'self';"
   )
@@ -254,6 +252,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/',
     '/customer/:path*',
     '/helper/:path*',
     '/admin/:path*',

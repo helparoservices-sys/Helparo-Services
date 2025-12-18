@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import MobileAppEntry from '@/components/mobile-app-entry'
 import { Button } from '@/components/ui/button'
 import { 
   ArrowRight,
@@ -97,7 +98,13 @@ export default function LandingPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-white overflow-hidden">
+    <>
+      <div className="md:hidden">
+        <MobileAppEntry />
+      </div>
+
+      <div className="hidden md:block">
+        <div className="min-h-screen bg-white overflow-hidden">
       {/* ═══════════════════════════════════════════════════════════════════
           HOW IT WORKS MODAL - FULL FLOW EXPLANATION
       ═══════════════════════════════════════════════════════════════════ */}
@@ -299,12 +306,85 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           HERO SECTION - THE WOW FACTOR
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="relative pt-28 sm:pt-32 lg:pt-40 pb-16 sm:pb-20 lg:pb-32">
+      <section className="relative pt-20 sm:pt-32 lg:pt-40 pb-10 sm:pb-20 lg:pb-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-20 items-center">
             
             {/* Left: Content */}
             <div className="relative z-10">
+              {/* Mobile-only: Splash-style hero (desktop/tablet remains unchanged) */}
+              <div className="md:hidden">
+                <div className="mx-auto max-w-sm">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="relative mb-4">
+                      <div className="absolute inset-0 bg-emerald-500/15 blur-2xl rounded-[2rem]" />
+                      <img
+                        src="/logo.svg"
+                        alt="Helparo"
+                        className="relative w-16 h-16 rounded-[18px] bg-white shadow-xl shadow-emerald-500/15"
+                      />
+                    </div>
+
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 px-3 py-1.5 rounded-full mb-3">
+                      <span className="text-xs font-semibold text-emerald-800">Trusted home services</span>
+                      <span className="flex items-center text-sm font-bold text-amber-600">
+                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 mr-0.5" />
+                        4.9
+                      </span>
+                    </div>
+
+                    <h1 className="text-[2rem] font-black text-gray-900 leading-[1.05] tracking-tight mb-2">
+                      Home services
+                      <br />
+                      <span className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 bg-clip-text text-transparent">
+                        made magical
+                      </span>
+                    </h1>
+
+                    <p className="text-sm text-gray-600 leading-relaxed mb-4">
+                      Book a verified professional in <span className="text-emerald-600 font-bold">under 30 minutes</span>
+                    </p>
+
+                    <div className="w-full bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-3 mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                          <IndianRupee className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-sm font-bold text-amber-800">You decide your price</p>
+                          <p className="text-xs text-amber-700">No fixed rates • Fair for everyone</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="w-full flex flex-col gap-3 mb-4">
+                      <Button
+                        size="lg"
+                        className="group bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl px-8 h-14 text-base font-bold shadow-xl shadow-emerald-600/25 hover:shadow-emerald-600/40 transition-all duration-300"
+                        asChild
+                      >
+                        <Link href="/auth/signup">
+                          Get Started
+                          <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center justify-center gap-4 text-sm">
+                      <Link href="/services" className="font-semibold text-emerald-700 hover:text-emerald-800">
+                        Browse services
+                      </Link>
+                      <span className="text-gray-300">•</span>
+                      <Link href="/auth/login" className="font-semibold text-gray-600 hover:text-gray-800">
+                        Log in
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Desktop/Tablet hero (unchanged) */}
+              <div className="hidden md:block">
               {/* 🚀 INDIA'S FIRST - Revolutionary Badge */}
               <div className="flex flex-wrap items-center gap-3 mb-6 animate-fade-in">
                 <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-pink-500 text-white px-4 py-2 rounded-full shadow-lg shadow-orange-500/25">
@@ -418,6 +498,7 @@ export default function LandingPage() {
                   <span className="font-medium">Satisfaction assured</span>
                 </div>
               </div>
+              </div>
             </div>
 
             {/* Right: Hero Visual */}
@@ -523,7 +604,7 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           SOCIAL PROOF BAR
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-8 bg-gray-50 border-y border-gray-100">
+      <section className="hidden md:block py-8 bg-gray-50 border-y border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-center gap-8 lg:gap-16">
             <div className="text-center">
@@ -560,7 +641,7 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           🔥 REVOLUTIONARY SECTION - AI + YOU DECIDE PRICE
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-20 lg:py-28 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 text-white relative overflow-hidden">
+      <section className="hidden md:block py-20 lg:py-28 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.15),transparent_60%)]" />
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.02%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')] opacity-50" />
         
@@ -651,7 +732,7 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           SERVICES SECTION - STUNNING GRID
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-24 lg:py-32 bg-white relative">
+      <section className="py-12 md:py-24 lg:py-32 bg-white relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center mb-16">
@@ -659,10 +740,10 @@ export default function LandingPage() {
               <Sparkles className="w-4 h-4" />
               Popular Services
             </div>
-            <h2 className="text-4xl lg:text-5xl font-black text-gray-900 mb-4">
+            <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-gray-900 mb-3 md:mb-4">
               What do you need <span className="text-emerald-600">help</span> with?
             </h2>
-            <p className="text-xl text-gray-500 max-w-2xl mx-auto">
+            <p className="text-base sm:text-xl text-gray-500 max-w-2xl mx-auto">
               Professional services delivered by verified experts. Book in seconds.
             </p>
           </div>
@@ -682,9 +763,9 @@ export default function LandingPage() {
               <Link
                 key={service.name}
                 href={`/auth/signup?service=${encodeURIComponent(service.name.toLowerCase())}`}
-                className={`group relative p-6 rounded-3xl bg-white border-2 border-gray-100 ${service.hover} hover:shadow-xl hover:-translate-y-2 transition-all duration-300`}
+                className={`group relative p-4 sm:p-6 rounded-3xl bg-white border-2 border-gray-100 ${service.hover} hover:shadow-xl hover:-translate-y-2 transition-all duration-300`}
               >
-                <div className={`w-14 h-14 rounded-2xl ${service.bg} flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl ${service.bg} flex items-center justify-center text-3xl mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300`}>
                   {service.icon}
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 mb-1">{service.name}</h3>
@@ -710,7 +791,7 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           HOW IT WORKS - VISUAL TIMELINE
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-24 lg:py-32 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
+      <section className="hidden md:block py-24 lg:py-32 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.05),transparent_70%)]" />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
@@ -754,7 +835,7 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           WHY CHOOSE US - TRUST SECTION
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-24 lg:py-32 bg-white relative">
+      <section className="hidden md:block py-24 lg:py-32 bg-white relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
             {/* Left Content */}
@@ -857,7 +938,7 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           SAFETY SECTION - GREEN GRADIENT
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-24 lg:py-32 bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 text-white relative overflow-hidden">
+      <section className="hidden md:block py-24 lg:py-32 bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')] opacity-30" />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
@@ -896,7 +977,7 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           FINAL CTA - DARK PREMIUM
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-24 lg:py-32 bg-gray-950 text-white relative overflow-hidden">
+      <section className="hidden md:block py-24 lg:py-32 bg-gray-950 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.15),transparent_60%)]" />
         
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
@@ -999,6 +1080,8 @@ export default function LandingPage() {
         .animate-float { animation: float 4s ease-in-out infinite; }
         .animate-float-delayed { animation: float-delayed 5s ease-in-out infinite 1s; }
       `}</style>
-    </div>
+        </div>
+      </div>
+    </>
   )
 }
