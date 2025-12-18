@@ -352,7 +352,7 @@ export function AddressInteractiveMap({
   return (
     <div ref={wrapperRef} className="space-y-4">
       <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyDCS0wAuS7OMSgByRvM2HdQ80YC4CLDR4s&libraries=places`}
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
         strategy="afterInteractive"
         onLoad={handleGoogleMapsLoad}
         onError={() => {
