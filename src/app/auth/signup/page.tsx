@@ -1,69 +1,277 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, useRef, useCallback, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Eye, EyeOff, CheckCircle, Loader2, ArrowLeft, Mail, Lock, User, Phone, Check, X, ArrowRight, Shield, Star, Sparkles, Zap, Clock } from 'lucide-react'
-import { supabase } from '@/lib/supabase/client'
+import { Loader2, ArrowLeft, ArrowRight, Phone, RefreshCw, AlertCircle, User, Briefcase } from 'lucide-react'
 import { LegalModal } from '@/components/legal/legal-modal'
+import { logger } from '@/lib/logger'
+import { createBrowserClient } from '@supabase/ssr'
+import { auth, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from '@/lib/firebase'
 
 function SignUpForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const defaultRole = searchParams.get('role') || 'customer'
-  const serviceParam = searchParams.get('service')
+  const roleParam = searchParams.get('role')
+
+  const [role, setRole] = useState<'customer' | 'helper' | null>(
+    roleParam === 'customer' || roleParam === 'helper' ? roleParam : null
+  )
+  const [phone, setPhone] = useState('')
+  const [otp, setOtp] = useState(['', '', '', '', '', ''])
+  const [step, setStep] = useState<'phone' | 'otp'>('phone')
+  const [maskedPhone, setMaskedPhone] = useState('')
+  const [countdown, setCountdown] = useState(0)
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null)
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null)
+  const [recaptchaReady, setRecaptchaReady] = useState(false)
+  const [recaptchaInitialized, setRecaptchaInitialized] = useState(false)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
+
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const [showTerms, setShowTerms] = useState(false)
+  const [showPrivacy, setShowPrivacy] = useState(false)
+
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([])
+  const countryCode = '+91'
 
   const goBackOrHome = () => {
     if (typeof window === 'undefined') return
-
     if (window.history.length > 1) router.back()
     else router.push('/')
   }
-  
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    fullName: '',
-    phone: '',
-    role: defaultRole as 'customer' | 'helper',
-  })
 
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
-  const [showTerms, setShowTerms] = useState(false)
-  const [showPrivacy, setShowPrivacy] = useState(false)
-  const [googleLoading, setGoogleLoading] = useState(false)
-  const [focusedField, setFocusedField] = useState<string | null>(null)
-  const [emailTouched, setEmailTouched] = useState(false)
+  const initializeRecaptcha = useCallback(() => {
+    if (typeof window === 'undefined' || recaptchaInitialized || recaptchaVerifier) return
+    setRecaptchaInitialized(true)
+    try {
+      const existingContainer = document.getElementById('recaptcha-container')
+      if (existingContainer) existingContainer.innerHTML = ''
+      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+        callback: () => setRecaptchaReady(true),
+        'expired-callback': () => {
+          setRecaptchaVerifier(null)
+          setRecaptchaReady(false)
+          setRecaptchaInitialized(false)
+        }
+      })
+      setRecaptchaVerifier(verifier)
+      setRecaptchaReady(true)
+    } catch (err) {
+      console.error('Failed to initialize reCAPTCHA:', err)
+      setRecaptchaInitialized(false)
+    }
+  }, [recaptchaVerifier, recaptchaInitialized])
 
-  // Email validation
-  const isValidEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(email)
+  useEffect(() => {
+    if (step === 'phone') {
+      setTimeout(() => initializeRecaptcha(), 500)
+    }
+  }, [step, initializeRecaptcha])
+
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [countdown])
+
+  const handleSendOtp = async () => {
+    if (phone.length !== 10) {
+      setError('Please enter a valid 10-digit phone number')
+      return
+    }
+    if (!agreedToTerms) {
+      setError('Please agree to Terms & Privacy Policy')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('phone', phone)
+        .maybeSingle()
+
+      if (existingProfile) {
+        setError('This phone number is already registered. Please login instead.')
+        setLoading(false)
+        return
+      }
+
+      if (!recaptchaVerifier || !recaptchaReady) {
+        initializeRecaptcha()
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+      if (!recaptchaVerifier) {
+        setError('Verification not ready. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      const fullPhone = `${countryCode}${phone}`
+      const result = await signInWithPhoneNumber(auth, fullPhone, recaptchaVerifier)
+      setConfirmationResult(result)
+      setMaskedPhone(`******${phone.slice(-4)}`)
+      setStep('otp')
+      setCountdown(60)
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string }
+      logger.error('Phone signup error', { error: err })
+      if (error.code === 'auth/invalid-phone-number') setError('Invalid phone number format')
+      else if (error.code === 'auth/too-many-requests') setError('Too many requests. Please try again later.')
+      else setError(error.message || 'Failed to send OTP')
+      
+      if (recaptchaVerifier) {
+        try { recaptchaVerifier.clear() } catch { /* ignore */ }
+        setRecaptchaVerifier(null)
+        setRecaptchaReady(false)
+        setRecaptchaInitialized(false)
+      }
+    } finally {
+      setLoading(false)
+    }
   }
-  const emailValid = formData.email === '' || isValidEmail(formData.email)
 
-  // Phone number handling - only store 10 digits, display with +91
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Remove all non-digits
-    const digits = e.target.value.replace(/\D/g, '')
-    // Limit to 10 digits
-    const limitedDigits = digits.slice(0, 10)
-    setFormData({ ...formData, phone: limitedDigits })
+  const handleVerifyOtp = async () => {
+    const otpCode = otp.join('')
+    if (otpCode.length !== 6) {
+      setError('Please enter the complete 6-digit OTP')
+      return
+    }
+    if (!confirmationResult) {
+      setError('Session expired. Please try again.')
+      setStep('phone')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      await confirmationResult.confirm(otpCode)
+      
+      const firebaseUser = auth.currentUser
+      if (!firebaseUser) throw new Error('Authentication failed')
+
+      const response = await fetch('/api/auth/phone-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, role })
+      })
+
+      const result = await response.json()
+      
+      if (!response.ok || result.error) {
+        logger.error('Failed to create account', { error: result.error })
+        setError(result.error || 'Signup failed. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      router.push(`/${role}/dashboard`)
+      
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string }
+      logger.error('OTP verification error', { error: err })
+      if (error.code === 'auth/invalid-verification-code') setError('Invalid OTP. Please try again.')
+      else if (error.code === 'auth/code-expired') {
+        setError('OTP has expired. Please request a new one.')
+        setStep('phone')
+      } else setError('Verification failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResendOtp = async () => {
+    if (countdown > 0) return
+    setOtp(['', '', '', '', '', ''])
+    setConfirmationResult(null)
+    setError('')
+    setLoading(true)
+    
+    if (recaptchaVerifier) {
+      try { recaptchaVerifier.clear() } catch { /* ignore */ }
+      setRecaptchaVerifier(null)
+    }
+    setRecaptchaInitialized(false)
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      initializeRecaptcha()
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      if (!recaptchaVerifier) {
+        setError('Verification not ready. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      const fullPhone = `${countryCode}${phone}`
+      const result = await signInWithPhoneNumber(auth, fullPhone, recaptchaVerifier)
+      setConfirmationResult(result)
+      setCountdown(60)
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string }
+      logger.error('Resend OTP error', { error: err })
+      setError(error.message || 'Failed to resend OTP')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return
+    const newOtp = [...otp]
+    newOtp[index] = value.slice(-1)
+    setOtp(newOtp)
+    if (value && index < 5) otpInputRefs.current[index + 1]?.focus()
+  }
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) otpInputRefs.current[index - 1]?.focus()
+  }
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault()
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+    if (pastedData.length === 6) {
+      setOtp(pastedData.split(''))
+      otpInputRefs.current[5]?.focus()
+    }
   }
 
   const handleGoogleSignUp = async () => {
-    setError('')
+    if (!agreedToTerms) {
+      setError('Please agree to Terms & Privacy Policy')
+      return
+    }
+    
     setGoogleLoading(true)
+    setError('')
 
     try {
-      localStorage.setItem('pendingSignupRole', formData.role)
+      localStorage.setItem('pendingSignupRole', role)
       localStorage.setItem('roleSelected', 'true')
       
-      const { error: googleError } = await supabase.auth.signInWithOAuth({
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
@@ -73,453 +281,318 @@ function SignUpForm() {
           },
         },
       })
-
-      if (googleError) throw googleError
       
+      if (error) {
+        logger.error('Google signup error', { error })
+        setError(error.message)
+        setGoogleLoading(false)
+      }
     } catch (err: unknown) {
-      const error = err as { message?: string }
-      setError(error?.message || 'Failed to sign up with Google')
+      logger.error('Google signup error', { error: err })
+      setError('Failed to sign up with Google')
       setGoogleLoading(false)
     }
   }
 
-  const passwordChecks = {
-    length: formData.password.length >= 8,
-    upper: /[A-Z]/.test(formData.password),
-    lower: /[a-z]/.test(formData.password),
-    number: /[0-9]/.test(formData.password),
-  }
-  const passwordValid = Object.values(passwordChecks).every(Boolean)
-  const passwordMatch = formData.password === formData.confirmPassword && formData.confirmPassword !== ''
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-
-    try {
-      if (!passwordValid) {
-        throw new Error('Password does not meet requirements')
-      }
-      if (!passwordMatch) {
-        throw new Error('Passwords do not match')
-      }
-      if (!isValidEmail(formData.email)) {
-        throw new Error('Please enter a valid email address')
-      }
-
-      // Store phone as 10 digits only (no country code prefix)
-      const cleanPhone = formData.phone ? formData.phone.replace(/[\s-]/g, '') : ''
-
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName,
-            phone: cleanPhone,
-            role: formData.role,
-          },
-          emailRedirectTo: `${window.location.origin}/auth/confirm`,
-        },
-      })
-      
-      if (signUpError) throw signUpError
-      if (data.user) setSuccess(true)
-    } catch (err: unknown) {
-      const error = err as { message?: string }
-      setError(error?.message || 'An error occurred during sign up')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (success) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50/30 flex items-center justify-center p-4">
-        <div className="max-w-md w-full text-center">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-500/30">
-            <CheckCircle className="w-12 h-12 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Check your email! 📧</h1>
-          <p className="text-gray-500 text-lg mb-10">
-            We&apos;ve sent a verification link to <strong className="text-emerald-600">{formData.email}</strong>
-          </p>
-          <Link 
-            href="/auth/login"
-            className="inline-block h-14 px-8 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-2xl transition-all shadow-lg shadow-emerald-500/30 hover:scale-105 leading-[3.5rem]"
-          >
-            Go to Login
-          </Link>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50/30 flex">
-      {/* Left Side - Branding & Features (Hidden on mobile) */}
-      <div className="hidden lg:flex lg:w-1/2 xl:w-[55%] relative overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')] opacity-40" />
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-400/20 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl" />
-        </div>
-        
-        {/* Content */}
-        <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
-          {/* Brand */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div>
-              <span className="text-2xl font-black text-white font-heading block tracking-tight">helparo</span>
-              <span className="text-xs font-semibold text-emerald-200 tracking-wider uppercase">Home Services</span>
-            </div>
-          </Link>
-
-          {/* Main Content */}
-          <div className="max-w-md">
-            <h1 className="text-4xl xl:text-5xl font-black text-white leading-tight mb-6">
-              Join India&apos;s most
-              <span className="block text-emerald-200">trusted home services</span>
-            </h1>
-            <p className="text-lg text-white/80 mb-10">
-              Create your free account and get access to 50+ professional services at your doorstep within minutes.
-            </p>
-
-            {/* Why Join Cards */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
-                  <Zap className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white">Book in 60 Seconds</h3>
-                  <p className="text-sm text-white/70">AI-powered instant booking</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
-                  <Clock className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white">Help in 30 Minutes</h3>
-                  <p className="text-sm text-white/70">Average arrival time</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
-                  <Shield className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white">100% Satisfaction</h3>
-                  <p className="text-sm text-white/70">Money-back guarantee</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Stats */}
-          <div className="flex items-center gap-8">
-            <div>
-              <div className="text-3xl font-black text-white">50K+</div>
-              <div className="text-sm text-white/60">Happy Customers</div>
-            </div>
-            <div className="w-px h-12 bg-white/20" />
-            <div>
-              <div className="text-3xl font-black text-white">10K+</div>
-              <div className="text-sm text-white/60">Verified Helpers</div>
-            </div>
-            <div className="w-px h-12 bg-white/20" />
-            <div>
-              <div className="text-3xl font-black text-white">50+</div>
-              <div className="text-sm text-white/60">Services</div>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50/30 flex flex-col">
+      <div id="recaptcha-container"></div>
+      
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-100">
+        <button type="button" onClick={goBackOrHome} className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors">
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-medium">Back</span>
+        </button>
+        <Link href="/" className="flex items-center gap-2">
+          <span className="text-2xl font-black text-gray-900 font-heading tracking-tight">helparo</span>
+        </Link>
+        <div className="w-16" />
       </div>
 
-      {/* Right Side - Signup Form */}
-      <div className="flex-1 flex flex-col">
-        {/* Mobile Header */}
-        <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-100">
-          <button type="button" onClick={goBackOrHome} className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium">Back</span>
-          </button>
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-lg font-black text-gray-900 font-heading tracking-tight">helparo</span>
-          </Link>
-          <div className="w-12" />
-        </div>
+      {/* Content */}
+      <div className="flex-1 flex items-center justify-center px-5 py-8">
+        <div className="w-full max-w-md">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Create account</h1>
+            <p className="text-sm text-gray-500">Join 50K+ users on Helparo</p>
+          </div>
 
-        {/* Desktop Back Button */}
-        <div className="hidden lg:flex items-center p-6">
-          <button type="button" onClick={goBackOrHome} className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors group">
-            <div className="w-10 h-10 rounded-xl bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center transition-colors">
-              <ArrowLeft className="w-5 h-5" />
-            </div>
-            <span className="font-medium">Back to home</span>
-          </button>
-        </div>
-
-        {/* Form Container */}
-        <div className="flex-1 flex items-start lg:items-center justify-center p-4 lg:p-12 overflow-y-auto">
-          <div className="w-full max-w-md">
-            {/* Header - compact for mobile */}
-            <div className="text-center mb-4 lg:mb-6">
-              <div className="hidden lg:flex items-center justify-center mx-auto mb-6">
-                <span className="text-3xl font-black text-emerald-700 font-heading tracking-tight">helparo</span>
-              </div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">Create account</h1>
-              <p className="text-sm text-gray-500">Join 50K+ users on Helparo</p>
-            </div>
-
-            {/* Quick Signup Options */}
-            <div className="space-y-3 mb-4 lg:mb-6">
-              {/* Phone Number Signup - FEATURED */}
-              <Link
-                href="/auth/signup-phone"
-                className="w-full h-12 lg:h-14 flex items-center justify-center gap-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl lg:rounded-2xl font-semibold transition-all duration-200 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <Phone className="w-5 h-5" />
-                <span>Continue with Phone Number</span>
-              </Link>
-
-              {/* Google Sign Up */}
-              <button
-                type="button"
-                onClick={handleGoogleSignUp}
-                disabled={googleLoading || loading}
-                className="w-full h-12 lg:h-14 flex items-center justify-center gap-3 bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 rounded-xl lg:rounded-2xl font-semibold text-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-              >
-                {googleLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
-                ) : (
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                  </svg>
-                )}
-                <span>{googleLoading ? 'Connecting...' : 'Continue with Google'}</span>
-              </button>
-            </div>
-
-            {/* Divider - COMMENTED OUT FOR PASSWORDLESS AUTH */}
-            {/* <div className="flex items-center gap-4 my-4 lg:my-6">
-              <div className="flex-1 h-px bg-gray-200" />
-              <span className="text-xs text-gray-400 font-medium">or sign up with email</span>
-              <div className="flex-1 h-px bg-gray-200" />
-            </div> */}
-
-            {/* TRADITIONAL EMAIL/PASSWORD FORM - COMMENTED OUT FOR PASSWORDLESS AUTH */}
-            {/* Uncomment below to restore email/password signup */}
-            {/* <form onSubmit={handleSubmit} className="space-y-3 lg:space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs lg:text-sm font-medium text-gray-700">Full name</label>
-                <div className="relative">
-                  <div className={`absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'name' ? 'text-emerald-500' : 'text-gray-400'}`}>
-                    <User className="w-4 h-4 lg:w-5 lg:h-5" />
+          <div className="space-y-5">
+            {step === 'phone' ? (
+              <>
+                {/* Role Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">I want to</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setRole('customer')}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        role === 'customer'
+                          ? 'border-emerald-500 bg-emerald-50'
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center ${
+                        role === 'customer' ? 'bg-emerald-100' : 'bg-gray-100'
+                      }`}>
+                        <User className={`w-5 h-5 ${role === 'customer' ? 'text-emerald-600' : 'text-gray-500'}`} />
+                      </div>
+                      <p className={`font-semibold text-sm ${role === 'customer' ? 'text-emerald-700' : 'text-gray-700'}`}>
+                        Get Help
+                      </p>
+                      <p className="text-xs text-gray-500">Book services</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRole('helper')}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        role === 'helper'
+                          ? 'border-emerald-500 bg-emerald-50'
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center ${
+                        role === 'helper' ? 'bg-emerald-100' : 'bg-gray-100'
+                      }`}>
+                        <Briefcase className={`w-5 h-5 ${role === 'helper' ? 'text-emerald-600' : 'text-gray-500'}`} />
+                      </div>
+                      <p className={`font-semibold text-sm ${role === 'helper' ? 'text-emerald-700' : 'text-gray-700'}`}>
+                        Provide Help
+                      </p>
+                      <p className="text-xs text-gray-500">Earn money</p>
+                    </button>
                   </div>
-                  <input
-                    type="text"
-                    placeholder="John Doe"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    onFocus={() => setFocusedField('name')}
-                    onBlur={() => setFocusedField(null)}
-                    required
-                    className="w-full h-11 lg:h-12 pl-10 lg:pl-12 pr-4 bg-gray-50 border-2 border-gray-200 rounded-xl text-sm lg:text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
-                  />
+                  {!role && (
+                    <p className="text-xs text-amber-600 mt-2">Please select an option</p>
+                  )}
                 </div>
-              </div>
 
-              <div className="space-y-1">
-                <label className="text-xs lg:text-sm font-medium text-gray-700">Email address</label>
-                <div className="relative">
-                  <div className={`absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'email' ? 'text-emerald-500' : 'text-gray-400'}`}>
-                    <Mail className="w-4 h-4 lg:w-5 lg:h-5" />
-                  </div>
-                  <input
-                    type="email"
-                    placeholder="you@example.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    onFocus={() => setFocusedField('email')}
-                    onBlur={() => { setFocusedField(null); setEmailTouched(true) }}
-                    required
-                    className={`w-full h-11 lg:h-12 pl-10 lg:pl-12 pr-4 bg-gray-50 border-2 rounded-xl text-sm lg:text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none transition-all duration-200 ${!emailValid && emailTouched ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-emerald-500'}`}
-                  />
-                </div>
-                {!emailValid && emailTouched && (
-                  <p className="text-xs text-red-500 mt-0.5">Please enter a valid email address</p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs lg:text-sm font-medium text-gray-700">Phone number</label>
-                <div className="relative flex">
-                  <div className="flex items-center justify-center px-3 lg:px-4 bg-gray-100 border-2 border-r-0 border-gray-200 rounded-l-xl text-sm text-gray-600 font-medium">
-                    +91
-                  </div>
-                  <div className="relative flex-1">
-                    <div className={`absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'phone' ? 'text-emerald-500' : 'text-gray-400'}`}>
-                      <Phone className="w-4 h-4 lg:w-5 lg:h-5" />
+                {/* Phone Input */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-gray-500">
+                      <Phone className="w-5 h-5" />
+                      <span className="text-sm font-medium">+91</span>
+                      <div className="w-px h-5 bg-gray-300" />
                     </div>
                     <input
                       type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                       placeholder="9876543210"
-                      value={formData.phone}
-                      onChange={handlePhoneChange}
-                      onFocus={() => setFocusedField('phone')}
-                      onBlur={() => setFocusedField(null)}
-                      maxLength={10}
-                      className="w-full h-11 lg:h-12 pl-10 lg:pl-12 pr-4 bg-gray-50 border-2 border-gray-200 rounded-r-xl text-sm lg:text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
+                      className="w-full h-14 pl-24 pr-4 bg-white border border-gray-200 rounded-xl text-base text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all"
                     />
                   </div>
+                  <p className="mt-2 text-xs text-gray-500">We&apos;ll send you a 6-digit verification code</p>
                 </div>
-                {formData.phone && formData.phone.length < 10 && (
-                  <p className="text-xs text-amber-600 mt-0.5">Enter 10 digit mobile number ({formData.phone.length}/10)</p>
-                )}
-              </div>
 
-              <div className="space-y-1">
-                <label className="text-xs lg:text-sm font-medium text-gray-700">Password</label>
-                <div className="relative">
-                  <div className={`absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'password' ? 'text-emerald-500' : 'text-gray-400'}`}>
-                    <Lock className="w-4 h-4 lg:w-5 lg:h-5" />
-                  </div>
+                {/* Terms Checkbox */}
+                <div className="flex items-center gap-3">
                   <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Create a password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    onFocus={() => setFocusedField('password')}
-                    onBlur={() => setFocusedField(null)}
-                    required
-                    className="w-full h-11 lg:h-12 pl-10 lg:pl-12 pr-10 lg:pr-12 bg-gray-50 border-2 border-gray-200 rounded-xl text-sm lg:text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
+                    type="checkbox"
+                    id="terms"
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 flex-shrink-0"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
+                  <label htmlFor="terms" className="text-sm text-gray-600">
+                    I agree to the{' '}
+                    <button type="button" onClick={() => setShowTerms(true)} className="text-emerald-600 hover:underline">
+                      Terms of Service
+                    </button>
+                    {' '}and{' '}
+                    <button type="button" onClick={() => setShowPrivacy(true)} className="text-emerald-600 hover:underline">
+                      Privacy Policy
+                    </button>
+                  </label>
                 </div>
-                
-                {formData.password && (
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
-                    <div className={`flex items-center gap-1 text-[10px] lg:text-xs ${passwordChecks.length ? 'text-emerald-600' : 'text-gray-400'}`}>
-                      <Check className="w-3 h-3" />
-                      <span>8+ chars</span>
-                    </div>
-                    <div className={`flex items-center gap-1 text-[10px] lg:text-xs ${passwordChecks.upper ? 'text-emerald-600' : 'text-gray-400'}`}>
-                      <Check className="w-3 h-3" />
-                      <span>Uppercase</span>
-                    </div>
-                    <div className={`flex items-center gap-1 text-[10px] lg:text-xs ${passwordChecks.lower ? 'text-emerald-600' : 'text-gray-400'}`}>
-                      <Check className="w-3 h-3" />
-                      <span>Lowercase</span>
-                    </div>
-                    <div className={`flex items-center gap-1 text-[10px] lg:text-xs ${passwordChecks.number ? 'text-emerald-600' : 'text-gray-400'}`}>
-                      <Check className="w-3 h-3" />
-                      <span>Number</span>
-                    </div>
+
+                {error && (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{error}</span>
                   </div>
                 )}
-              </div>
 
-              <div className="space-y-1">
-                <label className="text-xs lg:text-sm font-medium text-gray-700">Confirm password</label>
-                <div className="relative">
-                  <div className={`absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'confirm' ? 'text-emerald-500' : 'text-gray-400'}`}>
-                    <Lock className="w-4 h-4 lg:w-5 lg:h-5" />
-                  </div>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Confirm your password"
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    onFocus={() => setFocusedField('confirm')}
-                    onBlur={() => setFocusedField(null)}
-                    required
-                    className="w-full h-11 lg:h-12 pl-10 lg:pl-12 pr-10 lg:pr-12 bg-gray-50 border-2 border-gray-200 rounded-xl text-sm lg:text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
-                  />
-                  {formData.confirmPassword && (
-                    <div className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2">
-                      {passwordMatch ? (
-                        <Check className="w-4 h-4 lg:w-5 lg:h-5 text-emerald-500" />
-                      ) : (
-                        <X className="w-4 h-4 lg:w-5 lg:h-5 text-red-500" />
-                      )}
+                <button
+                  onClick={handleSendOtp}
+                  disabled={phone.length !== 10 || !agreedToTerms || loading || !role}
+                  className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Sending OTP...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Send OTP</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+
+                <div className="flex items-center gap-3 my-4">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <span className="text-xs text-gray-400 font-medium">or</span>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGoogleSignUp}
+                  disabled={googleLoading || !agreedToTerms}
+                  className="w-full h-12 flex items-center justify-center gap-3 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl font-medium text-gray-700 transition-colors disabled:opacity-50"
+                >
+                  {googleLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" viewBox="0 0 24 24">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                      </svg>
+                      <span>Continue with Google</span>
+                    </>
+                  )}
+                </button>
+              </>
+            ) : (
+              /* OTP Step - Enhanced Design */
+              <div className="space-y-6">
+                {/* Animated Header */}
+                <div className="text-center">
+                  <div className="relative w-20 h-20 mx-auto mb-5">
+                    {/* Outer ring animation */}
+                    <div className="absolute inset-0 rounded-full border-2 border-emerald-200 animate-ping opacity-30" />
+                    {/* Middle ring */}
+                    <div className="absolute inset-2 rounded-full border-2 border-emerald-300 animate-pulse" />
+                    {/* Inner circle with icon */}
+                    <div className="absolute inset-4 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                      <Phone className="w-6 h-6 text-white" />
                     </div>
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Verify your number</h2>
+                  <p className="text-sm text-gray-500">
+                    We sent a 6-digit code to
+                  </p>
+                  <p className="text-base font-semibold text-emerald-600 mt-1">{maskedPhone}</p>
+                </div>
+
+                {/* OTP Input with enhanced styling */}
+                <div className="relative">
+                  <div className="flex justify-center gap-2 sm:gap-3">
+                    {otp.map((digit, index) => (
+                      <input
+                        key={index}
+                        ref={(el) => { otpInputRefs.current[index] = el }}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(index, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                        onPaste={handleOtpPaste}
+                        className={`w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl font-bold rounded-xl border-2 transition-all duration-200 focus:outline-none ${
+                          digit 
+                            ? 'bg-emerald-50 border-emerald-500 text-emerald-700' 
+                            : 'bg-gray-50 border-gray-200 text-gray-900 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  {/* Progress indicator */}
+                  <div className="flex justify-center gap-1.5 mt-4">
+                    {[0, 1, 2, 3, 4, 5].map((i) => (
+                      <div 
+                        key={i} 
+                        className={`h-1 w-6 rounded-full transition-all duration-300 ${
+                          otp[i] ? 'bg-emerald-500' : 'bg-gray-200'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Timer/Resend with better styling */}
+                <div className="text-center py-2">
+                  {countdown > 0 ? (
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-full">
+                      <div className="w-5 h-5 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+                      <span className="text-sm text-gray-600">
+                        Resend code in <span className="font-bold text-emerald-600">{countdown}s</span>
+                      </span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleResendOtp}
+                      disabled={loading}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 rounded-full text-emerald-600 font-medium transition-colors"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      <span>Resend code</span>
+                    </button>
                   )}
                 </div>
-              </div>
 
-              {error && (
-                <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
-                  <X className="w-5 h-5 flex-shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading || !passwordValid || !passwordMatch}
-                className="w-full h-12 lg:h-14 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl lg:rounded-2xl transition-all duration-300 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2 mt-4 lg:mt-6"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Creating account...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Create account</span>
-                    <ArrowRight className="w-5 h-5" />
-                  </>
+                {error && (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{error}</span>
+                  </div>
                 )}
-              </button>
-            </form> */}
 
-            {/* Sign In */}
-            <p className="text-center text-sm text-gray-500 mt-4 lg:mt-6">
+                {/* Verify Button with gradient */}
+                <button
+                  onClick={handleVerifyOtp}
+                  disabled={otp.join('').length !== 6 || loading}
+                  className="w-full h-14 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 disabled:shadow-none"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Creating your account...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Verify & Create Account</span>
+                      <ArrowRight className="w-5 h-5" />
+                    </>
+                  )}
+                </button>
+
+                {/* Change number link */}
+                <button
+                  onClick={() => {
+                    setStep('phone')
+                    setOtp(['', '', '', '', '', ''])
+                    setError('')
+                  }}
+                  className="w-full text-sm text-gray-500 hover:text-emerald-600 flex items-center justify-center gap-1.5 py-2 transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Change phone number</span>
+                </button>
+              </div>
+            )}
+
+            {/* Sign In Link */}
+            <p className="text-center text-sm text-gray-500 mt-6">
               Already have an account?{' '}
               <Link href="/auth/login" className="font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
                 Sign in
               </Link>
             </p>
-
-            {/* Legal - more compact on mobile */}
-            <p className="text-center text-[10px] lg:text-xs text-gray-400 mt-3 lg:mt-4">
-              By signing up, you agree to our{' '}
-              <button onClick={() => setShowTerms(true)} className="text-gray-500 hover:text-emerald-600 transition-colors underline">Terms</button>
-              {' '}&{' '}
-              <button onClick={() => setShowPrivacy(true)} className="text-gray-500 hover:text-emerald-600 transition-colors underline">Privacy</button>
-            </p>
-
-            <div className="hidden lg:flex mt-3 items-center justify-center gap-4 text-xs">
-              <Link
-                href={formData.role === 'helper' ? '/legal/helper/terms' : '/legal/customer/terms'}
-                className="text-gray-500 hover:text-emerald-700 underline"
-              >
-                View {formData.role === 'helper' ? 'Helper' : 'Customer'} Terms
-              </Link>
-              <Link
-                href={formData.role === 'helper' ? '/legal/helper/privacy' : '/legal/customer/privacy'}
-                className="text-gray-500 hover:text-emerald-700 underline"
-              >
-                View {formData.role === 'helper' ? 'Helper' : 'Customer'} Privacy
-              </Link>
-            </div>
-
-            <LegalModal type="terms" audience={formData.role} open={showTerms} onOpenChange={setShowTerms} />
-            <LegalModal type="privacy" audience={formData.role} open={showPrivacy} onOpenChange={setShowPrivacy} />
           </div>
+
+          <LegalModal type="terms" audience={role} open={showTerms} onOpenChange={setShowTerms} />
+          <LegalModal type="privacy" audience={role} open={showPrivacy} onOpenChange={setShowPrivacy} />
         </div>
       </div>
     </div>

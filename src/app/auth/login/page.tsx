@@ -3,20 +3,13 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Eye, EyeOff, Loader2, ArrowLeft, Mail, Lock, X, ArrowRight, Shield, Star, Sparkles, Phone, RefreshCw, AlertCircle } from 'lucide-react'
-import { loginAction } from '@/app/actions/auth'
-import { LegalModal } from '@/components/legal/legal-modal'
+import { Loader2, ArrowLeft, ArrowRight, Shield, Star, Sparkles, Phone, RefreshCw, AlertCircle } from 'lucide-react'
 import { logger } from '@/lib/logger'
 import { createBrowserClient } from '@supabase/ssr'
 import { auth, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from '@/lib/firebase'
 
 export default function LoginPage() {
   const router = useRouter()
-  const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email')
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  })
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [step, setStep] = useState<'phone' | 'otp'>('phone')
@@ -26,15 +19,11 @@ export default function LoginPage() {
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null)
   const [recaptchaReady, setRecaptchaReady] = useState(false)
   const [recaptchaInitialized, setRecaptchaInitialized] = useState(false)
-  
-  const [showPassword, setShowPassword] = useState(false)
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [showTerms, setShowTerms] = useState(false)
-  const [showPrivacy, setShowPrivacy] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
-  const [focusedField, setFocusedField] = useState<string | null>(null)
-  
+
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([])
   const countryCode = '+91'
 
@@ -74,12 +63,11 @@ export default function LoginPage() {
     }
   }, [recaptchaVerifier, recaptchaInitialized])
 
-  // Initialize reCAPTCHA when phone login is selected
   useEffect(() => {
-    if (loginMethod === 'phone' && step === 'phone') {
+    if (step === 'phone') {
       setTimeout(() => initializeRecaptcha(), 500)
     }
-  }, [loginMethod, step, initializeRecaptcha])
+  }, [step, initializeRecaptcha])
 
   // Countdown timer
   useEffect(() => {
@@ -437,7 +425,7 @@ export default function LoginPage() {
             <span className="font-medium">Back</span>
           </button>
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-lg font-black text-gray-900 font-heading tracking-tight">helparo</span>
+            <span className="text-2xl font-black text-gray-900 font-heading tracking-tight">helparo</span>
           </Link>
           <div className="w-12" />
         </div>
@@ -454,11 +442,11 @@ export default function LoginPage() {
 
         {/* Form Container */}
         <div className="flex-1 flex items-center justify-center px-5 py-6 sm:p-6 lg:p-12 overflow-y-auto">
-          <div className="w-full max-w-md">
+          <div className="w-full max-w-lg">
             {/* Header */}
-            <div className="text-center mb-6 lg:mb-8">
+            <div className="text-center mb-8">
               <div className="hidden lg:flex items-center justify-center mx-auto mb-6">
-                <span className="text-3xl font-black text-emerald-700 font-heading tracking-tight">helparo</span>
+                <span className="text-4xl font-black text-gray-900 font-heading tracking-tight">helparo</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Welcome back</h1>
               <p className="text-sm text-gray-500">
@@ -466,204 +454,33 @@ export default function LoginPage() {
               </p>
             </div>
 
-            {/* Login Method Tabs */}
-            <div className="flex gap-2 p-1 bg-gray-100 rounded-xl lg:rounded-2xl mb-6 lg:mb-8">
-              <button
-                type="button"
-                onClick={() => setLoginMethod('email')}
-                className={`flex-1 h-10 lg:h-12 rounded-lg lg:rounded-xl font-semibold text-sm lg:text-base transition-all ${
-                  loginMethod === 'email'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Email
-              </button>
-              <button
-                type="button"
-                onClick={() => setLoginMethod('phone')}
-                className={`flex-1 h-10 lg:h-12 rounded-lg lg:rounded-xl font-semibold text-sm lg:text-base transition-all ${
-                  loginMethod === 'phone'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Phone
-              </button>
-            </div>
-
-            {/* EMAIL LOGIN */}
-            {loginMethod === 'email' && (
-              <>
-                {/* Google Sign In */}
-                <button
-                  type="button"
-                  onClick={handleGoogleLogin}
-                  disabled={googleLoading || loading}
-                  className="w-full h-12 lg:h-14 flex items-center justify-center gap-3 bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 rounded-xl lg:rounded-2xl font-semibold text-sm lg:text-base text-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                >
-                  {googleLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
-                  ) : (
-                    <svg className="w-5 h-5" viewBox="0 0 24 24">
-                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                    </svg>
-                  )}
-                  <span>{googleLoading ? 'Connecting...' : 'Continue with Google'}</span>
-                </button>
-
-                {/*
-  Divider
-  <div className="flex items-center gap-3 my-5 lg:my-8">
-    <div className="flex-1 h-px bg-gray-200" />
-    <span className="text-xs text-gray-400 font-medium">or use email</span>
-    <div className="flex-1 h-px bg-gray-200" />
-  </div>
-
-  Form
-  <form onSubmit={handlePasswordLogin} className="space-y-4 lg:space-y-5">
-
-    Email Input
-    <div className="space-y-1.5">
-      <label className="text-xs lg:text-sm font-medium text-gray-700">
-        Email address
-      </label>
-      <div className="relative">
-        <div
-          className={`absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
-            focusedField === 'email' ? 'text-emerald-500' : 'text-gray-400'
-          }`}
-        >
-          <Mail className="w-4 h-4 lg:w-5 lg:h-5" />
-        </div>
-        <input
-          type="email"
-          placeholder="you@example.com"
-          value={formData.email}
-          onChange={(e) =>
-            setFormData({ ...formData, email: e.target.value })
-          }
-          onFocus={() => setFocusedField('email')}
-          onBlur={() => setFocusedField(null)}
-          required
-          className="w-full h-11 lg:h-14 pl-10 lg:pl-12 pr-4 bg-gray-50 border-2 border-gray-200 rounded-xl lg:rounded-2xl text-sm lg:text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
-        />
-      </div>
-    </div>
-
-    Password Input
-    <div className="space-y-1.5">
-      <label className="text-xs lg:text-sm font-medium text-gray-700">
-        Password
-      </label>
-      <div className="relative">
-        <div
-          className={`absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
-            focusedField === 'password'
-              ? 'text-emerald-500'
-              : 'text-gray-400'
-          }`}
-        >
-          <Lock className="w-4 h-4 lg:w-5 lg:h-5" />
-        </div>
-        <input
-          type={showPassword ? 'text' : 'password'}
-          placeholder="Enter your password"
-          value={formData.password}
-          onChange={(e) =>
-            setFormData({ ...formData, password: e.target.value })
-          }
-          onFocus={() => setFocusedField('password')}
-          onBlur={() => setFocusedField(null)}
-          required
-          className="w-full h-11 lg:h-14 pl-10 lg:pl-12 pr-10 lg:pr-12 bg-gray-50 border-2 border-gray-200 rounded-xl lg:rounded-2xl text-sm lg:text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
-        />
-        <button
-          type="button"
-          onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          {showPassword ? (
-            <EyeOff className="w-4 h-4 lg:w-5 lg:h-5" />
-          ) : (
-            <Eye className="w-4 h-4 lg:w-5 lg:h-5" />
-          )}
-        </button>
-      </div>
-    </div>
-
-    Forgot Password
-    <div className="flex justify-end">
-      <Link
-        href="/auth/forgot-password"
-        className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
-      >
-        Forgot password?
-      </Link>
-    </div>
-
-    Error
-    {error && (
-      <div className="flex items-center gap-2 p-3 lg:p-4 bg-red-50 border border-red-200 rounded-xl lg:rounded-2xl text-red-600 text-xs lg:text-sm">
-        <X className="w-4 h-4 lg:w-5 lg:h-5 flex-shrink-0" />
-        <span>{error}</span>
-      </div>
-    )}
-
-    Submit Button
-    <button
-      type="submit"
-      disabled={loading}
-      className="w-full h-12 lg:h-14 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl lg:rounded-2xl transition-all duration-300 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
-    >
-      {loading ? (
-        <>
-          <Loader2 className="w-5 h-5 animate-spin" />
-          <span>Signing in...</span>
-        </>
-      ) : (
-        <>
-          <span>Sign in</span>
-          <ArrowRight className="w-5 h-5" />
-        </>
-      )}
-    </button>
-  </form>
-*/}
-
-              </>
-            )}
-
-            {/* PHONE LOGIN */}
-            {loginMethod === 'phone' && (
-              <>
+            {/* Clean Card */}
+            <div className="space-y-5">
                 {step === 'phone' ? (
-                  <div className="space-y-5">
+                  <div className="space-y-4">
+                    {/* Phone Input */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">Phone Number</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                       <div className="relative">
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-gray-500">
                           <Phone className="w-5 h-5" />
                           <span className="text-sm font-medium">+91</span>
-                          <div className="w-px h-6 bg-gray-300" />
+                          <div className="w-px h-5 bg-gray-300" />
                         </div>
                         <input
                           type="tel"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                           placeholder="9876543210"
-                          className="w-full h-14 pl-24 pr-4 bg-gray-50 border-2 border-gray-200 rounded-2xl text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all"
+                          className="w-full h-14 pl-24 pr-4 bg-white border border-gray-200 rounded-xl text-base text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all"
                         />
                       </div>
-                      <p className="mt-2 text-xs text-gray-500">We&apos;ll send you a verification code via SMS</p>
+                      <p className="mt-2 text-xs text-gray-500">We&apos;ll send you a 6-digit verification code</p>
                     </div>
 
                     {error && (
-                      <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-sm">
-                        <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                      <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
                         <span>{error}</span>
                       </div>
                     )}
@@ -671,7 +488,7 @@ export default function LoginPage() {
                     <button
                       onClick={handlePhoneLogin}
                       disabled={phone.length !== 10 || loading}
-                      className="w-full h-14 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-2xl transition-all shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+                      className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {loading ? (
                         <>
@@ -681,12 +498,12 @@ export default function LoginPage() {
                       ) : (
                         <>
                           <span>Send OTP</span>
-                          <ArrowRight className="w-5 h-5" />
+                          <ArrowRight className="w-4 h-4" />
                         </>
                       )}
                     </button>
 
-                    <div className="flex items-center gap-3 my-5">
+                    <div className="flex items-center gap-3 my-4">
                       <div className="flex-1 h-px bg-gray-200" />
                       <span className="text-xs text-gray-400 font-medium">or</span>
                       <div className="flex-1 h-px bg-gray-200" />
@@ -696,7 +513,7 @@ export default function LoginPage() {
                       type="button"
                       onClick={handleGoogleLogin}
                       disabled={googleLoading}
-                      className="w-full h-12 flex items-center justify-center gap-3 bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 rounded-xl font-semibold text-gray-700 transition-all disabled:opacity-50"
+                      className="w-full h-12 flex items-center justify-center gap-3 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl font-medium text-gray-700 transition-colors disabled:opacity-50"
                     >
                       {googleLoading ? (
                         <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
@@ -714,14 +531,14 @@ export default function LoginPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="space-y-6">
+                  <div className="space-y-5">
                     <div className="text-center">
-                      <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-                        <Phone className="w-8 h-8 text-emerald-600" />
+                      <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4">
+                        <Phone className="w-7 h-7 text-emerald-600" />
                       </div>
-                      <h2 className="text-xl font-bold text-gray-900 mb-2">Enter Verification Code</h2>
+                      <h2 className="text-xl font-bold text-gray-900 mb-1">Enter verification code</h2>
                       <p className="text-sm text-gray-500">
-                        Code sent to <strong>{maskedPhone}</strong>
+                        Sent to <span className="font-medium text-gray-700">{maskedPhone}</span>
                       </p>
                     </div>
 
@@ -737,7 +554,7 @@ export default function LoginPage() {
                           onChange={(e) => handleOtpChange(index, e.target.value)}
                           onKeyDown={(e) => handleOtpKeyDown(index, e)}
                           onPaste={handleOtpPaste}
-                          className="w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl font-bold bg-gray-50 border-2 border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:outline-none transition-all"
+                          className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl font-bold bg-white border border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all"
                         />
                       ))}
                     </div>
@@ -745,13 +562,13 @@ export default function LoginPage() {
                     <div className="text-center">
                       {countdown > 0 ? (
                         <p className="text-sm text-gray-500">
-                          Resend OTP in <span className="font-semibold text-emerald-600">{countdown}s</span>
+                          Resend in <span className="font-medium text-emerald-600">{countdown}s</span>
                         </p>
                       ) : (
                         <button
                           onClick={handleResendOtp}
                           disabled={loading}
-                          className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-2 mx-auto"
+                          className="text-sm font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5 mx-auto"
                         >
                           <RefreshCw className="w-4 h-4" />
                           <span>Resend OTP</span>
@@ -760,8 +577,8 @@ export default function LoginPage() {
                     </div>
 
                     {error && (
-                      <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-sm">
-                        <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                      <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
                         <span>{error}</span>
                       </div>
                     )}
@@ -769,7 +586,7 @@ export default function LoginPage() {
                     <button
                       onClick={handleVerifyOtp}
                       disabled={otp.join('').length !== 6 || loading}
-                      className="w-full h-14 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-2xl transition-all shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+                      className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {loading ? (
                         <>
@@ -779,7 +596,7 @@ export default function LoginPage() {
                       ) : (
                         <>
                           <span>Verify & Login</span>
-                          <ArrowRight className="w-5 h-5" />
+                          <ArrowRight className="w-4 h-4" />
                         </>
                       )}
                     </button>
@@ -790,15 +607,14 @@ export default function LoginPage() {
                         setOtp(['', '', '', '', '', ''])
                         setError('')
                       }}
-                      className="w-full text-sm text-gray-500 hover:text-gray-700 flex items-center justify-center gap-2"
+                      className="w-full text-sm text-gray-500 hover:text-gray-700 flex items-center justify-center gap-1.5"
                     >
                       <ArrowLeft className="w-4 h-4" />
                       <span>Change phone number</span>
                     </button>
                   </div>
                 )}
-              </>
-            )}
+            </div>
 
             {/* Sign Up */}
             <p className="text-center text-sm text-gray-500 mt-6 lg:mt-8">
@@ -807,17 +623,6 @@ export default function LoginPage() {
                 Sign up for free
               </Link>
             </p>
-
-            {/* Legal - compact on mobile */}
-            <p className="text-center text-[11px] lg:text-xs text-gray-400 mt-4 lg:mt-6">
-              By continuing, you agree to our{' '}
-              <button onClick={() => setShowTerms(true)} className="text-gray-500 hover:text-emerald-600 transition-colors underline">Terms</button>
-              {' '}&{' '}
-              <button onClick={() => setShowPrivacy(true)} className="text-gray-500 hover:text-emerald-600 transition-colors underline">Privacy</button>
-            </p>
-
-            <LegalModal type="terms" audience="customer" open={showTerms} onOpenChange={setShowTerms} />
-            <LegalModal type="privacy" audience="customer" open={showPrivacy} onOpenChange={setShowPrivacy} />
           </div>
         </div>
 
