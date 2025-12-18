@@ -289,29 +289,29 @@ export default function LoginPage() {
     }
   }
 
-  const handlePasswordLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+  // const handlePasswordLogin = async (e: React.FormEvent) => {
+  //   e.preventDefault()
+  //   setError('')
+  //   setLoading(true)
 
-    try {
-      const formDataObj = new FormData()
-      formDataObj.append('email', formData.email)
-      formDataObj.append('password', formData.password)
+  //   try {
+  //     const formDataObj = new FormData()
+  //     formDataObj.append('email', formData.email)
+  //     formDataObj.append('password', formData.password)
       
-      const result = await loginAction(formDataObj)
+  //     const result = await loginAction(formDataObj)
       
-      if (result?.error) {
-        setError(result.error)
-        setLoading(false)
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Invalid email or password'
-      logger.error('Login error', { error: err })
-      setError(errorMessage)
-      setLoading(false)
-    }
-  }
+  //     if (result?.error) {
+  //       setError(result.error)
+  //       setLoading(false)
+  //     }
+  //   } catch (err: unknown) {
+  //     const errorMessage = err instanceof Error ? err.message : 'Invalid email or password'
+  //     logger.error('Login error', { error: err })
+  //     setError(errorMessage)
+  //     setLoading(false)
+  //   }
+  // }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50/30 flex">
@@ -437,35 +437,27 @@ export default function LoginPage() {
             </div>
 
             {/* Login Method Tabs */}
-            <div className="flex gap-2 mb-6">
+            <div className="flex gap-2 p-1 bg-gray-100 rounded-xl lg:rounded-2xl mb-6 lg:mb-8">
               <button
-                onClick={() => {
-                  setLoginMethod('email')
-                  setError('')
-                  setStep('phone')
-                }}
-                className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all ${
+                type="button"
+                onClick={() => setLoginMethod('email')}
+                className={`flex-1 h-10 lg:h-12 rounded-lg lg:rounded-xl font-semibold text-sm lg:text-base transition-all ${
                   loginMethod === 'email'
-                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                <Mail className="w-4 h-4 inline mr-2" />
                 Email
               </button>
               <button
-                onClick={() => {
-                  setLoginMethod('phone')
-                  setError('')
-                  if (!recaptchaVerifier) initializeRecaptcha()
-                }}
-                className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all ${
+                type="button"
+                onClick={() => setLoginMethod('phone')}
+                className={`flex-1 h-10 lg:h-12 rounded-lg lg:rounded-xl font-semibold text-sm lg:text-base transition-all ${
                   loginMethod === 'phone'
-                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                <Phone className="w-4 h-4 inline mr-2" />
                 Phone
               </button>
             </div>
@@ -493,96 +485,125 @@ export default function LoginPage() {
                   <span>{googleLoading ? 'Connecting...' : 'Continue with Google'}</span>
                 </button>
 
-                {/* Divider */}
-                <div className="flex items-center gap-3 my-5 lg:my-8">
-                  <div className="flex-1 h-px bg-gray-200" />
-                  <span className="text-xs text-gray-400 font-medium">or use email</span>
-                  <div className="flex-1 h-px bg-gray-200" />
-                </div>
+                {/*
+  Divider
+  <div className="flex items-center gap-3 my-5 lg:my-8">
+    <div className="flex-1 h-px bg-gray-200" />
+    <span className="text-xs text-gray-400 font-medium">or use email</span>
+    <div className="flex-1 h-px bg-gray-200" />
+  </div>
 
-                {/* Form */}
-                <form onSubmit={handlePasswordLogin} className="space-y-4 lg:space-y-5">
-                  {/* Email Input */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs lg:text-sm font-medium text-gray-700">Email address</label>
-                    <div className="relative">
-                      <div className={`absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'email' ? 'text-emerald-500' : 'text-gray-400'}`}>
-                        <Mail className="w-4 h-4 lg:w-5 lg:h-5" />
-                      </div>
-                      <input
-                        type="email"
-                        placeholder="you@example.com"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        onFocus={() => setFocusedField('email')}
-                        onBlur={() => setFocusedField(null)}
-                        required
-                        className="w-full h-11 lg:h-14 pl-10 lg:pl-12 pr-4 bg-gray-50 border-2 border-gray-200 rounded-xl lg:rounded-2xl text-sm lg:text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
-                      />
-                    </div>
-                  </div>
+  Form
+  <form onSubmit={handlePasswordLogin} className="space-y-4 lg:space-y-5">
 
-                  {/* Password Input */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs lg:text-sm font-medium text-gray-700">Password</label>
-                    <div className="relative">
-                      <div className={`absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${focusedField === 'password' ? 'text-emerald-500' : 'text-gray-400'}`}>
-                        <Lock className="w-4 h-4 lg:w-5 lg:h-5" />
-                      </div>
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="Enter your password"
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        onFocus={() => setFocusedField('password')}
-                        onBlur={() => setFocusedField(null)}
-                        required
-                        className="w-full h-11 lg:h-14 pl-10 lg:pl-12 pr-10 lg:pr-12 bg-gray-50 border-2 border-gray-200 rounded-xl lg:rounded-2xl text-sm lg:text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4 lg:w-5 lg:h-5" /> : <Eye className="w-4 h-4 lg:w-5 lg:h-5" />}
-                      </button>
-                    </div>
-                  </div>
+    Email Input
+    <div className="space-y-1.5">
+      <label className="text-xs lg:text-sm font-medium text-gray-700">
+        Email address
+      </label>
+      <div className="relative">
+        <div
+          className={`absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
+            focusedField === 'email' ? 'text-emerald-500' : 'text-gray-400'
+          }`}
+        >
+          <Mail className="w-4 h-4 lg:w-5 lg:h-5" />
+        </div>
+        <input
+          type="email"
+          placeholder="you@example.com"
+          value={formData.email}
+          onChange={(e) =>
+            setFormData({ ...formData, email: e.target.value })
+          }
+          onFocus={() => setFocusedField('email')}
+          onBlur={() => setFocusedField(null)}
+          required
+          className="w-full h-11 lg:h-14 pl-10 lg:pl-12 pr-4 bg-gray-50 border-2 border-gray-200 rounded-xl lg:rounded-2xl text-sm lg:text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
+        />
+      </div>
+    </div>
 
-                  {/* Forgot Password */}
-                  <div className="flex justify-end">
-                    <Link href="/auth/forgot-password" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
-                      Forgot password?
-                    </Link>
-                  </div>
+    Password Input
+    <div className="space-y-1.5">
+      <label className="text-xs lg:text-sm font-medium text-gray-700">
+        Password
+      </label>
+      <div className="relative">
+        <div
+          className={`absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
+            focusedField === 'password'
+              ? 'text-emerald-500'
+              : 'text-gray-400'
+          }`}
+        >
+          <Lock className="w-4 h-4 lg:w-5 lg:h-5" />
+        </div>
+        <input
+          type={showPassword ? 'text' : 'password'}
+          placeholder="Enter your password"
+          value={formData.password}
+          onChange={(e) =>
+            setFormData({ ...formData, password: e.target.value })
+          }
+          onFocus={() => setFocusedField('password')}
+          onBlur={() => setFocusedField(null)}
+          required
+          className="w-full h-11 lg:h-14 pl-10 lg:pl-12 pr-10 lg:pr-12 bg-gray-50 border-2 border-gray-200 rounded-xl lg:rounded-2xl text-sm lg:text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all duration-200"
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          {showPassword ? (
+            <EyeOff className="w-4 h-4 lg:w-5 lg:h-5" />
+          ) : (
+            <Eye className="w-4 h-4 lg:w-5 lg:h-5" />
+          )}
+        </button>
+      </div>
+    </div>
 
-                  {/* Error */}
-                  {error && (
-                    <div className="flex items-center gap-2 p-3 lg:p-4 bg-red-50 border border-red-200 rounded-xl lg:rounded-2xl text-red-600 text-xs lg:text-sm">
-                      <X className="w-4 h-4 lg:w-5 lg:h-5 flex-shrink-0" />
-                      <span>{error}</span>
-                    </div>
-                  )}
+    Forgot Password
+    <div className="flex justify-end">
+      <Link
+        href="/auth/forgot-password"
+        className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
+      >
+        Forgot password?
+      </Link>
+    </div>
 
-                  {/* Submit Button */}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full h-12 lg:h-14 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl lg:rounded-2xl transition-all duration-300 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>Signing in...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Sign in</span>
-                        <ArrowRight className="w-5 h-5" />
-                      </>
-                    )}
-                  </button>
-                </form>
+    Error
+    {error && (
+      <div className="flex items-center gap-2 p-3 lg:p-4 bg-red-50 border border-red-200 rounded-xl lg:rounded-2xl text-red-600 text-xs lg:text-sm">
+        <X className="w-4 h-4 lg:w-5 lg:h-5 flex-shrink-0" />
+        <span>{error}</span>
+      </div>
+    )}
+
+    Submit Button
+    <button
+      type="submit"
+      disabled={loading}
+      className="w-full h-12 lg:h-14 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl lg:rounded-2xl transition-all duration-300 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+    >
+      {loading ? (
+        <>
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span>Signing in...</span>
+        </>
+      ) : (
+        <>
+          <span>Sign in</span>
+          <ArrowRight className="w-5 h-5" />
+        </>
+      )}
+    </button>
+  </form>
+*/}
+
               </>
             )}
 
@@ -607,7 +628,7 @@ export default function LoginPage() {
                           className="w-full h-14 pl-24 pr-4 bg-gray-50 border-2 border-gray-200 rounded-2xl text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all"
                         />
                       </div>
-                      <p className="mt-2 text-xs text-gray-500">We'll send you a verification code via SMS</p>
+                      <p className="mt-2 text-xs text-gray-500">We&apos;ll send you a verification code via SMS</p>
                     </div>
 
                     {error && (

@@ -307,16 +307,16 @@ function SignUpForm() {
               </button>
             </div>
 
-            {/* Divider */}
-            <div className="flex items-center gap-4 my-4 lg:my-6">
+            {/* Divider - COMMENTED OUT FOR PASSWORDLESS AUTH */}
+            {/* <div className="flex items-center gap-4 my-4 lg:my-6">
               <div className="flex-1 h-px bg-gray-200" />
               <span className="text-xs text-gray-400 font-medium">or sign up with email</span>
               <div className="flex-1 h-px bg-gray-200" />
-            </div>
+            </div> */}
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-3 lg:space-y-4">
-              {/* Full Name */}
+            {/* TRADITIONAL EMAIL/PASSWORD FORM - COMMENTED OUT FOR PASSWORDLESS AUTH */}
+            {/* Uncomment below to restore email/password signup */}
+            {/* <form onSubmit={handleSubmit} className="space-y-3 lg:space-y-4">
               <div className="space-y-1">
                 <label className="text-xs lg:text-sm font-medium text-gray-700">Full name</label>
                 <div className="relative">
@@ -336,7 +336,6 @@ function SignUpForm() {
                 </div>
               </div>
 
-              {/* Email */}
               <div className="space-y-1">
                 <label className="text-xs lg:text-sm font-medium text-gray-700">Email address</label>
                 <div className="relative">
@@ -359,7 +358,6 @@ function SignUpForm() {
                 )}
               </div>
 
-              {/* Phone */}
               <div className="space-y-1">
                 <label className="text-xs lg:text-sm font-medium text-gray-700">Phone number</label>
                 <div className="relative flex">
@@ -387,7 +385,6 @@ function SignUpForm() {
                 )}
               </div>
 
-              {/* Password */}
               <div className="space-y-1">
                 <label className="text-xs lg:text-sm font-medium text-gray-700">Password</label>
                 <div className="relative">
@@ -413,7 +410,6 @@ function SignUpForm() {
                   </button>
                 </div>
                 
-                {/* Password Requirements - Inline */}
                 {formData.password && (
                   <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
                     <div className={`flex items-center gap-1 text-[10px] lg:text-xs ${passwordChecks.length ? 'text-emerald-600' : 'text-gray-400'}`}>
@@ -436,7 +432,6 @@ function SignUpForm() {
                 )}
               </div>
 
-              {/* Confirm Password */}
               <div className="space-y-1">
                 <label className="text-xs lg:text-sm font-medium text-gray-700">Confirm password</label>
                 <div className="relative">
@@ -465,7 +460,6 @@ function SignUpForm() {
                 </div>
               </div>
 
-              {/* Error */}
               {error && (
                 <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
                   <X className="w-5 h-5 flex-shrink-0" />
@@ -473,7 +467,6 @@ function SignUpForm() {
                 </div>
               )}
 
-              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading || !passwordValid || !passwordMatch}
@@ -491,7 +484,7 @@ function SignUpForm() {
                   </>
                 )}
               </button>
-            </form>
+            </form> */}
 
             {/* Sign In */}
             <p className="text-center text-sm text-gray-500 mt-4 lg:mt-6">
