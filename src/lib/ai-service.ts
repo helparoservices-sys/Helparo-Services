@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-// Initialize Gemini AI
+// Initialize Gemini AI (FREE tier from Google AI Studio)
 const apiKey = process.env.GEMINI_API_KEY || ''
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null
 
