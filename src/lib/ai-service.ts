@@ -1,11 +1,14 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-// Initialize Gemini AI
-const apiKey = process.env.GEMINI_API_KEY || ''
+// Initialize Vertex AI (uses Google Cloud credits)
+const apiKey = process.env.VERTEX_AI_API_KEY || ''
+const projectId = process.env.VERTEX_AI_PROJECT_ID || 'helparo-7a75d'
+const location = process.env.VERTEX_AI_LOCATION || 'us-central1'
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null
 
 // Log API key status on load (for debugging)
-console.log('🔑 Gemini API Key status:', apiKey ? `Set (${apiKey.substring(0, 10)}...)` : 'NOT SET')
+console.log('🔑 Vertex AI Key status:', apiKey ? `Set (${apiKey.substring(0, 10)}...)` : 'NOT SET')
+console.log('🌍 Vertex AI Project:', projectId, 'Location:', location)
 
 interface AIAnalysisResult {
   estimatedPrice: number
