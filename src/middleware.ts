@@ -189,9 +189,16 @@ export async function middleware(request: NextRequest) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, phone, phone_verified')
       .eq('id', user.id)
       .single()
+
+    // Check email verification for email-based signups (non-phone users)
+    const isPhoneUser = profile?.phone && profile?.phone_verified
+    if (!isPhoneUser && user.email && !user.email_confirmed_at) {
+      logger.warn('Unverified email access attempt', { user_id: user.id, email: user.email })
+      return NextResponse.redirect(new URL('/auth/verify-email', request.url))
+    }
 
     const userRole = (profile as { role?: string } | null)?.role || 'customer'
     const requestedPath = request.nextUrl.pathname

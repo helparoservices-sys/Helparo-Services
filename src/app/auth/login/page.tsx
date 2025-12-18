@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Loader2, ArrowLeft, Mail, Lock, X, ArrowRight, Shield, Star, Sparkles, Phone, RefreshCw, AlertCircle } from 'lucide-react'
@@ -73,6 +73,21 @@ export default function LoginPage() {
       setRecaptchaInitialized(false)
     }
   }, [recaptchaVerifier, recaptchaInitialized])
+
+  // Initialize reCAPTCHA when phone login is selected
+  useEffect(() => {
+    if (loginMethod === 'phone' && step === 'phone') {
+      setTimeout(() => initializeRecaptcha(), 500)
+    }
+  }, [loginMethod, step, initializeRecaptcha])
+
+  // Countdown timer
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [countdown])
 
   const handlePhoneLogin = async () => {
     if (phone.length !== 10) {
@@ -164,10 +179,11 @@ export default function LoginPage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       )
 
+      const cleanPhone = phone.replace(/[\s-]/g, '')
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
-        .eq('phone', phone)
+        .eq('phone', cleanPhone)
         .maybeSingle()
 
       if (!profile) {
@@ -176,8 +192,27 @@ export default function LoginPage() {
         return
       }
 
-      // If user has email, try to sign in with custom logic
-      // For now, redirect to dashboard (you can enhance this with custom token generation)
+      // Create a server-side Supabase session using the phone number
+      // This calls our API route which has admin privileges to create sessions
+      const response = await fetch('/api/auth/phone-login', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-csrf-token': document.cookie.split(';').find(c => c.trim().startsWith('csrf-token='))?.split('=')[1] || ''
+        },
+        body: JSON.stringify({ phone: cleanPhone })
+      })
+
+      const result = await response.json()
+      
+      if (!response.ok || result.error) {
+        logger.error('Failed to create Supabase session', { error: result.error })
+        setError(result.error || 'Login failed. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      // Session created successfully, redirect to dashboard
       router.push(`/${profile.role}/dashboard`)
       
     } catch (err: unknown) {
@@ -249,11 +284,6 @@ export default function LoginPage() {
       setOtp(pastedData.split(''))
       otpInputRefs.current[5]?.focus()
     }
-  }
-
-  // Countdown timer
-  if (countdown > 0 && step === 'otp') {
-    setTimeout(() => setCountdown(countdown - 1), 1000)
   }
 
   const handleGoogleLogin = async () => {

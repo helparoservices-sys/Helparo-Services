@@ -448,6 +448,7 @@ export default function CompleteSignupPage() {
 
     try {
       await confirmationResult.confirm(otpCode)
+      // Store phone as 10 digits only (no country code prefix)
       const cleanPhone = phone.replace(/[\s-]/g, '')
 
       const { error: updateError } = await supabase.from('profiles').update({

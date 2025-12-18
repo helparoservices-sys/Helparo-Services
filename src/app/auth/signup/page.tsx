@@ -108,8 +108,8 @@ function SignUpForm() {
         throw new Error('Please enter a valid email address')
       }
 
-      // Prepend +91 to phone number for storage
-      const fullPhone = formData.phone ? `+91${formData.phone}` : ''
+      // Store phone as 10 digits only (no country code prefix)
+      const cleanPhone = formData.phone ? formData.phone.replace(/[\s-]/g, '') : ''
 
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
@@ -117,7 +117,7 @@ function SignUpForm() {
         options: {
           data: {
             full_name: formData.fullName,
-            phone: fullPhone,
+            phone: cleanPhone,
             role: formData.role,
           },
           emailRedirectTo: `${window.location.origin}/auth/confirm`,

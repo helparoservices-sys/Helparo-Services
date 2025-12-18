@@ -70,9 +70,6 @@ export default function PhoneSignupPage() {
   
   // Profile step
   const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
   
   // Common
   const [loading, setLoading] = useState(false)
@@ -369,54 +366,45 @@ export default function PhoneSignupPage() {
         return
       }
 
+      // Clean phone number (remove spaces and dashes)
       const cleanPhone = phone.replace(/[\s-]/g, '')
-      const userId = firebaseUser.uid
+      const phoneEmail = `${cleanPhone}@phone.helparo.in` // Generate email for phone-only users
+      // Generate crypto-secure random password - user never needs this, only OTP matters
+      const phonePassword = crypto.randomUUID() + crypto.randomUUID()
 
-      // If email and password provided, create Supabase auth account
-      if (email && password) {
-        const { data, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              phone: cleanPhone,
-              full_name: fullName,
-              role: role,
-              phone_verified: true,
-              firebase_uid: userId
-            }
+      // Create Supabase Auth user with phone and email
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: phoneEmail,
+        password: phonePassword,
+        phone: `${countryCode}${cleanPhone}`,
+        options: {
+          data: {
+            full_name: fullName,
+            role: role,
+            phone_verified: true
           }
-        })
+        }
+      })
 
-        if (signUpError) throw signUpError
+      if (authError) throw authError
+      if (!authData.user) throw new Error('Failed to create user account')
 
-        // Update profile with phone verification
-        await supabase.from('profiles').update({
+      const userID = authData.user.id
+
+      // Update profile with additional details
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: fullName,
           phone: cleanPhone,
           country_code: countryCode,
+          role: role,
           phone_verified: true,
-          phone_verified_at: new Date().toISOString(),
-          firebase_uid: userId
-        }).eq('id', data.user!.id)
+          phone_verified_at: new Date().toISOString()
+        })
+        .eq('id', userID)
 
-      } else {
-        // Phone-only signup: Create profile directly without Supabase auth
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: userId,
-            phone: cleanPhone,
-            country_code: countryCode,
-            full_name: fullName,
-            email: email || null,
-            role: role,
-            phone_verified: true,
-            phone_verified_at: new Date().toISOString(),
-            firebase_uid: userId
-          })
-
-        if (profileError) throw profileError
-      }
+      if (profileError) throw profileError
 
       // Save legal acceptances
       const audience: LegalAudience = role === 'helper' ? 'helper' : 'customer'
@@ -461,7 +449,7 @@ export default function PhoneSignupPage() {
 
       if (termsDoc?.version) {
         await supabase.from('legal_acceptances').insert({
-          user_id: userId,
+          user_id: userID,
           document_type: 'terms',
           document_audience: audience,
           document_version: termsDoc.version
@@ -470,7 +458,7 @@ export default function PhoneSignupPage() {
 
       if (privacyDoc?.version) {
         await supabase.from('legal_acceptances').insert({
-          user_id: userId,
+          user_id: userID,
           document_type: 'privacy',
           document_audience: audience,
           document_version: privacyDoc.version
@@ -691,7 +679,7 @@ export default function PhoneSignupPage() {
                       {phoneError}
                     </p>
                   )}
-                  <p className="mt-2 text-xs text-gray-500">We'll send you a verification code via SMS</p>
+                  <p className="mt-2 text-xs text-gray-500">We&apos;ll send you a verification code via SMS</p>
                 </div>
 
                 {/* Legal Checkboxes */}
@@ -761,22 +749,12 @@ export default function PhoneSignupPage() {
                   <div className="flex-1 h-px bg-gray-200" />
                 </div>
 
-                <div className="text-center space-y-3">
-                  <Link
-                    href="/auth/signup"
-                    className="block w-full h-12 flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 rounded-xl font-semibold text-gray-700 transition-all"
-                  >
-                    <Mail className="w-5 h-5" />
-                    <span>Sign up with Email</span>
+                <p className="text-center text-sm text-gray-500">
+                  Already have an account?{' '}
+                  <Link href="/auth/login" className="font-semibold text-emerald-600 hover:text-emerald-700">
+                    Login
                   </Link>
-
-                  <p className="text-sm text-gray-500">
-                    Already have an account?{' '}
-                    <Link href="/auth/login" className="font-semibold text-emerald-600 hover:text-emerald-700">
-                      Login
-                    </Link>
-                  </p>
-                </div>
+                </p>
               </div>
             )}
 
@@ -892,54 +870,8 @@ export default function PhoneSignupPage() {
                   </div>
                 </div>
 
-                {/* Email (Optional) */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Email <span className="text-gray-400 text-xs">(Optional)</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                      <Mail className="w-5 h-5" />
-                    </div>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      className="w-full h-14 pl-12 pr-4 bg-gray-50 border-2 border-gray-200 rounded-2xl text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all"
-                    />
-                  </div>
-                  <p className="mt-2 text-xs text-gray-500">Add email to login with email & password</p>
-                </div>
-
-                {/* Password (Optional) */}
-                {email && (
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-900 mb-2">
-                      Password <span className="text-gray-400 text-xs">(Optional)</span>
-                    </label>
-                    <div className="relative">
-                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                        <Lock className="w-5 h-5" />
-                      </div>
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Create a password (min 8 characters)"
-                        className="w-full h-14 pl-12 pr-12 bg-gray-50 border-2 border-gray-200 rounded-2xl text-base text-gray-900 placeholder-gray-400 focus:bg-white focus:border-emerald-500 focus:outline-none transition-all"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        {showPassword ? <Lock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
-                      </button>
-                    </div>
-                    <p className="mt-2 text-xs text-gray-500">Set a password to login with email & password later</p>
-                  </div>
-                )}
+                {/* Email and Password fields REMOVED - Phone-only signup */}
+                {/* Users can add email/password later from profile settings */}
 
                 {/* Complete Signup Button */}
                 <button
@@ -959,15 +891,6 @@ export default function PhoneSignupPage() {
                     </>
                   )}
                 </button>
-
-                {/* Info Box */}
-                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-start gap-3">
-                  <Sparkles className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-900">
-                    <p className="font-semibold mb-1">You can add email & password later!</p>
-                    <p className="text-blue-700">Skip them now and add from your profile settings anytime.</p>
-                  </div>
-                </div>
               </div>
             )}
           </div>
