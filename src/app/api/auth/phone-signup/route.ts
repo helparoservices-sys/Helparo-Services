@@ -1,3 +1,4 @@
+import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
@@ -19,10 +20,18 @@ export async function POST(request: Request) {
       )
     }
 
-    const supabase = await createClient()
+    let admin
+    try {
+      admin = createAdminClient()
+    } catch {
+      return NextResponse.json(
+        { error: 'Server configuration error. Please contact support.' },
+        { status: 500 }
+      )
+    }
 
     // Check if phone already exists
-    const { data: existingProfile } = await supabase
+    const { data: existingProfile } = await admin
       .from('profiles')
       .select('id')
       .eq('phone', phone)
@@ -39,7 +48,7 @@ export async function POST(request: Request) {
     const phoneEmail = `${phone}@phone.helparo.in`
     const tempPassword = `Phone_${phone}_${Date.now()}`
 
-    const { data: authData, error: createError } = await supabase.auth.admin.createUser({
+    const { data: authData, error: createError } = await admin.auth.admin.createUser({
       email: phoneEmail,
       password: tempPassword,
       email_confirm: true,
@@ -59,49 +68,40 @@ export async function POST(request: Request) {
       )
     }
 
-    // Create profile
-    const { error: profileError } = await supabase
+    // Update profile (the auth trigger already creates a profile row)
+    const { error: profileError } = await admin
       .from('profiles')
-      .insert({
-        id: authData.user.id,
+      .update({
         phone: phone,
         role: role,
         full_name: '',
-        email: phoneEmail
+        email: phoneEmail,
+        country_code: '+91',
+        phone_verified: true,
+        phone_verified_at: new Date().toISOString()
       })
+      .eq('id', authData.user.id)
 
     if (profileError) {
-      console.error('Failed to create profile:', profileError)
-      // Cleanup: delete the auth user if profile creation fails
-      await supabase.auth.admin.deleteUser(authData.user.id)
+      console.error('Failed to update profile:', profileError)
+      // Cleanup: delete the auth user if profile update fails
+      await admin.auth.admin.deleteUser(authData.user.id)
       return NextResponse.json(
         { error: 'Failed to create profile' },
         { status: 500 }
       )
     }
 
-    // Generate session
-    const { data: sessionData, error: sessionError } = await supabase.auth.admin.generateLink({
-      type: 'magiclink',
-      email: phoneEmail
+    // Create a Supabase session cookie for the browser
+    // (UI uses phone OTP via Firebase; this server-side sign-in just establishes Supabase auth.)
+    const supabase = await createClient()
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: phoneEmail,
+      password: tempPassword,
     })
 
-    if (sessionError || !sessionData) {
-      console.error('Failed to generate session:', sessionError)
-      return NextResponse.json(
-        { error: 'Account created but login failed. Please try logging in.' },
-        { status: 500 }
-      )
-    }
-
-    // Exchange the magic link token for a session
-    const { error: exchangeError } = await supabase.auth.verifyOtp({
-      token_hash: sessionData.properties.hashed_token,
-      type: 'email'
-    })
-
-    if (exchangeError) {
-      console.error('Failed to exchange token:', exchangeError)
+    if (signInError) {
+      console.error('Failed to create session:', signInError)
       return NextResponse.json(
         { error: 'Account created but login failed. Please try logging in.' },
         { status: 500 }

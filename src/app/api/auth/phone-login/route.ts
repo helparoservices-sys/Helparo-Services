@@ -1,6 +1,6 @@
+import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 
 export async function POST(request: Request) {
   try {
@@ -13,25 +13,36 @@ export async function POST(request: Request) {
       )
     }
 
+    let admin
+    try {
+      admin = createAdminClient()
+    } catch {
+      return NextResponse.json(
+        { error: 'Server configuration error. Please contact support.' },
+        { status: 500 }
+      )
+    }
+
     const supabase = await createClient()
 
-    // Find the user's auth account using phone email pattern
-    const phoneEmail = `${phone}@phone.helparo.in`
-    
-    // Get the user by email
-    const { data: { users }, error: listError } = await supabase.auth.admin.listUsers()
-    
-    if (listError) {
-      console.error('Failed to list users:', listError)
+    // Lookup via profiles (fast + role-safe)
+    const { data: profile, error: profileLookupError } = await admin
+      .from('profiles')
+      .select('email')
+      .eq('phone', phone)
+      .maybeSingle()
+
+    if (profileLookupError) {
+      console.error('Failed to lookup profile:', profileLookupError)
       return NextResponse.json(
         { error: 'Authentication failed' },
         { status: 500 }
       )
     }
 
-    const user = users?.find(u => u.email === phoneEmail)
-    
-    if (!user) {
+    const phoneEmail = profile?.email || `${phone}@phone.helparo.in`
+
+    if (!profile) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -39,7 +50,7 @@ export async function POST(request: Request) {
     }
 
     // Generate session using admin API
-    const { data: sessionData, error: sessionError } = await supabase.auth.admin.generateLink({
+    const { data: sessionData, error: sessionError } = await admin.auth.admin.generateLink({
       type: 'magiclink',
       email: phoneEmail
     })
@@ -52,13 +63,10 @@ export async function POST(request: Request) {
       )
     }
 
-    // Set the session cookies
-    const cookieStore = await cookies()
-    
     // Exchange the magic link token for a session
     const { data: { session }, error: exchangeError } = await supabase.auth.verifyOtp({
       token_hash: sessionData.properties.hashed_token,
-      type: 'email'
+      type: 'magiclink'
     })
 
     if (exchangeError || !session) {
