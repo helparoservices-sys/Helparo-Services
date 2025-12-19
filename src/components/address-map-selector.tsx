@@ -67,31 +67,28 @@ export function AddressMapSelector({
   const placesService = useRef<google.maps.places.PlacesService | null>(null)
   const isGoogleMapsLoaded = useRef(false)
 
-  // Load Google Maps API
-  useEffect(() => {
-    const loadGoogleMaps = async () => {
-      if (isGoogleMapsLoaded.current) return
+  // Lazy-load Google Maps API on first user interaction
+  const loadGoogleMaps = useCallback(async () => {
+    if (isGoogleMapsLoaded.current) return
 
-      try {
-        const loader = new Loader({
-          apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-          version: 'weekly',
-          libraries: ['places']
-        })
+    try {
+      const loader = new Loader({
+        apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+        version: 'weekly',
+        libraries: ['places'],
+        region: 'IN',
+      })
 
-        await loader.load()
-        
-        autocompleteService.current = new google.maps.places.AutocompleteService()
-        const dummyDiv = document.createElement('div')
-        placesService.current = new google.maps.places.PlacesService(dummyDiv)
-        
-        isGoogleMapsLoaded.current = true
-      } catch (error) {
-        console.error('Failed to load Google Maps:', error)
-      }
+      await loader.load()
+      
+      autocompleteService.current = new google.maps.places.AutocompleteService()
+      const dummyDiv = document.createElement('div')
+      placesService.current = new google.maps.places.PlacesService(dummyDiv)
+      
+      isGoogleMapsLoaded.current = true
+    } catch (error) {
+      console.error('Failed to load Google Maps:', error)
     }
-
-    loadGoogleMaps()
   }, [])
 
   // Close suggestions when clicking outside
@@ -162,6 +159,9 @@ export function AddressMapSelector({
     const newValue = e.target.value
     onChange(newValue)
 
+    // Ensure Maps API is loaded only when user interacts
+    loadGoogleMaps()
+
     // Debounce search
     if (searchTimeout.current) {
       clearTimeout(searchTimeout.current)
@@ -223,6 +223,7 @@ export function AddressMapSelector({
   }
 
   const handleUseCurrentLocation = async () => {
+    await loadGoogleMaps()
     const coords = await requestLocation()
     if (coords && address) {
       onChange(address.formatted_address)

@@ -61,34 +61,31 @@ export function AddressAutocomplete({
   const placesService = useRef<google.maps.places.PlacesService | null>(null)
   const isGoogleMapsLoaded = useRef(false)
 
-  // Load Google Maps API
-  useEffect(() => {
-    const loadGoogleMaps = async () => {
-      if (isGoogleMapsLoaded.current) return
+  // Lazy-load Google Maps API on first interaction
+  const loadGoogleMaps = useCallback(async () => {
+    if (isGoogleMapsLoaded.current) return
 
-      try {
-        const loader = new Loader({
-          apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-          version: 'weekly',
-          libraries: ['places']
-        })
+    try {
+      const loader = new Loader({
+        apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+        version: 'weekly',
+        libraries: ['places'],
+        region: 'IN',
+      })
 
-        await loader.load()
-        
-        autocompleteService.current = new google.maps.places.AutocompleteService()
-        
-        // Create a dummy div for PlacesService (required by Google)
-        const dummyDiv = document.createElement('div')
-        placesService.current = new google.maps.places.PlacesService(dummyDiv)
-        
-        isGoogleMapsLoaded.current = true
-        console.log('✅ Google Maps Places API loaded')
-      } catch (error) {
-        console.error('❌ Failed to load Google Maps:', error)
-      }
+      await loader.load()
+      
+      autocompleteService.current = new google.maps.places.AutocompleteService()
+      
+      // Create a dummy div for PlacesService (required by Google)
+      const dummyDiv = document.createElement('div')
+      placesService.current = new google.maps.places.PlacesService(dummyDiv)
+      
+      isGoogleMapsLoaded.current = true
+      console.log('✅ Google Maps Places API loaded')
+    } catch (error) {
+      console.error('❌ Failed to load Google Maps:', error)
     }
-
-    loadGoogleMaps()
   }, [])
 
   // Close suggestions when clicking outside
@@ -163,6 +160,7 @@ export function AddressAutocomplete({
     }
 
     searchTimeout.current = setTimeout(() => {
+      loadGoogleMaps()
       searchAddress(newValue)
     }, 500)
   }
@@ -220,6 +218,7 @@ export function AddressAutocomplete({
   }
 
   const handleUseCurrentLocation = async () => {
+    await loadGoogleMaps()
     const coords = await requestLocation()
     if (coords && address) {
       onChange(address.formatted_address)

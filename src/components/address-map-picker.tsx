@@ -335,6 +335,7 @@ export function AddressMapPicker({
             <LoadScript 
               googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
               libraries={['places']}
+              region="IN"
               onLoad={() => console.log('✅ Google Maps loaded successfully')}
               onError={(error) => {
                 console.error('❌ Google Maps failed to load:', error)
