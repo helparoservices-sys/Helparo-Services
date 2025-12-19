@@ -261,137 +261,165 @@ export default function ConsentPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-900 via-gray-900 to-gray-950">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-emerald-500" />
+          <p className="text-gray-400 text-sm">Loading documents...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-gray-950">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-white/90 backdrop-blur-xl shadow-sm">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-gray-900/95 backdrop-blur-xl">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <div className="flex items-center justify-between h-14">
+            <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
               <Image 
                 src="/logo.svg" 
                 alt="Helparo" 
-                width={40} 
-                height={40} 
-                className="rounded-lg shadow-md"
+                width={36} 
+                height={36} 
+                className="rounded-lg"
                 priority
               />
-              <div>
-                <h2 className="text-xl font-bold text-emerald-700">Helparo</h2>
-              </div>
+              <h2 className="text-lg font-bold text-white">Helparo</h2>
             </Link>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white py-8">
+      <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 py-10 sm:py-12">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <Scale className="h-6 w-6 text-white" />
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+              <Scale className="h-5 w-5 text-white" />
             </div>
-            <span className="text-sm uppercase tracking-wider text-white/80 font-medium">Legal Agreement</span>
+            <span className="text-xs uppercase tracking-widest text-white/70 font-semibold">Legal Agreement</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Review & Accept Legal Documents</h1>
-          <p className="text-white/90">Please review and accept to continue using Helparo</p>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-white">Review & Accept Legal Documents</h1>
+          <p className="text-white/80 text-sm sm:text-base">Please review and accept to continue using Helparo</p>
         </div>
       </div>
 
       {/* Content */}
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="bg-gray-800/50 p-1.5 rounded-2xl flex gap-1.5 mb-6 border border-gray-700/50">
           <button
             onClick={() => setActiveTab('terms')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all ${
               activeTab === 'terms'
-                ? 'bg-emerald-600 text-white shadow-lg'
-                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25'
+                : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
             }`}
           >
             <FileText className="h-4 w-4" />
-            Terms & Conditions
-            {termsAccepted && <CheckCircle className="h-4 w-4 text-green-300" />}
+            <span>Terms & Conditions</span>
+            {termsAccepted && <CheckCircle className="h-4 w-4 text-emerald-300" />}
           </button>
           <button
             onClick={() => setActiveTab('privacy')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all ${
               activeTab === 'privacy'
-                ? 'bg-emerald-600 text-white shadow-lg'
-                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25'
+                : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
             }`}
           >
             <Shield className="h-4 w-4" />
-            Privacy Policy
-            {privacyAccepted && <CheckCircle className="h-4 w-4 text-green-300" />}
+            <span>Privacy Policy</span>
+            {privacyAccepted && <CheckCircle className="h-4 w-4 text-emerald-300" />}
           </button>
         </div>
 
         {/* Document Content */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-6 md:p-8 mb-6 max-h-[50vh] overflow-y-auto">
-          {activeTab === 'terms' && terms && (
-            <div className="prose prose-slate max-w-none">
-              <div className="flex items-center gap-2 mb-4 pb-4 border-b">
-                <FileText className="h-5 w-5 text-emerald-600" />
-                <h2 className="text-xl font-bold text-gray-900 m-0">{terms.title}</h2>
-                <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full">v{terms.version}</span>
+        <div className="bg-gray-800/40 rounded-2xl border border-gray-700/50 mb-6 overflow-hidden">
+          <div className="max-h-[55vh] overflow-y-auto p-5 sm:p-6">
+            {activeTab === 'terms' && terms && (
+              <div>
+                <div className="flex items-center gap-3 mb-5 pb-4 border-b border-gray-700/50">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-emerald-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-lg font-bold text-white">{terms.title}</h2>
+                    <span className="text-xs text-emerald-400 font-medium">Version {terms.version}</span>
+                  </div>
+                </div>
+                <div className="prose prose-invert prose-sm max-w-none 
+                  prose-headings:text-white prose-headings:font-bold prose-headings:mt-6 prose-headings:mb-3
+                  prose-h1:text-xl prose-h2:text-lg prose-h3:text-base
+                  prose-p:text-gray-300 prose-p:leading-relaxed prose-p:mb-4
+                  prose-strong:text-white prose-strong:font-semibold
+                  prose-ul:text-gray-300 prose-ol:text-gray-300
+                  prose-li:my-1.5 prose-li:marker:text-emerald-400
+                  prose-a:text-emerald-400 prose-a:no-underline hover:prose-a:underline">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {terms.content_md}
+                  </ReactMarkdown>
+                </div>
               </div>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {terms.content_md}
-              </ReactMarkdown>
-            </div>
-          )}
-          {activeTab === 'privacy' && privacy && (
-            <div className="prose prose-slate max-w-none">
-              <div className="flex items-center gap-2 mb-4 pb-4 border-b">
-                <Shield className="h-5 w-5 text-emerald-600" />
-                <h2 className="text-xl font-bold text-gray-900 m-0">{privacy.title}</h2>
-                <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full">v{privacy.version}</span>
+            )}
+            {activeTab === 'privacy' && privacy && (
+              <div>
+                <div className="flex items-center gap-3 mb-5 pb-4 border-b border-gray-700/50">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center">
+                    <Shield className="h-5 w-5 text-cyan-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-lg font-bold text-white">{privacy.title}</h2>
+                    <span className="text-xs text-cyan-400 font-medium">Version {privacy.version}</span>
+                  </div>
+                </div>
+                <div className="prose prose-invert prose-sm max-w-none 
+                  prose-headings:text-white prose-headings:font-bold prose-headings:mt-6 prose-headings:mb-3
+                  prose-h1:text-xl prose-h2:text-lg prose-h3:text-base
+                  prose-p:text-gray-300 prose-p:leading-relaxed prose-p:mb-4
+                  prose-strong:text-white prose-strong:font-semibold
+                  prose-ul:text-gray-300 prose-ol:text-gray-300
+                  prose-li:my-1.5 prose-li:marker:text-cyan-400
+                  prose-a:text-cyan-400 prose-a:no-underline hover:prose-a:underline">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {privacy.content_md}
+                  </ReactMarkdown>
+                </div>
               </div>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {privacy.content_md}
-              </ReactMarkdown>
-            </div>
-          )}
-          {!terms && !privacy && (
-            <p className="text-gray-500 text-center py-8">No legal documents available.</p>
-          )}
+            )}
+            {!terms && !privacy && (
+              <p className="text-gray-400 text-center py-12">No legal documents available.</p>
+            )}
+          </div>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl">
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-sm">
             {error}
           </div>
         )}
 
         {/* Accept Section */}
-        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100 p-6">
-          <div className="flex items-start gap-3 mb-4">
-            <input
-              type="checkbox"
-              id="acceptAll"
-              checked={true}
-              readOnly
-              className="mt-1 h-5 w-5 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500"
-            />
-            <label htmlFor="acceptAll" className="text-sm text-gray-700">
-              I have read and agree to the <strong>Terms & Conditions</strong> and <strong>Privacy Policy</strong>. 
-              I understand that by clicking &quot;Accept &amp; Continue&quot;, I am entering into a legally binding agreement with Helparo Services.
-            </label>
+        <div className="bg-gradient-to-br from-gray-800/60 to-gray-800/40 rounded-2xl border border-gray-700/50 p-5 sm:p-6">
+          <div className="flex items-start gap-3 mb-5">
+            <div className="mt-0.5">
+              <div className="w-5 h-5 rounded-md bg-emerald-500 flex items-center justify-center">
+                <CheckCircle className="h-3.5 w-3.5 text-white" />
+              </div>
+            </div>
+            <p className="text-sm text-gray-300 leading-relaxed">
+              I have read and agree to the <strong className="text-white">Terms & Conditions</strong> and{' '}
+              <strong className="text-white">Privacy Policy</strong>. I understand that by clicking 
+              &quot;Accept &amp; Continue&quot;, I am entering into a legally binding agreement with Helparo Services.
+            </p>
           </div>
 
           <Button
             onClick={handleAccept}
             disabled={accepting}
-            className="w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-700 hover:via-teal-700 hover:to-cyan-700 text-white font-bold text-lg py-6 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300"
+            className="w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white font-bold text-base py-4 rounded-xl shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all duration-300 border-0"
           >
             {accepting ? (
               <>

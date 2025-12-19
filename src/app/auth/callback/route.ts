@@ -25,52 +25,7 @@ export async function GET(request: Request) {
         return NextResponse.redirect(new URL('/auth/complete-signup', requestUrl.origin))
       }
 
-      // For existing users who have verified phone, check if terms need updating
-      const { data: terms } = await supabase
-        .from('legal_documents')
-        .select('version')
-        .eq('type', 'terms')
-        .eq('is_active', true)
-        .order('version', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      const { data: privacy } = await supabase
-        .from('legal_documents')
-        .select('version')
-        .eq('type', 'privacy')
-        .eq('is_active', true)
-        .order('version', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      let needsConsent = false
-      if ((terms as any)?.version) {
-        const { data: acceptedTerms } = await supabase
-          .from('legal_acceptances')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('document_type', 'terms')
-          .eq('document_version', (terms as any).version)
-          .maybeSingle()
-        if (!acceptedTerms) needsConsent = true
-      }
-      if ((privacy as any)?.version) {
-        const { data: acceptedPrivacy } = await supabase
-          .from('legal_acceptances')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('document_type', 'privacy')
-          .eq('document_version', (privacy as any).version)
-          .maybeSingle()
-        if (!acceptedPrivacy) needsConsent = true
-      }
-
-      // Only show /legal/consent for EXISTING users who need to accept updated terms
-      if (needsConsent) {
-        return NextResponse.redirect(new URL('/legal/consent', requestUrl.origin))
-      }
-      
-      // Role-based redirect
+      // Role-based redirect - go straight to dashboard
       const role = profile?.role || 'customer'
       return NextResponse.redirect(new URL(`/${role}/dashboard`, requestUrl.origin))
     }
