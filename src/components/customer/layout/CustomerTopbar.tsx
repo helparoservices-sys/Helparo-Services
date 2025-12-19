@@ -50,11 +50,8 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
             <Menu className="h-5 w-5 text-gray-600" />
           </button>
           
-          <Link href="/customer/dashboard" className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Helparo" className="h-8 w-8 rounded-xl shadow-md" />
-            <span className="text-lg font-bold text-gray-900">
-              Helparo
-            </span>
+          <Link href="/customer/dashboard" className="flex items-center">
+            <span className="text-lg font-bold text-gray-900">helparo</span>
           </Link>
         </div>
 

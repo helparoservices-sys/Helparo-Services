@@ -63,15 +63,8 @@ export const metadata: Metadata = {
     creator: '@helparo',
   },
   verification: {
-    // 🔴 IMPORTANT: Replace this with your actual Google Search Console verification code!
-    // 1. Go to: https://search.google.com/search-console/
-    // 2. Add property: helparo.in
-    // 3. Choose "HTML tag" verification method
-    // 4. Copy the content value and paste below
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || 'your-google-verification-code',
-    // Bing Webmaster verification (optional but recommended)
-    // Go to: https://www.bing.com/webmasters/
-    // yandex: 'your-yandex-code',
+    // Set this env var to the Search Console verification token; keep empty when not configured
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '',
   },
   alternates: {
     canonical: 'https://helparo.in',
@@ -101,7 +94,7 @@ const localBusinessSchema = {
   url: 'https://helparo.in',
   logo: 'https://helparo.in/logo.svg',
   image: 'https://helparo.in/og-image.png',
-  telephone: '+91-XXXXXXXXXX',
+  telephone: '',
   address: {
     '@type': 'PostalAddress',
     addressLocality: 'Vijayawada',
@@ -112,13 +105,6 @@ const localBusinessSchema = {
     '@type': 'GeoCoordinates',
     latitude: '16.5062',
     longitude: '80.6480',
-  },
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.8',
-    reviewCount: '10000',
-    bestRating: '5',
-    worstRating: '1',
   },
   priceRange: '₹₹',
   openingHoursSpecification: {
@@ -245,7 +231,7 @@ const organizationSchema = {
   contactPoint: [
     {
       '@type': 'ContactPoint',
-      telephone: '+91-XXXXXXXXXX',
+      telephone: '',
       contactType: 'customer service',
       availableLanguage: ['English', 'Hindi', 'Telugu']
     }

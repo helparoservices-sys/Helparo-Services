@@ -153,25 +153,13 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
         </nav>
       </aside>
 
-      {/* Mobile Sidebar - Slides in from left */}
+      {/* Mobile Sidebar - Slides in from left, positioned below topbar */}
       <aside
-        className={`lg:hidden fixed top-0 left-0 h-full w-72 bg-white border-r border-gray-100 z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`lg:hidden fixed top-14 left-0 h-full w-72 bg-white border-r border-gray-100 z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
+          mobileOpen ? 'translate-x-0 visible pointer-events-auto' : '-translate-x-full invisible pointer-events-none'
         }`}
       >
-        {/* Mobile Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Helparo" className="w-9 h-9 rounded-xl" />
-            <span className="text-lg font-bold text-gray-900">Helparo</span>
-          </div>
-          <button 
-            onClick={onMobileClose}
-            className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-600" />
-          </button>
-        </div>
+        {/* Mobile Header removed per UX request */}
 
         <nav className="p-3 space-y-5">
           {menuSections.map((section, idx) => (

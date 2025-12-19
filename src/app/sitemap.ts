@@ -37,14 +37,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/legal/privacy', priority: 0.4, changeFrequency: 'monthly' as const },
   ]
 
-  // Customer dashboard pages
-  const customerRoutes = [
-    { path: '/customer/dashboard', priority: 0.6, changeFrequency: 'daily' as const },
-    { path: '/customer/requests/new', priority: 0.7, changeFrequency: 'daily' as const },
-    { path: '/customer/subscriptions', priority: 0.5, changeFrequency: 'weekly' as const },
-  ]
-
-  const allRoutes = [...mainRoutes, ...serviceRoutes, ...legalRoutes, ...customerRoutes]
+  const allRoutes = [...mainRoutes, ...serviceRoutes, ...legalRoutes]
 
   // Remove trailing slash from base URL to prevent double slashes
   const baseUrl = base.replace(/\/$/, '')
