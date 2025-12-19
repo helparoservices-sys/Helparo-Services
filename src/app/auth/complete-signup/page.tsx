@@ -127,11 +127,19 @@ export default function CompleteSignupPage() {
           .eq('id', authUser.id)
           .maybeSingle()
 
-        if (profile?.phone && profile?.phone_verified) {
-          router.push(`/${profile.role || 'customer'}/dashboard`)
+        // Customer with role set - go directly to dashboard (phone collected during booking)
+        if (profile?.role === 'customer') {
+          router.push('/customer/dashboard')
           return
         }
 
+        // Helper with verified phone - go to dashboard
+        if (profile?.role === 'helper' && profile?.phone && profile?.phone_verified) {
+          router.push('/helper/dashboard')
+          return
+        }
+
+        // No role set or helper needs phone verification - show role selection
         setStep('selectRole')
       } catch (err) {
         console.error('Check error:', err)
@@ -160,10 +168,42 @@ export default function CompleteSignupPage() {
     }
   }, [phone])
 
-  const handleRoleSelect = (role: 'customer' | 'helper') => {
+  const handleRoleSelect = async (role: 'customer' | 'helper') => {
     setFinalRole(role)
     localStorage.setItem('roleSelected', 'true')
     localStorage.setItem('pendingSignupRole', role)
+    
+    // For customers: skip phone verification, update role and go to dashboard
+    if (role === 'customer' && user) {
+      setStep('processing')
+      setMessage('Setting up your account...')
+      
+      try {
+        // Update profile with customer role
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ role: 'customer' })
+          .eq('id', user.id)
+        
+        if (updateError) {
+          console.error('Failed to update role:', updateError)
+          setError('Failed to set up account. Please try again.')
+          setStep('selectRole')
+          return
+        }
+        
+        // Go straight to dashboard - phone will be collected during booking
+        router.push('/customer/dashboard')
+        return
+      } catch (err) {
+        console.error('Error setting up customer:', err)
+        setError('Something went wrong. Please try again.')
+        setStep('selectRole')
+        return
+      }
+    }
+    
+    // For helpers: require phone verification
     setStep('verify')
     setTimeout(initializeRecaptcha, 500)
   }

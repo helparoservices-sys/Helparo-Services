@@ -19,15 +19,21 @@ export async function GET(request: Request) {
         .eq('id', user.id)
         .maybeSingle()
 
-      // Check if phone is verified - if not, go to complete-signup
-      // complete-signup handles: role selection + terms acceptance + phone verification
-      if (!profile?.phone || !profile?.phone_verified) {
-        return NextResponse.redirect(new URL('/auth/complete-signup', requestUrl.origin))
+      // If role already set, redirect based on role
+      if (profile?.role) {
+        if (profile.role === 'helper') {
+          // Helpers must have verified phone
+          if (!profile.phone || !profile.phone_verified) {
+            return NextResponse.redirect(new URL('/auth/complete-signup', requestUrl.origin))
+          }
+          return NextResponse.redirect(new URL('/helper/dashboard', requestUrl.origin))
+        }
+        // Customer with role set - go straight to dashboard
+        return NextResponse.redirect(new URL('/customer/dashboard', requestUrl.origin))
       }
 
-      // Role-based redirect - go straight to dashboard
-      const role = profile?.role || 'customer'
-      return NextResponse.redirect(new URL(`/${role}/dashboard`, requestUrl.origin))
+      // No role set - go to post-oauth handler (client-side) to read localStorage role
+      return NextResponse.redirect(new URL('/auth/post-oauth', requestUrl.origin))
     }
   }
 

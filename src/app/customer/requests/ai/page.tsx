@@ -259,6 +259,25 @@ export default function AIRequestPage() {
     workOverview?: string;
   } | null>(null)
 
+  // Pre-fill mobile number from profile if available
+  useEffect(() => {
+    const loadUserPhone = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('phone')
+          .eq('id', user.id)
+          .maybeSingle()
+        
+        if (profile?.phone) {
+          setFormData(prev => ({ ...prev, mobileNumber: profile.phone }))
+        }
+      }
+    }
+    loadUserPhone()
+  }, [supabase])
+
   const handleAddressSelect = (addressData: { 
     display_name: string; 
     city: string;

@@ -102,15 +102,22 @@ export default function CustomerDashboard() {
 
       const { data: userProfile } = await supabase
         .from('profiles')
-        .select('phone, phone_verified, full_name, avatar_url')
+        .select('role, phone, phone_verified, full_name, avatar_url')
         .eq('id', user.id)
         .single()
 
-      if (!userProfile?.phone || !userProfile?.phone_verified) {
-        router.push('/auth/complete-signup')
+      // Check if user has customer role set
+      if (!userProfile?.role || userProfile.role !== 'customer') {
+        // User might be a helper or no role - redirect appropriately
+        if (userProfile?.role === 'helper') {
+          router.push('/helper/dashboard')
+        } else {
+          router.push('/auth/complete-signup')
+        }
         return
       }
 
+      // Customers don't need phone verification - it's collected during booking
       setProfile(userProfile)
 
       const [walletRes, loyaltyRes, requestsRes, activeRes, completedRes, badgesRes, referralsRes] = await Promise.all([
