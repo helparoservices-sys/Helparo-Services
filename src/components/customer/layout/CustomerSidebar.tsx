@@ -170,13 +170,13 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
 
       {/* Mobile Sidebar - Slides in from left, positioned below topbar */}
       <aside
-        className={`lg:hidden fixed top-14 left-0 h-full w-72 bg-white border-r border-gray-100 z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
+        className={`lg:hidden fixed top-14 left-0 h-[calc(100vh-3.5rem)] w-72 bg-white border-r border-gray-100 z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
           mobileOpen ? 'translate-x-0 visible pointer-events-auto' : '-translate-x-full invisible pointer-events-none'
         }`}
       >
         {/* Mobile Header removed per UX request */}
 
-        <nav className="p-3 space-y-5">
+        <nav className="p-3 space-y-5 pb-20">
           {menuSections.map((section, idx) => (
             <div key={idx}>
               <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-3">

@@ -1,7 +1,8 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 import { 
   Bot, 
   IndianRupee, 
@@ -20,13 +21,36 @@ import {
 } from 'lucide-react'
 
 export default function PricingPage() {
+  const [homeHref, setHomeHref] = useState('/')
+
+  // Check if user is logged in and determine home link
+  useEffect(() => {
+    const checkUser = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+        if (profile?.role === 'helper') {
+          setHomeHref('/helper/dashboard')
+        } else if (profile?.role === 'customer') {
+          setHomeHref('/customer/dashboard')
+        }
+      }
+    }
+    checkUser()
+  }, [])
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-emerald-50">
       {/* Premium Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center space-x-2 group">
+            <Link href={homeHref} className="flex items-center space-x-2 group">
               <img src="/logo.svg" alt="Helparo" className="w-10 h-10 rounded-xl shadow-lg shadow-emerald-500/30 group-hover:shadow-emerald-500/50 transition-all duration-300 group-hover:scale-105" />
               <span className="text-xl font-bold text-gray-900">helparo</span>
             </Link>
