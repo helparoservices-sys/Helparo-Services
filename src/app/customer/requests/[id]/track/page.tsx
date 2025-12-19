@@ -544,6 +544,7 @@ interface JobDetails {
   helper_accepted_at: string | null
   work_started_at: string | null
   work_completed_at: string | null
+  assigned_helper_id: string | null
   images?: string[]
   service_type_details?: {
     estimated_duration?: number
@@ -667,6 +668,7 @@ export default function JobTrackingPage() {
         helper_location_lng: helperLngParsed,
         created_at: data.created_at, helper_accepted_at: data.helper_accepted_at,
         work_started_at: data.work_started_at, work_completed_at: data.work_completed_at,
+        assigned_helper_id: data.assigned_helper_id || null,
         assigned_helper: data.assigned_helper, category: data.category,
         images: data.images || [],
         service_type_details: data.service_type_details || {}
@@ -801,13 +803,17 @@ export default function JobTrackingPage() {
     )
   }
 
-  const isBroadcasting = job.broadcast_status === 'broadcasting' && (!job.assigned_helper_id || job.assigned_helper_id === null)
+  // A job is broadcasting if status is 'broadcasting' AND no helper is assigned yet
+  const isBroadcasting = job.broadcast_status === 'broadcasting' && !job.assigned_helper_id && !job.assigned_helper
   const isActive = !['cancelled', 'completed'].includes(job.broadcast_status)
   const hasHelper = job.helper_location_lat !== null && job.helper_location_lng !== null && job.helper_location_lat !== 0 && job.helper_location_lng !== 0
+  const helperAssigned = !!job.assigned_helper_id || !!job.assigned_helper
   
   console.log('🎯 Main page computed values:', {
     isBroadcasting,
     hasHelper,
+    helperAssigned,
+    assigned_helper_id: job.assigned_helper_id,
     helper_location_lat: job.helper_location_lat,
     helper_location_lng: job.helper_location_lng,
     broadcast_status: job.broadcast_status,
@@ -914,7 +920,7 @@ export default function JobTrackingPage() {
               {isBroadcasting && <SearchingAnimation nearbyHelpers={nearbyHelpers} />}
 
               {/* HELPER ASSIGNED - Premium Card */}
-              {job.assigned_helper_id && job.assigned_helper && (
+              {helperAssigned && job.assigned_helper && (
                 <>
                   {/* Status Banner - Soft gradient */}
                   <div className={`rounded-2xl p-4 mb-4 relative overflow-hidden ${

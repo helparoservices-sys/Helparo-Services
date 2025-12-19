@@ -311,15 +311,21 @@ export default function HelperDashboard() {
 
   // Load the currently active job (assigned status)
   const loadActiveJob = async () => {
+    console.log('🔄 loadActiveJob called')
     try {
       const result = await getHelperAssignedJobs()
+      console.log('📋 getHelperAssignedJobs result:', result)
       if (result && Array.isArray(result.jobs)) {
+        console.log('📋 All jobs:', result.jobs.map((j: AssignedJob) => ({ id: j.id, status: j.status, title: j.title })))
         const job = result.jobs.find((j: AssignedJob) => j.status === 'assigned')
+        console.log('✅ Active job found:', job ? { id: job.id, status: job.status } : 'none')
         setActiveJob(job || null)
       } else {
+        console.log('❌ No jobs array in result')
         setActiveJob(null)
       }
-    } catch {
+    } catch (err) {
+      console.error('❌ loadActiveJob error:', err)
       setActiveJob(null)
     } finally {
       setActiveJobChecked(true)
@@ -329,20 +335,44 @@ export default function HelperDashboard() {
   useEffect(() => {
     if (!userId) return
     const supabase = createClient()
-    const channel = supabase
-      .channel('dashboard-jobs-updates')
+    
+    // Subscribe to service_requests assigned to this helper
+    // This catches updates to already-assigned jobs
+    const assignedChannel = supabase
+      .channel('dashboard-assigned-jobs')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'service_requests',
         filter: `assigned_helper_id=eq.${userId}`
-      }, () => {
+      }, (payload) => {
+        console.log('📬 Assigned job update received:', payload)
         // Refresh both stats and active job state (dashboard is locked when active job exists)
         loadDashboard()
         loadActiveJob()
       })
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
+    
+    // Also subscribe to notifications table to catch when we accept a new job
+    // The accept API creates a notification for the customer, but we can also use this channel
+    // to know something happened with our job assignments
+    const notificationsChannel = supabase
+      .channel('dashboard-notifications')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public', 
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`
+      }, (payload) => {
+        console.log('🔔 New notification for helper:', payload)
+        loadActiveJob()
+      })
+      .subscribe()
+
+    return () => { 
+      supabase.removeChannel(assignedChannel)
+      supabase.removeChannel(notificationsChannel)
+    }
   }, [userId])
 
   const checkProfile = async () => {

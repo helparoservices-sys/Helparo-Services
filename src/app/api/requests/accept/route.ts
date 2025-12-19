@@ -172,6 +172,24 @@ export async function POST(request: NextRequest) {
         status: 'queued'
       })
 
+    // Also notify the helper so their dashboard subscription triggers
+    await supabase
+      .from('notifications')
+      .insert({
+        user_id: user.id,
+        request_id: requestId,
+        channel: 'push',
+        title: '✅ Job Accepted',
+        body: `You have successfully accepted the job: ${customerProfile?.full_name || 'Customer'}'s request`,
+        data: {
+          type: 'job_accepted_by_me',
+          request_id: requestId,
+          customer_name: customerProfile?.full_name,
+          customer_phone: customerProfile?.phone
+        },
+        status: 'read' // Already shown toast, mark as read
+      })
+
     return NextResponse.json({
       success: true,
       message: 'Job accepted successfully!',

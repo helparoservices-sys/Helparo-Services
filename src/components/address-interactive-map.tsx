@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { MapPin, Loader2, X, Navigation } from 'lucide-react'
-import Script from 'next/script'
 
 interface AddressSuggestion {
   display_name: string
@@ -39,7 +38,78 @@ interface AddressInteractiveMapProps {
 declare global {
   interface Window {
     google: typeof google
+    initGoogleMapsCallback?: () => void
   }
+}
+
+// Global state for Google Maps loading
+let googleMapsLoadPromise: Promise<void> | null = null
+let googleMapsLoaded = false
+
+function loadGoogleMapsScript(apiKey: string): Promise<void> {
+  // Already fully loaded
+  if (googleMapsLoaded && window.google?.maps) {
+    return Promise.resolve()
+  }
+
+  // Already loading - return existing promise
+  if (googleMapsLoadPromise) {
+    return googleMapsLoadPromise
+  }
+
+  // Check if script already exists in DOM
+  const existingScript = document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]')
+  if (existingScript && window.google?.maps) {
+    googleMapsLoaded = true
+    return Promise.resolve()
+  }
+
+  // Create loading promise
+  googleMapsLoadPromise = new Promise((resolve, reject) => {
+    // Double check after creating promise
+    if (window.google?.maps) {
+      googleMapsLoaded = true
+      resolve()
+      return
+    }
+
+    const script = document.createElement('script')
+    script.id = 'google-maps-script'
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&region=IN&callback=initGoogleMapsCallback`
+    script.async = true
+    script.defer = true
+
+    // Setup callback
+    window.initGoogleMapsCallback = () => {
+      console.log('✅ Google Maps API loaded via callback')
+      googleMapsLoaded = true
+      resolve()
+    }
+
+    script.onerror = (error) => {
+      console.error('❌ Google Maps script failed to load', error)
+      googleMapsLoadPromise = null
+      reject(new Error('Failed to load Google Maps script'))
+    }
+
+    // Timeout fallback
+    const timeout = setTimeout(() => {
+      if (!googleMapsLoaded) {
+        console.error('❌ Google Maps load timeout')
+        googleMapsLoadPromise = null
+        reject(new Error('Google Maps load timeout'))
+      }
+    }, 15000)
+
+    script.onload = () => {
+      clearTimeout(timeout)
+      // Callback will handle the resolve
+    }
+
+    document.head.appendChild(script)
+  })
+
+  return googleMapsLoadPromise
 }
 
 export function AddressInteractiveMap({
@@ -59,52 +129,109 @@ export function AddressInteractiveMap({
   const [mapLoaded, setMapLoaded] = useState(false)
   const [mapError, setMapError] = useState<string | null>(null)
   const [gettingLocation, setGettingLocation] = useState(false)
+  const [scriptReady, setScriptReady] = useState(false)
+  
   const searchTimeout = useRef<NodeJS.Timeout>()
   const wrapperRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<HTMLDivElement>(null)
-  const googleMapRef = useRef<google.maps.Map | null>(null)
+  const mapContainerRef = useRef<HTMLDivElement>(null)
+  const mapInstanceRef = useRef<google.maps.Map | null>(null)
   const markerRef = useRef<google.maps.Marker | null>(null)
-  const scriptLoadedRef = useRef(false)
+  const mapInitialized = useRef(false)
+  
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
-  // Handle Google Maps load
-  const handleGoogleMapsLoad = () => {
-    console.log('✅ Google Maps script loaded!')
-    scriptLoadedRef.current = true
-    if (mapRef.current && !googleMapRef.current) {
-      setTimeout(initializeMap, 100)
-    }
-  }
-
-  // Check if Google Maps is already loaded on mount
+  // Load Google Maps script on mount
   useEffect(() => {
-    // Check immediately
-    if (window.google?.maps && !googleMapRef.current && mapRef.current) {
-      console.log('✅ Google Maps already available, initializing...')
-      scriptLoadedRef.current = true
-      setTimeout(initializeMap, 100)
+    if (!apiKey) {
+      setMapError('Google Maps API key is missing')
       return
     }
-    
-    // Poll for Google Maps if not yet available (handles race conditions)
-    let attempts = 0
-    const maxAttempts = 50 // 5 seconds max
-    const checkGoogle = setInterval(() => {
-      attempts++
-      if (window.google?.maps && !googleMapRef.current && mapRef.current) {
-        console.log(`✅ Google Maps found after ${attempts} attempts`)
-        scriptLoadedRef.current = true
-        clearInterval(checkGoogle)
-        setTimeout(initializeMap, 100)
-      } else if (attempts >= maxAttempts) {
-        console.log('⚠️ Google Maps not found after polling')
-        clearInterval(checkGoogle)
-      }
-    }, 100)
-    
-    return () => clearInterval(checkGoogle)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
+    let cancelled = false
+
+    const loadMaps = async () => {
+      try {
+        await loadGoogleMapsScript(apiKey)
+        if (!cancelled) {
+          setScriptReady(true)
+          setMapError(null)
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to load Google Maps:', error)
+          setMapError('Failed to load Google Maps. Please refresh the page.')
+        }
+      }
+    }
+
+    loadMaps()
+
+    return () => {
+      cancelled = true
+    }
+  }, [apiKey])
+
+  // Initialize map once script is ready
+  useEffect(() => {
+    if (!scriptReady || !mapContainerRef.current || mapInitialized.current) {
+      return
+    }
+
+    if (!window.google?.maps) {
+      console.log('Waiting for Google Maps...')
+      return
+    }
+
+    mapInitialized.current = true
+    
+    try {
+      console.log('🗺️ Creating Google Map instance...')
+      
+      const defaultCenter = { lat: 20.5937, lng: 78.9629 }
+      
+      mapInstanceRef.current = new window.google.maps.Map(mapContainerRef.current, {
+        center: defaultCenter,
+        zoom: 5,
+        mapTypeControl: true,
+        streetViewControl: false,
+        fullscreenControl: true,
+        zoomControl: true,
+        gestureHandling: 'greedy',
+      })
+
+      // Mark loaded when tiles are ready
+      const tilesHandler = mapInstanceRef.current.addListener('tilesloaded', () => {
+        setMapLoaded(true)
+        console.log('✅ Map tiles loaded')
+        google.maps.event.removeListener(tilesHandler)
+      })
+
+      // Also check idle as backup
+      const idleHandler = mapInstanceRef.current.addListener('idle', () => {
+        if (!mapLoaded) {
+          setMapLoaded(true)
+        }
+        google.maps.event.removeListener(idleHandler)
+      })
+
+      // Click to place marker
+      mapInstanceRef.current.addListener('click', (e: google.maps.MapMouseEvent) => {
+        if (e.latLng) {
+          const lat = e.latLng.lat()
+          const lng = e.latLng.lng()
+          placeMarker({ lat, lng })
+          reverseGeocode(lat, lng)
+        }
+      })
+
+      console.log('✅ Map initialized')
+    } catch (error) {
+      console.error('❌ Map initialization error:', error)
+      setMapError('Failed to initialize map')
+    }
+  }, [scriptReady])
+
+  // Click outside handler
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
@@ -115,127 +242,45 @@ export function AddressInteractiveMap({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const initializeMap = () => {
-    if (!mapRef.current || !window.google?.maps || googleMapRef.current) {
-      console.log('Cannot initialize map', { 
-        hasMapRef: !!mapRef.current, 
-        hasGoogle: !!window.google?.maps,
-        hasGoogleMapRef: !!googleMapRef.current 
-      })
-      return
-    }
+  const placeMarker = useCallback((position: { lat: number; lng: number }) => {
+    if (!mapInstanceRef.current) return
 
-    console.log('🗺️ Initializing map...')
+    setSelectedLocation(position)
 
-    try {
-      const defaultCenter = selectedLocation || { lat: 20.5937, lng: 78.9629 }
-      
-      googleMapRef.current = new window.google.maps.Map(mapRef.current, {
-        center: defaultCenter,
-        zoom: selectedLocation ? 15 : 5,
-        mapTypeControl: true,
-        streetViewControl: false,
-        fullscreenControl: true,
-        zoomControl: true,
-      })
-
-      // Force resize
-      setTimeout(() => {
-        if (googleMapRef.current) {
-          window.google.maps.event.trigger(googleMapRef.current, 'resize')
-          googleMapRef.current.setCenter(defaultCenter)
-        }
-        setMapLoaded(true)
-        console.log('✅ Map loaded and ready')
-      }, 300)
-
-      // Add click listener to place marker
-      googleMapRef.current.addListener('click', (e: google.maps.MapMouseEvent) => {
-        if (!e.latLng) return
-        const lat = e.latLng.lat()
-        const lng = e.latLng.lng()
-        updateMarkerPosition({ lat, lng })
-        reverseGeocode(lat, lng)
-      })
-
-      // Create marker if we have a location
-      if (selectedLocation) {
-        createMarker(selectedLocation)
-      }
-
-      console.log('✅ Map initialized successfully')
-    } catch (error) {
-      console.error('❌ Error initializing map:', error)
-      setMapError('Failed to initialize map')
-    }
-  }
-
-  const createMarker = (position: { lat: number; lng: number }) => {
-    if (!googleMapRef.current) return
-
-    // Remove existing marker
+    // Remove old marker
     if (markerRef.current) {
       markerRef.current.setMap(null)
     }
 
-    // Create floating heart marker SVG (no pin, just heart)
-    const heartMarkerSvg = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
-        <defs>
-          <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#FF6B8A"/>
-            <stop offset="100%" style="stop-color:#EF4444"/>
-          </linearGradient>
-          <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#EF4444" flood-opacity="0.4"/>
-          </filter>
-        </defs>
-        <g filter="url(#shadow)">
-          <path d="M24 44C24 44 42 30 42 18C42 10.27 35.73 4 28 4C25.03 4 24 6.5 24 6.5C24 6.5 22.97 4 20 4C12.27 4 6 10.27 6 18C6 30 24 44 24 44Z" fill="url(#heartGrad)" stroke="white" stroke-width="2"/>
-        </g>
-      </svg>
-    `
-
-    // Create new marker with floating heart icon
+    // Create marker with default icon
     markerRef.current = new window.google.maps.Marker({
       position,
-      map: googleMapRef.current,
+      map: mapInstanceRef.current,
       draggable: true,
       animation: window.google.maps.Animation.DROP,
-      icon: {
-        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(heartMarkerSvg),
-        scaledSize: new window.google.maps.Size(48, 48),
-        anchor: new window.google.maps.Point(24, 44),
-      },
     })
 
+    // Drag end handler
     markerRef.current.addListener('dragend', (e: google.maps.MapMouseEvent) => {
-      if (!e.latLng) return
-      const lat = e.latLng.lat()
-      const lng = e.latLng.lng()
-      setSelectedLocation({ lat, lng })
-      reverseGeocode(lat, lng)
+      if (e.latLng) {
+        const lat = e.latLng.lat()
+        const lng = e.latLng.lng()
+        setSelectedLocation({ lat, lng })
+        reverseGeocode(lat, lng)
+      }
     })
-  }
 
-  const updateMarkerPosition = (position: { lat: number; lng: number }) => {
-    setSelectedLocation(position)
-    
-    if (markerRef.current) {
-      markerRef.current.setPosition(position)
-    } else {
-      createMarker(position)
-    }
-
-    if (googleMapRef.current) {
-      googleMapRef.current.setCenter(position)
-      googleMapRef.current.setZoom(15)
-    }
-  }
+    // Center and zoom
+    mapInstanceRef.current.setCenter(position)
+    mapInstanceRef.current.setZoom(15)
+  }, [])
 
   const reverseGeocode = async (lat: number, lng: number) => {
     try {
-      const response = await fetch(`/api/address/reverse?lat=${lat}&lng=${lng}`, { cache: 'no-store' })
+      const response = await fetch(`/api/address/reverse?lat=${lat}&lng=${lng}`, { 
+        cache: 'no-store' 
+      })
+      
       if (response.ok) {
         const data = await response.json()
         if (data.address) {
@@ -263,7 +308,9 @@ export function AddressInteractiveMap({
 
     setIsSearching(true)
     try {
-      const response = await fetch(`/api/address/search?q=${encodeURIComponent(query)}`, { cache: 'no-store' })
+      const response = await fetch(`/api/address/search?q=${encodeURIComponent(query)}`, { 
+        cache: 'no-store' 
+      })
       if (response.ok) {
         const data = await response.json()
         setSuggestions(data?.results || [])
@@ -306,7 +353,7 @@ export function AddressInteractiveMap({
     onChange(suggestion.display_name)
     setShowSuggestions(false)
     setSuggestions([])
-    updateMarkerPosition({ lat, lng })
+    placeMarker({ lat, lng })
     onAddressSelect?.(selectedAddress)
   }
 
@@ -321,9 +368,9 @@ export function AddressInteractiveMap({
       markerRef.current = null
     }
     
-    if (googleMapRef.current) {
-      googleMapRef.current.setCenter({ lat: 20.5937, lng: 78.9629 })
-      googleMapRef.current.setZoom(5)
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setCenter({ lat: 20.5937, lng: 78.9629 })
+      mapInstanceRef.current.setZoom(5)
     }
   }
 
@@ -338,29 +385,21 @@ export function AddressInteractiveMap({
       (position) => {
         const lat = position.coords.latitude
         const lng = position.coords.longitude
-        updateMarkerPosition({ lat, lng })
+        placeMarker({ lat, lng })
         reverseGeocode(lat, lng)
         setGettingLocation(false)
       },
-      () => {
-        alert('Unable to get your location')
+      (error) => {
+        console.error('Geolocation error:', error)
+        alert('Unable to get your location. Please allow location access.')
         setGettingLocation(false)
-      }
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
     )
   }
 
   return (
     <div ref={wrapperRef} className="space-y-4">
-      <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
-        strategy="afterInteractive"
-        onLoad={handleGoogleMapsLoad}
-        onError={() => {
-          console.error('❌ Failed to load Google Maps')
-          setMapError('Failed to load map')
-        }}
-      />
-      
       <div className="flex gap-2">
         <div className="relative flex-1">
           <input
@@ -423,11 +462,16 @@ export function AddressInteractiveMap({
           {mapError ? (
             <div className="rounded-lg border-2 border-red-200 bg-red-50 p-8 text-center" style={{ height: mapHeight }}>
               <p className="text-red-600 font-semibold">⚠️ {mapError}</p>
+              <p className="text-red-500 text-sm mt-2">Please check your Google Maps API key and refresh.</p>
             </div>
           ) : (
             <>
               <div className="relative">
-                <div ref={mapRef} className="rounded-lg overflow-hidden border-2 border-purple-200" style={{ height: mapHeight, width: '100%' }} />
+                <div 
+                  ref={mapContainerRef} 
+                  className="rounded-lg overflow-hidden border-2 border-purple-200" 
+                  style={{ height: mapHeight, width: '100%' }} 
+                />
                 {!mapLoaded && (
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
                     <div className="text-center">
