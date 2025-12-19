@@ -867,11 +867,11 @@ export function useJobNotifications() {
     // Initial check
     checkForNewNotifications()
 
-    // Poll every 3 seconds for new notifications and job status
+    // Poll every 1.5 seconds for new notifications and job status (faster response)
     const pollInterval = setInterval(() => {
       checkForNewNotifications()
       checkIfJobTaken()
-    }, 3000)
+    }, 1500)
 
     return () => {
       clearInterval(pollInterval)
@@ -1165,8 +1165,8 @@ export function useJobNotifications() {
       // Helper is now on a job; suppress future notifications until cleared
       setIsOnJob(true)
       
-      // Redirect to job details
-      router.push(`/helper/jobs/${requestId}`)
+      // Redirect to dashboard where active job card is shown
+      router.push('/helper/dashboard')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to accept job'
       toast.error(message)

@@ -11,15 +11,27 @@ export type Json =
 	| { [key: string]: Json | undefined }
 	| Json[]
 
+// Generic table type for permissive operations
+type GenericTable = {
+	Row: Record<string, any>
+	Insert: Record<string, any>
+	Update: Record<string, any>
+	Relationships: any[]
+}
+
 export type Database = {
 	public: {
 		Tables: {
-			[tableName: string]: {
-				Row: Record<string, any>
-				Insert: Record<string, any>
-				Update: Record<string, any>
-				Relationships: any[]
-			}
+			service_requests: GenericTable
+			broadcast_notifications: GenericTable
+			notifications: GenericTable
+			profiles: GenericTable
+			helper_profiles: GenericTable
+			service_categories: GenericTable
+			reviews: GenericTable
+			helper_earnings: GenericTable
+			helper_rating_summary: GenericTable
+			[tableName: string]: GenericTable
 		}
 		Views: {
 			[viewName: string]: any

@@ -281,6 +281,7 @@ export default function HelperJobPage() {
   const [endOtpInput, setEndOtpInput] = useState('')
   const [verifying, setVerifying] = useState(false)
   const [completing, setCompleting] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
   const [showCompletionModal, setShowCompletionModal] = useState(false)
   const [locationWatchId, setLocationWatchId] = useState<number | null>(null)
   const [elapsedTime, setElapsedTime] = useState<string>('00:00:00')
@@ -698,6 +699,53 @@ export default function HelperJobPage() {
     }
   }
 
+  // Cancel job before work starts (helper cancellation)
+  async function cancelJob() {
+    if (!job || job.work_started_at) {
+      toast.error('Cannot cancel - work has already started')
+      return
+    }
+    
+    if (!confirm('Are you sure you want to cancel this job? This may affect your rating.')) {
+      return
+    }
+    
+    setCancelling(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        toast.error('Please login')
+        return
+      }
+      
+      // Reset helper's is_on_job flag first
+      await supabase
+        .from('helper_profiles')
+        .update({ is_on_job: false })
+        .eq('user_id', user.id)
+      
+      // Call re-broadcast API to reset job and notify other helpers
+      const response = await fetch(`/api/requests/${requestId}/rebroadcast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to re-broadcast job')
+      }
+      
+      toast.success(`Job cancelled. ${data.helpersNotified} helpers notified.`)
+      router.push('/helper/dashboard')
+    } catch (error: any) {
+      console.error('Cancel error:', error)
+      toast.error(error.message || 'Failed to cancel job')
+    } finally {
+      setCancelling(false)
+    }
+  }
+
   function messageCustomer() {
     if (job?.customer?.phone) {
       window.open(`https://wa.me/91${job.customer.phone}`, '_blank')
@@ -1048,6 +1096,31 @@ export default function HelperJobPage() {
                     <CheckCircle className="h-5 w-5" />
                   )}
                 </Button>
+              </div>
+
+              {/* Cancel Button - Only visible before work starts */}
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <Button
+                  variant="outline"
+                  onClick={cancelJob}
+                  disabled={cancelling}
+                  className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                >
+                  {cancelling ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Cancelling...
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Cancel Job
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-gray-400 text-center mt-2">
+                  You can only cancel before entering the Start OTP
+                </p>
               </div>
             </CardContent>
           </Card>

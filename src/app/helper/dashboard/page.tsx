@@ -157,6 +157,7 @@ export default function HelperDashboard() {
   const [endOtpInput, setEndOtpInput] = useState('')
   const [verifyingStart, setVerifyingStart] = useState(false)
   const [verifyingEnd, setVerifyingEnd] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
   
   // UI state
   const [showPhotos, setShowPhotos] = useState(true)
@@ -590,6 +591,58 @@ export default function HelperDashboard() {
     }
   }
 
+  // Cancel job before work starts (helper cancellation)
+  const cancelJob = async () => {
+    if (!fullJobDetails || fullJobDetails.work_started_at) {
+      toast.error('Cannot cancel - work has already started')
+      return
+    }
+    
+    if (!confirm('Are you sure you want to cancel this job? This may affect your rating.')) {
+      return
+    }
+    
+    setCancelling(true)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        toast.error('Please login')
+        return
+      }
+      
+      // Reset helper's is_on_job flag first
+      await supabase
+        .from('helper_profiles')
+        .update({ is_on_job: false })
+        .eq('user_id', user.id)
+      
+      // Call re-broadcast API to reset job and notify other helpers
+      const response = await fetch(`/api/requests/${fullJobDetails.id}/rebroadcast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to re-broadcast job')
+      }
+      
+      toast.success(`Job cancelled. ${data.helpersNotified} helpers notified.`)
+      
+      // Clear active job state
+      setActiveJob(null)
+      setFullJobDetails(null)
+      loadStats()
+    } catch (error: any) {
+      console.error('Cancel error:', error)
+      toast.error(error.message || 'Failed to cancel job')
+    } finally {
+      setCancelling(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -915,6 +968,33 @@ export default function HelperDashboard() {
                 {verifyingStart ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Start'}
               </Button>
             </div>
+          </div>
+        )}
+
+        {/* Cancel Job Button - Only visible before work starts */}
+        {!hasStarted && (
+          <div className="bg-white rounded-xl p-4 border border-red-200">
+            <Button
+              variant="outline"
+              onClick={cancelJob}
+              disabled={cancelling}
+              className="w-full border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+            >
+              {cancelling ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Cancelling...
+                </>
+              ) : (
+                <>
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel Job
+                </>
+              )}
+            </Button>
+            <p className="text-xs text-gray-400 text-center mt-2">
+              You can only cancel before entering the Start OTP
+            </p>
           </div>
         )}
 

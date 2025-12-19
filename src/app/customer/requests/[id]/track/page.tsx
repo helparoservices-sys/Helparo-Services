@@ -801,7 +801,7 @@ export default function JobTrackingPage() {
     )
   }
 
-  const isBroadcasting = job.broadcast_status === 'broadcasting' && !job.assigned_helper
+  const isBroadcasting = job.broadcast_status === 'broadcasting' && (!job.assigned_helper_id || job.assigned_helper_id === null)
   const isActive = !['cancelled', 'completed'].includes(job.broadcast_status)
   const hasHelper = job.helper_location_lat !== null && job.helper_location_lng !== null && job.helper_location_lat !== 0 && job.helper_location_lng !== 0
   
@@ -914,7 +914,7 @@ export default function JobTrackingPage() {
               {isBroadcasting && <SearchingAnimation nearbyHelpers={nearbyHelpers} />}
 
               {/* HELPER ASSIGNED - Premium Card */}
-              {job.assigned_helper && (
+              {job.assigned_helper_id && job.assigned_helper && (
                 <>
                   {/* Status Banner - Soft gradient */}
                   <div className={`rounded-2xl p-4 mb-4 relative overflow-hidden ${
