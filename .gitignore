@@ -47,3 +47,13 @@ next-env.d.ts
 
 # Local Netlify folder
 .netlify
+
+# Android / Capacitor
+*.jks
+*.keystore
+android/.idea/
+android/.gradle/
+android/app/release/
+android/local.properties
+generate-icons.js
+icon-generator.html
