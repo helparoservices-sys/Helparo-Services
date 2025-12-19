@@ -257,11 +257,35 @@ export async function POST(request: NextRequest) {
     // NOTIFY ALL helpers within radius - category match is preferred but not required
     const NOTIFICATION_RADIUS_KM = 15 // Use predefined service location radius for matching
     
+    // Get list of helpers who actually have active assigned jobs (not just is_on_job flag)
+    // This helps recover from stuck states where is_on_job flag wasn't reset properly
+    const { data: activeAssignments } = await supabase
+      .from('service_requests')
+      .select('assigned_helper_id')
+      .in('status', ['assigned', 'in_progress'])
+      .not('assigned_helper_id', 'is', null)
+    
+    const busyHelperUserIds = new Set((activeAssignments || []).map(a => a.assigned_helper_id))
+    
     let filteredHelpers = relevantHelpers?.filter(helper => {
-      // Helpers currently on a job should not receive new job notifications
-      if (helper.is_on_job) {
-        console.log(`❌ Helper ${helper.id} excluded: currently on a job`)
+      // Check if helper ACTUALLY has an active job (more reliable than is_on_job flag)
+      const actuallyBusy = busyHelperUserIds.has(helper.user_id)
+      
+      if (actuallyBusy) {
+        console.log(`❌ Helper ${helper.id} excluded: actually has an active assigned job`)
         return false
+      }
+      
+      // If is_on_job flag says busy but no actual job, auto-fix the flag and include them
+      if (helper.is_on_job && !actuallyBusy) {
+        console.log(`⚠️ Helper ${helper.id}: is_on_job=true but no actual job found. Including and auto-fixing flag.`)
+        // Fire-and-forget fix for the stuck flag
+        supabase
+          .from('helper_profiles')
+          .update({ is_on_job: false })
+          .eq('id', helper.id)
+          .then(() => console.log(`✅ Auto-fixed is_on_job for helper ${helper.id}`))
+          .catch(err => console.error(`Failed to auto-fix is_on_job for ${helper.id}:`, err))
       }
 
       // Check distance from customer location using predefined service location ONLY

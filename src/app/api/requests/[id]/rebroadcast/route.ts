@@ -164,7 +164,7 @@ export async function POST(
     const serviceLng = serviceRequest.service_location_lng
     const BROADCAST_RADIUS_KM = 25
 
-    // Get all approved, online helpers who are NOT on a job - use admin client
+    // Get all approved helpers (we'll filter by actual job assignments, not is_on_job flag)
     const { data: relevantHelpersData, error: helpersError } = await adminSupabase
       .from('helper_profiles')
       .select(`
@@ -176,19 +176,53 @@ export async function POST(
         emergency_availability,
         current_location_lat,
         current_location_lng,
+        latitude,
+        longitude,
+        service_radius_km,
         service_categories,
         profiles:user_id(full_name, phone)
       `)
       .eq('is_approved', true)
-      .eq('is_on_job', false) // Only helpers NOT on a job
-      .or('is_available_now.eq.true,is_online.eq.true') // Online helpers
+      .eq('verification_status', 'approved')
 
     if (helpersError) {
       console.error('❌ Error fetching helpers:', helpersError)
       return NextResponse.json({ error: 'Failed to fetch helpers' }, { status: 500 })
     }
 
-    const relevantHelpers = (relevantHelpersData || []) as unknown as HelperProfile[]
+    // Get list of helpers who actually have active assigned jobs (more reliable than is_on_job flag)
+    const { data: activeAssignments } = await adminSupabase
+      .from('service_requests')
+      .select('assigned_helper_id')
+      .in('status', ['assigned', 'in_progress'])
+      .not('assigned_helper_id', 'is', null)
+      .neq('id', requestId) // Exclude the current job being rebroadcast
+    
+    const busyHelperUserIds = new Set((activeAssignments || []).map(a => a.assigned_helper_id))
+
+    // Filter helpers who are NOT actually busy
+    const availableHelpers = (relevantHelpersData || []).filter(h => {
+      const actuallyBusy = busyHelperUserIds.has(h.user_id)
+      if (actuallyBusy) {
+        console.log(`❌ Helper ${h.id} excluded: actually has another active job`)
+        return false
+      }
+      
+      // Auto-fix stuck is_on_job flag
+      if (h.is_on_job && !actuallyBusy) {
+        console.log(`⚠️ Helper ${h.id}: is_on_job=true but no actual job. Auto-fixing.`)
+        adminSupabase
+          .from('helper_profiles')
+          .update({ is_on_job: false })
+          .eq('id', h.id)
+          .then(() => {})
+          .catch(err => console.error(`Failed to auto-fix is_on_job:`, err))
+      }
+      
+      return true
+    }) as unknown as HelperProfile[]
+
+    const relevantHelpers = availableHelpers
 
     console.log(`👥 Found ${relevantHelpers.length} potential helpers`)
     

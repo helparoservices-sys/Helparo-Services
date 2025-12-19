@@ -32,7 +32,6 @@ import {
   Sparkles,
   ThumbsUp
 } from 'lucide-react'
-import { LoadingSpinner } from '@/components/ui/loading'
 import { getHelperDashboardStats } from '@/app/actions/helper-dashboard'
 import { getHelperAssignedJobs } from '@/app/actions/assigned-jobs'
 import { getHelperAvailability, toggleHelperAvailability } from '@/app/actions/helper-availability'
@@ -167,6 +166,21 @@ export default function HelperDashboard() {
   const [locationWatchId, setLocationWatchId] = useState<number | null>(null)
   const [showCompletionModal, setShowCompletionModal] = useState(false)
   const [completedJobDetails, setCompletedJobDetails] = useState<FullJobDetails | null>(null)
+
+  const defaultStats: DashboardStats = {
+    earnings: { today: 0, thisWeek: 0, thisMonth: 0, pending: 0 },
+    jobs: { active: 0, completed: 0, pending: 0, total: 0 },
+    rating: { average: 0, totalReviews: 0 },
+    verification: { isApproved: false, status: '' },
+    recentJobs: [],
+    upcomingJobs: []
+  }
+
+  const isStatsLoading = loading || !stats
+  const safeStats = stats || defaultStats
+  const SkeletonLine = ({ className }: { className?: string }) => (
+    <div className={`animate-pulse bg-slate-200 dark:bg-slate-700 rounded ${className || ''}`} />
+  )
 
   // Timer effect for elapsed time and color transition
   useEffect(() => {
@@ -344,6 +358,28 @@ export default function HelperDashboard() {
         const job = result.jobs.find((j: AssignedJob) => j.status === 'assigned')
         console.log('✅ Active job found:', job ? { id: job.id, status: job.status } : 'none')
         setActiveJob(job || null)
+        
+        // AUTO-FIX: If no active job but is_on_job flag might be stuck, reset it
+        if (!job) {
+          const supabase = createClient()
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            const { data: helperProfile } = await supabase
+              .from('helper_profiles')
+              .select('id, is_on_job')
+              .eq('user_id', user.id)
+              .single()
+            
+            if (helperProfile && helperProfile.is_on_job === true) {
+              console.log('⚠️ AUTO-FIX: is_on_job=true but no active job found. Resetting flag.')
+              await supabase
+                .from('helper_profiles')
+                .update({ is_on_job: false })
+                .eq('id', helperProfile.id)
+              console.log('✅ AUTO-FIX: is_on_job reset to false')
+            }
+          }
+        }
       } else {
         console.log('❌ No jobs array in result')
         setActiveJob(null)
@@ -710,7 +746,7 @@ export default function HelperDashboard() {
       // Clear active job state
       setActiveJob(null)
       setFullJobDetails(null)
-      loadStats()
+      loadDashboard()
     } catch (error: any) {
       console.error('Cancel error:', error)
       toast.error(error.message || 'Failed to cancel job')
@@ -719,24 +755,7 @@ export default function HelperDashboard() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
-  }
-
-  // Prevent showing the normal dashboard for a split second while the active job is still loading.
-  if (!activeJobChecked) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
-  }
-
-  if (error || !stats) {
+  if (!isStatsLoading && activeJobChecked && (error || !stats)) {
     return (
       <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
         <p className="text-red-600 dark:text-red-400">{error || 'Failed to load dashboard'}</p>
@@ -747,7 +766,7 @@ export default function HelperDashboard() {
     )
   }
 
-  const needsVerification = !stats.verification.isApproved || stats.verification.status !== 'approved'
+  const needsVerification = !isStatsLoading && (!safeStats.verification.isApproved || safeStats.verification.status !== 'approved')
 
   // Get gradient colors based on elapsed time (gradual transition over 30 mins)
   const getTimerGradient = () => {
@@ -1126,13 +1145,19 @@ export default function HelperDashboard() {
     )
   }
 
-  // If activeJob exists but fullJobDetails not loaded yet, show loading
-  if (activeJob && !fullJobDetails) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <LoadingSpinner size="lg" />
+  const renderActiveJobSkeleton = () => (
+    <div className="space-y-4 pb-6">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 animate-pulse h-48" />
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 animate-pulse h-32" />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="h-12 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 animate-pulse" />
+        <div className="h-12 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 animate-pulse" />
       </div>
-    )
+    </div>
+  )
+
+  if (activeJob && !fullJobDetails) {
+    return renderActiveJobSkeleton()
   }
 
   // ...existing code...
@@ -1171,13 +1196,13 @@ export default function HelperDashboard() {
       {/* Verification Alert - Compact */}
       {needsVerification && (
         <Link 
-          href={stats.verification.status === 'pending' ? "/helper/verification" : "/helper/onboarding"}
+          href={safeStats.verification.status === 'pending' ? "/helper/verification" : "/helper/onboarding"}
           className="block bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4"
         >
           <div className="flex items-center gap-3">
             <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
             <p className="flex-1 font-medium text-amber-800 dark:text-amber-200 text-sm">
-              {stats.verification.status === 'pending' ? 'Verification in progress' : 'Complete verification to start'}
+              {safeStats.verification.status === 'pending' ? 'Verification in progress' : 'Complete verification to start'}
             </p>
             <ArrowRight className="h-4 w-4 text-amber-600" />
           </div>
@@ -1191,7 +1216,11 @@ export default function HelperDashboard() {
             <IndianRupee className="h-4 w-4 text-emerald-600" />
             <span className="text-xs text-slate-500">Today</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">₹{stats.earnings.today.toLocaleString()}</p>
+          {isStatsLoading ? (
+            <SkeletonLine className="h-7 w-24" />
+          ) : (
+            <p className="text-2xl font-bold text-slate-900 dark:text-white">₹{safeStats.earnings.today.toLocaleString()}</p>
+          )}
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
@@ -1199,7 +1228,9 @@ export default function HelperDashboard() {
             <Briefcase className="h-4 w-4 text-blue-600" />
             <span className="text-xs text-slate-500">Active</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.jobs.active}</p>
+          {isStatsLoading ? <SkeletonLine className="h-7 w-16" /> : (
+            <p className="text-2xl font-bold text-slate-900 dark:text-white">{safeStats.jobs.active}</p>
+          )}
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
@@ -1207,7 +1238,9 @@ export default function HelperDashboard() {
             <Star className="h-4 w-4 text-amber-500" />
             <span className="text-xs text-slate-500">Rating</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.rating.average.toFixed(1)}</p>
+          {isStatsLoading ? <SkeletonLine className="h-7 w-16" /> : (
+            <p className="text-2xl font-bold text-slate-900 dark:text-white">{safeStats.rating.average.toFixed(1)}</p>
+          )}
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
@@ -1215,7 +1248,9 @@ export default function HelperDashboard() {
             <CheckCircle className="h-4 w-4 text-teal-600" />
             <span className="text-xs text-slate-500">Done</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.jobs.completed}</p>
+          {isStatsLoading ? <SkeletonLine className="h-7 w-16" /> : (
+            <p className="text-2xl font-bold text-slate-900 dark:text-white">{safeStats.jobs.completed}</p>
+          )}
         </div>
       </div>
 
@@ -1242,11 +1277,26 @@ export default function HelperDashboard() {
           <span className="font-semibold text-slate-900 dark:text-white text-sm">Recent Jobs</span>
           <Link href="/helper/assigned" className="text-xs text-emerald-600 font-medium">View All</Link>
         </div>
-        {stats.recentJobs.length === 0 ? (
+        {isStatsLoading ? (
+          <div className="divide-y divide-slate-100 dark:divide-slate-700">
+            {[...Array(3)].map((_, idx) => (
+              <div key={idx} className="flex items-center justify-between px-4 py-2.5">
+                <div className="min-w-0 flex-1 space-y-1">
+                  <SkeletonLine className="h-4 w-40" />
+                  <SkeletonLine className="h-3 w-24" />
+                </div>
+                <div className="text-right ml-3 space-y-1">
+                  <SkeletonLine className="h-4 w-12" />
+                  <SkeletonLine className="h-3 w-14" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : safeStats.recentJobs.length === 0 ? (
           <p className="text-sm text-slate-400 text-center py-6">No jobs yet</p>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-700">
-            {stats.recentJobs.slice(0, 5).map((job) => (
+            {safeStats.recentJobs.slice(0, 5).map((job) => (
               <Link 
                 key={job.id} 
                 href="/helper/assigned"

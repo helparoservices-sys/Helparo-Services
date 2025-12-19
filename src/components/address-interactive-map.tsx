@@ -35,6 +35,8 @@ interface AddressInteractiveMapProps {
   mapHeight?: string
 }
 
+const DEFAULT_CENTER = { lat: 20.5937, lng: 78.9629 }
+
 declare global {
   interface Window {
     google: typeof google
@@ -187,10 +189,8 @@ export function AddressInteractiveMap({
     try {
       console.log('🗺️ Creating Google Map instance...')
       
-      const defaultCenter = { lat: 20.5937, lng: 78.9629 }
-      
       mapInstanceRef.current = new window.google.maps.Map(mapContainerRef.current, {
-        center: defaultCenter,
+        center: DEFAULT_CENTER,
         zoom: 5,
         mapTypeControl: true,
         streetViewControl: false,
@@ -369,45 +369,87 @@ export function AddressInteractiveMap({
     }
     
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.setCenter({ lat: 20.5937, lng: 78.9629 })
+      mapInstanceRef.current.setCenter(DEFAULT_CENTER)
       mapInstanceRef.current.setZoom(5)
     }
   }
 
+  const getStoredCoordinates = () => {
+    try {
+      if (typeof window === 'undefined') return null
+      const latString = localStorage.getItem('userLatitude') ?? localStorage.getItem('lastKnownLatitude')
+      const lngString = localStorage.getItem('userLongitude') ?? localStorage.getItem('lastKnownLongitude')
+      const lat = latString ? parseFloat(latString) : NaN
+      const lng = lngString ? parseFloat(lngString) : NaN
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+      return { lat, lng }
+    } catch {
+      return null
+    }
+  }
+
+  const persistCoordinates = (lat: number, lng: number) => {
+    try {
+      if (typeof window === 'undefined') return
+      const latString = lat.toString()
+      const lngString = lng.toString()
+      localStorage.setItem('userLatitude', latString)
+      localStorage.setItem('userLongitude', lngString)
+      localStorage.setItem('lastKnownLatitude', latString)
+      localStorage.setItem('lastKnownLongitude', lngString)
+    } catch {
+      // Ignore storage failures to avoid blocking the flow
+    }
+  }
+
+  const fallbackToKnownLocation = (reason: string) => {
+    console.warn('Using fallback location:', reason)
+    const stored = getStoredCoordinates()
+    const coords = stored || DEFAULT_CENTER
+    setSelectedLocation(coords)
+    placeMarker(coords)
+    reverseGeocode(coords.lat, coords.lng)
+    setGettingLocation(false)
+  }
+
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser')
+      fallbackToKnownLocation('Geolocation unsupported')
       return
     }
 
     setGettingLocation(true)
+    let settled = false
+
+    const handleFallback = (message: string) => {
+      if (settled) return
+      settled = true
+      fallbackToKnownLocation(message)
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      handleFallback('Geolocation timed out')
+    }, 12000)
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        if (settled) return
+        settled = true
+        clearTimeout(timeoutId)
         const lat = position.coords.latitude
         const lng = position.coords.longitude
+        setSelectedLocation({ lat, lng })
         placeMarker({ lat, lng })
         reverseGeocode(lat, lng)
+        persistCoordinates(lat, lng)
         setGettingLocation(false)
       },
       (error) => {
-        console.error('Geolocation error:', error.code, error.message)
-        setGettingLocation(false)
-        
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            alert('Location access was denied. Please enable location permissions in your browser settings and try again.')
-            break
-          case error.POSITION_UNAVAILABLE:
-            alert('Location information is unavailable. Please try again or enter your address manually.')
-            break
-          case error.TIMEOUT:
-            alert('Location request timed out. Please check your connection and try again.')
-            break
-          default:
-            alert('Unable to get your location. Please try again or enter your address manually.')
-        }
+        clearTimeout(timeoutId)
+        console.warn('Geolocation error:', error.code, error.message)
+        handleFallback(error.message || 'Geolocation error')
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     )
   }
 
