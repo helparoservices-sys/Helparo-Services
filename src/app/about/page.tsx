@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
+import { createClient } from '@/lib/supabase/client'
 import { 
   ArrowRight, 
   Shield, 
@@ -57,6 +58,7 @@ function AnimatedCounter({ end, duration = 2000, suffix = '' }: { end: number; d
 export default function AboutPage() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [activeValue, setActiveValue] = useState(0)
+  const [homeHref, setHomeHref] = useState('/')
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20)
@@ -67,6 +69,27 @@ export default function AboutPage() {
   useEffect(() => {
     const interval = setInterval(() => setActiveValue((p) => (p + 1) % 4), 4000)
     return () => clearInterval(interval)
+  }, [])
+
+  // Check if user is logged in and determine home link
+  useEffect(() => {
+    const checkUser = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+        if (profile?.role === 'helper') {
+          setHomeHref('/helper/dashboard')
+        } else if (profile?.role === 'customer') {
+          setHomeHref('/customer/dashboard')
+        }
+      }
+    }
+    checkUser()
   }, [])
 
   const values = [
@@ -87,7 +110,7 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2.5 group">
+            <Link href={homeHref} className="flex items-center gap-2.5 group">
               <img src="/logo.svg" alt="Helparo" className="w-10 h-10 rounded-[12px] shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform" />
               <span className="text-xl font-extrabold text-gray-900 hidden sm:block">helparo</span>
             </Link>
@@ -532,7 +555,7 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-12 mb-16">
             <div className="col-span-2 lg:col-span-1">
-              <Link href="/" className="flex items-center gap-2.5 mb-6 group">
+              <Link href={homeHref} className="flex items-center gap-2.5 mb-6 group">
                 <img src="/logo.svg" alt="Helparo" className="w-10 h-10 rounded-xl shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform" />
                 <span className="text-xl font-bold text-white">helparo</span>
               </Link>
