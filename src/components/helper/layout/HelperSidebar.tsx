@@ -18,7 +18,8 @@ import {
   Phone,
   Lock,
   DollarSign,
-  X
+  X,
+  AlertTriangle
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -75,6 +76,12 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
       label: 'My Jobs',
       icon: Briefcase,
       href: '/helper/assigned',
+      requiresVerification: true
+    },
+    {
+      label: 'SOS Alerts',
+      icon: AlertTriangle,
+      href: '/helper/sos',
       requiresVerification: true
     },
     {

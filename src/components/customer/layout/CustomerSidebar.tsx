@@ -21,7 +21,8 @@ import {
   ShoppingBag,
   Video,
   Radio,
-  X
+  X,
+  AlertTriangle
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -53,6 +54,7 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
         { icon: LayoutDashboard, label: 'Dashboard', href: '/customer/dashboard' },
         { icon: Radio, label: 'Active Requests', href: '/customer/active-requests' },
         { icon: ClipboardList, label: 'Past Bookings', href: '/customer/past-bookings' },
+        { icon: AlertTriangle, label: 'My SOS Alerts', href: '/customer/sos' },
       ]
     },
     /* === HIDDEN FOR PLAY STORE DEPLOYMENT - PAYMENT FEATURES === 

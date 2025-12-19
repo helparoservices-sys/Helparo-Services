@@ -99,3 +99,35 @@ export async function cancelSOS(alertId: string, reason?: string) {
     return handleServerActionError(error)
   }
 }
+
+export async function getMySOSAlerts() {
+  try {
+    const { user } = await requireAuth()
+    await rateLimit('get-sos', user.id, RATE_LIMITS.API_MODERATE)
+
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('sos_alerts')
+      .select(`
+        id,
+        alert_type,
+        status,
+        description,
+        latitude,
+        longitude,
+        created_at,
+        acknowledged_at,
+        resolved_at,
+        resolution_note
+      `)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+
+    return { data: { alerts: data || [] } }
+  } catch (error: any) {
+    logger.error('Get my SOS alerts error', { error })
+    return handleServerActionError(error)
+  }
+}

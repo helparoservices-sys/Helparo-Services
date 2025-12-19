@@ -13,12 +13,33 @@ export async function getHelperSOSAlerts() {
     const { user } = await requireAuth(UserRole.HELPER)
     const supabase = await createClient()
 
+    console.log('🔍 Fetching SOS alerts for helper user.id:', user.id)
+
+    // Get SOS alerts that this helper is responding to (acknowledged_by = user.id)
     const { data: alerts, error } = await supabase
       .from('sos_alerts')
-      .select('id, alert_type, status, description, created_at, latitude, longitude')
-      .eq('user_id', user.id)
+      .select(`
+        id, 
+        alert_type, 
+        status, 
+        description, 
+        created_at, 
+        latitude, 
+        longitude,
+        acknowledged_at,
+        resolved_at,
+        user_id,
+        acknowledged_by,
+        profiles!sos_alerts_user_id_fkey (
+          full_name,
+          phone
+        )
+      `)
+      .eq('acknowledged_by', user.id)
       .order('created_at', { ascending: false })
       .limit(50)
+
+    console.log('🔍 SOS alerts query result:', { alerts, error })
 
     if (error) {
       logger.error('Failed to fetch SOS alerts', { error })

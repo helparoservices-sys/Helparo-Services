@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingSpinner, SkeletonCard } from '@/components/ui/loading'
-import { getHelperSOSAlerts, createSOSAlert, cancelSOSAlert } from '@/app/actions/helper-sos'
-import { AlertTriangle, Phone, MapPin, Clock, Shield, XCircle } from 'lucide-react'
+import { getHelperSOSAlerts } from '@/app/actions/helper-sos'
+import { AlertTriangle, Phone, MapPin, Clock, CheckCircle, User, Navigation, MessageCircle } from 'lucide-react'
 import { toast } from 'sonner'
+import { formatDistanceToNow } from 'date-fns'
+import Link from 'next/link'
 
 interface SOSAlert {
   id: string
@@ -16,15 +18,18 @@ interface SOSAlert {
   created_at: string
   latitude: number | null
   longitude: number | null
+  acknowledged_at: string | null
+  resolved_at: string | null
+  user_id: string
+  profiles: {
+    full_name: string | null
+    phone: string | null
+  } | null
 }
 
 export default function HelperSOSPage() {
   const [loading, setLoading] = useState(true)
   const [alerts, setAlerts] = useState<SOSAlert[]>([])
-  const [creating, setCreating] = useState(false)
-  const [showForm, setShowForm] = useState(false)
-  const [alertType, setAlertType] = useState('emergency')
-  const [description, setDescription] = useState('')
 
   useEffect(() => {
     loadData()
@@ -32,287 +37,254 @@ export default function HelperSOSPage() {
 
   const loadData = async () => {
     setLoading(true)
-
     const result = await getHelperSOSAlerts()
 
     if ('error' in result && result.error) {
       toast.error(result.error)
     } else if ('data' in result && result.data) {
-      setAlerts(result.data.alerts)
+      setAlerts(result.data.alerts as SOSAlert[])
     }
 
     setLoading(false)
   }
 
-  const handleCreateAlert = async () => {
-    if (!description.trim()) {
-      toast.error('Please describe the situation')
-      return
-    }
-
-    setCreating(true)
-
-    // Get current location
-    let latitude: number | null = null
-    let longitude: number | null = null
-
-    if (navigator.geolocation) {
-      try {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject)
-        })
-        latitude = position.coords.latitude
-        longitude = position.coords.longitude
-      } catch (error) {
-        console.log('Location not available')
-      }
-    }
-
-    const result = await createSOSAlert({
-      alert_type: alertType,
-      description: description.trim(),
-      latitude,
-      longitude,
-    })
-
-    if ('error' in result && result.error) {
-      toast.error(result.error)
-    } else {
-      toast.success('SOS alert created')
-      setDescription('')
-      setShowForm(false)
-      loadData()
-    }
-
-    setCreating(false)
-  }
-
-  const handleCancelAlert = async (alertId: string) => {
-    const result = await cancelSOSAlert(alertId)
-
-    if ('error' in result && result.error) {
-      toast.error(result.error)
-    } else {
-      toast.success('Alert cancelled')
-      loadData()
-    }
-  }
-
-  const getAlertColor = (type: string) => {
+  const getAlertTypeBadge = (type: string) => {
     const colors: Record<string, string> = {
-      emergency: 'from-red-600 to-red-400',
-      safety_concern: 'from-orange-600 to-orange-400',
-      dispute: 'from-yellow-600 to-yellow-400',
-      harassment: 'from-purple-600 to-purple-400',
-      other: 'from-gray-600 to-gray-400',
+      emergency: 'bg-red-500 text-white',
+      safety_concern: 'bg-orange-500 text-white',
+      dispute: 'bg-yellow-500 text-black',
+      harassment: 'bg-purple-500 text-white',
+      other: 'bg-slate-500 text-white'
     }
-    return colors[type] || colors.other
+    
+    const labels: Record<string, string> = {
+      emergency: 'Emergency',
+      safety_concern: 'Safety Concern',
+      dispute: 'Dispute',
+      harassment: 'Harassment',
+      other: 'Other'
+    }
+    
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[type] || colors.other}`}>
+        {labels[type] || type}
+      </span>
+    )
   }
 
   const getStatusBadge = (status: string) => {
-    const badges: Record<string, { text: string; color: string }> = {
-      active: { text: 'Active', color: 'bg-red-100 text-red-700' },
-      resolved: { text: 'Resolved', color: 'bg-green-100 text-green-700' },
-      cancelled: { text: 'Cancelled', color: 'bg-gray-100 text-gray-700' },
+    switch (status) {
+      case 'active':
+        return (
+          <span className="flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-full text-xs font-medium animate-pulse">
+            <AlertTriangle className="h-3 w-3" />
+            Active - Needs Help
+          </span>
+        )
+      case 'acknowledged':
+        return (
+          <span className="flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 rounded-full text-xs font-medium">
+            <Clock className="h-3 w-3" />
+            You're Responding
+          </span>
+        )
+      case 'resolved':
+        return (
+          <span className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full text-xs font-medium">
+            <CheckCircle className="h-3 w-3" />
+            Resolved
+          </span>
+        )
+      case 'cancelled':
+        return (
+          <span className="px-2 py-1 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400 rounded-full text-xs font-medium">
+            Cancelled
+          </span>
+        )
+      default:
+        return (
+          <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs">
+            {status}
+          </span>
+        )
     }
-    return badges[status] || badges.active
+  }
+
+  const openNavigation = (lat: number, lng: number) => {
+    window.open(
+      `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
+      '_blank'
+    )
+  }
+
+  const callCustomer = (phone: string) => {
+    window.location.href = `tel:${phone}`
+  }
+
+  const messageCustomer = (phone: string) => {
+    window.open(`https://wa.me/91${phone}`, '_blank')
+  }
+
+  // Separate active and past alerts
+  const activeAlerts = alerts.filter(a => a.status === 'acknowledged' || a.status === 'active')
+  const pastAlerts = alerts.filter(a => a.status === 'resolved' || a.status === 'cancelled')
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <LoadingSpinner />
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 py-8 px-4">
-      <div className="mx-auto max-w-4xl space-y-6">
-        {/* Header */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-6">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
-            SOS & Safety Alerts
-          </h1>
-          <p className="text-gray-600 mt-1">Emergency assistance and safety reporting</p>
+    <div className="max-w-4xl mx-auto p-4 space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="p-3 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl">
+          <AlertTriangle className="h-7 w-7 text-white" />
         </div>
+        <div>
+          <h1 className="text-2xl font-bold">SOS Responses</h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm">
+            Customer emergencies you're responding to
+          </p>
+        </div>
+      </div>
 
-        {/* Emergency Button */}
-        <Card className="bg-white/80 backdrop-blur-sm border-white/50 shadow-lg">
-          <CardContent className="pt-6">
-            <div className="text-center space-y-4">
-              <div className="mx-auto h-24 w-24 rounded-full bg-gradient-to-br from-red-600 to-red-400 flex items-center justify-center animate-pulse">
-                <AlertTriangle className="h-12 w-12 text-white" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900">Emergency Assistance</h3>
-                <p className="text-sm text-gray-600 mt-2">
-                  In case of emergency, create an alert to notify support immediately
-                </p>
-              </div>
-              {!showForm ? (
-                <Button
-                  onClick={() => setShowForm(true)}
-                  size="lg"
-                  className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 gap-2"
-                >
-                  <AlertTriangle className="h-5 w-5" />
-                  Create SOS Alert
-                </Button>
-              ) : (
-                <div className="space-y-4 pt-4 border-t">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Alert Type</label>
-                    <select
-                      value={alertType}
-                      onChange={e => setAlertType(e.target.value)}
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    >
-                      <option value="emergency">Emergency</option>
-                      <option value="safety_concern">Safety Concern</option>
-                      <option value="dispute">Dispute</option>
-                      <option value="harassment">Harassment</option>
-                      <option value="other">Other</option>
-                    </select>
+      {/* Active Alerts */}
+      {activeAlerts.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <span className="h-2 w-2 bg-red-500 rounded-full animate-pulse"></span>
+            Active Responses ({activeAlerts.length})
+          </h2>
+          
+          {activeAlerts.map((alert) => (
+            <Card key={alert.id} className="border-red-300 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20">
+              <CardContent className="pt-6 space-y-4">
+                {/* Alert Header */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    {getAlertTypeBadge(alert.alert_type)}
+                    {getStatusBadge(alert.status)}
                   </div>
+                  <span className="text-xs text-slate-500">
+                    {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}
+                  </span>
+                </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Description</label>
-                    <textarea
-                      value={description}
-                      onChange={e => setDescription(e.target.value)}
-                      placeholder="Describe the situation..."
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
-                      rows={4}
-                    />
+                {/* Customer Info */}
+                <div className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg">
+                  <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <User className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                   </div>
-
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={handleCreateAlert}
-                      disabled={creating || !description.trim()}
-                      className="flex-1 bg-red-600 hover:bg-red-700 gap-2"
-                    >
-                      {creating ? (
-                        <>
-                          <LoadingSpinner size="sm" />
-                          Creating...
-                        </>
-                      ) : (
-                        <>
-                          <Phone className="h-4 w-4" />
-                          Submit Alert
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setShowForm(false)
-                        setDescription('')
-                      }}
-                      disabled={creating}
-                    >
-                      Cancel
-                    </Button>
+                  <div>
+                    <p className="font-semibold">{alert.profiles?.full_name || 'Customer'}</p>
+                    <p className="text-sm text-slate-500">Needs your help urgently</p>
                   </div>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Safety Features */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-white/80 backdrop-blur-sm border-white/50">
-            <CardContent className="pt-6 text-center">
-              <Phone className="h-10 w-10 mx-auto mb-3 text-blue-600" />
-              <h4 className="font-semibold text-gray-900 mb-1">24/7 Support</h4>
-              <p className="text-xs text-gray-600">Immediate assistance available</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/80 backdrop-blur-sm border-white/50">
-            <CardContent className="pt-6 text-center">
-              <MapPin className="h-10 w-10 mx-auto mb-3 text-green-600" />
-              <h4 className="font-semibold text-gray-900 mb-1">Location Tracking</h4>
-              <p className="text-xs text-gray-600">Share your location for safety</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/80 backdrop-blur-sm border-white/50">
-            <CardContent className="pt-6 text-center">
-              <Shield className="h-10 w-10 mx-auto mb-3 text-purple-600" />
-              <h4 className="font-semibold text-gray-900 mb-1">Incident Reporting</h4>
-              <p className="text-xs text-gray-600">Report safety concerns</p>
-            </CardContent>
-          </Card>
-        </div>
+                {/* Description */}
+                <div className="p-3 bg-white dark:bg-slate-800 rounded-lg">
+                  <p className="text-sm text-slate-500 mb-1">Emergency Description</p>
+                  <p className="text-slate-700 dark:text-slate-300">{alert.description}</p>
+                </div>
 
-        {/* Alert History */}
-        <Card className="bg-white/80 backdrop-blur-sm border-white/50 shadow-lg">
-          <CardHeader>
-            <CardTitle>Alert History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <SkeletonCard />
-            ) : alerts.length === 0 ? (
-              <div className="text-center py-8">
-                <Shield className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-600 font-medium">No alerts created</p>
-                <p className="text-sm text-gray-500 mt-2">Your safety alerts will appear here</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {alerts.map(alert => {
-                  const statusBadge = getStatusBadge(alert.status)
-
-                  return (
-                    <div
-                      key={alert.id}
-                      className="p-4 rounded-xl border bg-gradient-to-r from-white to-gray-50"
+                {/* Action Buttons */}
+                <div className="grid grid-cols-3 gap-2">
+                  {alert.profiles?.phone && (
+                    <>
+                      <Button
+                        onClick={() => callCustomer(alert.profiles!.phone!)}
+                        className="bg-green-600 hover:bg-green-700 gap-2"
+                      >
+                        <Phone className="h-4 w-4" />
+                        Call
+                      </Button>
+                      <Button
+                        onClick={() => messageCustomer(alert.profiles!.phone!)}
+                        variant="outline"
+                        className="gap-2 border-green-300 text-green-700 hover:bg-green-50"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                        WhatsApp
+                      </Button>
+                    </>
+                  )}
+                  {alert.latitude && alert.longitude && (
+                    <Button
+                      onClick={() => openNavigation(alert.latitude!, alert.longitude!)}
+                      variant="outline"
+                      className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50"
                     >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-start gap-3">
-                          <div className={`h-12 w-12 rounded-full bg-gradient-to-br ${getAlertColor(alert.alert_type)} flex items-center justify-center`}>
-                            <AlertTriangle className="h-6 w-6 text-white" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-semibold text-gray-900 capitalize">
-                                {alert.alert_type.replace('_', ' ')}
-                              </h4>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusBadge.color}`}>
-                                {statusBadge.text}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-600 mt-1">{alert.description}</p>
-                          </div>
-                        </div>
-                        {alert.status === 'active' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCancelAlert(alert.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 gap-2"
-                          >
-                            <XCircle className="h-4 w-4" />
-                            Cancel
-                          </Button>
-                        )}
-                      </div>
+                      <Navigation className="h-4 w-4" />
+                      Navigate
+                    </Button>
+                  )}
+                </div>
 
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {new Date(alert.created_at).toLocaleString()}
-                        </div>
-                        {alert.latitude && alert.longitude && (
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            Location shared
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+                {/* View Details Link */}
+                <Link href={`/helper/sos/${alert.id}`}>
+                  <Button variant="secondary" className="w-full">
+                    View Full Details
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Empty State for Active */}
+      {activeAlerts.length === 0 && (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <CheckCircle className="h-16 w-16 mx-auto text-green-300 dark:text-green-600 mb-4" />
+            <h3 className="text-lg font-medium text-slate-600 dark:text-slate-400 mb-2">
+              No Active SOS Responses
+            </h3>
+            <p className="text-slate-500 dark:text-slate-500 text-sm">
+              You're not currently responding to any emergencies
+            </p>
           </CardContent>
         </Card>
-      </div>
+      )}
+
+      {/* Past Alerts */}
+      {pastAlerts.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-slate-600 dark:text-slate-400">
+            Past Responses ({pastAlerts.length})
+          </h2>
+          
+          {pastAlerts.map((alert) => (
+            <Card key={alert.id} className="bg-slate-50 dark:bg-slate-900/50">
+              <CardContent className="pt-4 pb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                      <User className="h-5 w-5 text-slate-500" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{alert.profiles?.full_name || 'Customer'}</p>
+                      <p className="text-xs text-slate-500 capitalize">
+                        {alert.alert_type.replace('_', ' ')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    {getStatusBadge(alert.status)}
+                    <p className="text-xs text-slate-500 mt-1">
+                      {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
