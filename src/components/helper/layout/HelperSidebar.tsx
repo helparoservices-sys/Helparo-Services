@@ -19,7 +19,10 @@ import {
   Lock,
   DollarSign,
   X,
-  AlertTriangle
+  AlertTriangle,
+  Shield,
+  Info,
+  ScrollText
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -135,6 +138,25 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
     === END HIDDEN VIDEO CALLS === */
   ]
 
+  // Legal section items (no verification required, always accessible)
+  const legalItems = [
+    {
+      label: 'Privacy Policy',
+      icon: Shield,
+      href: '/legal/helper/privacy',
+    },
+    {
+      label: 'Terms & Conditions',
+      icon: ScrollText,
+      href: '/legal/helper/terms',
+    },
+    {
+      label: 'About',
+      icon: Info,
+      href: '/about',
+    },
+  ]
+
   const isActive = (href: string) => pathname === href
 
   // Render nav items
@@ -165,6 +187,41 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
             </div>
           )
         }
+
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={isMobile ? onMobileClose : undefined}
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+              active
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-50 dark:hover:bg-slate-800 hover:text-emerald-600 dark:hover:text-emerald-400'
+            }`}
+            title={collapsed && !isMobile ? item.label : ''}
+          >
+            <Icon className={`h-5 w-5 flex-shrink-0 ${active ? 'text-white' : ''}`} />
+            {(isMobile || !collapsed) && (
+              <span className="text-sm font-medium truncate">
+                {item.label}
+              </span>
+            )}
+          </Link>
+        )
+      })}
+
+      {/* Legal Section Divider */}
+      {(isMobile || !collapsed) && (
+        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+          <p className="px-4 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Legal</p>
+        </div>
+      )}
+      {collapsed && !isMobile && <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700" />}
+
+      {/* Legal Items */}
+      {legalItems.map((item) => {
+        const Icon = item.icon
+        const active = isActive(item.href)
 
         return (
           <Link

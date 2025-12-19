@@ -22,7 +22,11 @@ import {
   Video,
   Radio,
   X,
-  AlertTriangle
+  AlertTriangle,
+  Shield,
+  FileText,
+  Info,
+  IndianRupee
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -94,6 +98,15 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
         { icon: Video, label: 'Video Calls', href: '/customer/video-calls/history' },
         { icon: HeadphonesIcon, label: 'Support', href: '/customer/support' },
         { icon: Bell, label: 'Notifications', href: '/customer/notifications' },
+      ]
+    },
+    {
+      title: 'Legal',
+      items: [
+        { icon: IndianRupee, label: 'Pricing', href: '/pricing' },
+        { icon: Shield, label: 'Privacy Policy', href: '/legal/customer/privacy' },
+        { icon: FileText, label: 'Terms & Conditions', href: '/legal/customer/terms' },
+        { icon: Info, label: 'About', href: '/about' },
       ]
     }
   ]

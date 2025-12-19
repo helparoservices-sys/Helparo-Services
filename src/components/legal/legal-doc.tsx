@@ -90,7 +90,7 @@ export function LegalDoc({
       <header className="sticky top-0 z-50 border-b bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <Link href={backHref} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <Image 
                 src="/logo.svg" 
                 alt="Helparo" 
@@ -108,7 +108,7 @@ export function LegalDoc({
 
             <div className="flex items-center gap-3">
               <Link 
-                href="/"
+                href={backHref}
                 className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
               >
                 <Home className="h-4 w-4" />

@@ -79,7 +79,7 @@ export default async function HelperTermsPage() {
       contentMd={doc?.content_md ?? 'No terms available.'}
       version={doc?.version}
       updatedAt={doc?.updated_at}
-      backHref="/auth/login"
+      backHref="/helper/dashboard"
     />
   )
 }

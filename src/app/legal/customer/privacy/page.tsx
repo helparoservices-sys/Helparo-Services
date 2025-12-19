@@ -79,7 +79,7 @@ export default async function CustomerPrivacyPage() {
       contentMd={doc?.content_md ?? 'No privacy policy available.'}
       version={doc?.version}
       updatedAt={doc?.updated_at}
-      backHref="/auth/login"
+      backHref="/customer/dashboard"
     />
   )
 }
