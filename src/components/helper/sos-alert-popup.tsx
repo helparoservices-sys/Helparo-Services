@@ -218,11 +218,6 @@ export default function SOSAlertPopup() {
       // Check immediately on load
       await checkForSOSAlerts(user.id)
 
-      // Poll every 5 seconds as fallback (in case realtime fails)
-      pollingInterval = setInterval(() => {
-        checkForSOSAlerts(user.id)
-      }, 5000)
-
       // Subscribe to new SOS notifications via realtime
       channel = supabase
         .channel(`sos-notifications:${user.id}`)
@@ -269,7 +264,6 @@ export default function SOSAlertPopup() {
     setupSubscription()
 
     return () => {
-      if (pollingInterval) clearInterval(pollingInterval)
       if (channel) {
         supabase.removeChannel(channel)
       }

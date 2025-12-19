@@ -620,8 +620,7 @@ export default function JobTrackingPage() {
       .channel(`job-${requestId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `id=eq.${requestId}` }, () => loadJobDetails())
       .subscribe()
-    const interval = setInterval(loadJobDetails, 5000)
-    return () => { supabase.removeChannel(channel); clearInterval(interval) }
+    return () => { supabase.removeChannel(channel) }
   }, [requestId])
 
   async function loadJobDetails() {

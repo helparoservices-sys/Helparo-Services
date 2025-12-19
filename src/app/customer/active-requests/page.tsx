@@ -69,12 +69,8 @@ export default function ActiveRequestsPage() {
       }, () => loadActiveRequests())
       .subscribe()
 
-    // Poll every 10 seconds
-    const interval = setInterval(loadActiveRequests, 10000)
-
     return () => {
       supabase.removeChannel(channel)
-      clearInterval(interval)
     }
   }, [])
 

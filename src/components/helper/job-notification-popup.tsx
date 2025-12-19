@@ -644,10 +644,7 @@ export function useJobNotifications() {
     // Initial fetch
     getProfile()
     
-    // Also sync is_on_job status every 10 seconds to catch stuck states
-    const syncInterval = setInterval(getProfile, 10000)
-    
-    return () => clearInterval(syncInterval)
+    return () => {}
   }, [])
 
   // Keep on-job status in sync via realtime updates
@@ -678,35 +675,31 @@ export function useJobNotifications() {
     }
   }, [helperProfile])
 
-  // Poll for new notifications as backup (every 5 seconds)
+  // Initial one-time fetch for notifications (realtime handles live updates)
   useEffect(() => {
     if (!helperProfile) {
-      console.log('🔔 [POLL-SKIP] No helper profile yet')
+      console.log('🔔 [FETCH-SKIP] No helper profile yet')
       return
     }
     if (isOnJob) {
-      console.log('🔔 [POLL-SKIP] Helper is marked as on_job, skipping poll. Helper:', helperProfile.id)
+      console.log('🔔 [FETCH-SKIP] Helper is marked as on_job, skipping fetch. Helper:', helperProfile.id)
       return
     }
 
-    console.log('🔔 Starting polling fallback for helper:', helperProfile.id, 'isOnJob:', isOnJob)
+    console.log('🔔 Single fetch for helper notifications (realtime handles updates):', helperProfile.id, 'isOnJob:', isOnJob)
 
-    const checkForNewNotifications = async () => {
+    const fetchOnce = async () => {
       try {
         const supabase = createClient()
-        
-        // First check auth status
         const { data: { user } } = await supabase.auth.getUser()
-        console.log('🔔 [POLL] Auth check - user:', user?.id || 'NOT AUTHENTICATED')
-        
+        console.log('🔔 [FETCH] Auth check - user:', user?.id || 'NOT AUTHENTICATED')
+
         if (!user) {
-          console.log('🔔 [POLL] Skipping poll - not authenticated')
+          console.log('🔔 [FETCH] Skipping - not authenticated')
           return
         }
-        
-        console.log('🔔 [POLL] Querying broadcast_notifications for helper_id:', helperProfile.id, '| Current notification:', notificationRef.current?.id || 'none', '| Seen IDs count:', seenNotificationIds.current.size)
-        
-        const { data: rawData, error, count } = await supabase
+
+        const { data: rawData, error } = await supabase
           .from('broadcast_notifications')
           .select(`
             *,
@@ -726,161 +719,97 @@ export function useJobNotifications() {
             )
           `, { count: 'exact' })
           .eq('helper_id', helperProfile.id)
-          .in('status', ['sent', 'pending']) // Match 'sent' status from broadcast API
+          .in('status', ['sent', 'pending'])
           .order('sent_at', { ascending: false })
           .limit(1)
           .single()
 
-        if (rawData) {
-          const typedData = rawData as { id: string; request_id: string; sent_at: string; service_request: { status?: string } | null }
-          const key = `${typedData.id}_${typedData.sent_at}`
-          console.log('🔔 [POLL] Query result - Found notification ID:', typedData.id, '| Request:', typedData.request_id, '| Key:', key, '| Already seen:', seenNotificationIds.current.has(key), '| Service request status:', typedData.service_request?.status || 'unknown')
-        } else {
-          console.log('🔔 [POLL] Query result - No notification found | error:', error?.code || 'none', error?.message || '')
-        }
-
         if (error && error.code !== 'PGRST116') {
-          console.log('🔔 Poll check error:', error.message)
+          console.log('🔔 Fetch error:', error.message)
           return
         }
-        
-        // Type assertion for the query result
+
+        if (!rawData) {
+          console.log('🔔 [FETCH] No pending notifications')
+          return
+        }
+
         const data = rawData as {
           id: string
           request_id: string
           distance_km: string
           sent_at: string
           service_request: Record<string, unknown> | null
-        } | null
-        
+        }
+
+        const notificationKey = `${data.id}_${data.sent_at}`
         const currentNotification = notificationRef.current
+        if (currentNotification || seenNotificationIds.current.has(notificationKey)) return
 
-        // Use combination of id and sent_at to track seen notifications (allows re-broadcasts to show)
-        const notificationKey = data ? `${data.id}_${data.sent_at}` : ''
-        
-        // Skip if already showing a notification or already seen this exact notification version
-        if (data && !currentNotification && !seenNotificationIds.current.has(notificationKey)) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const req = data.service_request as Record<string, any>
-          if (!req) {
-            console.log('🔔 [POLL] No service request data for notification:', data.id, '- This may be an RLS issue. Check /api/debug/my-notifications')
-            // Don't mark as seen - RLS might resolve on next poll
-            return
-          }
-          
-          // Skip if job is already cancelled or assigned
-          const jobStatus = req.status || ''
-          if (jobStatus === 'cancelled' || jobStatus === 'assigned' || jobStatus === 'completed') {
-            console.log('🔔 [POLL] Skipping notification - job status:', jobStatus)
-            seenNotificationIds.current.add(notificationKey)
-            return
-          }
+        const req = data.service_request as Record<string, any> | null
+        if (!req) return
 
+        const jobStatus = req.status || ''
+        if (['cancelled', 'assigned', 'completed'].includes(jobStatus)) {
           seenNotificationIds.current.add(notificationKey)
-          console.log('🔔 [POLL] Found new notification:', data.id, 'for request:', data.request_id, 'key:', notificationKey)
-          
-          const serviceDetails = req.service_type_details || {}
-          let expectedTime = serviceDetails.preferred_time || ''
-          if (expectedTime === 'asap') expectedTime = 'As soon as possible'
-          else if (expectedTime === 'today') expectedTime = 'Today'
-          else if (expectedTime === 'tomorrow') expectedTime = 'Tomorrow'
-          else if (expectedTime === 'this_week') expectedTime = 'This week'
-          
-          const images = serviceDetails.images || req.images || []
-          const videos = serviceDetails.videos || []
-          
-          setNotification({
-            id: data.id,
-            request_id: data.request_id,
-            customer_name: req.customer?.full_name || 'Customer',
-            customer_phone: req.customer?.phone || undefined,
-            category: req.category?.name || 'Service',
-            description: req.description || req.title,
-            address: req.service_address || req.address_line1 || 'Address not provided',
-            estimated_price: req.estimated_price || 0,
-            urgency: req.urgency_level || 'normal',
-            distance_km: parseFloat(data.distance_km) || 0,
-            expires_in: 30,
-            sent_at: data.sent_at,
-            photos: images,
-            videos: videos,
-            expected_time: expectedTime || undefined,
-            estimated_duration: serviceDetails.estimated_duration,
-            confidence: serviceDetails.confidence,
-            helper_brings: serviceDetails.helper_brings || [],
-            customer_provides: serviceDetails.customer_provides || [],
-            work_overview: serviceDetails.work_overview || '',
-            materials_needed: serviceDetails.materials_needed || []
-          })
+          return
+        }
 
-          // Prepare video URLs
-          try {
-            const prepared: string[] = await Promise.all(videos.map(async (v: string) => {
-              if (v.startsWith('data:')) {
-                const r = await fetch(v)
-                const b = await r.blob()
-                return URL.createObjectURL(b)
-              }
-              return v
-            }))
-            setVideoUrls(prepared)
-          } catch (err) {
-            console.error('Failed to prepare notification videos', err)
-          }
-          // Sound is now handled by the continuous sound loop useEffect
+        seenNotificationIds.current.add(notificationKey)
+
+        const serviceDetails = req.service_type_details || {}
+        let expectedTime = serviceDetails.preferred_time || ''
+        if (expectedTime === 'asap') expectedTime = 'As soon as possible'
+        else if (expectedTime === 'today') expectedTime = 'Today'
+        else if (expectedTime === 'tomorrow') expectedTime = 'Tomorrow'
+        else if (expectedTime === 'this_week') expectedTime = 'This week'
+
+        const images = serviceDetails.images || req.images || []
+        const videos = serviceDetails.videos || []
+
+        setNotification({
+          id: data.id,
+          request_id: data.request_id,
+          customer_name: req.customer?.full_name || 'Customer',
+          customer_phone: req.customer?.phone || undefined,
+          category: req.category?.name || 'Service',
+          description: req.description || req.title,
+          address: req.service_address || req.address_line1 || 'Address not provided',
+          estimated_price: req.estimated_price || 0,
+          urgency: req.urgency_level || 'normal',
+          distance_km: parseFloat(data.distance_km) || 0,
+          expires_in: 30,
+          sent_at: data.sent_at,
+          photos: images,
+          videos: videos,
+          expected_time: expectedTime || undefined,
+          estimated_duration: serviceDetails.estimated_duration,
+          confidence: serviceDetails.confidence,
+          helper_brings: serviceDetails.helper_brings || [],
+          customer_provides: serviceDetails.customer_provides || [],
+          work_overview: serviceDetails.work_overview || '',
+          materials_needed: serviceDetails.materials_needed || []
+        })
+
+        try {
+          const prepared: string[] = await Promise.all(videos.map(async (v: string) => {
+            if (v.startsWith('data:')) {
+              const r = await fetch(v)
+              const b = await r.blob()
+              return URL.createObjectURL(b)
+            }
+            return v
+          }))
+          setVideoUrls(prepared)
+        } catch (err) {
+          console.error('Failed to prepare notification videos', err)
         }
       } catch (err) {
-        console.error('🔔 Poll error:', err)
+        console.error('🔔 Fetch error:', err)
       }
     }
 
-    // Also poll to check if currently shown job was taken by someone else
-    const checkIfJobTaken = async () => {
-      const currentNotification = notificationRef.current
-      if (!currentNotification) return
-      
-      try {
-        const supabase = createClient()
-        const { data: rawRequest } = await supabase
-          .from('service_requests')
-          .select('status, assigned_helper_id')
-          .eq('id', currentNotification.request_id)
-          .single()
-        
-        const request = rawRequest as { status: string; assigned_helper_id: string | null } | null
-        
-        if (request) {
-          const currentUserId = authUserIdRef.current
-          // Job was assigned to someone else
-          if (request.status === 'assigned' && request.assigned_helper_id && request.assigned_helper_id !== currentUserId) {
-            console.log('🔔 [POLL] Job taken by another helper, dismissing')
-            toast.error('Ooops, you are late — better luck next time! 😅')
-            setNotification(null)
-          }
-          // Job was cancelled
-          if (request.status === 'cancelled') {
-            console.log('🔔 [POLL] Job cancelled, dismissing')
-            toast.info('This job has been cancelled by the customer')
-            setNotification(null)
-          }
-        }
-      } catch (err) {
-        console.error('🔔 Error checking job status:', err)
-      }
-    }
-
-    // Initial check
-    checkForNewNotifications()
-
-    // Poll every 1.5 seconds for new notifications and job status (faster response)
-    const pollInterval = setInterval(() => {
-      checkForNewNotifications()
-      checkIfJobTaken()
-    }, 1500)
-
-    return () => {
-      clearInterval(pollInterval)
-    }
+    fetchOnce()
   }, [helperProfile, isOnJob])
 
   useEffect(() => {
