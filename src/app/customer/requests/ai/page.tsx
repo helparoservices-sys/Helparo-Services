@@ -506,6 +506,7 @@ export default function AIRequestPage() {
       })
       
       setStep(2) // Move to review step
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (err) {
       console.error('AI analysis error:', err)
       const category = detectCategory(formData.description)
@@ -524,6 +525,7 @@ export default function AIRequestPage() {
         workOverview: categoryDetails.workOverview,
       })
       setStep(2)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } finally {
       setAnalyzing(false)
     }
@@ -588,6 +590,7 @@ export default function AIRequestPage() {
       }
       
       setStep(3) // Done step
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       
       setTimeout(() => {
         router.push(`/customer/requests/${broadcastData.requestId}/track`)
@@ -616,7 +619,14 @@ export default function AIRequestPage() {
       <div className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-white/20 shadow-lg shadow-black/5">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-4">
           <button 
-            onClick={() => step > 1 ? setStep(step - 1) : router.back()}
+            onClick={() => {
+              if (step > 1) {
+                setStep(step - 1)
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              } else {
+                router.back()
+              }
+            }}
             className="p-2.5 hover:bg-gray-100 rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95"
           >
             <ArrowLeft className="w-5 h-5 text-gray-700" />

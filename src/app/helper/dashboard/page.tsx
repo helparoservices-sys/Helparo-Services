@@ -227,6 +227,30 @@ export default function HelperDashboard() {
     }
   }, [cachedUserId])
   
+  // Re-fetch active job when page becomes visible (user navigates back to tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('📱 Page became visible, refreshing active job')
+        loadActiveJob()
+      }
+    }
+    
+    // Also re-fetch when window gains focus (user clicks on tab)
+    const handleFocus = () => {
+      console.log('📱 Window focused, refreshing active job')
+      loadActiveJob()
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [])
+  
   // Load full job details when activeJob changes
   useEffect(() => {
     if (activeJob?.id) {
@@ -353,6 +377,27 @@ export default function HelperDashboard() {
       })
       .subscribe()
     
+    // Subscribe to helper_profiles to catch when is_on_job changes
+    // This fires when the helper accepts a job (is_on_job set to true)
+    const helperProfileChannel = supabase
+      .channel('dashboard-helper-profile')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'helper_profiles',
+        filter: `user_id=eq.${userId}`
+      }, (payload) => {
+        console.log('👤 Helper profile update received:', payload)
+        const newData = payload.new as { is_on_job?: boolean }
+        // If is_on_job changed to true, we just accepted a job - refresh active job
+        if (newData?.is_on_job === true) {
+          console.log('🎯 is_on_job changed to true, refreshing active job')
+          loadActiveJob()
+          loadDashboard()
+        }
+      })
+      .subscribe()
+    
     // Also subscribe to notifications table to catch when we accept a new job
     // The accept API creates a notification for the customer, but we can also use this channel
     // to know something happened with our job assignments
@@ -371,6 +416,7 @@ export default function HelperDashboard() {
 
     return () => { 
       supabase.removeChannel(assignedChannel)
+      supabase.removeChannel(helperProfileChannel)
       supabase.removeChannel(notificationsChannel)
     }
   }, [userId])

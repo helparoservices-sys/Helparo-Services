@@ -157,10 +157,24 @@ export function SimpleAddressInput({
         }
       },
       (error) => {
-        console.error('Geolocation error:', error)
-        alert('Unable to get your location. Please enable location services.')
+        console.error('Geolocation error:', error.code, error.message)
         setGettingLocation(false)
-      }
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            alert('Location access was denied. Please enable location permissions in your browser settings and try again.')
+            break
+          case error.POSITION_UNAVAILABLE:
+            alert('Location information is unavailable. Please try again or enter your address manually.')
+            break
+          case error.TIMEOUT:
+            alert('Location request timed out. Please check your connection and try again.')
+            break
+          default:
+            alert('Unable to get your location. Please try again or enter your address manually.')
+        }
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
     )
   }
 

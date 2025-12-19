@@ -305,7 +305,7 @@ export default function CustomerDashboard() {
                   </div>
                   <div className="min-w-0">
                     <h3 className="text-xl sm:text-2xl lg:text-3xl font-black mb-1">Post a Request</h3>
-                    <p className="text-orange-100 font-medium text-sm sm:text-base">Name your budget, helpers bid</p>
+                    <p className="text-orange-100 font-medium text-sm sm:text-base">Your budget, your rules</p>
                   </div>
                 </div>
                 
@@ -315,31 +315,31 @@ export default function CustomerDashboard() {
                     <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
                       <Target className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     </div>
-                    <span className="truncate">Your budget</span>
+                    <span className="truncate">You decide the price</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90">
                     <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
                       <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     </div>
-                    <span className="truncate">Multiple offers</span>
+                    <span className="truncate">We find the right pro</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90">
                     <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
                       <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     </div>
-                    <span className="truncate">Compare helpers</span>
+                    <span className="truncate">Zero hidden fees</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90">
                     <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
                       <Heart className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     </div>
-                    <span className="truncate">Fair pricing</span>
+                    <span className="truncate">100% in your control</span>
                   </div>
                 </div>
                 
                 {/* CTA */}
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-orange-100 text-xs sm:text-sm hidden sm:block max-w-[200px]">Set your price and let helpers compete</p>
+                  <p className="text-orange-100 text-xs sm:text-sm hidden sm:block max-w-[200px]">Name your price, we handle the rest</p>
                   <div className="bg-white text-orange-700 font-bold px-4 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm flex items-center gap-2 shadow-xl group-hover:gap-3 transition-all whitespace-nowrap">
                     Post Now <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
                   </div>

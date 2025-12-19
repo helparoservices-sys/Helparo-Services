@@ -2,6 +2,7 @@
 
 import { useState, ReactNode, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
+import { Toaster } from 'sonner'
 import { RoleGuard } from '@/components/auth/RoleGuard'
 import CustomerSidebar from './CustomerSidebar'
 import CustomerTopbar from './CustomerTopbar'
@@ -36,6 +37,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
   return (
     <RoleGuard allowedRole="customer">
       <ToastProvider>
+        <Toaster position="top-right" richColors closeButton />
         <div className="min-h-screen bg-gray-50">
           {/* Location Permission Modal */}
           <LocationPermissionModal />

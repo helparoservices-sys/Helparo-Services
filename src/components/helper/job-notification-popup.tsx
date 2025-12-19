@@ -86,72 +86,58 @@ export function JobNotificationPopup({
   const urgency = urgencyConfig[notification.urgency as keyof typeof urgencyConfig] || urgencyConfig.normal
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
+    <div className="fixed inset-0 z-[100] flex flex-col bg-white">
+      {/* Header - Fixed at top */}
+      <div className="bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-4 flex-shrink-0">
+        <div className="flex items-center justify-between max-w-2xl mx-auto">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center animate-pulse">
+              <Zap className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-white font-bold text-lg">New Job Alert!</h3>
+              <p className="text-emerald-100 text-sm">Review and decide</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      {/* Popup Card */}
-      <div className="relative w-full max-w-md mx-4 mb-4 sm:mb-0 animate-slide-up">
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          {/* Header - Alert Style */}
-          <div className="bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center animate-pulse">
-                  <Zap className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-white font-bold text-lg">New Job Alert!</h3>
-                  <p className="text-emerald-100 text-sm">Tap to accept this job</p>
-                </div>
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto p-5 space-y-4">
+          {/* Customer & Category */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                <User className="h-5 w-5 text-gray-600" />
               </div>
-              <button 
-                onClick={onClose}
-                className="p-2 hover:bg-white/20 rounded-full transition-colors"
-              >
-                <X className="h-5 w-5 text-white" />
-              </button>
+              <div>
+                <p className="font-semibold text-gray-900">{notification.customer_name}</p>
+                <p className="text-sm text-gray-500">needs your help</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Call Customer Button */}
+              {notification.customer_phone && (
+                <a
+                  href={`tel:${notification.customer_phone}`}
+                  className="p-2 bg-blue-100 hover:bg-blue-200 rounded-full transition-colors group"
+                  title="Call customer to clarify doubts"
+                >
+                  <Phone className="h-5 w-5 text-blue-600 group-hover:animate-pulse" />
+                </a>
+              )}
+              <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${urgency.color}`}>
+                {urgency.text}
+              </span>
             </div>
           </div>
 
-          {/* Content */}
-          <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
-            {/* Customer & Category */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                  <User className="h-5 w-5 text-gray-600" />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900">{notification.customer_name}</p>
-                  <p className="text-sm text-gray-500">needs your help</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {/* Call Customer Button */}
-                {notification.customer_phone && (
-                  <a
-                    href={`tel:${notification.customer_phone}`}
-                    className="p-2 bg-blue-100 hover:bg-blue-200 rounded-full transition-colors group"
-                    title="Call customer to clarify doubts"
-                  >
-                    <Phone className="h-5 w-5 text-blue-600 group-hover:animate-pulse" />
-                  </a>
-                )}
-                <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${urgency.color}`}>
-                  {urgency.text}
-                </span>
-              </div>
-            </div>
-
-            {/* Service Type & Full Description */}
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-              <p className="text-sm text-emerald-600 font-medium mb-2">{notification.category}</p>
-              <p className="text-gray-800 font-medium whitespace-pre-wrap">{notification.description}</p>
-            </div>
+          {/* Service Type & Full Description */}
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+            <p className="text-sm text-emerald-600 font-medium mb-2">{notification.category}</p>
+            <p className="text-gray-800 font-medium whitespace-pre-wrap">{notification.description}</p>
+          </div>
 
             {/* Customer Photos */}
             {notification.photos && notification.photos.length > 0 && (
@@ -463,53 +449,38 @@ export function JobNotificationPopup({
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 p-5 pt-0">
-            <Button
-              variant="outline"
-              onClick={() => onDecline(notification.request_id)}
-              className="flex-1 h-14 text-base font-semibold border-2 border-gray-200 hover:bg-gray-100"
-              disabled={accepting}
-            >
-              Decline
-            </Button>
-            <Button
-              onClick={handleAccept}
-              disabled={accepting}
-              className="flex-[2] h-14 text-base font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-200"
-            >
-              {accepting ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Accepting...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Zap className="h-5 w-5" />
-                  Accept Job
-                </span>
-              )}
-            </Button>
-          </div>
+      {/* Fixed Action Buttons at Bottom */}
+      <div className="flex-shrink-0 bg-white border-t border-gray-200 p-5 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+        <div className="flex gap-3 max-w-2xl mx-auto">
+          <Button
+            variant="outline"
+            onClick={() => onDecline(notification.request_id)}
+            className="flex-1 h-14 text-base font-semibold border-2 border-gray-200 hover:bg-gray-100"
+            disabled={accepting}
+          >
+            Decline
+          </Button>
+          <Button
+            onClick={handleAccept}
+            disabled={accepting}
+            className="flex-[2] h-14 text-base font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-200"
+          >
+            {accepting ? (
+              <span className="flex items-center gap-2">
+                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Accepting...
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                Accept Job
+              </span>
+            )}
+          </Button>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes slide-up {
-          from {
-            transform: translateY(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-        .animate-slide-up {
-          animation: slide-up 0.3s ease-out forwards;
-        }
-      `}</style>
     </div>
   )
 }
@@ -523,6 +494,7 @@ export function useJobNotifications() {
   const [isOnJob, setIsOnJob] = useState(false)
   const [videoUrls, setVideoUrls] = useState<string[]>([])
   const seenNotificationIds = useRef<Set<string>>(new Set())
+  const lastSeenClearTime = useRef<number>(Date.now())
   const soundIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   
@@ -535,6 +507,22 @@ export function useJobNotifications() {
   useEffect(() => { notificationRef.current = notification }, [notification])
   useEffect(() => { authUserIdRef.current = authUserId }, [authUserId])
   useEffect(() => { isOnJobRef.current = isOnJob }, [isOnJob])
+  
+  // Clear seen notification IDs every 5 minutes to allow re-displays
+  // This helps with edge cases where notifications might need to be shown again
+  useEffect(() => {
+    const clearSeenInterval = setInterval(() => {
+      const now = Date.now()
+      const fiveMinutes = 5 * 60 * 1000
+      if (now - lastSeenClearTime.current > fiveMinutes) {
+        console.log('🔔 Clearing seen notification IDs (5 min interval)')
+        seenNotificationIds.current.clear()
+        lastSeenClearTime.current = now
+      }
+    }, 60000) // Check every minute
+    
+    return () => clearInterval(clearSeenInterval)
+  }, [])
 
   // Function to play alert sound once
   const playAlertSoundOnce = useCallback(() => {
@@ -692,9 +680,16 @@ export function useJobNotifications() {
 
   // Poll for new notifications as backup (every 5 seconds)
   useEffect(() => {
-    if (!helperProfile || isOnJob) return
+    if (!helperProfile) {
+      console.log('🔔 [POLL-SKIP] No helper profile yet')
+      return
+    }
+    if (isOnJob) {
+      console.log('🔔 [POLL-SKIP] Helper is marked as on_job, skipping poll. Helper:', helperProfile.id)
+      return
+    }
 
-    console.log('🔔 Starting polling fallback for helper:', helperProfile.id)
+    console.log('🔔 Starting polling fallback for helper:', helperProfile.id, 'isOnJob:', isOnJob)
 
     const checkForNewNotifications = async () => {
       try {
@@ -709,7 +704,7 @@ export function useJobNotifications() {
           return
         }
         
-        console.log('🔔 [POLL] Querying broadcast_notifications for helper_id:', helperProfile.id)
+        console.log('🔔 [POLL] Querying broadcast_notifications for helper_id:', helperProfile.id, '| Current notification:', notificationRef.current?.id || 'none', '| Seen IDs count:', seenNotificationIds.current.size)
         
         const { data: rawData, error, count } = await supabase
           .from('broadcast_notifications')
@@ -736,7 +731,13 @@ export function useJobNotifications() {
           .limit(1)
           .single()
 
-        console.log('🔔 [POLL] Query result - data:', rawData ? 'found' : 'null', '| error:', error?.code || 'none', error?.message || '')
+        if (rawData) {
+          const typedData = rawData as { id: string; request_id: string; sent_at: string; service_request: { status?: string } | null }
+          const key = `${typedData.id}_${typedData.sent_at}`
+          console.log('🔔 [POLL] Query result - Found notification ID:', typedData.id, '| Request:', typedData.request_id, '| Key:', key, '| Already seen:', seenNotificationIds.current.has(key), '| Service request status:', typedData.service_request?.status || 'unknown')
+        } else {
+          console.log('🔔 [POLL] Query result - No notification found | error:', error?.code || 'none', error?.message || '')
+        }
 
         if (error && error.code !== 'PGRST116') {
           console.log('🔔 Poll check error:', error.message)
@@ -754,12 +755,16 @@ export function useJobNotifications() {
         
         const currentNotification = notificationRef.current
 
-        // Skip if already showing a notification or already seen this one
-        if (data && !currentNotification && !seenNotificationIds.current.has(data.id)) {
+        // Use combination of id and sent_at to track seen notifications (allows re-broadcasts to show)
+        const notificationKey = data ? `${data.id}_${data.sent_at}` : ''
+        
+        // Skip if already showing a notification or already seen this exact notification version
+        if (data && !currentNotification && !seenNotificationIds.current.has(notificationKey)) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const req = data.service_request as Record<string, any>
           if (!req) {
-            console.log('🔔 [POLL] No service request data for notification:', data.id)
+            console.log('🔔 [POLL] No service request data for notification:', data.id, '- This may be an RLS issue. Check /api/debug/my-notifications')
+            // Don't mark as seen - RLS might resolve on next poll
             return
           }
           
@@ -767,12 +772,12 @@ export function useJobNotifications() {
           const jobStatus = req.status || ''
           if (jobStatus === 'cancelled' || jobStatus === 'assigned' || jobStatus === 'completed') {
             console.log('🔔 [POLL] Skipping notification - job status:', jobStatus)
-            seenNotificationIds.current.add(data.id)
+            seenNotificationIds.current.add(notificationKey)
             return
           }
 
-          seenNotificationIds.current.add(data.id)
-          console.log('🔔 [POLL] Found new notification:', data.id, 'for request:', data.request_id)
+          seenNotificationIds.current.add(notificationKey)
+          console.log('🔔 [POLL] Found new notification:', data.id, 'for request:', data.request_id, 'key:', notificationKey)
           
           const serviceDetails = req.service_type_details || {}
           let expectedTime = serviceDetails.preferred_time || ''
@@ -905,10 +910,11 @@ export function useJobNotifications() {
           filter: `helper_id=eq.${helperProfile.id}`
         },
         async (payload) => {
-          console.log('🔔 New job notification received:', payload)
+          console.log('🔔 [REALTIME] New job notification received via realtime:', payload)
+          console.log('🔔 [REALTIME] Notification ID:', (payload.new as any)?.id, 'Request ID:', (payload.new as any)?.request_id)
 
           if (isOnJobRef.current) {
-            console.log('🔕 Ignoring notification (helper is on a job)')
+            console.log('🔕 [REALTIME] Ignoring notification (helper is on a job)')
             return
           }
           
@@ -1069,6 +1075,15 @@ export function useJobNotifications() {
           const currentNotification = notificationRef.current
           const currentUserId = authUserIdRef.current
           
+          // If job is re-broadcast (status back to open with broadcasting), clear seen IDs for this request
+          // so the helper can see the new notification
+          if (newData.status === 'open' && newData.broadcast_status === 'broadcasting') {
+            console.log('🔔 Job re-broadcast detected, clearing seen notification IDs')
+            // Clear all seen IDs to allow re-broadcast notifications to show
+            // This is safe because new notifications have new IDs anyway
+            seenNotificationIds.current.clear()
+          }
+          
           // Check if this is the currently displayed notification being cancelled
           if (currentNotification && currentNotification.request_id === newData.id) {
             if (newData.status === 'cancelled') {
@@ -1165,8 +1180,9 @@ export function useJobNotifications() {
       // Helper is now on a job; suppress future notifications until cleared
       setIsOnJob(true)
       
-      // Redirect to dashboard where active job card is shown
-      router.push('/helper/dashboard')
+      // Redirect to the specific job page instead of dashboard
+      // This ensures the helper sees their active job immediately
+      router.push(`/helper/jobs/${requestId}`)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to accept job'
       toast.error(message)

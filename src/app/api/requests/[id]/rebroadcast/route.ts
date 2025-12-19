@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // Calculate distance between two coordinates (Haversine formula)
 function calculateDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -70,6 +71,7 @@ export async function POST(
   try {
     const { id: requestId } = await params
     const supabase = await createClient()
+    const adminSupabase = createAdminClient() // Use admin client to bypass RLS
     
     // Get the service request
     const { data: serviceRequestData, error: fetchError } = await supabase
@@ -128,8 +130,7 @@ export async function POST(
     const categorySlug = category?.slug || ''
     const categoryParentId = category?.parent_id || null
 
-    // Reset the service request to broadcasting state
-    const supabase2 = await createClient() // Fresh client to avoid type inference issues
+    // Reset the service request to broadcasting state - use admin client to bypass RLS
     const updatePayload = {
       status: 'open',
       broadcast_status: 'broadcasting',
@@ -140,7 +141,7 @@ export async function POST(
       updated_at: new Date().toISOString()
     }
     
-    const updateResult = await supabase2
+    const updateResult = await adminSupabase
       .from('service_requests')
       .update(updatePayload)
       .eq('id', requestId)
@@ -150,21 +151,21 @@ export async function POST(
       return NextResponse.json({ error: 'Failed to reset job status' }, { status: 500 })
     }
 
-    // Delete old broadcast notifications for this request
-    await supabase2
+    // Delete old broadcast notifications for this request - use admin client
+    const deleteResult = await adminSupabase
       .from('broadcast_notifications')
       .delete()
       .eq('request_id', requestId)
-
-    console.log('✅ Cleared old broadcast notifications')
+    
+    console.log('✅ Cleared old broadcast notifications, result:', deleteResult.error ? deleteResult.error.message : 'success')
 
     // Find relevant helpers (same logic as original broadcast)
     const serviceLat = serviceRequest.service_location_lat
     const serviceLng = serviceRequest.service_location_lng
     const BROADCAST_RADIUS_KM = 25
 
-    // Get all approved, online helpers who are NOT on a job
-    const { data: relevantHelpersData, error: helpersError } = await supabase
+    // Get all approved, online helpers who are NOT on a job - use admin client
+    const { data: relevantHelpersData, error: helpersError } = await adminSupabase
       .from('helper_profiles')
       .select(`
         id,
@@ -190,6 +191,12 @@ export async function POST(
     const relevantHelpers = (relevantHelpersData || []) as unknown as HelperProfile[]
 
     console.log(`👥 Found ${relevantHelpers.length} potential helpers`)
+    
+    // Log each helper's details for debugging
+    relevantHelpers.forEach((h, idx) => {
+      const name = Array.isArray(h.profiles) ? h.profiles[0]?.full_name : h.profiles?.full_name
+      console.log(`   Helper ${idx + 1}: ${name || h.id} | is_online: ${h.is_online} | is_available: ${h.is_available_now} | is_on_job: ${h.is_on_job}`)
+    })
 
     // Filter helpers by distance and category
     let filteredHelpers = relevantHelpers.filter(helper => {
@@ -262,6 +269,8 @@ export async function POST(
     if (filteredHelpers.length > 0) {
       for (const helper of filteredHelpers) {
         const distanceKm = helper.distance_km || 0
+        const helperName = Array.isArray(helper.profiles) ? helper.profiles[0]?.full_name : helper.profiles?.full_name
+        console.log(`   📨 Creating notification for helper: ${helperName || helper.id} (helper_id: ${helper.id})`)
 
         // Create broadcast_notifications entry for real-time popup
         broadcastNotifications.push({
@@ -293,22 +302,28 @@ export async function POST(
         })
       }
 
-      // Insert broadcast notifications (for real-time)
+      // Insert broadcast notifications (for real-time) - use admin client to bypass RLS
       if (broadcastNotifications.length > 0) {
-        const { error: broadcastError } = await supabase
+        console.log('📝 Attempting to insert notifications:', JSON.stringify(broadcastNotifications, null, 2))
+        
+        // Then insert fresh ones using admin client
+        const { data: insertedData, error: broadcastError } = await adminSupabase
           .from('broadcast_notifications')
           .insert(broadcastNotifications as any)
+          .select()
 
         if (broadcastError) {
-          console.error('Error creating broadcast notifications:', broadcastError)
+          console.error('❌ Error creating broadcast notifications:', broadcastError)
         } else {
-          console.log(`✅ Created ${broadcastNotifications.length} broadcast notifications`)
+          console.log(`✅ Created ${insertedData?.length || 0} broadcast notifications`)
         }
+      } else {
+        console.log('⚠️ No broadcast notifications to create - filteredHelpers might be empty')
       }
 
-      // Insert regular notifications (for push)
+      // Insert regular notifications (for push) - use admin client
       if (notifications.length > 0) {
-        const { error: notifError } = await supabase
+        const { error: notifError } = await adminSupabase
           .from('notifications')
           .insert(notifications as any)
 
@@ -319,7 +334,7 @@ export async function POST(
     }
 
     // Notify customer that job is being re-broadcasted
-    await supabase
+    await adminSupabase
       .from('notifications')
       .insert({
         user_id: serviceRequest.customer_id,
