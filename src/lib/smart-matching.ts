@@ -42,8 +42,13 @@ interface HelperRecord {
   user_id: string
   full_name?: string
   profile_image_url?: string
-  latitude?: number
-  longitude?: number
+  // NOTE: Use the helper's predefined service location (set during onboarding) for matching.
+  // Live GPS can be stale or unavailable; it is only for post-acceptance tracking.
+  service_location_lat?: number
+  service_location_lng?: number
+  service_radius_km?: number
+  latitude?: number // legacy/live location - do NOT use for matching
+  longitude?: number // legacy/live location - do NOT use for matching
   is_online?: boolean
   completed_jobs?: number
   avg_response_time_minutes?: number
@@ -82,12 +87,33 @@ export async function findMatchingHelpers(
       return []
     }
 
-    // 2. Score each helper
+    const RADIUS_KM = 15
+
+    // 2. Filter by predefined service location radius and score each helper
     const scoredHelpers = await Promise.all(
-      helpers.map(async (helper: HelperRecord) => {
-        const score = await calculateMatchScore(helper, criteria)
-        return score
-      })
+      helpers
+        .filter((helper: HelperRecord) => {
+          const baseLat = helper.service_location_lat ?? null
+          const baseLng = helper.service_location_lng ?? null
+
+          // Skip helpers without a configured service location; live GPS is not reliable for matching
+          if (baseLat === null || baseLng === null || Number.isNaN(baseLat) || Number.isNaN(baseLng)) {
+            return false
+          }
+
+          const distance = calculateDistance(
+            criteria.location,
+            { lat: baseLat, lng: baseLng }
+          )
+
+          // Enforce radius (default 15 km, or helper-specific radius if set)
+          const radius = helper.service_radius_km ?? RADIUS_KM
+          return distance <= radius
+        })
+        .map(async (helper: HelperRecord) => {
+          const score = await calculateMatchScore(helper, criteria)
+          return score
+        })
     )
 
     // 3. Sort by match score (highest first)
@@ -121,9 +147,11 @@ async function calculateMatchScore(
   const matchReasons: string[] = []
 
   // Factor 1: Distance (25 points max) - CRITICAL for on-demand services
+  const baseLat = helper.service_location_lat ?? helper.latitude
+  const baseLng = helper.service_location_lng ?? helper.longitude
   const distance = calculateDistance(
     criteria.location,
-    { lat: helper.latitude, lng: helper.longitude }
+    { lat: baseLat, lng: baseLng }
   )
   const distanceScore = Math.max(0, 25 - distance * 2) // Lose 2 points per km
   totalScore += distanceScore

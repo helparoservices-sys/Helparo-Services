@@ -214,8 +214,8 @@ export async function POST(request: NextRequest) {
         service_categories,
         skills,
         service_radius_km,
-        current_location_lat,
-        current_location_lng,
+        service_location_lat,
+        service_location_lng,
         is_online,
         is_on_job,
         profiles!helper_profiles_user_id_fkey (
@@ -252,9 +252,9 @@ export async function POST(request: NextRequest) {
       console.log(`   Helper ${h.id}: categories count = ${h.service_categories?.length || 0}`)
     })
 
-    // Filter helpers who are within the search radius (50km default)
+    // Filter helpers who are within the search radius (15km default using service location)
     // NOTIFY ALL helpers within radius - category match is preferred but not required
-    const NOTIFICATION_RADIUS_KM = 50 // Search radius from customer location
+    const NOTIFICATION_RADIUS_KM = 15 // Use predefined service location radius for matching
     
     let filteredHelpers = relevantHelpers?.filter(helper => {
       // Helpers currently on a job should not receive new job notifications
@@ -263,29 +263,30 @@ export async function POST(request: NextRequest) {
         return false
       }
 
-      // Check distance from customer location FIRST (use NOTIFICATION_RADIUS_KM)
+      // Check distance from customer location using predefined service location ONLY
       let distance = 0
-      let hasLocation = false
-      
-      if (locationLat && locationLng && helper.current_location_lat && helper.current_location_lng) {
-        hasLocation = true
+      const baseLat = helper.service_location_lat
+      const baseLng = helper.service_location_lng
+
+      if (locationLat && locationLng && baseLat && baseLng) {
         distance = calculateDistanceKm(
           locationLat,
           locationLng,
-          helper.current_location_lat,
-          helper.current_location_lng
+          baseLat,
+          baseLng
         )
         
         // Use fixed notification radius - PRIMARY FILTER
-        if (distance > NOTIFICATION_RADIUS_KM) {
-          console.log(`❌ Helper ${helper.id} excluded: ${distance.toFixed(1)}km > ${NOTIFICATION_RADIUS_KM}km notification radius`)
+        if (distance > (helper.service_radius_km || NOTIFICATION_RADIUS_KM)) {
+          console.log(`❌ Helper ${helper.id} excluded: ${distance.toFixed(1)}km > ${(helper.service_radius_km || NOTIFICATION_RADIUS_KM)}km service radius`)
           return false
         }
         
-        console.log(`✅ Helper ${helper.id}: ${distance.toFixed(1)}km within ${NOTIFICATION_RADIUS_KM}km radius`)
+        console.log(`✅ Helper ${helper.id}: ${distance.toFixed(1)}km within ${(helper.service_radius_km || NOTIFICATION_RADIUS_KM)}km radius (service location)`)
       } else {
-        // If helper has no location set, include them anyway
-        console.log(`✅ Helper ${helper.id}: no location set (will be notified)`)
+        // No predefined service location: skip to avoid relying on stale live GPS
+        console.log(`❌ Helper ${helper.id}: no service_location set, skipping for broadcast`)
+        return false
       }
 
       // Check category match by UUID or slug (SECONDARY - for prioritization)

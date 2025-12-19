@@ -351,11 +351,14 @@ export async function findBestMatchingHelpers(serviceRequestId: string, limit = 
       .select(`
         helper_id,
         is_available,
+        helper_profiles:helper_profiles!inner(
+          service_location_lat,
+          service_location_lng,
+          service_radius_km
+        ),
         profiles!inner(
           id,
-          full_name,
-          latitude,
-          longitude
+          full_name
         ),
         statistics:helper_statistics(
           quality_score,
@@ -383,14 +386,23 @@ export async function findBestMatchingHelpers(serviceRequestId: string, limit = 
       const stats = helper.statistics?.[0] || {}
       const specialization = helper.specializations?.[0] || {}
       const profile = helper.profiles
+      const baseLat = helper.helper_profiles?.service_location_lat ?? null
+      const baseLng = helper.helper_profiles?.service_location_lng ?? null
+      const serviceRadius = helper.helper_profiles?.service_radius_km ?? 15
+
+      // Skip helpers without predefined service location; live GPS must not be used for matching
+      if (baseLat === null || baseLng === null) return null
       
       // Distance score (closer is better)
       const distance = calculateDistance(
         request.latitude,
         request.longitude,
-        profile.latitude,
-        profile.longitude
+        baseLat,
+        baseLng
       )
+
+      // Enforce service radius (default 15km)
+      if (distance > serviceRadius) return null
       const distanceScore = Math.max(0, 100 - distance) // 100 points for 0km, 0 points for 100km+
 
       // Quality score from statistics
@@ -426,7 +438,7 @@ export async function findBestMatchingHelpers(serviceRequestId: string, limit = 
         years_of_experience: specialization?.years_of_experience || 0,
         is_verified: specialization?.is_verified || false
       }
-    })
+    }).filter(Boolean)
 
     // Sort by match score and return top matches
     matches.sort((a, b) => b.match_score - a.match_score)
