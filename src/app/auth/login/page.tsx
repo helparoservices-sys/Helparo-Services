@@ -7,6 +7,7 @@ import { Loader2, ArrowLeft, ArrowRight, Shield, Star, Sparkles, Phone, RefreshC
 import { logger } from '@/lib/logger'
 import { createBrowserClient } from '@supabase/ssr'
 import { auth, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from '@/lib/firebase'
+import { signInWithGoogle } from '@/lib/capacitor-auth'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -279,21 +280,8 @@ export default function LoginPage() {
     setError('')
     
     try {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-      
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      })
+      // Use capacitor-auth helper which handles in-app browser for Capacitor
+      const { error } = await signInWithGoogle(`${window.location.origin}/auth/callback`)
       
       if (error) {
         logger.error('Google login error', { error })

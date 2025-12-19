@@ -270,7 +270,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
       </head>
-      <body className="antialiased pt-safe pb-safe">
+      <body className="antialiased">
         <CapacitorBackButton />
         <LanguageProvider>
           <PageTransition>

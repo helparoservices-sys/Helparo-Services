@@ -12,7 +12,18 @@ export function CapacitorBackButton() {
 
     let App: any = null
 
-    const setupBackButton = async () => {
+    const setupCapacitor = async () => {
+      try {
+        // Setup StatusBar - make content NOT go under status bar
+        const { StatusBar, Style } = await import('@capacitor/status-bar')
+        await StatusBar.setStyle({ style: Style.Light })
+        await StatusBar.setBackgroundColor({ color: '#ffffff' })
+        // This makes content not overlap with status bar
+        await StatusBar.setOverlaysWebView({ overlay: false })
+      } catch (error) {
+        console.log('StatusBar not available')
+      }
+
       try {
         // Dynamically import Capacitor App plugin
         const { App: CapApp } = await import('@capacitor/app')
@@ -34,7 +45,7 @@ export function CapacitorBackButton() {
       }
     }
 
-    setupBackButton()
+    setupCapacitor()
 
     // Cleanup
     return () => {

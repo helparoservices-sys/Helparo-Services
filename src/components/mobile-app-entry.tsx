@@ -1,8 +1,10 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { ArrowRight, Star, Sparkles, Shield, Clock, MapPin, Zap, ChevronRight, CheckCircle2, TrendingUp, Heart, Briefcase, Loader2 } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
 // Animated Counter Component
 function AnimatedCounter({ value, suffix = "" }: { value: string; suffix?: string }) {
@@ -243,9 +245,12 @@ function RecentBooking({ name, service, time, location, savings }: {
 }
 
 export default function MobileAppEntry() {
+  const router = useRouter()
   const [showSplash, setShowSplash] = useState(true)
   const [activeCategory, setActiveCategory] = useState(0)
   const [bookingIndex, setBookingIndex] = useState(0)
+  const [checkingAuth, setCheckingAuth] = useState(true)
+  const [shouldShowContent, setShouldShowContent] = useState(false)
   const { city, loading: cityLoading } = useCurrentCity()
 
   const categories = [
@@ -259,10 +264,47 @@ export default function MobileAppEntry() {
 
   const recentBookings = RECENT_BOOKINGS
 
+  // Check if user is logged in and redirect to dashboard - MUST run first
   useEffect(() => {
-    const timer = setTimeout(() => setShowSplash(false), 1800)
-    return () => clearTimeout(timer)
-  }, [])
+    const checkAuth = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        
+        if (user) {
+          // User is logged in, check their role
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+          
+          if (profile?.role === 'helper') {
+            router.replace('/helper/dashboard')
+            return // Keep checkingAuth true while redirecting
+          } else if (profile?.role === 'customer') {
+            router.replace('/customer/dashboard')
+            return // Keep checkingAuth true while redirecting
+          }
+        }
+      } catch (error) {
+        console.log('Not logged in')
+      }
+      // Only show content if user is NOT logged in
+      setCheckingAuth(false)
+      setShouldShowContent(true)
+    }
+    
+    checkAuth()
+  }, [router])
+
+  // Only start splash countdown after auth check is done
+  useEffect(() => {
+    if (shouldShowContent) {
+      const timer = setTimeout(() => setShowSplash(false), 1800)
+      return () => clearTimeout(timer)
+    }
+  }, [shouldShowContent])
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -279,6 +321,26 @@ export default function MobileAppEntry() {
   }, [])
 
   useEffect(() => {}, [])
+
+  // Show loading while checking authentication
+  if (checkingAuth || !shouldShowContent) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-20 left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+          <div className="absolute bottom-32 right-10 w-40 h-40 bg-teal-400/20 rounded-full blur-3xl" />
+        </div>
+        <div className="relative text-center px-8">
+          <h1 className="text-5xl font-black text-white tracking-tight mb-4">helparo</h1>
+          <div className="h-0.5 w-12 bg-white/40 rounded-full mx-auto mb-4" />
+          <p className="text-base font-semibold text-white/90 mb-4">
+            India&apos;s 1st Self-Price Platform
+          </p>
+          <Loader2 className="w-8 h-8 text-white animate-spin mx-auto" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="relative flex flex-col bg-[#FAFBFC] min-h-screen min-h-[100dvh]">
