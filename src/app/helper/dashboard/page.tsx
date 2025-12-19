@@ -643,7 +643,7 @@ export default function HelperDashboard() {
     setShowCompletionModal(false)
     setCompletedJobDetails(null)
     loadActiveJob()
-    loadStats()
+    loadDashboard()
   }
 
   const callCustomer = () => {

@@ -1180,14 +1180,14 @@ export function useJobNotifications() {
       // Helper is now on a job; suppress future notifications until cleared
       setIsOnJob(true)
       
-      // Redirect to the specific job page instead of dashboard
-      // This ensures the helper sees their active job immediately
-      router.push(`/helper/jobs/${requestId}`)
+      // Force a full page reload to refresh dashboard state
+      // This ensures the active job shows up immediately
+      window.location.href = '/helper/dashboard'
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to accept job'
       toast.error(message)
     }
-  }, [helperProfile, router])
+  }, [helperProfile])
 
   const declineJob = useCallback(async (requestId: string) => {
     if (!helperProfile) return
