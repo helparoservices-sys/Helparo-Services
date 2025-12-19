@@ -1,9 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, createContext, useContext } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LoadingSpinner } from '@/components/ui/loading'
+
+interface UserContextType {
+  userId: string | null
+  role: string | null
+}
+
+const UserContext = createContext<UserContextType>({ userId: null, role: null })
+
+export function useUser() {
+  return useContext(UserContext)
+}
 
 interface RoleGuardProps {
   children: React.ReactNode
@@ -14,6 +25,8 @@ export function RoleGuard({ children, allowedRole }: RoleGuardProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [authorized, setAuthorized] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [role, setRole] = useState<string | null>(null)
 
   useEffect(() => {
     checkRole()
@@ -22,12 +35,16 @@ export function RoleGuard({ children, allowedRole }: RoleGuardProps) {
   const checkRole = async () => {
     const supabase = createClient()
     
-    const { data: { user } } = await supabase.auth.getUser()
+    // Use getSession for faster initial check (cached), then validate with getUser
+    const { data: { session } } = await supabase.auth.getSession()
     
-    if (!user) {
+    if (!session?.user) {
       router.push('/auth/login')
       return
     }
+
+    const user = session.user
+    setUserId(user.id)
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -36,6 +53,7 @@ export function RoleGuard({ children, allowedRole }: RoleGuardProps) {
       .single()
 
     const userRole = profile?.role
+    setRole(userRole)
 
     if (userRole !== allowedRole) {
       // Redirect to correct dashboard
@@ -59,5 +77,9 @@ export function RoleGuard({ children, allowedRole }: RoleGuardProps) {
     return null
   }
 
-  return <>{children}</>
+  return (
+    <UserContext.Provider value={{ userId, role }}>
+      {children}
+    </UserContext.Provider>
+  )
 }

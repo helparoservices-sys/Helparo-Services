@@ -623,7 +623,7 @@ export function useJobNotifications() {
   }, [videoUrls])
 
   useEffect(() => {
-    // Get helper profile
+    // Get helper profile and sync is_on_job status
     async function getProfile() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
@@ -647,12 +647,19 @@ export function useJobNotifications() {
 
       const typedProfile = profile as { id: string; is_on_job?: boolean | null } | null
       if (typedProfile) {
-        console.log('🔔 Helper profile found:', typedProfile.id)
+        console.log('🔔 Helper profile found:', typedProfile.id, 'is_on_job:', typedProfile.is_on_job)
         setHelperProfile(typedProfile)
         setIsOnJob(typedProfile.is_on_job === true)
       }
     }
+    
+    // Initial fetch
     getProfile()
+    
+    // Also sync is_on_job status every 10 seconds to catch stuck states
+    const syncInterval = setInterval(getProfile, 10000)
+    
+    return () => clearInterval(syncInterval)
   }, [])
 
   // Keep on-job status in sync via realtime updates
@@ -692,7 +699,19 @@ export function useJobNotifications() {
     const checkForNewNotifications = async () => {
       try {
         const supabase = createClient()
-        const { data: rawData, error } = await supabase
+        
+        // First check auth status
+        const { data: { user } } = await supabase.auth.getUser()
+        console.log('🔔 [POLL] Auth check - user:', user?.id || 'NOT AUTHENTICATED')
+        
+        if (!user) {
+          console.log('🔔 [POLL] Skipping poll - not authenticated')
+          return
+        }
+        
+        console.log('🔔 [POLL] Querying broadcast_notifications for helper_id:', helperProfile.id)
+        
+        const { data: rawData, error, count } = await supabase
           .from('broadcast_notifications')
           .select(`
             *,
@@ -710,12 +729,14 @@ export function useJobNotifications() {
               category:category_id (name),
               customer:customer_id (full_name, phone)
             )
-          `)
+          `, { count: 'exact' })
           .eq('helper_id', helperProfile.id)
           .in('status', ['sent', 'pending']) // Match 'sent' status from broadcast API
           .order('sent_at', { ascending: false })
           .limit(1)
           .single()
+
+        console.log('🔔 [POLL] Query result - data:', rawData ? 'found' : 'null', '| error:', error?.code || 'none', error?.message || '')
 
         if (error && error.code !== 'PGRST116') {
           console.log('🔔 Poll check error:', error.message)

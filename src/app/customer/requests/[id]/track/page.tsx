@@ -704,6 +704,12 @@ export default function JobTrackingPage() {
         status: 'cancelled', broadcast_status: 'cancelled',
         cancellation_reason: 'Cancelled by customer', cancelled_by: 'customer'
       }).eq('id', requestId)
+      
+      // Reset helper's is_on_job flag if they were assigned
+      if (job.assigned_helper?.id) {
+        await supabase.from('helper_profiles').update({ is_on_job: false }).eq('id', job.assigned_helper.id)
+      }
+      
       toast.success('Cancelled')
       router.push('/customer/requests')
     } catch { toast.error('Failed') }

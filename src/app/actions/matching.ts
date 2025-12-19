@@ -346,14 +346,15 @@ export async function findBestMatchingHelpers(serviceRequestId: string, limit = 
     }
 
     // Find helpers with matching services and good statistics
+    // NOTE: helper_profiles uses 'latitude' and 'longitude' for predefined service location
     const { data: helpers, error } = await supabase
       .from('helper_services')
       .select(`
         helper_id,
         is_available,
         helper_profiles:helper_profiles!inner(
-          service_location_lat,
-          service_location_lng,
+          latitude,
+          longitude,
           service_radius_km
         ),
         profiles!inner(
@@ -386,8 +387,9 @@ export async function findBestMatchingHelpers(serviceRequestId: string, limit = 
       const stats = helper.statistics?.[0] || {}
       const specialization = helper.specializations?.[0] || {}
       const profile = helper.profiles
-      const baseLat = helper.helper_profiles?.service_location_lat ?? null
-      const baseLng = helper.helper_profiles?.service_location_lng ?? null
+      // helper_profiles stores predefined service location in 'latitude' and 'longitude'
+      const baseLat = helper.helper_profiles?.latitude ?? null
+      const baseLng = helper.helper_profiles?.longitude ?? null
       const serviceRadius = helper.helper_profiles?.service_radius_km ?? 15
 
       // Skip helpers without predefined service location; live GPS must not be used for matching

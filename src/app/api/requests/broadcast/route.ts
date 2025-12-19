@@ -206,6 +206,7 @@ export async function POST(request: NextRequest) {
 
     // Find relevant helpers based on category/skills AND radius
     // Get helpers who have this category in their service_categories
+    // NOTE: helper_profiles uses 'latitude'/'longitude' for predefined service location, NOT 'service_location_lat/lng'
     const { data: relevantHelpers, error: helpersError } = await supabase
       .from('helper_profiles')
       .select(`
@@ -214,8 +215,8 @@ export async function POST(request: NextRequest) {
         service_categories,
         skills,
         service_radius_km,
-        service_location_lat,
-        service_location_lng,
+        latitude,
+        longitude,
         is_online,
         is_on_job,
         profiles!helper_profiles_user_id_fkey (
@@ -264,9 +265,10 @@ export async function POST(request: NextRequest) {
       }
 
       // Check distance from customer location using predefined service location ONLY
+      // helper_profiles stores service location in 'latitude' and 'longitude' columns
       let distance = 0
-      const baseLat = helper.service_location_lat
-      const baseLng = helper.service_location_lng
+      const baseLat = helper.latitude
+      const baseLng = helper.longitude
 
       if (locationLat && locationLng && baseLat && baseLng) {
         distance = calculateDistanceKm(
@@ -285,7 +287,7 @@ export async function POST(request: NextRequest) {
         console.log(`✅ Helper ${helper.id}: ${distance.toFixed(1)}km within ${(helper.service_radius_km || NOTIFICATION_RADIUS_KM)}km radius (service location)`)
       } else {
         // No predefined service location: skip to avoid relying on stale live GPS
-        console.log(`❌ Helper ${helper.id}: no service_location set, skipping for broadcast`)
+        console.log(`❌ Helper ${helper.id}: no latitude/longitude set, skipping for broadcast`)
         return false
       }
 

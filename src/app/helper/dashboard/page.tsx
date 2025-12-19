@@ -37,6 +37,7 @@ import { getHelperDashboardStats } from '@/app/actions/helper-dashboard'
 import { getHelperAssignedJobs } from '@/app/actions/assigned-jobs'
 import { getHelperAvailability, toggleHelperAvailability } from '@/app/actions/helper-availability'
 import { createClient } from '@/lib/supabase/client'
+import { useUser } from '@/components/auth/RoleGuard'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -140,6 +141,7 @@ interface DashboardStats {
 
 export default function HelperDashboard() {
   const router = useRouter()
+  const { userId: cachedUserId } = useUser()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeJob, setActiveJob] = useState<AssignedJob | null>(null)
@@ -148,7 +150,7 @@ export default function HelperDashboard() {
   const [error, setError] = useState('')
   const [isAvailableNow, setIsAvailableNow] = useState(false)
   const [togglingAvailability, setTogglingAvailability] = useState(false)
-  const [userId, setUserId] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(cachedUserId)
   
   // OTP inputs
   const [startOtpInput, setStartOtpInput] = useState('')
@@ -195,16 +197,34 @@ export default function HelperDashboard() {
   }, [fullJobDetails?.work_started_at, fullJobDetails?.work_completed_at])
 
   useEffect(() => {
-    checkProfile()
-    loadAvailability()
-    loadActiveJob()
+    // Parallelize all initial data loading for faster startup
+    const initializeDashboard = async () => {
+      try {
+        // If we have cached userId from RoleGuard, use it directly
+        if (cachedUserId) {
+          setUserId(cachedUserId)
+        }
+        
+        // Run profile check and other loads in parallel
+        const profileCheckPromise = checkProfile()
+        const availabilityPromise = loadAvailability()
+        const activeJobPromise = loadActiveJob()
+        
+        // Wait for all to complete
+        await Promise.all([profileCheckPromise, availabilityPromise, activeJobPromise])
+      } catch (err) {
+        console.error('Dashboard initialization error:', err)
+      }
+    }
+    
+    initializeDashboard()
     
     return () => {
       if (locationWatchId !== null) {
         navigator.geolocation.clearWatch(locationWatchId)
       }
     }
-  }, [])
+  }, [cachedUserId])
   
   // Load full job details when activeJob changes
   useEffect(() => {
@@ -327,34 +347,44 @@ export default function HelperDashboard() {
   const checkProfile = async () => {
     try {
       const supabase = createClient()
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      if (authError || !user) {
-        setError('Not authenticated')
-        setLoading(false)
-        return
+      
+      // Use cached userId if available, otherwise fetch
+      let currentUserId = cachedUserId
+      
+      if (!currentUserId) {
+        // Use getSession for faster check (already validated by RoleGuard)
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.user) {
+          setError('Not authenticated')
+          setLoading(false)
+          return
+        }
+        currentUserId = session.user.id
+        setUserId(currentUserId)
       }
-      setUserId(user.id)
 
-      const { data: userProfileRaw } = await supabase
-        .from('profiles')
-        .select('phone, phone_verified')
-        .eq('id', user.id)
-        .single()
+      // Parallel fetch both profiles at once
+      const [userProfileResult, helperProfileResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('phone, phone_verified')
+          .eq('id', currentUserId)
+          .single(),
+        supabase
+          .from('helper_profiles')
+          .select('address, service_categories')
+          .eq('user_id', currentUserId)
+          .maybeSingle()
+      ])
 
-      const userProfile = userProfileRaw as { phone?: string | null; phone_verified?: boolean | null } | null
+      const userProfile = userProfileResult.data as { phone?: string | null; phone_verified?: boolean | null } | null
 
       if (!userProfile?.phone || !userProfile?.phone_verified) {
         router.push('/auth/complete-signup')
         return
       }
 
-      const { data: profileRaw } = await supabase
-        .from('helper_profiles')
-        .select('address, service_categories')
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      const profile = profileRaw as { address?: string | null; service_categories?: unknown[] | null } | null
+      const profile = helperProfileResult.data as { address?: string | null; service_categories?: unknown[] | null } | null
 
       if (!profile?.address || !profile?.service_categories?.length) {
         router.push('/helper/onboarding')

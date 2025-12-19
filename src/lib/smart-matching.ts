@@ -43,12 +43,11 @@ interface HelperRecord {
   full_name?: string
   profile_image_url?: string
   // NOTE: Use the helper's predefined service location (set during onboarding) for matching.
+  // helper_profiles table stores this in 'latitude' and 'longitude' columns.
   // Live GPS can be stale or unavailable; it is only for post-acceptance tracking.
-  service_location_lat?: number
-  service_location_lng?: number
+  latitude?: number // predefined service location from onboarding
+  longitude?: number // predefined service location from onboarding
   service_radius_km?: number
-  latitude?: number // legacy/live location - do NOT use for matching
-  longitude?: number // legacy/live location - do NOT use for matching
   is_online?: boolean
   completed_jobs?: number
   avg_response_time_minutes?: number
@@ -93,8 +92,9 @@ export async function findMatchingHelpers(
     const scoredHelpers = await Promise.all(
       helpers
         .filter((helper: HelperRecord) => {
-          const baseLat = helper.service_location_lat ?? null
-          const baseLng = helper.service_location_lng ?? null
+          // helper_profiles uses 'latitude' and 'longitude' for predefined service location
+          const baseLat = helper.latitude ?? null
+          const baseLng = helper.longitude ?? null
 
           // Skip helpers without a configured service location; live GPS is not reliable for matching
           if (baseLat === null || baseLng === null || Number.isNaN(baseLat) || Number.isNaN(baseLng)) {
@@ -147,8 +147,9 @@ async function calculateMatchScore(
   const matchReasons: string[] = []
 
   // Factor 1: Distance (25 points max) - CRITICAL for on-demand services
-  const baseLat = helper.service_location_lat ?? helper.latitude
-  const baseLng = helper.service_location_lng ?? helper.longitude
+  // helper_profiles stores predefined service location in 'latitude' and 'longitude'
+  const baseLat = helper.latitude
+  const baseLng = helper.longitude
   const distance = calculateDistance(
     criteria.location,
     { lat: baseLat, lng: baseLng }
