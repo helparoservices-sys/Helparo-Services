@@ -51,7 +51,7 @@ export default function CustomerPromosPage() {
     const today = new Date().toISOString().split('T')[0]
     const { data: promos } = await supabase
       .from('promo_codes')
-      .select('*')
+      .select('id, code, discount_type, discount_value, description, start_date, end_date, max_uses, current_uses') // 🟢 SAFE: Select only display fields for promo list
       .eq('is_active', true)
       .lte('start_date', today)
       .gte('end_date', today)

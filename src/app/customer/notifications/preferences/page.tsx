@@ -43,7 +43,7 @@ export default function NotificationPreferencesPage() {
 
     const { data } = await supabase
       .from('user_notification_prefs')
-      .select('*')
+      .select('user_id, email_notifications, sms_notifications, push_notifications, marketing_emails, job_updates, payment_notifications, quiet_hours, timezone') // 🟢 SAFE: All preference form fields
       .eq('user_id', user.id)
       .single()
 

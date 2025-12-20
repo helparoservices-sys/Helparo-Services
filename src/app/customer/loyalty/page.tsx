@@ -48,9 +48,10 @@ export default function CustomerLoyaltyPage() {
     }
 
     // Load transactions
+    // 🟢 SAFE: Select only displayed fields
     const { data: txData } = await supabase
       .from('loyalty_transactions')
-      .select('*')
+      .select('id, user_id, points, transaction_type, description, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(20)

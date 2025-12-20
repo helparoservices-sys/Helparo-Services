@@ -73,9 +73,10 @@ export default function CustomerReferralsPage() {
     }
 
     // Load referrals
+    // 🟢 SAFE: Select only displayed fields
     const { data: refData } = await supabase
       .from('referrals')
-      .select('*')
+      .select('id, referrer_id, referred_user_id, status, reward_earned, created_at, referral_code')
       .eq('referrer_id', user.id)
       .order('created_at', { ascending: false })
 

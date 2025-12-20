@@ -63,6 +63,7 @@ export default function CustomerHistoryPage() {
       `)
       .eq('customer_id', user.id)
       .order('created_at', { ascending: false })
+      .limit(100) // 🟢 SAFE: Filter applied after, but prevents loading entire history
     
     // Filter for completed or cancelled (check both status and broadcast_status)
     const data = allData?.filter(b => 

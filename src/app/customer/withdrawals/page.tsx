@@ -47,6 +47,7 @@ export default function CustomerWithdrawalsPage() {
       .select('*')
       .eq('helper_id', user.id)
       .order('requested_at', { ascending: false })
+      .limit(50) // 🟢 SAFE: Most recent 50 withdrawals sufficient for UI
 
     if (!error && data) {
       setWithdrawals(data as Withdrawal[])

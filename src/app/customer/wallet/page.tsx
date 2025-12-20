@@ -77,9 +77,10 @@ export default function CustomerWalletPage() {
     }
 
     // Load wallet balance
+    // 🟢 SAFE: Select only displayed fields
     const { data: walletData } = await supabase
       .from('wallet_accounts')
-      .select('*')
+      .select('user_id, available_balance, escrow_balance, updated_at')
       .eq('user_id', user.id)
       .single()
 

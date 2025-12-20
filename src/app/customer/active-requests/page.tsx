@@ -98,6 +98,7 @@ export default function ActiveRequestsPage() {
         .eq('customer_id', user.id)
         .in('broadcast_status', ['broadcasting', 'accepted', 'on_way', 'arrived', 'in_progress'])
         .order('created_at', { ascending: false })
+        .limit(100) // 🟢 SAFE: Customers rarely have >100 concurrent active requests
 
       if (!error && data) {
         // Fetch assigned helpers for each request
