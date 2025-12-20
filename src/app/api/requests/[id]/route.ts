@@ -88,6 +88,26 @@ export async function GET(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
+    // PHASE 2: Process images - handle both Firebase URLs and base64
+    // New jobs have Firebase URLs (https://)
+    // Old jobs have base64 (data:image/...)
+    // Both formats are supported for backward compatibility
+    const processedImages = (serviceRequest.images || []).map((img: string) => {
+      if (img.startsWith('https://') || img.startsWith('http://')) {
+        // Firebase URL - pass through (no egress from Supabase)
+        return img
+      } else if (img.startsWith('data:image')) {
+        // Base64 - pass through for old jobs (still causes egress, but needed for compatibility)
+        return img
+      } else {
+        // Invalid format - skip
+        console.warn('⚠️ [PHASE-2] Invalid image format, skipping:', img.substring(0, 50))
+        return null
+      }
+    }).filter((img: string | null): img is string => img !== null)
+
+    console.log(`📸 [PHASE-2] Processed ${processedImages.length} images: ${processedImages.filter(img => img.startsWith('https://')).length} URLs, ${processedImages.filter(img => img.startsWith('data:')).length} base64`)
+
     // Fetch assigned helper details if exists
     let assignedHelper = null
     if (serviceRequest.assigned_helper_id) {
@@ -224,6 +244,7 @@ export async function GET(
 
     const response = {
       ...serviceRequest,
+      images: processedImages, // PHASE-2: Use processed images (URLs or base64)
       service_location_lat: toNumberOrFallback(serviceRequest.service_location_lat, serviceRequest.latitude, 0),
       service_location_lng: toNumberOrFallback(serviceRequest.service_location_lng, serviceRequest.longitude, 0),
       helper_location_lat: helperLocationLat,

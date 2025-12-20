@@ -138,6 +138,7 @@ export async function getHelperDashboardStats() {
       upcomingJobsResult
     ] = await Promise.all([
       // Jobs statistics - use assigned_helper_id (stores user.id)
+      // Exclude images from all dashboard queries to reduce egress
       supabase
         .from('service_requests')
         .select('id')

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { uploadBase64ToFirebaseAdmin } from '@/lib/firebase-admin'
 
 // Generate 6-digit OTP
 function generateOTP(): string {
@@ -149,6 +150,76 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // =====================================================
+    // PHASE 1: DUAL WRITE - Upload images to Firebase Storage
+    // NEW jobs → Firebase URLs stored (reduce Supabase egress)
+    // Fallback → base64 if Firebase fails (backward compatible)
+    // =====================================================
+    let finalImages: string[] = []
+    let firebaseUploadAttempted = false
+    let firebaseConfigError: string | null = null
+    
+    if (images && Array.isArray(images) && images.length > 0) {
+      console.log(`📸 [PHASE-1] Images received: ${images.length}`)
+      
+      for (let i = 0; i < images.length; i++) {
+        const image = images[i]
+        console.log(`📤 [PHASE-1] Uploading image ${i + 1}/${images.length}`)
+        
+        // Already a URL - keep as-is (safety check)
+        if (image.startsWith('https://') || image.startsWith('http://')) {
+          console.log(`⏭️ [PHASE-1] Image ${i + 1} is already a URL, skipping upload`)
+          finalImages.push(image)
+          continue
+        }
+        
+        // Base64 image - upload to Firebase
+        if (image.startsWith('data:image')) {
+          firebaseUploadAttempted = true
+          try {
+            const timestamp = Date.now()
+            const randomId = Math.random().toString(36).substring(2, 9)
+            const path = `service-requests/${user.id}/${timestamp}-${randomId}-${i}.jpg`
+            
+            // Upload to Firebase Storage using Admin SDK - WILL THROW if misconfigured
+            const firebaseUrl = await uploadBase64ToFirebaseAdmin(image, path)
+            
+            console.log(`✅ [PHASE-1] Firebase upload success: ${firebaseUrl.substring(0, 60)}...`)
+            finalImages.push(firebaseUrl)
+            
+          } catch (uploadError: any) {
+            // Capture configuration error for warning
+            if (uploadError.message.includes('initialization failed')) {
+              firebaseConfigError = uploadError.message
+              console.error(`🚨 [PHASE-1] FIREBASE ADMIN NOT CONFIGURED:`, uploadError.message)
+              console.error(`🚨 [PHASE-1] Add credentials to Vercel: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY`)
+            }
+            
+            // FALLBACK: Store base64 if Firebase fails (backward compatible)
+            console.error(`❌ [PHASE-1] Firebase upload failed, fallback to base64:`, uploadError.message)
+            finalImages.push(image)
+          }
+        } else {
+          // Unknown format - keep as-is
+          console.log(`⚠️ [PHASE-1] Image ${i + 1} has unknown format, keeping as-is`)
+          finalImages.push(image)
+        }
+      }
+      
+      const urlCount = finalImages.filter(img => img.startsWith('https://')).length
+      const b64Count = finalImages.filter(img => img.startsWith('data:')).length
+      console.log(`✅ [PHASE-1] Complete: ${urlCount} Firebase URLs, ${b64Count} base64 fallbacks`)
+      
+      // Log warning if Firebase was attempted but not configured
+      if (firebaseUploadAttempted && urlCount === 0 && firebaseConfigError) {
+        console.error(`🚨 [PHASE-1] WARNING: All images fell back to base64 due to Firebase misconfiguration`)
+        console.error(`🚨 [PHASE-1] This will cause HIGH Supabase egress costs`)
+        console.error(`🚨 [PHASE-1] Visit /api/debug/firebase-health to diagnose`)
+      }
+    } else {
+      console.log('ℹ️ [PHASE-1] No images provided for this job')
+    }
+
     // Create the service request with OTPs
     const startOtp = generateOTP()
     const endOtp = generateOTP()
@@ -168,7 +239,7 @@ export async function POST(request: NextRequest) {
         service_location_lat: locationLat,
         service_location_lng: locationLng,
         service_address: `${flatNumber || ''}, ${address}`,
-        images: images || [],
+        images: finalImages, // PHASE-1: Firebase URLs or base64 fallback
         estimated_price: estimatedPrice,
         urgency_level: urgency === 'emergency' ? 'urgent' : 'normal',
         status: 'open',

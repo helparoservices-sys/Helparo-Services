@@ -147,23 +147,40 @@ export function JobNotificationPopup({
                   <p className="text-xs text-gray-600 font-medium">Photos from Customer (tap to view)</p>
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-2">
-                  {notification.photos.map((photo, idx) => (
+                  {notification.photos.map((photo, idx) => {
+                    const isFirebaseUrl = photo.startsWith('https://storage.googleapis.com') || photo.startsWith('https://firebasestorage.googleapis.com')
+                    const isBase64 = photo.startsWith('data:image')
+                    console.log(`🖼️ [IMAGE-RENDER] Photo ${idx + 1}:`, { isFirebaseUrl, isBase64, url: photo.substring(0, 60) })
+                    
+                    return (
                     <button 
                       key={idx} 
                       onClick={() => setSelectedPhotoIndex(idx)}
                       className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 hover:border-emerald-500 transition-colors group"
                     >
-                      <Image 
-                        src={photo} 
-                        alt={`Problem photo ${idx + 1}`}
-                        fill
-                        className="object-cover"
-                      />
+                      {/* Use native img for Firebase URLs to avoid next/image issues */}
+                      {isFirebaseUrl ? (
+                        <img 
+                          src={photo} 
+                          alt={`Problem photo ${idx + 1}`}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => console.error('🖼️ [IMAGE-ERROR] Failed to load Firebase image:', photo)}
+                        />
+                      ) : (
+                        <Image 
+                          src={photo} 
+                          alt={`Problem photo ${idx + 1}`}
+                          fill
+                          className="object-cover"
+                          unoptimized={isBase64}
+                        />
+                      )}
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                         <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     </button>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -211,14 +228,30 @@ export function JobNotificationPopup({
                   className="relative w-full h-full max-w-4xl max-h-[80vh] mx-4"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Image
-                    src={notification.photos[selectedPhotoIndex]}
-                    alt={`Problem photo ${selectedPhotoIndex + 1}`}
-                    fill
-                    className="object-contain"
-                    sizes="(max-width: 768px) 100vw, 80vw"
-                    priority
-                  />
+                  {(() => {
+                    const photo = notification.photos[selectedPhotoIndex]
+                    const isFirebaseUrl = photo.startsWith('https://storage.googleapis.com') || photo.startsWith('https://firebasestorage.googleapis.com')
+                    const isBase64 = photo.startsWith('data:image')
+                    
+                    return isFirebaseUrl ? (
+                      <img
+                        src={photo}
+                        alt={`Problem photo ${selectedPhotoIndex + 1}`}
+                        className="absolute inset-0 w-full h-full object-contain"
+                        onError={(e) => console.error('🖼️ [LIGHTBOX-ERROR] Failed to load Firebase image:', photo)}
+                      />
+                    ) : (
+                      <Image
+                        src={photo}
+                        alt={`Problem photo ${selectedPhotoIndex + 1}`}
+                        fill
+                        className="object-contain"
+                        sizes="(max-width: 768px) 100vw, 80vw"
+                        priority
+                        unoptimized={isBase64}
+                      />
+                    )
+                  })()}
                 </div>
 
                 {/* Next button */}
@@ -675,156 +708,21 @@ export function useJobNotifications() {
     }
   }, [helperProfile])
 
-  // Initial one-time fetch for notifications (realtime handles live updates)
+  // CRITICAL: Subscribe to realtime FIRST, then fetch
+  // This prevents race condition where INSERT happens between fetch and subscribe
   useEffect(() => {
     if (!helperProfile) {
-      console.log('🔔 [FETCH-SKIP] No helper profile yet')
-      return
-    }
-    if (isOnJob) {
-      console.log('🔔 [FETCH-SKIP] Helper is marked as on_job, skipping fetch. Helper:', helperProfile.id)
-      return
-    }
-
-    console.log('🔔 Single fetch for helper notifications (realtime handles updates):', helperProfile.id, 'isOnJob:', isOnJob)
-
-    const fetchOnce = async () => {
-      try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        console.log('🔔 [FETCH] Auth check - user:', user?.id || 'NOT AUTHENTICATED')
-
-        if (!user) {
-          console.log('🔔 [FETCH] Skipping - not authenticated')
-          return
-        }
-
-        const { data: rawData, error } = await supabase
-          .from('broadcast_notifications')
-          .select(`
-            *,
-            service_request:request_id (
-              id,
-              title,
-              description,
-              service_address,
-              address_line1,
-              estimated_price,
-              urgency_level,
-              images,
-              status,
-              service_type_details,
-              category:category_id (name),
-              customer:customer_id (full_name, phone)
-            )
-          `, { count: 'exact' })
-          .eq('helper_id', helperProfile.id)
-          .in('status', ['sent', 'pending'])
-          .order('sent_at', { ascending: false })
-          .limit(1)
-          .single()
-
-        if (error && error.code !== 'PGRST116') {
-          console.log('🔔 Fetch error:', error.message)
-          return
-        }
-
-        if (!rawData) {
-          console.log('🔔 [FETCH] No pending notifications')
-          return
-        }
-
-        const data = rawData as {
-          id: string
-          request_id: string
-          distance_km: string
-          sent_at: string
-          service_request: Record<string, unknown> | null
-        }
-
-        const notificationKey = `${data.id}_${data.sent_at}`
-        const currentNotification = notificationRef.current
-        if (currentNotification || seenNotificationIds.current.has(notificationKey)) return
-
-        const req = data.service_request as Record<string, any> | null
-        if (!req) return
-
-        const jobStatus = req.status || ''
-        if (['cancelled', 'assigned', 'completed'].includes(jobStatus)) {
-          seenNotificationIds.current.add(notificationKey)
-          return
-        }
-
-        seenNotificationIds.current.add(notificationKey)
-
-        const serviceDetails = req.service_type_details || {}
-        let expectedTime = serviceDetails.preferred_time || ''
-        if (expectedTime === 'asap') expectedTime = 'As soon as possible'
-        else if (expectedTime === 'today') expectedTime = 'Today'
-        else if (expectedTime === 'tomorrow') expectedTime = 'Tomorrow'
-        else if (expectedTime === 'this_week') expectedTime = 'This week'
-
-        const images = serviceDetails.images || req.images || []
-        const videos = serviceDetails.videos || []
-
-        setNotification({
-          id: data.id,
-          request_id: data.request_id,
-          customer_name: req.customer?.full_name || 'Customer',
-          customer_phone: req.customer?.phone || undefined,
-          category: req.category?.name || 'Service',
-          description: req.description || req.title,
-          address: req.service_address || req.address_line1 || 'Address not provided',
-          estimated_price: req.estimated_price || 0,
-          urgency: req.urgency_level || 'normal',
-          distance_km: parseFloat(data.distance_km) || 0,
-          expires_in: 30,
-          sent_at: data.sent_at,
-          photos: images,
-          videos: videos,
-          expected_time: expectedTime || undefined,
-          estimated_duration: serviceDetails.estimated_duration,
-          confidence: serviceDetails.confidence,
-          helper_brings: serviceDetails.helper_brings || [],
-          customer_provides: serviceDetails.customer_provides || [],
-          work_overview: serviceDetails.work_overview || '',
-          materials_needed: serviceDetails.materials_needed || []
-        })
-
-        try {
-          const prepared: string[] = await Promise.all(videos.map(async (v: string) => {
-            if (v.startsWith('data:')) {
-              const r = await fetch(v)
-              const b = await r.blob()
-              return URL.createObjectURL(b)
-            }
-            return v
-          }))
-          setVideoUrls(prepared)
-        } catch (err) {
-          console.error('Failed to prepare notification videos', err)
-        }
-      } catch (err) {
-        console.error('🔔 Fetch error:', err)
-      }
-    }
-
-    fetchOnce()
-  }, [helperProfile, isOnJob])
-
-  useEffect(() => {
-    if (!helperProfile) {
-      console.log('🔔 No helper profile yet, not subscribing')
+      console.log('🔔 [REALTIME] No helper profile yet, not subscribing')
       return
     }
 
     if (isOnJob) {
-      console.log('🔕 Helper is on a job; suppressing new job notifications')
+      console.log('🔕 [REALTIME] Helper is on a job; suppressing new job notifications')
       setNotification(null)
       return
     }
     
-    console.log('🔔 Setting up realtime subscription for helper:', helperProfile.id)
+    console.log('🔔 [REALTIME] Setting up realtime subscription for helper:', helperProfile.id)
     const supabase = createClient()
 
     // Subscribe to real-time notifications (new job broadcast)
@@ -839,7 +737,7 @@ export function useJobNotifications() {
           filter: `helper_id=eq.${helperProfile.id}`
         },
         async (payload) => {
-          console.log('🔔 [REALTIME] New job notification received via realtime:', payload)
+          console.log('🔔 [REALTIME] New job notification received:', payload)
           console.log('🔔 [REALTIME] Notification ID:', (payload.new as any)?.id, 'Request ID:', (payload.new as any)?.request_id)
 
           if (isOnJobRef.current) {
@@ -871,7 +769,7 @@ export function useJobNotifications() {
             .single()
           
           if (error) {
-            console.error('🔔 Error fetching notification details:', error)
+            console.error('🔔 [REALTIME] Error fetching notification details:', error)
             return
           }
           
@@ -925,13 +823,12 @@ export function useJobNotifications() {
               materials_needed: serviceDetails.materials_needed || []
             })
 
-            // Prepare video blob URLs for playback (convert data: URLs to blob object URLs)
+            // Prepare video blob URLs for playback
             try {
               const rawVideos = videos || []
               const prepared: string[] = await Promise.all(rawVideos.map(async (v: string) => {
                 try {
                   if (v.startsWith('blob:') || v.startsWith('http') || v.startsWith('data:')) {
-                    // If it's data: URL or already blob/http, attempt to convert data: to blob URL; leave http/blob as-is
                     if (v.startsWith('data:')) {
                       const r = await fetch(v)
                       const b = await r.blob()
@@ -945,18 +842,160 @@ export function useJobNotifications() {
                   return v
                 }
               }))
-              // store prepared URLs in a stateful variable (so rendering can use blob URLs)
               setVideoUrls(prepared)
             } catch (err) {
               console.error('Failed to prepare notification videos', err)
             }
-            // Sound is now handled by the continuous sound loop useEffect
           }
         }
       )
       .subscribe((status) => {
-        console.log('🔔 Subscription status:', status)
+        console.log('🔔 [REALTIME] Subscription status:', status)
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ [REALTIME] Successfully subscribed to job notifications for helper:', helperProfile.id)
+          
+          // ONLY AFTER subscription is confirmed, perform initial fetch
+          // This prevents race condition where INSERT happens between fetch and subscribe
+          console.log('🔔 [REALTIME] Subscription confirmed, performing initial fetch...')
+          performInitialFetch()
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ [REALTIME] Subscription failed - check Supabase Realtime settings')
+        } else if (status === 'TIMED_OUT') {
+          console.error('❌ [REALTIME] Subscription timed out - check network connection')
+        }
       })
+    
+    // Initial fetch function - called AFTER subscription is confirmed
+    const performInitialFetch = async () => {
+      if (isOnJobRef.current) {
+        console.log('🔔 [FETCH-SKIP] Helper is on_job, skipping initial fetch')
+        return
+      }
+
+      try {
+        console.log('🔔 [FETCH] Checking for pending notifications...')
+        const { data: { user } } = await supabase.auth.getUser()
+        
+        if (!user) {
+          console.log('🔔 [FETCH] Skipping - not authenticated')
+          return
+        }
+
+        const { data: rawData, error } = await supabase
+          .from('broadcast_notifications')
+          .select(`
+            *,
+            service_request:request_id (
+              id,
+              title,
+              description,
+              service_address,
+              address_line1,
+              estimated_price,
+              urgency_level,
+              images,
+              status,
+              service_type_details,
+              category:category_id (name),
+              customer:customer_id (full_name, phone)
+            )
+          `)
+          .eq('helper_id', helperProfile.id)
+          .in('status', ['sent', 'pending'])
+          .order('sent_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (error && error.code !== 'PGRST116') {
+          console.log('🔔 [FETCH] Error:', error.message)
+          return
+        }
+
+        if (!rawData) {
+          console.log('🔔 [FETCH] No pending notifications')
+          return
+        }
+
+        const data = rawData as {
+          id: string
+          request_id: string
+          distance_km: string
+          sent_at: string
+          service_request: Record<string, unknown> | null
+        }
+
+        const notificationKey = `${data.id}_${data.sent_at}`
+        if (notificationRef.current || seenNotificationIds.current.has(notificationKey)) {
+          console.log('🔔 [FETCH] Notification already seen, skipping')
+          return
+        }
+
+        const req = data.service_request as Record<string, any> | null
+        if (!req) return
+
+        const jobStatus = req.status || ''
+        if (['cancelled', 'assigned', 'completed'].includes(jobStatus)) {
+          seenNotificationIds.current.add(notificationKey)
+          console.log('🔔 [FETCH] Job already completed/cancelled, skipping')
+          return
+        }
+
+        seenNotificationIds.current.add(notificationKey)
+
+        const serviceDetails = req.service_type_details || {}
+        let expectedTime = serviceDetails.preferred_time || ''
+        if (expectedTime === 'asap') expectedTime = 'As soon as possible'
+        else if (expectedTime === 'today') expectedTime = 'Today'
+        else if (expectedTime === 'tomorrow') expectedTime = 'Tomorrow'
+        else if (expectedTime === 'this_week') expectedTime = 'This week'
+
+        // Get images from service_type_details or req.images (same as realtime handler)
+        const images = serviceDetails.images || req.images || []
+        const videos = serviceDetails.videos || []
+        
+        console.log('📸 [FETCH] Images found:', images.length, 'URLs:', images.map((img: string) => img.substring(0, 60)))
+        console.log('✅ [FETCH] Found pending notification, showing popup')
+        setNotification({
+          id: data.id,
+          request_id: data.request_id,
+          customer_name: req.customer?.full_name || 'Customer',
+          customer_phone: req.customer?.phone || undefined,
+          category: req.category?.name || 'Service',
+          description: req.description || req.title,
+          address: req.service_address || req.address_line1 || 'Address not provided',
+          estimated_price: req.estimated_price || 0,
+          urgency: req.urgency_level || 'normal',
+          distance_km: parseFloat(data.distance_km) || 0,
+          expires_in: 30,
+          sent_at: data.sent_at,
+          photos: images,
+          videos: videos,
+          expected_time: expectedTime || undefined,
+          estimated_duration: serviceDetails.estimated_duration,
+          confidence: serviceDetails.confidence,
+          helper_brings: serviceDetails.helper_brings || [],
+          customer_provides: serviceDetails.customer_provides || [],
+          work_overview: serviceDetails.work_overview || '',
+          materials_needed: serviceDetails.materials_needed || []
+        })
+
+        try {
+          const prepared: string[] = await Promise.all(videos.map(async (v: string) => {
+            if (v.startsWith('data:')) {
+              const r = await fetch(v)
+              const b = await r.blob()
+              return URL.createObjectURL(b)
+            }
+            return v
+          }))
+          setVideoUrls(prepared)
+        } catch (err) {
+          console.error('Failed to prepare notification videos', err)
+        }
+      } catch (err) {
+        console.error('🔔 [FETCH] Error:', err)
+      }
+    }
 
     // If another helper accepts, our broadcast_notification row is marked 'expired'
     // We must listen to UPDATEs to dismiss any currently open popup.

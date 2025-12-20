@@ -9,7 +9,12 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ['opnjibjsddwyojrerbll.supabase.co', 'lh3.googleusercontent.com'],
+    domains: [
+      'opnjibjsddwyojrerbll.supabase.co', 
+      'lh3.googleusercontent.com',
+      'storage.googleapis.com',
+      'firebasestorage.googleapis.com'
+    ],
     remotePatterns: [
       {
         protocol: 'https',
@@ -22,6 +27,18 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: '**.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'storage.googleapis.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.firebasestorage.app',
       },
     ],
     formats: ['image/avif', 'image/webp'],
