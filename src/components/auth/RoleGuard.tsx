@@ -2,7 +2,7 @@
 
 import { useEffect, useState, createContext, useContext } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { LoadingSpinner } from '@/components/ui/loading'
 
 interface UserContextType {
@@ -33,9 +33,8 @@ export function RoleGuard({ children, allowedRole }: RoleGuardProps) {
   }, [])
 
   const checkRole = async () => {
-    const supabase = createClient()
-    
-    // Use getSession for faster initial check (cached), then validate with getUser
+    // OPTIMIZATION: Use singleton client to avoid re-initialization
+    // Use getSession for faster initial check (cached)
     const { data: { session } } = await supabase.auth.getSession()
     
     if (!session?.user) {

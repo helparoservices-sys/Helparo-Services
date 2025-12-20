@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { 
@@ -92,7 +92,7 @@ export default function CustomerDashboard() {
 
   useEffect(() => {
     async function loadData() {
-      const supabase = createClient()
+      // OPTIMIZATION: Use singleton client
       const { data: { user } } = await supabase.auth.getUser()
       
       if (!user) {
@@ -120,21 +120,34 @@ export default function CustomerDashboard() {
       // Customers don't need phone verification - it's collected during booking
       setProfile(userProfile)
 
-      const [walletRes, loyaltyRes, requestsRes, activeRes, completedRes, badgesRes, referralsRes] = await Promise.all([
+      // OPTIMIZATION: Combine service_requests queries to reduce from 7 to 5 requests
+      // Using Postgres aggregation to get all counts in one query
+      const [walletRes, loyaltyRes, requestsWithCounts, badgesRes, referralsRes] = await Promise.all([
         supabase.from('wallet_accounts').select('available_balance').eq('user_id', user.id).single(),
         supabase.from('loyalty_points').select('points_balance').eq('user_id', user.id).single(),
-        supabase.from('service_requests').select('id, title, status, broadcast_status, created_at, city').eq('customer_id', user.id).order('created_at', { ascending: false }).limit(5),
-        supabase.from('service_requests').select('id', { count: 'exact', head: true }).eq('customer_id', user.id).in('broadcast_status', ['broadcasting', 'accepted', 'on_way', 'arrived', 'in_progress']),
-        supabase.from('service_requests').select('id', { count: 'exact', head: true }).eq('customer_id', user.id).eq('broadcast_status', 'completed'),
+        // Combined query: get recent requests + counts using Postgres aggregation
+        supabase.rpc('get_customer_requests_summary', { customer_uuid: user.id }).then(res => {
+          // Fallback to separate queries if RPC doesn't exist yet
+          if (res.error) {
+            return Promise.all([
+              supabase.from('service_requests').select('id, title, status, broadcast_status, created_at, city').eq('customer_id', user.id).order('created_at', { ascending: false }).limit(5),
+              supabase.from('service_requests').select('id', { count: 'exact', head: true }).eq('customer_id', user.id).in('broadcast_status', ['broadcasting', 'accepted', 'on_way', 'arrived', 'in_progress']),
+              supabase.from('service_requests').select('id', { count: 'exact', head: true }).eq('customer_id', user.id).eq('broadcast_status', 'completed'),
+            ]).then(([requests, active, completed]) => ({
+              data: { requests: requests.data || [], active_count: active.count || 0, completed_count: completed.count || 0 }
+            }))
+          }
+          return res
+        }),
         supabase.from('user_badges').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
         supabase.from('referrals').select('id', { count: 'exact', head: true }).eq('referrer_id', user.id),
       ])
 
       setWallet(walletRes.data)
       setLoyalty(loyaltyRes.data)
-      setRequests(requestsRes.data || [])
-      setActiveCount(activeRes.count || 0)
-      setCompletedCount(completedRes.count || 0)
+      setRequests(requestsWithCounts.data?.requests || [])
+      setActiveCount(requestsWithCounts.data?.active_count || 0)
+      setCompletedCount(requestsWithCounts.data?.completed_count || 0)
       setBadgeCount(badgesRes.count || 0)
       setReferralCount(referralsRes.count || 0)
       setLoading(false)
@@ -142,7 +155,7 @@ export default function CustomerDashboard() {
       // Check if we should show referral code modal (only for first-time customers)
       // Show modal if: user has no completed bookings AND hasn't dismissed the modal before
       const hasSeenReferralPrompt = localStorage.getItem('helparo_referral_prompt_completed')
-      if (!hasSeenReferralPrompt && (completedRes.count || 0) === 0) {
+      if (!hasSeenReferralPrompt && (requestsWithCounts.data?.completed_count || 0) === 0) {
         // Small delay to let dashboard render first
         setTimeout(() => setShowReferralModal(true), 1000)
       }

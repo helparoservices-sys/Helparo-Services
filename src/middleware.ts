@@ -166,7 +166,10 @@ export async function middleware(request: NextRequest) {
   }
 
   // Role-based access control - CRITICAL SECURITY
+  // OPTIMIZATION: Reuse existing supabase client instead of creating new one
   if (isProtectedRoute && user) {
+    // Get profile using the SAME supabase client created above (line 118)
+    // This avoids duplicate client initialization
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

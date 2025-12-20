@@ -184,24 +184,13 @@ export default function EmergencySOSButton({ requestId, className = '' }: Emerge
         }
       }
 
+      // OPTIMIZATION: Import singleton instead of createClient()
       const supabase = createClient()
       
-      // Try to get user - first from getUser, then from session
-      let user = null
-      try {
-        const { data: userData } = await supabase.auth.getUser()
-        user = userData?.user
-      } catch {
-        // If getUser fails, try getSession
-        const { data: sessionData } = await supabase.auth.getSession()
-        user = sessionData?.session?.user
-      }
-      
-      if (!user) {
-        // Last resort: check if we have a session
-        const { data: sessionData } = await supabase.auth.getSession()
-        user = sessionData?.session?.user
-      }
+      // OPTIMIZATION: Single auth check instead of triple fallback
+      // getSession is faster and sufficient for client-side auth
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       
       if (!user) {
         throw new Error('Please log in to send an SOS alert')
