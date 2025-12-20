@@ -63,7 +63,7 @@ export default function CustomerSupportPage() {
 
     const { data } = await supabase
       .from('support_tickets')
-      .select('*')
+      .select('id, user_id, subject, description, status, priority, category, created_at, updated_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 

@@ -54,7 +54,7 @@ export default function CustomerNotificationsPage() {
 
     let query = supabase
       .from('notifications')
-      .select('*')
+      .select('id, user_id, type, title, body, link, read_at, created_at, data')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(50)

@@ -25,9 +25,8 @@ export function LiveBookingActivity() {
     // Fetch recent bookings (last 24 hours)
     fetchRecentBookings()
 
-    // Update every 30 seconds
-    const interval = setInterval(fetchRecentBookings, 30000)
-    return () => clearInterval(interval)
+    // ✅ EGRESS FIX: Removed 30-second polling
+    // Social proof updates once per page load only
   }, [])
 
   const fetchRecentBookings = async () => {
@@ -88,8 +87,9 @@ export function HelperPopularityBadge({ helperId }: { helperId: string }) {
     }
 
     fetchViewers()
-    const interval = setInterval(fetchViewers, 10000) // Update every 10s
-    return () => clearInterval(interval)
+    
+    // ✅ EGRESS FIX: Removed 10-second polling
+    // Viewer count updates once per page load only
   }, [helperId])
 
   if (viewerCount < 2) return null // Don't show if only 1 person

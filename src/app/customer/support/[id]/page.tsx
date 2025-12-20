@@ -47,9 +47,25 @@ export default function TicketDetailsPage() {
   useEffect(() => {
     loadTicketData()
     
-    // Auto-refresh messages every 10 seconds
-    const interval = setInterval(loadMessages, 10000)
-    return () => clearInterval(interval)
+    // ✅ EGRESS FIX: Use Realtime instead of polling
+    // Subscribe to new messages for this ticket
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`ticket-messages-${ticketId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'support_ticket_messages',
+        filter: `ticket_id=eq.${ticketId}`
+      }, (payload) => {
+        // Append new message instead of re-fetching all
+        setMessages(prev => [...prev, payload.new as Message])
+      })
+      .subscribe()
+    
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [ticketId])
 
   useEffect(() => {

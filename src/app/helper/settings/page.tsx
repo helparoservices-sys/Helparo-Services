@@ -62,7 +62,7 @@ export default function HelperSettingsPage() {
 
     const { data: profileData } = await supabase
       .from('profiles')
-      .select('*')
+      .select('full_name, email, phone, bio, address, city, state, pincode, email_notifications, sms_notifications, push_notifications, booking_updates, payment_alerts, promotional_emails, profile_visibility, show_phone, show_address, allow_reviews')
       .eq('id', user.id)
       .single()
 

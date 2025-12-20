@@ -52,7 +52,7 @@ export async function getHelperWallet() {
     // Get wallet ledger entries (more reliable than transactions table)
     const { data: ledgerEntries } = await supabase
       .from('wallet_ledger')
-      .select('*')
+      .select('id, user_id, entry_type, transaction_type, amount, created_at, description, status')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(50)
@@ -94,7 +94,7 @@ export async function getHelperWallet() {
     // Get withdrawal requests
     const { data: withdrawals } = await supabase
       .from('withdrawal_requests')
-      .select('*')
+      .select('id, helper_id, amount, status, requested_at, processed_at, notes')
       .eq('helper_id', helperId)
       .order('requested_at', { ascending: false })
       .limit(20)

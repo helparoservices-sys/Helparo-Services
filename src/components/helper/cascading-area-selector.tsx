@@ -49,7 +49,7 @@ export function CascadingAreaSelector({ selectedAreaIds, onChange }: Props) {
     const supabase = createClient()
     const { data } = await supabase
       .from('service_areas')
-      .select('*')
+      .select('id, name, level, parent_id, display_order, is_active')
       .eq('level', 'state')
       .eq('is_active', true)
       .order('display_order')
@@ -62,7 +62,7 @@ export function CascadingAreaSelector({ selectedAreaIds, onChange }: Props) {
     const supabase = createClient()
     const { data } = await supabase
       .from('service_areas')
-      .select('*')
+      .select('id, name, level, parent_id, display_order, is_active')
       .eq('level', 'district')
       .eq('parent_id', stateId)
       .eq('is_active', true)
@@ -77,7 +77,7 @@ export function CascadingAreaSelector({ selectedAreaIds, onChange }: Props) {
     const supabase = createClient()
     const { data } = await supabase
       .from('service_areas')
-      .select('*')
+      .select('id, name, level, parent_id, display_order, is_active')
       .eq('level', 'city')
       .eq('parent_id', districtId)
       .eq('is_active', true)
@@ -91,7 +91,7 @@ export function CascadingAreaSelector({ selectedAreaIds, onChange }: Props) {
     const supabase = createClient()
     const { data } = await supabase
       .from('service_areas')
-      .select('*')
+      .select('id, name, level, parent_id, display_order, is_active')
       .eq('level', 'area')
       .eq('parent_id', cityId)
       .eq('is_active', true)

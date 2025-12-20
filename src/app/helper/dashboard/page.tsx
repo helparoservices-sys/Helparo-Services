@@ -241,28 +241,13 @@ export default function HelperDashboard() {
     }
   }, [cachedUserId])
   
-  // Re-fetch active job when page becomes visible (user navigates back to tab)
+  // ✅ EGRESS FIX: Removed tab focus re-fetch
+  // ✅ EGRESS FIX: Removed tab focus/visibility re-fetch
+  // Dashboard updates via Realtime instead of polling on focus
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        console.log('📱 Page became visible, refreshing active job')
-        loadActiveJob()
-      }
-    }
-    
-    // Also re-fetch when window gains focus (user clicks on tab)
-    const handleFocus = () => {
-      console.log('📱 Window focused, refreshing active job')
-      loadActiveJob()
-    }
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('focus', handleFocus)
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('focus', handleFocus)
-    }
+    // No action needed - Realtime subscriptions handle all updates
+    // Removed both visibilitychange and focus event listeners
+    return () => {}
   }, [])
   
   // Load full job details when activeJob changes

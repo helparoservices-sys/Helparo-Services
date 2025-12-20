@@ -458,13 +458,13 @@ export async function getCustomerFullDetails(userId: string): Promise<{ data: Cu
     // Fetch all data in parallel
     const results = await Promise.allSettled([
       // 0: Basic Profile
-      supabase.from('profiles').select('*').eq('id', userId).single(),
+      supabase.from('profiles').select('id, email, role, full_name, phone, avatar_url, bio, address, city, state, pincode, is_active, email_verified, phone_verified, created_at, updated_at, last_login_at, status, onboarding_completed').eq('id', userId).single(),
 
       // 1: Login History
-      supabase.from('login_attempts').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
+      supabase.from('login_attempts').select('id, user_id, ip_address, user_agent, success, failure_reason, created_at, country, city, device_type').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
 
       // 2: Active Sessions
-      supabase.from('user_sessions').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
+      supabase.from('user_sessions').select('id, user_id, session_token, ip_address, user_agent, created_at, expires_at, last_activity_at, is_active').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
 
       // 3: Service Requests
       supabase
@@ -521,13 +521,13 @@ export async function getCustomerFullDetails(userId: string): Promise<{ data: Cu
         .limit(200),
 
       // 7: Device Tokens
-      supabase.from('device_tokens').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+      supabase.from('device_tokens').select('id, user_id, token, platform, device_id, created_at, last_used_at, is_active').eq('user_id', userId).order('created_at', { ascending: false }),
 
       // 8: Notification Preferences
-      supabase.from('user_notification_prefs').select('*').eq('user_id', userId).single(),
+      supabase.from('user_notification_prefs').select('user_id, email_enabled, sms_enabled, push_enabled, job_alerts, payment_alerts, marketing_emails, created_at, updated_at').eq('user_id', userId).single(),
 
       // 9: Loyalty Points
-      supabase.from('loyalty_points').select('*').eq('user_id', userId).single(),
+      supabase.from('loyalty_points').select('user_id, points_balance, lifetime_points, tier, created_at, updated_at').eq('user_id', userId).single(),
 
       // 10: Reviews Given
       supabase

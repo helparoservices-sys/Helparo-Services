@@ -66,7 +66,7 @@ export function useRealtimeNotifications(userId: string | undefined) {
     const loadNotifications = async () => {
       const { data } = await supabase
         .from('notifications')
-        .select('*')
+        .select('id, type, title, body, link, data, channel, created_at, read, read_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(20)
@@ -187,7 +187,7 @@ export function useRealtimeMessages(conversationId: string | undefined) {
     const loadMessages = async () => {
       const { data } = await supabase
         .from('messages')
-        .select('*')
+        .select('id, conversation_id, sender_id, content, created_at')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true })
 
@@ -235,7 +235,7 @@ export function useRealtimeBids(requestId: string | undefined) {
     const loadBids = async () => {
       const { data } = await supabase
         .from('request_applications')
-        .select('*')
+        .select('id, request_id, helper_id, bid_amount, message, status, created_at')
         .eq('request_id', requestId)
         .order('created_at', { ascending: false })
 
