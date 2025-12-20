@@ -427,7 +427,7 @@ function SignUpForm() {
                   )}
                 </button>
 
-                {/* Google Sign Up - Only show for customers, not helpers */}
+                {/* Google Sign Up - Hidden for now
                 {role !== 'helper' && (
                   <>
                     <div className="flex items-center gap-3 my-4">
@@ -458,6 +458,7 @@ function SignUpForm() {
                     </button>
                   </>
                 )}
+                */}
               </>
             ) : (
               /* OTP Step - Enhanced Design */
