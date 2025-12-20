@@ -276,7 +276,7 @@ function SignUpForm() {
       localStorage.setItem('roleSelected', 'true')
       
       // Use capacitor-auth helper which handles in-app browser for Capacitor
-      const { error } = await signInWithGoogle(`${window.location.origin}/auth/callback`)
+      const { error } = await signInWithGoogle(role)
       
       if (error) {
         logger.error('Google signup error', { error })
@@ -294,16 +294,11 @@ function SignUpForm() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50/30 flex flex-col">
       <div id="recaptcha-container"></div>
       
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-100">
-        <button type="button" onClick={goBackOrHome} className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors">
-          <ArrowLeft className="w-5 h-5" />
-          <span className="font-medium">Back</span>
-        </button>
+      {/* Header - Fixed with safe area padding for status bar */}
+      <div className="flex items-center justify-center p-4 pt-safe border-b border-gray-100 bg-white">
         <Link href="/" className="flex items-center gap-2">
           <span className="text-2xl font-black text-gray-900 font-heading tracking-tight">helparo</span>
         </Link>
-        <div className="w-16" />
       </div>
 
       {/* Content */}

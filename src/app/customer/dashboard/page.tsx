@@ -153,9 +153,12 @@ export default function CustomerDashboard() {
       setLoading(false)
 
       // Check if we should show referral code modal (only for first-time customers)
-      // Show modal if: user has no completed bookings AND hasn't dismissed the modal before
+      // Show modal if: completely new user (no requests at all) AND hasn't seen it before
       const hasSeenReferralPrompt = localStorage.getItem('helparo_referral_prompt_completed')
-      if (!hasSeenReferralPrompt && (requestsWithCounts.data?.completed_count || 0) === 0) {
+      const totalRequests = (requestsWithCounts.data?.requests?.length || 0)
+      const isFirstTimeUser = totalRequests === 0 && (requestsWithCounts.data?.completed_count || 0) === 0
+      
+      if (!hasSeenReferralPrompt && isFirstTimeUser) {
         // Small delay to let dashboard render first
         setTimeout(() => setShowReferralModal(true), 1000)
       }
@@ -183,7 +186,7 @@ export default function CustomerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 overflow-x-hidden pt-safe-or-4">
       {/* Decorative Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-emerald-100/40 via-teal-100/30 to-transparent rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3" />

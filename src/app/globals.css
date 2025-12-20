@@ -9,28 +9,52 @@
 
 /* CSS Variables for native app */
 :root {
-  --safe-area-inset-top: env(safe-area-inset-top, 24px);
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
   --safe-area-inset-right: env(safe-area-inset-right, 0px);
-  --safe-area-inset-bottom: env(safe-area-inset-bottom, 16px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-inset-left: env(safe-area-inset-left, 0px);
   --keyboard-height: 0px;
+  --status-bar-height: 0px;
 }
 
-/* Android WebView fallback - detect Capacitor and apply fixed padding */
-@supports not (padding-top: env(safe-area-inset-top)) {
+/* 
+ * IMPORTANT: When running in Capacitor with StatusBar overlay:false,
+ * Android natively pushes content below the status bar.
+ * We should NOT add extra CSS padding, otherwise we get double spacing.
+ * Only use safe-area-inset for iOS notches or when overlay:true is used.
+ */
+
+/* iOS fallback for when safe-area-inset is available */
+@supports (padding-top: env(safe-area-inset-top)) {
   :root {
-    --safe-area-inset-top: 28px;
-    --safe-area-inset-bottom: 20px;
+    --safe-area-inset-top: env(safe-area-inset-top);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom);
   }
 }
 
-/* Safe area utilities for notched phones */
-.pt-safe { padding-top: max(24px, var(--safe-area-inset-top)); }
-.pb-safe { padding-bottom: max(16px, var(--safe-area-inset-bottom)); }
+/* Safe area utilities - only apply on iOS or when explicitly needed */
+.pt-safe { 
+  padding-top: var(--safe-area-inset-top); 
+}
+.pt-safe-or-4 {
+  padding-top: max(1rem, var(--safe-area-inset-top));
+}
+.pb-safe { 
+  padding-bottom: max(16px, var(--safe-area-inset-bottom)); 
+}
 .pl-safe { padding-left: var(--safe-area-inset-left); }
 .pr-safe { padding-right: var(--safe-area-inset-right); }
 .mt-safe { margin-top: var(--safe-area-inset-top); }
 .mb-safe { margin-bottom: var(--safe-area-inset-bottom); }
+
+/* Fixed elements (headers, modals) need to account for status bar */
+.fixed-top-safe {
+  top: var(--safe-area-inset-top);
+}
+
+.pt-safe-header {
+  padding-top: var(--safe-area-inset-top);
+}
 
 /* Keyboard-aware bottom padding */
 .pb-keyboard {
@@ -62,9 +86,16 @@
   top: 0;
   left: 0;
   right: 0;
-  height: var(--safe-area-inset-top);
+  height: var(--status-bar-height);
   background-color: #00C3B4;
   z-index: 9999;
+  pointer-events: none;
+}
+
+/* Ensure body accounts for status bar */
+body {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
 }
 
 /* ═══════════════════════════════════════════════════════════════════

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import MobileAppEntry from '@/components/mobile-app-entry'
+import { MobileRedirect } from '@/components/mobile-redirect'
 import { Button } from '@/components/ui/button'
 import { 
   ArrowRight,
@@ -99,6 +100,8 @@ export default function LandingPage() {
 
   return (
     <>
+      <MobileRedirect />
+      
       <div className="md:hidden">
         <MobileAppEntry />
       </div>

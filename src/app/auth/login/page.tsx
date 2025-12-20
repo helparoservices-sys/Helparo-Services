@@ -281,7 +281,7 @@ export default function LoginPage() {
     
     try {
       // Use capacitor-auth helper which handles in-app browser for Capacitor
-      const { error } = await signInWithGoogle(`${window.location.origin}/auth/callback`)
+      const { error } = await signInWithGoogle('customer')
       
       if (error) {
         logger.error('Google login error', { error })
@@ -406,16 +406,11 @@ export default function LoginPage() {
 
       {/* Right Side - Login Form */}
       <div className="flex-1 flex flex-col">
-        {/* Mobile Header */}
-        <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-100">
-          <button type="button" onClick={goBackOrHome} className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium">Back</span>
-          </button>
+        {/* Mobile Header - Fixed with safe area padding for status bar */}
+        <div className="lg:hidden flex items-center justify-center p-4 pt-safe border-b border-gray-100 bg-white">
           <Link href="/" className="flex items-center gap-2">
             <span className="text-2xl font-black text-gray-900 font-heading tracking-tight">helparo</span>
           </Link>
-          <div className="w-12" />
         </div>
 
         {/* Desktop Back Button */}
@@ -491,6 +486,7 @@ export default function LoginPage() {
                       )}
                     </button>
 
+                    {/* Google OAuth - Hidden for now
                     <div className="flex items-center gap-3 my-4">
                       <div className="flex-1 h-px bg-gray-200" />
                       <span className="text-xs text-gray-400 font-medium">or</span>
@@ -517,6 +513,7 @@ export default function LoginPage() {
                         </>
                       )}
                     </button>
+                    */}
                   </div>
                 ) : (
                   <div className="space-y-5">

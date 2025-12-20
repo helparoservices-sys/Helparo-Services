@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- PRODUCTION FIX: Changed from white to emerald green for better visibility -->
+    <!-- Use your brand color here. Emerald green matches Helparo branding -->
+    <!-- Alternative colors: #059669 (darker emerald), #FFFFFF (white), #1F2937 (dark gray) -->
+    <color name="ic_launcher_background">#10B981</color>
 </resources>

@@ -3,6 +3,7 @@ import './globals.css'
 import { PageTransition } from '@/components/page-transition'
 import { LanguageProvider } from '@/lib/language-context'
 import { CapacitorBackButton } from '@/components/capacitor-back-button'
+import { CapacitorInit } from '@/components/capacitor-init'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://helparo.in'),
@@ -271,6 +272,7 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
+        <CapacitorInit />
         <CapacitorBackButton />
         <LanguageProvider>
           <PageTransition>

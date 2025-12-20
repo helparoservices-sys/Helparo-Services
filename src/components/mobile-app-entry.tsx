@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { ArrowRight, Star, Sparkles, Shield, Clock, MapPin, Zap, ChevronRight, CheckCircle2, TrendingUp, Heart, Briefcase, Loader2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { initializeDeepLinkListener } from "@/lib/capacitor-auth"
 
 // Animated Counter Component
 function AnimatedCounter({ value, suffix = "" }: { value: string; suffix?: string }) {
@@ -266,6 +267,9 @@ export default function MobileAppEntry() {
 
   // Check if user is logged in and redirect to dashboard - MUST run first
   useEffect(() => {
+    // Initialize deep link listener for OAuth callbacks
+    initializeDeepLinkListener()
+    
     const checkAuth = async () => {
       try {
         const supabase = createClient()

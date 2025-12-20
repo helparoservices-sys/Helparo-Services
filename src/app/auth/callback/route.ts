@@ -4,14 +4,23 @@ import { NextResponse } from 'next/server'
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
+  const fromMobile = requestUrl.searchParams.get('from') === 'mobile'
 
   if (code) {
     const supabase = await createClient()
-    await supabase.auth.exchangeCodeForSession(code)
+    const { data: sessionData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (exchangeError) {
+      console.error('❌ Code exchange failed:', exchangeError)
+      const errorUrl = fromMobile 
+        ? 'helparoapp://auth/error?message=oauth_failed'
+        : new URL('/auth/login?error=oauth_failed', requestUrl.origin).toString()
+      return NextResponse.redirect(errorUrl)
+    }
 
     // After session exchange, get user info
     const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
+    if (user && sessionData.session) {
       // Check if profile exists and has been properly set up
       const { data: profile } = await supabase
         .from('profiles')
@@ -19,24 +28,47 @@ export async function GET(request: Request) {
         .eq('id', user.id)
         .maybeSingle()
 
-      // If role already set, redirect based on role
+      // Determine redirect destination based on profile
+      let destination = '/'
+      
       if (profile?.role) {
         if (profile.role === 'helper') {
           // Helpers must have verified phone
           if (!profile.phone || !profile.phone_verified) {
-            return NextResponse.redirect(new URL('/auth/complete-signup', requestUrl.origin))
+            destination = '/auth/complete-signup'
+          } else {
+            destination = '/helper/dashboard'
           }
-          return NextResponse.redirect(new URL('/helper/dashboard', requestUrl.origin))
+        } else {
+          // Customer with role set - go straight to dashboard
+          destination = '/customer/dashboard'
         }
-        // Customer with role set - go straight to dashboard
-        return NextResponse.redirect(new URL('/customer/dashboard', requestUrl.origin))
+      } else {
+        // No role set - go to post-oauth handler
+        destination = '/auth/post-oauth'
       }
 
-      // No role set - go to post-oauth handler (client-side) to read localStorage role
-      return NextResponse.redirect(new URL('/auth/post-oauth', requestUrl.origin))
+      // For mobile apps, redirect back to the app via deep link with tokens
+      // The WebView doesn't share cookies with Chrome, so we pass tokens directly
+      if (fromMobile) {
+        const { access_token, refresh_token } = sessionData.session
+        // Use deep link with tokens to establish session in the app's WebView
+        const mobileRedirect = `helparoapp://auth/success?` + 
+          `access_token=${encodeURIComponent(access_token)}` +
+          `&refresh_token=${encodeURIComponent(refresh_token)}` +
+          `&redirect=${encodeURIComponent(destination)}`
+        console.log('📱 Mobile OAuth complete, redirecting to app with tokens')
+        return NextResponse.redirect(mobileRedirect)
+      }
+      
+      // Web redirect
+      return NextResponse.redirect(new URL(destination, requestUrl.origin))
     }
   }
 
   // URL to redirect to after sign in process completes
-  return NextResponse.redirect(requestUrl.origin)
+  const fallbackUrl = fromMobile 
+    ? 'helparoapp://auth/error?message=no_session'
+    : requestUrl.origin
+  return NextResponse.redirect(fallbackUrl)
 }

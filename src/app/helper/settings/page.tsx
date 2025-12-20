@@ -327,10 +327,19 @@ export default function HelperSettingsPage() {
                       <Label htmlFor="pincode">Pincode</Label>
                       <Input
                         id="pincode"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]{6}"
                         value={profile.pincode}
-                        onChange={(e) => setProfile({ ...profile, pincode: e.target.value })}
-                        placeholder="PIN code"
+                        onChange={(e) => {
+                          // Only allow numeric input, max 6 digits
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 6)
+                          setProfile({ ...profile, pincode: value })
+                        }}
+                        maxLength={6}
+                        placeholder="400001"
                       />
+                      <p className="text-xs text-muted-foreground">6-digit pincode (numbers only)</p>
                     </div>
                   </div>
 

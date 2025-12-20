@@ -474,6 +474,14 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
       return
     }
     
+    // Validate pincode format: must be exactly 6 digits
+    const pincodeRegex = /^\d{6}$/
+    if (!pincodeRegex.test(data.pincode.trim())) {
+      setValidationError('Pincode must be exactly 6 digits')
+      toast.error('Please enter a valid 6-digit pincode')
+      return
+    }
+    
     if (!data.service_radius_km || data.service_radius_km < 1) {
       setValidationError(t('onboarding.step2.radiusRequired'))
       toast.error(t('onboarding.step2.selectRadius'))
@@ -578,12 +586,21 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
           </label>
           <input
             type="text"
+            inputMode="numeric"
+            pattern="[0-9]{6}"
             value={data.pincode || ''}
-            onChange={(e) => onChange({ pincode: e.target.value })}
-            maxLength={10}
+            onChange={(e) => {
+              // Only allow numeric input, max 6 digits
+              const value = e.target.value.replace(/\D/g, '').slice(0, 6)
+              onChange({ pincode: value })
+            }}
+            maxLength={6}
             className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="400001"
           />
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Enter 6-digit pincode (numbers only)
+          </p>
         </div>
 
         {/* Coordinates (Optional) */}
