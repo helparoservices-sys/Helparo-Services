@@ -52,7 +52,7 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
           </button>
           
           <Link href="/customer/dashboard" className="flex items-center">
-            <span className="text-lg font-bold text-gray-900 dark:text-white">helparo</span>
+            <span className="text-lg font-bold text-gray-900 dark:text-white">helparo1</span>
           </Link>
         </div>
 
