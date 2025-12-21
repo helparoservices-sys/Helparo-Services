@@ -31,22 +31,25 @@ export function CapacitorBackButton() {
       }
       
       try {
-        // Capacitor 8.0+ SystemBars API (imported from @capacitor/status-bar)
-        const StatusBarModule = await import('@capacitor/status-bar')
-        const StatusBar = StatusBarModule.StatusBar
-        
-        // Note: SystemBars plugin automatically injects CSS variables when insetsHandling: 'css'
-        // is set in capacitor.config.ts. We just need to set the style.
-        
-        // Set dark text/icons on light background
-        await StatusBar.setStyle({ style: 'DARK' })
-        
-        // Ensure status bar is visible
+        // Configure Capacitor StatusBar to avoid overlapping content on Android
+        const { StatusBar, Style } = await import('@capacitor/status-bar')
+
+        // Dark icons on light background
+        await StatusBar.setStyle({ style: Style.Dark })
+
+        // Critical: prevent the WebView from drawing under the system status bar
+        await StatusBar.setOverlaysWebView({ overlay: false })
+
+        // Match the native status bar background with the web UI header
+        await StatusBar.setBackgroundColor({ color: '#FFFFFF' })
+
+        // Ensure the bar is visible after applying the settings
         await StatusBar.show()
-        
+
         console.log('✅ StatusBar configured correctly')
       } catch (error) {
         console.log('StatusBar not available:', error)
+        toast.error('Status bar setup failed. Please restart the app.')
       }
 
       try {
