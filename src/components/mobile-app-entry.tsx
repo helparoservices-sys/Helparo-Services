@@ -65,7 +65,7 @@ function useCurrentCity() {
         const data = await response.json()
         if (data.city) return data.city
       } catch (e) {
-        console.log('ipapi.co failed:', e)
+        alert('ipapi.co failed: ' + e)
       }
 
       try {
@@ -73,7 +73,7 @@ function useCurrentCity() {
         const data = await response.json()
         if (data.city) return data.city
       } catch (e) {
-        console.log('ipinfo.io failed:', e)
+        alert('ipinfo.io failed: ' + e)
       }
 
       try {
@@ -81,7 +81,7 @@ function useCurrentCity() {
         const data = await response.json()
         if (data.cityName) return data.cityName
       } catch (e) {
-        console.log('freeipapi.com failed:', e)
+        alert('freeipapi.com failed: ' + e)
       }
 
       return null
@@ -292,7 +292,7 @@ export default function MobileAppEntry() {
           }
         }
       } catch (error) {
-        console.log('Not logged in')
+        alert('Not logged in')
       }
       // Only show content if user is NOT logged in
       setCheckingAuth(false)

@@ -19,7 +19,7 @@ export default function FirebaseOTPTest() {
   const [success, setSuccess] = useState(false)
 
   const log = (msg: string) => {
-    console.log(msg)
+    alert(msg)
     setStatus(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`])
   }
 

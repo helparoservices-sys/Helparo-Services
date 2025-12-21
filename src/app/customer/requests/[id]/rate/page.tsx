@@ -100,8 +100,8 @@ export default function RateHelperPage() {
         } : null
       }
 
-      console.log('📋 Rating page - Job loaded:', transformedData)
-      console.log('📋 Raw API response assigned_helper:', data.assigned_helper)
+      alert('📋 Rating page - Job loaded: ' + JSON.stringify(transformedData))
+      alert('📋 Raw API response assigned_helper: ' + JSON.stringify(data.assigned_helper))
       setJob(transformedData)
     } catch (error) {
       console.error('Failed to load job:', error)
@@ -146,7 +146,7 @@ export default function RateHelperPage() {
         }
       }
 
-      console.log('📝 Submitting rating with helper_profile_id:', helperProfileId)
+      alert('📝 Submitting rating with helper_profile_id: ' + helperProfileId)
 
       // Insert rating
       const { error } = await supabase

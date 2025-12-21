@@ -104,18 +104,18 @@ export default function HelperRequestsPage() {
 
   const loadRequests = async () => {
     setLoading(true)
-    console.log('🔍 Fetching service requests...')
+    alert('🔍 Fetching service requests...')
     const result = await getHelperServiceRequests()
     
-    console.log('📦 Result from getHelperServiceRequests:', result)
+    alert('📦 Result from getHelperServiceRequests: ' + JSON.stringify(result))
     
     if ('error' in result) {
       console.error('❌ Error loading requests:', result.error)
       toast.error(result.error || 'Failed to load requests')
       setRequests([])
     } else if ('requests' in result) {
-      console.log('✅ Requests loaded:', result.requests.length, 'requests')
-      console.log('📋 Requests data:', result.requests)
+      alert('✅ Requests loaded: ' + result.requests.length + ' requests')
+      alert('📋 Requests data: ' + JSON.stringify(result.requests))
       setRequests(result.requests)
     } else {
       console.warn('⚠️ Unexpected result format:', result)
@@ -164,7 +164,7 @@ export default function HelperRequestsPage() {
       const amount = parseFloat(bidAmount[requestId] || '0')
       const message = bidMessage[requestId] || ''
 
-      console.log('Submitting bid:', { requestId, amount, message })
+      alert('Submitting bid: ' + JSON.stringify({ requestId, amount, message }))
 
       if (!amount || amount <= 0) {
         toast.error('Please enter a valid bid amount')
@@ -179,7 +179,7 @@ export default function HelperRequestsPage() {
         message: message.trim(),
       })
 
-      console.log('Bid submission result:', result)
+      alert('Bid submission result: ' + JSON.stringify(result))
 
       if ('error' in result) {
         toast.error(result.error || 'Failed to submit bid')
@@ -439,7 +439,7 @@ export default function HelperRequestsPage() {
                         type="button"
                         onClick={(e) => {
                           e.preventDefault()
-                          console.log('Button clicked for request:', request.id)
+                          alert('Button clicked for request: ' + request.id)
                           handleSubmitBid(request.id)
                         }}
                         disabled={submitting[request.id] || !bidAmount[request.id] || parseFloat(bidAmount[request.id]) <= 0}

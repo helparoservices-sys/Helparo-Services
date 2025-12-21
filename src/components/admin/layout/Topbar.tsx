@@ -168,7 +168,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
   }
 
   return (
-    <div className="fixed left-0 right-0 z-50" style={{ top: 0, paddingTop: 'max(env(safe-area-inset-top, 0px), 24px)' }}>
+    <div className="fixed left-0 right-0 z-50 pt-safe" style={{ top: 0 }}>
       <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-white/20 dark:border-slate-800/50 shadow-lg">
         <div className="h-16 px-4 flex items-center justify-between gap-4">
         {/* Left Section */}
