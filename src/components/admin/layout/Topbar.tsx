@@ -168,8 +168,8 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-white/20 dark:border-slate-800/50 shadow-lg z-50">
-      <div className="h-full px-4 flex items-center justify-between gap-4">
+    <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-white/20 dark:border-slate-800/50 shadow-lg z-50 pt-safe">
+      <div className="h-16 px-4 flex items-center justify-between gap-4">
         {/* Left Section */}
         <div className="flex items-center gap-4">
           {/* Sidebar Toggle */}

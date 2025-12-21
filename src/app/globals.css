@@ -15,6 +15,7 @@
   --safe-area-inset-left: env(safe-area-inset-left, 0px);
   --keyboard-height: 0px;
   --status-bar-height: 0px;
+  --android-status-bar-height: 0px;
 }
 
 /* 
@@ -32,10 +33,20 @@
   }
 }
 
+/* Android Capacitor: When overlay:false, Android pushes content down automatically.
+   We don't need extra padding in most cases. But if overlay is still happening,
+   the .capacitor-android class will be added and we can use --android-status-bar-height */
+
 /* Safe area utilities - only apply on iOS or when explicitly needed */
 .pt-safe { 
   padding-top: var(--safe-area-inset-top); 
 }
+
+/* Android-specific: Use Android status bar height when in Capacitor Android */
+.capacitor-android .pt-safe {
+  padding-top: var(--android-status-bar-height, 0px);
+}
+
 .pt-safe-or-4 {
   padding-top: max(1rem, var(--safe-area-inset-top));
 }
@@ -58,6 +69,26 @@
 
 .pt-safe-header {
   padding-top: var(--safe-area-inset-top);
+}
+
+/* Content area padding that accounts for header + safe area */
+/* For h-14 (3.5rem) header */
+.pt-header-14-safe {
+  padding-top: calc(3.5rem + var(--safe-area-inset-top));
+}
+
+/* For h-16 (4rem) header */
+.pt-header-16-safe {
+  padding-top: calc(4rem + var(--safe-area-inset-top));
+}
+
+/* Android-specific content padding */
+.capacitor-android .pt-header-14-safe {
+  padding-top: calc(3.5rem + var(--android-status-bar-height, 0px));
+}
+
+.capacitor-android .pt-header-16-safe {
+  padding-top: calc(4rem + var(--android-status-bar-height, 0px));
 }
 
 /* Keyboard-aware bottom padding */

@@ -65,7 +65,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             
             {/* Main content - No left margin on mobile */}
             <main 
-              className={`flex-1 transition-all duration-300 ease-in-out pt-16
+              className={`flex-1 transition-all duration-300 ease-in-out pt-header-16-safe
                 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}
                 ml-0
               `}

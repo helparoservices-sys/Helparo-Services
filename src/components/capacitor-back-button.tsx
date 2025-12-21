@@ -16,6 +16,23 @@ export function CapacitorBackButton() {
     let App: any = null
 
     const setupCapacitor = async () => {
+      // Check if we're in Capacitor
+      const isCapacitor = !!(window as any).Capacitor?.isNativePlatform?.()
+      
+      if (isCapacitor) {
+        // Add class to body for CSS targeting
+        document.body.classList.add('capacitor-app')
+        
+        // On Android, set a fixed status bar height since env(safe-area-inset-top) returns 0
+        // Typical Android status bar is 24dp which is ~24-28px depending on density
+        const isAndroid = (window as any).Capacitor?.getPlatform?.() === 'android'
+        if (isAndroid) {
+          document.body.classList.add('capacitor-android')
+          // Set CSS variable for Android status bar height (24dp standard)
+          document.documentElement.style.setProperty('--android-status-bar-height', '24px')
+        }
+      }
+      
       try {
         // Setup StatusBar for Android
         const { StatusBar, Style } = await import('@capacitor/status-bar')
