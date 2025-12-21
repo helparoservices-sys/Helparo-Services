@@ -71,7 +71,7 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-50">
+    <header className="fixed top-0 left-0 right-0 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-50 pt-safe">
       <div className="h-full px-4 flex items-center justify-between">
         {/* Left Section */}
         <div className="flex items-center gap-4">
