@@ -52,6 +52,10 @@
   top: var(--safe-area-inset-top);
 }
 
+.fixed-top-safe-offset {
+  top: max(1rem, var(--safe-area-inset-top));
+}
+
 .pt-safe-header {
   padding-top: var(--safe-area-inset-top);
 }
@@ -88,14 +92,37 @@
   right: 0;
   height: var(--status-bar-height);
   background-color: #00C3B4;
-  z-index: 9999;
+  z-index: 9998;
   pointer-events: none;
+}
+
+/* Global fixed top positioning with safe area */
+.fixed-top {
+  position: fixed;
+  top: env(safe-area-inset-top);
+  left: 0;
+  right: 0;
+}
+
+/* Fixed top with padding offset for notification bars */
+.fixed-top-notify {
+  position: fixed;
+  top: calc(max(1rem, env(safe-area-inset-top)));
+  left: 0;
+  right: 0;
+  z-index: 9999;
 }
 
 /* Ensure body accounts for status bar */
 body {
   min-height: 100vh;
   min-height: -webkit-fill-available;
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Content area padding for fixed headers */
+.content-with-fixed-header {
+  padding-top: calc(1rem + env(safe-area-inset-top));
 }
 
 /* ═══════════════════════════════════════════════════════════════════

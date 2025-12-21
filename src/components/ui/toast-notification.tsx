@@ -84,7 +84,7 @@ function ToastContainer({ toasts, onRemove }: {
   onRemove: (id: string) => void 
 }) {
   return (
-    <div className="fixed top-4 right-4 z-[9999] space-y-2">
+    <div className="fixed right-4 z-[9999] space-y-2" style={{ top: "max(1rem, env(safe-area-inset-top))" }}>
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onRemove={onRemove} />
       ))}
