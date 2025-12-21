@@ -39,8 +39,10 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-100 z-50 pt-safe">
-      <div className="flex items-center justify-between h-14 px-4">
+    <div className="fixed top-0 left-0 right-0 z-50">
+      <div className="safe-area-bar bg-white" />
+      <header className="bg-white border-b border-gray-100">
+        <div className="flex items-center justify-between h-14 px-4">
         {/* Left Section */}
         <div className="flex items-center gap-3">
           <button
@@ -105,7 +107,8 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
             )}
           </div>
         </div>
-      </div>
-    </header>
+        </div>
+      </header>
+    </div>
   )
 }

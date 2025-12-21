@@ -72,6 +72,14 @@
   padding-top: calc(4rem + env(safe-area-inset-top, 0px));
 }
 
+.safe-area-bar {
+  height: env(safe-area-inset-top, 0px);
+}
+
+body.capacitor-android .safe-area-bar {
+  height: max(env(safe-area-inset-top, 0px), var(--android-status-bar-fallback));
+}
+
 /* Keyboard-aware bottom padding */
 .pb-keyboard {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--keyboard-height));
