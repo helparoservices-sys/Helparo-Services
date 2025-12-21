@@ -16,6 +16,7 @@
 :root {
   --keyboard-height: 0px;
   --status-bar-height: 0px;
+  --android-status-bar-fallback: 24px;
 }
 
 /* Safe area utilities - work on both iOS and Android with Capacitor SystemBars */
@@ -129,6 +130,23 @@ body {
   min-height: 100vh;
   min-height: -webkit-fill-available;
   padding-top: env(safe-area-inset-top);
+}
+
+/* Android fallback: Capacitor sometimes reports 0 safe area, so use a minimum padding */
+body.capacitor-android {
+  padding-top: max(env(safe-area-inset-top, 0px), var(--android-status-bar-fallback));
+}
+
+body.capacitor-android .pt-safe {
+  padding-top: max(env(safe-area-inset-top, 0px), var(--android-status-bar-fallback));
+}
+
+body.capacitor-android .pt-header-14-safe {
+  padding-top: calc(3.5rem + max(env(safe-area-inset-top, 0px), var(--android-status-bar-fallback)));
+}
+
+body.capacitor-android .pt-header-16-safe {
+  padding-top: calc(4rem + max(env(safe-area-inset-top, 0px), var(--android-status-bar-fallback)));
 }
 
 /* Content area padding for fixed headers */
@@ -295,6 +313,12 @@ table {
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
+}
+
+/* Capacitor mobile: hide scrollbars to avoid teal bar overlay */
+body.capacitor-app ::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 ::-webkit-scrollbar-track {
@@ -541,6 +565,15 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #35F1CD;
+}
+
+/* Override after desktop scrollbar styles to keep Capacitor scrollbars hidden */
+body.capacitor-app ::-webkit-scrollbar,
+body.capacitor-app ::-webkit-scrollbar-thumb,
+body.capacitor-app ::-webkit-scrollbar-track {
+  width: 0;
+  height: 0;
+  background: transparent;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
