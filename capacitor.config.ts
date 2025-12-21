@@ -28,10 +28,10 @@ const config: CapacitorConfig = {
         enabled: true,
       },
     },
-    StatusBar: {
-      style: 'dark',  // Dark text on light background
-      backgroundColor: '#FFFFFF',  // White background to match app
-      overlaysWebView: false,  // Let Android handle spacing
+    // SystemBars: NEW Capacitor 8.0+ plugin for edge-to-edge support
+    SystemBars: {
+      style: 'DARK',  // Dark text on light background  
+      insetsHandling: 'css',  // Injects CSS variables for safe area
     },
   },
 };

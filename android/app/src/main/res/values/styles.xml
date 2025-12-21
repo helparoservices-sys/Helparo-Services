@@ -20,6 +20,7 @@
         <item name="android:windowTranslucentNavigation">false</item>
         <item name="android:enforceNavigationBarContrast" tools:targetApi="q">false</item>
         <item name="android:navigationBarColor">@android:color/white</item>
+        <item name="android:fitsSystemWindows">true</item>
     </style>
 
 

@@ -23,28 +23,23 @@ export function CapacitorBackButton() {
         // Add class to body for CSS targeting
         document.body.classList.add('capacitor-app')
         
-        // On Android, set a fixed status bar height since env(safe-area-inset-top) returns 0
-        // Typical Android status bar is 24dp which is ~24-28px depending on density
+        // On Android, mark for CSS targeting
         const isAndroid = (window as any).Capacitor?.getPlatform?.() === 'android'
         if (isAndroid) {
           document.body.classList.add('capacitor-android')
-          // Set CSS variable for Android status bar height (24dp standard)
-          document.documentElement.style.setProperty('--android-status-bar-height', '24px')
         }
       }
       
       try {
-        // Setup StatusBar for Android
-        const { StatusBar, Style } = await import('@capacitor/status-bar')
+        // Capacitor 8.0+ SystemBars API (imported from @capacitor/status-bar)
+        const StatusBarModule = await import('@capacitor/status-bar')
+        const StatusBar = StatusBarModule.StatusBar
         
-        // Use dark content on light background
-        await StatusBar.setStyle({ style: Style.Dark })
+        // Note: SystemBars plugin automatically injects CSS variables when insetsHandling: 'css'
+        // is set in capacitor.config.ts. We just need to set the style.
         
-        // CRITICAL: Set overlay to FALSE - Android will push content below status bar
-        await StatusBar.setOverlaysWebView({ overlay: false })
-        
-        // Set status bar background to match app header
-        await StatusBar.setBackgroundColor({ color: '#FFFFFF' })
+        // Set dark text/icons on light background
+        await StatusBar.setStyle({ style: 'DARK' })
         
         // Ensure status bar is visible
         await StatusBar.show()

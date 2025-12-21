@@ -5,95 +5,75 @@
 /* ═══════════════════════════════════════════════════════════════════
    CAPACITOR MOBILE APP STYLES
    Native app experience with safe areas and keyboard handling
+   
+   NOTE: Capacitor 8.0+ with SystemBars plugin automatically injects
+   CSS variables: --safe-area-inset-top, --safe-area-inset-right, 
+   --safe-area-inset-bottom, --safe-area-inset-left when
+   insetsHandling: 'css' is configured in capacitor.config.ts
 ═══════════════════════════════════════════════════════════════════ */
 
 /* CSS Variables for native app */
 :root {
-  --safe-area-inset-top: env(safe-area-inset-top, 0px);
-  --safe-area-inset-right: env(safe-area-inset-right, 0px);
-  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-area-inset-left: env(safe-area-inset-left, 0px);
   --keyboard-height: 0px;
   --status-bar-height: 0px;
-  --android-status-bar-height: 0px;
 }
 
-/* 
- * IMPORTANT: When running in Capacitor with StatusBar overlay:false,
- * Android natively pushes content below the status bar.
- * We should NOT add extra CSS padding, otherwise we get double spacing.
- * Only use safe-area-inset for iOS notches or when overlay:true is used.
- */
-
-/* iOS fallback for when safe-area-inset is available */
-@supports (padding-top: env(safe-area-inset-top)) {
-  :root {
-    --safe-area-inset-top: env(safe-area-inset-top);
-    --safe-area-inset-bottom: env(safe-area-inset-bottom);
-  }
-}
-
-/* Android Capacitor: When overlay:false, Android pushes content down automatically.
-   We don't need extra padding in most cases. But if overlay is still happening,
-   the .capacitor-android class will be added and we can use --android-status-bar-height */
-
-/* Safe area utilities - only apply on iOS or when explicitly needed */
+/* Safe area utilities - work on both iOS and Android with Capacitor SystemBars */
 .pt-safe { 
-  padding-top: var(--safe-area-inset-top); 
-}
-
-/* Android-specific: Use Android status bar height when in Capacitor Android */
-.capacitor-android .pt-safe {
-  padding-top: var(--android-status-bar-height, 0px);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .pt-safe-or-4 {
-  padding-top: max(1rem, var(--safe-area-inset-top));
+  padding-top: max(1rem, env(safe-area-inset-top, 0px));
 }
+
 .pb-safe { 
-  padding-bottom: max(16px, var(--safe-area-inset-bottom)); 
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); 
 }
-.pl-safe { padding-left: var(--safe-area-inset-left); }
-.pr-safe { padding-right: var(--safe-area-inset-right); }
-.mt-safe { margin-top: var(--safe-area-inset-top); }
-.mb-safe { margin-bottom: var(--safe-area-inset-bottom); }
+
+.pl-safe { 
+  padding-left: env(safe-area-inset-left, 0px); 
+}
+
+.pr-safe { 
+  padding-right: env(safe-area-inset-right, 0px); 
+}
+
+.mt-safe { 
+  margin-top: env(safe-area-inset-top, 0px); 
+}
+
+.mb-safe { 
+  margin-bottom: env(safe-area-inset-bottom, 0px); 
+}
 
 /* Fixed elements (headers, modals) need to account for status bar */
 .fixed-top-safe {
-  top: var(--safe-area-inset-top);
+  top: env(safe-area-inset-top, 0px);
 }
 
 .fixed-top-safe-offset {
-  top: max(1rem, var(--safe-area-inset-top));
+  top: max(1rem, env(safe-area-inset-top, 0px));
 }
 
 .pt-safe-header {
-  padding-top: var(--safe-area-inset-top);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 /* Content area padding that accounts for header + safe area */
 /* For h-14 (3.5rem) header */
 .pt-header-14-safe {
-  padding-top: calc(3.5rem + var(--safe-area-inset-top));
+  padding-top: calc(3.5rem + env(safe-area-inset-top, 0px));
 }
 
 /* For h-16 (4rem) header */
 .pt-header-16-safe {
-  padding-top: calc(4rem + var(--safe-area-inset-top));
-}
-
-/* Android-specific content padding */
-.capacitor-android .pt-header-14-safe {
-  padding-top: calc(3.5rem + var(--android-status-bar-height, 0px));
-}
-
-.capacitor-android .pt-header-16-safe {
-  padding-top: calc(4rem + var(--android-status-bar-height, 0px));
+  padding-top: calc(4rem + env(safe-area-inset-top, 0px));
 }
 
 /* Keyboard-aware bottom padding */
 .pb-keyboard {
-  padding-bottom: calc(var(--safe-area-inset-bottom) + var(--keyboard-height));
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--keyboard-height));
   transition: padding-bottom 0.25s ease;
 }
 
