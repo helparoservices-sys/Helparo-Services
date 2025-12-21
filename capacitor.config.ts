@@ -19,6 +19,11 @@ const config: CapacitorConfig = {
   },
   
   plugins: {
+    StatusBar: {
+      style: 'DARK',
+      backgroundColor: '#E8F7F3',
+      overlaysWebView: false,  // This is the KEY setting - prevents overlap
+    },
     Geolocation: {
       enableHighAccuracy: true,
     },

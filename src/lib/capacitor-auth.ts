@@ -241,10 +241,23 @@ export function initializeDeepLinkListener() {
  * Initialize app-level Capacitor features
  * Call this in the root layout
  */
-export function initializeCapacitor() {
+export async function initializeCapacitor() {
   if (!isCapacitor()) return
   
   console.log('🚀 Initializing Capacitor app features')
+  
+  // Configure status bar to prevent overlap
+  try {
+    const { StatusBar, Style } = await import('@capacitor/status-bar')
+    
+    // Set status bar style and background
+    await StatusBar.setStyle({ style: Style.Dark })
+    await StatusBar.setBackgroundColor({ color: '#E8F7F3' })
+    
+    console.log('✅ Status bar configured')
+  } catch (error) {
+    console.error('⚠️ Status bar configuration failed:', error)
+  }
   
   // Set up deep link handling
   initializeDeepLinkListener()
