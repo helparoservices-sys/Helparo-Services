@@ -5,84 +5,64 @@
 /* ═══════════════════════════════════════════════════════════════════
    CAPACITOR MOBILE APP STYLES
    Native app experience with safe areas and keyboard handling
-   
-   NOTE: Capacitor 8.0+ with SystemBars plugin automatically injects
-   CSS variables: --safe-area-inset-top, --safe-area-inset-right, 
-   --safe-area-inset-bottom, --safe-area-inset-left when
-   insetsHandling: 'css' is configured in capacitor.config.ts
 ═══════════════════════════════════════════════════════════════════ */
 
 /* CSS Variables for native app */
 :root {
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
   --keyboard-height: 0px;
   --status-bar-height: 0px;
-  --android-status-bar-fallback: 24px;
 }
 
-/* Safe area utilities - work on both iOS and Android with Capacitor SystemBars */
+/* 
+ * IMPORTANT: When running in Capacitor with StatusBar overlay:false,
+ * Android natively pushes content below the status bar.
+ * We should NOT add extra CSS padding, otherwise we get double spacing.
+ * Only use safe-area-inset for iOS notches or when overlay:true is used.
+ */
+
+/* iOS fallback for when safe-area-inset is available */
+@supports (padding-top: env(safe-area-inset-top)) {
+  :root {
+    --safe-area-inset-top: env(safe-area-inset-top);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Safe area utilities - only apply on iOS or when explicitly needed */
 .pt-safe { 
-  padding-top: env(safe-area-inset-top, 0px);
+  padding-top: var(--safe-area-inset-top); 
 }
-
 .pt-safe-or-4 {
-  padding-top: max(1rem, env(safe-area-inset-top, 0px));
+  padding-top: max(1rem, var(--safe-area-inset-top));
 }
-
 .pb-safe { 
-  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); 
+  padding-bottom: max(16px, var(--safe-area-inset-bottom)); 
 }
-
-.pl-safe { 
-  padding-left: env(safe-area-inset-left, 0px); 
-}
-
-.pr-safe { 
-  padding-right: env(safe-area-inset-right, 0px); 
-}
-
-.mt-safe { 
-  margin-top: env(safe-area-inset-top, 0px); 
-}
-
-.mb-safe { 
-  margin-bottom: env(safe-area-inset-bottom, 0px); 
-}
+.pl-safe { padding-left: var(--safe-area-inset-left); }
+.pr-safe { padding-right: var(--safe-area-inset-right); }
+.mt-safe { margin-top: var(--safe-area-inset-top); }
+.mb-safe { margin-bottom: var(--safe-area-inset-bottom); }
 
 /* Fixed elements (headers, modals) need to account for status bar */
 .fixed-top-safe {
-  top: env(safe-area-inset-top, 0px);
+  top: var(--safe-area-inset-top);
 }
 
 .fixed-top-safe-offset {
-  top: max(1rem, env(safe-area-inset-top, 0px));
+  top: max(1rem, var(--safe-area-inset-top));
 }
 
 .pt-safe-header {
-  padding-top: env(safe-area-inset-top, 0px);
-}
-
-/* Content area padding that accounts for header + safe area */
-/* For h-14 (3.5rem) header */
-.pt-header-14-safe {
-  padding-top: calc(3.5rem + env(safe-area-inset-top, 0px));
-}
-
-/* For h-16 (4rem) header */
-.pt-header-16-safe {
-  padding-top: calc(4rem + env(safe-area-inset-top, 0px));
-}
-
-.safe-area-bar {
-  height: env(safe-area-inset-top, 0px);
-}
-
-body.capacitor-android .safe-area-bar {
-  height: max(env(safe-area-inset-top, 0px), var(--android-status-bar-fallback));
+  padding-top: var(--safe-area-inset-top);
 }
 
 /* Keyboard-aware bottom padding */
 .pb-keyboard {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--keyboard-height));
+  padding-bottom: calc(var(--safe-area-inset-bottom) + var(--keyboard-height));
   transition: padding-bottom 0.25s ease;
 }
 
@@ -138,23 +118,6 @@ body {
   min-height: 100vh;
   min-height: -webkit-fill-available;
   padding-top: env(safe-area-inset-top);
-}
-
-/* Android fallback: Capacitor sometimes reports 0 safe area, so use a minimum padding */
-body.capacitor-android {
-  padding-top: max(env(safe-area-inset-top, 0px), var(--android-status-bar-fallback));
-}
-
-body.capacitor-android .pt-safe {
-  padding-top: max(env(safe-area-inset-top, 0px), var(--android-status-bar-fallback));
-}
-
-body.capacitor-android .pt-header-14-safe {
-  padding-top: calc(3.5rem + max(env(safe-area-inset-top, 0px), var(--android-status-bar-fallback)));
-}
-
-body.capacitor-android .pt-header-16-safe {
-  padding-top: calc(4rem + max(env(safe-area-inset-top, 0px), var(--android-status-bar-fallback)));
 }
 
 /* Content area padding for fixed headers */
@@ -321,12 +284,6 @@ table {
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
-}
-
-/* Capacitor mobile: hide scrollbars to avoid teal bar overlay */
-body.capacitor-app ::-webkit-scrollbar {
-  width: 0;
-  height: 0;
 }
 
 ::-webkit-scrollbar-track {
@@ -573,15 +530,6 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #35F1CD;
-}
-
-/* Override after desktop scrollbar styles to keep Capacitor scrollbars hidden */
-body.capacitor-app ::-webkit-scrollbar,
-body.capacitor-app ::-webkit-scrollbar-thumb,
-body.capacitor-app ::-webkit-scrollbar-track {
-  width: 0;
-  height: 0;
-  background: transparent;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════

@@ -168,9 +168,8 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
   }
 
   return (
-    <div className="fixed left-0 right-0 z-50" style={{ top: 0, paddingTop: 'max(env(safe-area-inset-top, 0px), 24px)' }}>
-      <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-white/20 dark:border-slate-800/50 shadow-lg">
-        <div className="h-16 px-4 flex items-center justify-between gap-4">
+    <header className="fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-white/20 dark:border-slate-800/50 shadow-lg z-50">
+      <div className="h-full px-4 flex items-center justify-between gap-4">
         {/* Left Section */}
         <div className="flex items-center gap-4">
           {/* Sidebar Toggle */}
@@ -362,9 +361,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
             )}
           </div>
         </div>
-        {/* Add closing tag for the main flex container */}
-        </div>
-      </header>
-    </div>
+      </div>
+    </header>
   )
 }

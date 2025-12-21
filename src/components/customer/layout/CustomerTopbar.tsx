@@ -39,20 +39,19 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
   }
 
   return (
-    <div className="fixed left-0 right-0 z-50" style={{ top: 0, paddingTop: 'max(env(safe-area-inset-top, 0px), 24px)' }}>
-      <header className="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800">
-        <div className="flex items-center justify-between h-14 px-4">
+    <header className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-gray-100 z-50">
+      <div className="flex items-center justify-between h-full px-4">
         {/* Left Section */}
         <div className="flex items-center gap-3">
           <button
             onClick={onToggleSidebar}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <Menu className="h-5 w-5 text-gray-600 dark:text-slate-300" />
+            <Menu className="h-5 w-5 text-gray-600" />
           </button>
           
           <Link href="/customer/dashboard" className="flex items-center">
-            <span className="text-lg font-bold text-gray-900 dark:text-white">helparo</span>
+            <span className="text-lg font-bold text-gray-900">helparo</span>
           </Link>
         </div>
 
@@ -61,9 +60,9 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
           {/* Notifications */}
           <Link
             href="/customer/notifications"
-            className="relative p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <Bell className="h-5 w-5 text-gray-600 dark:text-slate-300" />
+            <Bell className="h-5 w-5 text-gray-600" />
             <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full ring-2 ring-white"></span>
           </Link>
 
@@ -71,7 +70,7 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              className="flex items-center gap-2 p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <div className="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-sm font-bold">
                 {user?.email?.[0].toUpperCase() || 'U'}
@@ -79,25 +78,25 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
             </button>
 
             {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-100 dark:border-slate-800 py-2 overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/60">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                  <p className="text-sm font-semibold text-gray-900 truncate">
                     {user?.email}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-slate-400">Customer Account</p>
+                  <p className="text-xs text-gray-500">Customer Account</p>
                 </div>
                 
                 <Link
                   href="/customer/settings"
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
-                  <Settings className="h-4 w-4 text-gray-500 dark:text-slate-400" />
+                  <Settings className="h-4 w-4 text-gray-500" />
                   Settings
                 </Link>
                 
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 w-full text-left transition-colors"
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 w-full text-left transition-colors"
                 >
                   <LogOut className="h-4 w-4" />
                   Logout
@@ -106,8 +105,7 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
             )}
           </div>
         </div>
-        </div>
-      </header>
-    </div>
+      </div>
+    </header>
   )
 }
