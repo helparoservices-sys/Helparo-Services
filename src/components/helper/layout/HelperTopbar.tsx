@@ -177,6 +177,7 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
             )}
           </div>
         </div>
+        </div>
       </header>
     </div>
   )

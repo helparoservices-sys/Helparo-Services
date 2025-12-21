@@ -363,6 +363,8 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
             )}
           </div>
         </div>
+        {/* Add closing tag for the main flex container */}
+        </div>
       </header>
     </div>
   )
