@@ -273,7 +273,7 @@ export default function ConsentPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-gray-950">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-gray-900/95 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-gray-900/95 backdrop-blur-xl pt-safe">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">

@@ -635,7 +635,7 @@ export default function AIRequestPage() {
       <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-amber-300/5 to-orange-300/5 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2" />
       
       {/* Premium Header */}
-      <div className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-white/20 shadow-lg shadow-black/5">
+      <div className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-white/20 shadow-lg shadow-black/5 pt-safe">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-4">
           <button 
             onClick={() => {

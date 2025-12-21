@@ -47,7 +47,7 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-emerald-50">
       {/* Premium Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 pt-safe">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href={homeHref} className="flex items-center space-x-2 group">

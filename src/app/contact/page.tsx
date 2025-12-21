@@ -165,7 +165,7 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Premium Glass Header */}
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 pt-safe ${
         isScrolled 
           ? 'bg-white/80 backdrop-blur-2xl shadow-[0_2px_40px_-12px_rgba(0,0,0,0.1)] border-b border-gray-100' 
           : 'bg-white/50 backdrop-blur-xl'
