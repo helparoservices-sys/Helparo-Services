@@ -39,7 +39,7 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
   }
 
   return (
-    <div className="fixed left-0 right-0 z-50 pt-safe" style={{ top: 0 }}>
+    <div className="fixed left-0 right-0 z-50" style={{ top: 0, paddingTop: 'max(env(safe-area-inset-top, 0px), 24px)' }}>
       <header className="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800">
         <div className="flex items-center justify-between h-14 px-4">
         {/* Left Section */}
@@ -52,7 +52,7 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
           </button>
           
           <Link href="/customer/dashboard" className="flex items-center">
-            <span className="text-lg font-bold text-gray-900 dark:text-white">helparo1</span>
+            <span className="text-lg font-bold text-gray-900 dark:text-white">helparo</span>
           </Link>
         </div>
 

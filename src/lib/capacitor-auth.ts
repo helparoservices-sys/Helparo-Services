@@ -244,45 +244,10 @@ export function initializeDeepLinkListener() {
 export function initializeCapacitor() {
   if (!isCapacitor()) return
   
-  alert('🚀 Initializing Capacitor app features')
+  console.log('🚀 Initializing Capacitor app features')
   
   // Set up deep link handling
   initializeDeepLinkListener()
   
-  // Initialize SystemBars for safe area handling
-  initializeSystemBars()
-  
-  alert('✅ Capacitor initialized')
-}
-
-/**
- * Initialize SystemBars plugin for safe area handling
- * This injects CSS variables for status bar and notch handling
- */
-async function initializeSystemBars() {
-  try {
-    const { SystemBars } = await import('@capacitor/status-bar')
-    
-    // Set the style and enable CSS variable injection
-    await SystemBars.setStyle({ 
-      style: 'DARK'  // Dark text on light background
-    })
-    
-    // Get the current style to ensure it's applied
-    const style = await SystemBars.getStyle()
-    alert('📱 SystemBars style set: ' + JSON.stringify(style))
-    
-    // The plugin automatically injects CSS variables when insetsHandling: 'css' in capacitor.config.ts
-    alert('📱 SystemBars initialized - CSS variables should now be available')
-    
-  } catch (error) {
-    alert('⚠️ SystemBars initialization failed: ' + error)
-    // Fallback: manually set some CSS variables for Android
-    if (typeof document !== 'undefined') {
-      document.documentElement.style.setProperty('--safe-area-inset-top', '24px')
-      document.documentElement.style.setProperty('--safe-area-inset-bottom', '0px')
-      document.documentElement.style.setProperty('--safe-area-inset-left', '0px')
-      document.documentElement.style.setProperty('--safe-area-inset-right', '0px')
-    }
-  }
+  console.log('✅ Capacitor initialized')
 }

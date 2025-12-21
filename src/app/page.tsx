@@ -250,7 +250,7 @@ export default function LandingPage() {
                 <img src="/logo.svg" alt="Helparo" className="w-11 h-11 rounded-[14px] shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/40 group-hover:scale-105 transition-all duration-300" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[22px] font-extrabold tracking-tight text-gray-900">helparo</span>
+                <span className="text-[22px] font-extrabold tracking-tight text-gray-900">helparo1</span>
                 <span className="text-[10px] font-semibold text-emerald-600 tracking-[0.15em] uppercase -mt-1">Home Services</span>
               </div>
             </Link>
