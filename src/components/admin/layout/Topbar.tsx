@@ -44,23 +44,31 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
-    // Get user info and notifications
+    let userId: string | null = null
+    
+    // Get user info and notifications once
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
+        userId = user.id
         setUserEmail(user.email || '')
         fetchNotifications(user.id)
       }
     }
     init()
 
-    // Set up auto-refresh for notifications every 30 seconds
-    const interval = setInterval(async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        fetchNotifications(user.id)
-      }
-    }, 30000)
+    // Use Realtime instead of polling for notifications
+    const channel = supabase
+      .channel('admin-notifications')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'notifications'
+      }, () => {
+        // Refetch notifications when any change happens
+        if (userId) fetchNotifications(userId)
+      })
+      .subscribe()
 
     // Handle click outside to close dropdowns
     const handleClickOutside = (event: MouseEvent) => {
@@ -75,7 +83,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
-      clearInterval(interval)
+      supabase.removeChannel(channel)
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])

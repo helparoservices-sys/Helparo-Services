@@ -32,9 +32,7 @@ import {
   Sparkles,
   ThumbsUp
 } from 'lucide-react'
-import { getHelperDashboardStats } from '@/app/actions/helper-dashboard'
-import { getHelperAssignedJobs } from '@/app/actions/assigned-jobs'
-import { getHelperAvailability, toggleHelperAvailability } from '@/app/actions/helper-availability'
+import { toggleHelperAvailability } from '@/app/actions/helper-availability'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/components/auth/RoleGuard'
 import { toast } from 'sonner'
@@ -212,23 +210,38 @@ export default function HelperDashboard() {
   }, [fullJobDetails?.work_started_at, fullJobDetails?.work_completed_at])
 
   useEffect(() => {
-    // Parallelize all initial data loading for faster startup
+    // Single optimized API call for all dashboard data
     const initializeDashboard = async () => {
       try {
-        // If we have cached userId from RoleGuard, use it directly
-        if (cachedUserId) {
-          setUserId(cachedUserId)
+        const response = await fetch('/api/helper/dashboard')
+        const data = await response.json()
+        
+        if (data.redirect) {
+          router.push(data.redirect)
+          return
         }
         
-        // Run profile check and other loads in parallel
-        const profileCheckPromise = checkProfile()
-        const availabilityPromise = loadAvailability()
-        const activeJobPromise = loadActiveJob()
+        if (data.error) {
+          setError(data.error)
+          setLoading(false)
+          return
+        }
         
-        // Wait for all to complete
-        await Promise.all([profileCheckPromise, availabilityPromise, activeJobPromise])
+        // Set all state at once
+        setStats(data.stats)
+        setIsAvailableNow(data.isAvailableNow)
+        setUserId(data.userId)
+        
+        if (data.activeJob) {
+          setActiveJob(data.activeJob)
+        }
+        
+        setLoading(false)
+        setActiveJobChecked(true)
       } catch (err) {
         console.error('Dashboard initialization error:', err)
+        setError('Failed to load dashboard')
+        setLoading(false)
       }
     }
     
@@ -239,7 +252,7 @@ export default function HelperDashboard() {
         navigator.geolocation.clearWatch(locationWatchId)
       }
     }
-  }, [cachedUserId])
+  }, [])
   
   // ✅ EGRESS FIX: Removed tab focus re-fetch
   // ✅ EGRESS FIX: Removed tab focus/visibility re-fetch
@@ -332,48 +345,23 @@ export default function HelperDashboard() {
     setLocationWatchId(watchId)
   }
 
-  // Load the currently active job (assigned status)
-  const loadActiveJob = async () => {
-    console.log('🔄 loadActiveJob called')
+  // Refresh dashboard data (used by realtime subscriptions)
+  const refreshDashboard = async () => {
     try {
-      const result = await getHelperAssignedJobs()
-      console.log('📋 getHelperAssignedJobs result:', result)
-      if (result && Array.isArray(result.jobs)) {
-        console.log('📋 All jobs:', result.jobs.map((j: AssignedJob) => ({ id: j.id, status: j.status, title: j.title })))
-        const job = result.jobs.find((j: AssignedJob) => j.status === 'assigned')
-        console.log('✅ Active job found:', job ? { id: job.id, status: job.status } : 'none')
-        setActiveJob(job || null)
-        
-        // AUTO-FIX: If no active job but is_on_job flag might be stuck, reset it
-        if (!job) {
-          const supabase = createClient()
-          const { data: { user } } = await supabase.auth.getUser()
-          if (user) {
-            const { data: helperProfile } = await supabase
-              .from('helper_profiles')
-              .select('id, is_on_job')
-              .eq('user_id', user.id)
-              .single()
-            
-            if (helperProfile && helperProfile.is_on_job === true) {
-              console.log('⚠️ AUTO-FIX: is_on_job=true but no active job found. Resetting flag.')
-              await supabase
-                .from('helper_profiles')
-                .update({ is_on_job: false })
-                .eq('id', helperProfile.id)
-              console.log('✅ AUTO-FIX: is_on_job reset to false')
-            }
-          }
-        }
+      const response = await fetch('/api/helper/dashboard')
+      const data = await response.json()
+      
+      if (data.error || data.redirect) return
+      
+      setStats(data.stats)
+      setIsAvailableNow(data.isAvailableNow)
+      if (data.activeJob) {
+        setActiveJob(data.activeJob)
       } else {
-        console.log('❌ No jobs array in result')
         setActiveJob(null)
       }
     } catch (err) {
-      console.error('❌ loadActiveJob error:', err)
-      setActiveJob(null)
-    } finally {
-      setActiveJobChecked(true)
+      console.error('Dashboard refresh error:', err)
     }
   }
 
@@ -382,7 +370,6 @@ export default function HelperDashboard() {
     const supabase = createClient()
     
     // Subscribe to service_requests assigned to this helper
-    // This catches updates to already-assigned jobs
     const assignedChannel = supabase
       .channel('dashboard-assigned-jobs')
       .on('postgres_changes', {
@@ -390,16 +377,13 @@ export default function HelperDashboard() {
         schema: 'public',
         table: 'service_requests',
         filter: `assigned_helper_id=eq.${userId}`
-      }, (payload) => {
-        console.log('📬 Assigned job update received:', payload)
-        // Refresh both stats and active job state (dashboard is locked when active job exists)
-        loadDashboard()
-        loadActiveJob()
+      }, () => {
+        console.log('📬 Assigned job update received')
+        refreshDashboard()
       })
       .subscribe()
     
-    // Subscribe to helper_profiles to catch when is_on_job changes
-    // This fires when the helper accepts a job (is_on_job set to true)
+    // Subscribe to helper_profiles to catch availability changes
     const helperProfileChannel = supabase
       .channel('dashboard-helper-profile')
       .on('postgres_changes', {
@@ -407,120 +391,17 @@ export default function HelperDashboard() {
         schema: 'public',
         table: 'helper_profiles',
         filter: `user_id=eq.${userId}`
-      }, (payload) => {
-        console.log('👤 Helper profile update received:', payload)
-        const newData = payload.new as { is_on_job?: boolean }
-        // If is_on_job changed to true, we just accepted a job - refresh active job
-        if (newData?.is_on_job === true) {
-          console.log('🎯 is_on_job changed to true, refreshing active job')
-          loadActiveJob()
-          loadDashboard()
-        }
-      })
-      .subscribe()
-    
-    // Also subscribe to notifications table to catch when we accept a new job
-    // The accept API creates a notification for the customer, but we can also use this channel
-    // to know something happened with our job assignments
-    const notificationsChannel = supabase
-      .channel('dashboard-notifications')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public', 
-        table: 'notifications',
-        filter: `user_id=eq.${userId}`
-      }, (payload) => {
-        console.log('🔔 New notification for helper:', payload)
-        loadActiveJob()
+      }, () => {
+        console.log('👤 Helper profile update received')
+        refreshDashboard()
       })
       .subscribe()
 
     return () => { 
       supabase.removeChannel(assignedChannel)
       supabase.removeChannel(helperProfileChannel)
-      supabase.removeChannel(notificationsChannel)
     }
   }, [userId])
-
-  const checkProfile = async () => {
-    try {
-      const supabase = createClient()
-      
-      // Use cached userId if available, otherwise fetch
-      let currentUserId = cachedUserId
-      
-      if (!currentUserId) {
-        // Use getSession for faster check (already validated by RoleGuard)
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session?.user) {
-          setError('Not authenticated')
-          setLoading(false)
-          return
-        }
-        currentUserId = session.user.id
-        setUserId(currentUserId)
-      }
-
-      // Parallel fetch both profiles at once
-      const [userProfileResult, helperProfileResult] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('phone, phone_verified')
-          .eq('id', currentUserId)
-          .single(),
-        supabase
-          .from('helper_profiles')
-          .select('address, service_categories')
-          .eq('user_id', currentUserId)
-          .maybeSingle()
-      ])
-
-      const userProfile = userProfileResult.data as { phone?: string | null; phone_verified?: boolean | null } | null
-
-      if (!userProfile?.phone || !userProfile?.phone_verified) {
-        router.push('/auth/complete-signup')
-        return
-      }
-
-      const profile = helperProfileResult.data as { address?: string | null; service_categories?: unknown[] | null } | null
-
-      if (!profile?.address || !profile?.service_categories?.length) {
-        router.push('/helper/onboarding')
-        return
-      }
-
-      loadDashboard()
-    } catch {
-      setError('Failed to check profile')
-      setLoading(false)
-    }
-  }
-
-  const loadDashboard = async () => {
-    try {
-      // Don't block UI - set loading to false after basic check
-      setLoading(false)
-      
-      // Load stats in background
-      const result = await getHelperDashboardStats()
-      if ('error' in result) {
-        setError(result.error || 'Failed to load dashboard')
-      } else if ('stats' in result) {
-        setStats(result.stats)
-      }
-    } catch {
-      setError('Failed to load dashboard data')
-    }
-  }
-
-  const loadAvailability = async () => {
-    try {
-      const result = await getHelperAvailability()
-      if (!('error' in result)) {
-        setIsAvailableNow(result.isAvailableNow)
-      }
-    } catch { /* ignore */ }
-  }
 
   const handleAvailabilityToggle = async (newValue: boolean) => {
     setTogglingAvailability(true)
@@ -582,7 +463,7 @@ export default function HelperDashboard() {
       if (error) throw error
 
       toast.success('Work started! Good luck!')
-      loadActiveJob()
+      refreshDashboard()
       if (fullJobDetails.id) loadFullJobDetails(fullJobDetails.id)
     } catch (error: any) {
       toast.error(error.message || 'Failed to verify OTP')
@@ -664,8 +545,7 @@ export default function HelperDashboard() {
   const handleCompletionModalClose = () => {
     setShowCompletionModal(false)
     setCompletedJobDetails(null)
-    loadActiveJob()
-    loadDashboard()
+    refreshDashboard()
   }
 
   const callCustomer = () => {
@@ -732,7 +612,7 @@ export default function HelperDashboard() {
       // Clear active job state
       setActiveJob(null)
       setFullJobDetails(null)
-      loadDashboard()
+      refreshDashboard()
     } catch (error: any) {
       console.error('Cancel error:', error)
       toast.error(error.message || 'Failed to cancel job')
@@ -745,7 +625,7 @@ export default function HelperDashboard() {
     return (
       <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
         <p className="text-red-600 dark:text-red-400">{error || 'Failed to load dashboard'}</p>
-        <button onClick={loadDashboard} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg">
+        <button onClick={refreshDashboard} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg">
           Retry
         </button>
       </div>
