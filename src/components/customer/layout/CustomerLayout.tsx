@@ -38,7 +38,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
     <RoleGuard allowedRole="customer">
       <ToastProvider>
         <Toaster position="top-right" richColors closeButton />
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
           {/* Location Permission Modal */}
           <LocationPermissionModal />
 

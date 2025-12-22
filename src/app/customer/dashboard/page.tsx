@@ -171,7 +171,7 @@ export default function CustomerDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center">
         <div className="text-center">
           <div className="relative">
             <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto shadow-2xl shadow-emerald-500/30">
@@ -179,19 +179,19 @@ export default function CustomerDashboard() {
             </div>
             <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-amber-400 rounded-full animate-pulse" />
           </div>
-          <p className="text-gray-600 font-medium mt-6">Loading your dashboard...</p>
+          <p className="text-gray-600 dark:text-gray-300 font-medium mt-6">Loading your dashboard...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 overflow-x-hidden pt-safe-or-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 overflow-x-hidden pt-safe-or-4">
       {/* Decorative Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-emerald-100/40 via-teal-100/30 to-transparent rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-amber-100/30 via-orange-100/20 to-transparent rounded-full blur-3xl transform -translate-x-1/3 translate-y-1/3" />
-        <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-gradient-to-r from-violet-100/20 to-pink-100/20 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-emerald-100/40 via-teal-100/30 to-transparent dark:from-emerald-900/20 dark:via-teal-900/10 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-amber-100/30 via-orange-100/20 to-transparent dark:from-amber-900/10 dark:via-orange-900/5 rounded-full blur-3xl transform -translate-x-1/3 translate-y-1/3" />
+        <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-gradient-to-r from-violet-100/20 to-pink-100/20 dark:from-violet-900/10 dark:to-pink-900/10 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2" />
       </div>
 
       <main className="relative w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-10 overflow-x-hidden">
@@ -201,14 +201,14 @@ export default function CustomerDashboard() {
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-full mb-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 dark:from-emerald-500/20 dark:to-teal-500/20 rounded-full mb-3">
                 <span className="text-lg">{greeting.emoji}</span>
-                <span className="text-sm font-semibold text-emerald-700">{greeting.text}</span>
+                <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{greeting.text}</span>
               </div>
-              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-gray-900 tracking-tight">
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-gray-900 dark:text-white tracking-tight">
                 Hi, <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent">{firstName}</span>!
               </h1>
-              <p className="text-gray-500 mt-2 text-base sm:text-lg">What do you need help with today?</p>
+              <p className="text-gray-500 dark:text-gray-400 mt-2 text-base sm:text-lg">What do you need help with today?</p>
             </div>
             
 {/* === HIDDEN FOR NOW - WALLET & POINTS BUTTONS ===

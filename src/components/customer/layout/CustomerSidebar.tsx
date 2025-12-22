@@ -115,7 +115,7 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden lg:block fixed top-14 left-0 h-[calc(100vh-3.5rem)] bg-white border-r border-gray-100 transition-all duration-300 ease-in-out overflow-y-auto ${
+        className={`hidden lg:block fixed top-14 left-0 h-[calc(100vh-3.5rem)] bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 transition-all duration-300 ease-in-out overflow-y-auto ${
           collapsed ? 'w-16' : 'w-60'
         }`}
       >
@@ -123,7 +123,7 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
           {menuSections.map((section, idx) => (
             <div key={idx}>
               {!collapsed && (
-                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-3">
+                <h3 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 px-3">
                   {section.title}
                 </h3>
               )}
@@ -150,7 +150,7 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
                           isActive
                             ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'
                         } ${collapsed ? 'justify-center' : ''}`}
                         title={collapsed ? item.label : undefined}
                       >
@@ -170,7 +170,7 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
 
       {/* Mobile Sidebar - Slides in from left, positioned below topbar */}
       <aside
-        className={`lg:hidden fixed top-14 left-0 h-[calc(100vh-3.5rem)] w-72 bg-white border-r border-gray-100 z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
+        className={`lg:hidden fixed top-14 left-0 h-[calc(100vh-3.5rem)] w-72 bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
           mobileOpen ? 'translate-x-0 visible pointer-events-auto' : '-translate-x-full invisible pointer-events-none'
         }`}
       >
@@ -179,7 +179,7 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
         <nav className="p-3 space-y-5 pb-20">
           {menuSections.map((section, idx) => (
             <div key={idx}>
-              <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-3">
+              <h3 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 px-3">
                 {section.title}
               </h3>
               <ul className="space-y-0.5">
@@ -206,7 +206,7 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
                         className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
                           isActive
                             ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'
                         }`}
                       >
                         <Icon className="h-5 w-5 flex-shrink-0" />

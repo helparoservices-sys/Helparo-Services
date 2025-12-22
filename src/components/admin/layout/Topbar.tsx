@@ -216,7 +216,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
             className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             aria-label="Toggle Dark Mode"
           >
-            {darkMode ? (
+            {isDarkMode ? (
               <Sun className="h-5 w-5 text-yellow-500" />
             ) : (
               <Moon className="h-5 w-5 text-slate-600" />
