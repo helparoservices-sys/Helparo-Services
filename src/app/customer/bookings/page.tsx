@@ -311,13 +311,25 @@ export default function CustomerBookingsPage() {
           <div className="w-14 h-14 md:w-20 md:h-20 mx-auto mb-3 rounded-xl bg-gradient-to-br from-gray-100 to-slate-100 flex items-center justify-center">
             <Calendar className="w-7 h-7 md:w-10 md:h-10 text-gray-400" />
           </div>
-          <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-1">No completed bookings yet</h3>
+          <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-1">
+            {errorMessage ? 'Unable to show past bookings' : 'No completed bookings yet'}
+          </h3>
           <p className="text-gray-500 text-sm mb-5 max-w-xs mx-auto">
-            {filter === 'all' 
-              ? "Your completed and cancelled bookings will appear here. Check your active requests for ongoing services." 
-              : `No ${filter} bookings to show`}
+            {errorMessage
+              ? errorMessage
+              : filter === 'all' 
+                ? "Your completed and cancelled bookings will appear here. Check your active requests for ongoing services." 
+                : `No ${filter} bookings to show`}
           </p>
           <div className="flex flex-col sm:flex-row gap-2 justify-center max-w-xs mx-auto">
+            {errorMessage && (
+              <button
+                onClick={loadBookings}
+                className="w-full sm:w-auto px-5 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold transition-all hover:bg-amber-700"
+              >
+                Retry
+              </button>
+            )}
             <Link href="/customer/active-requests" className="w-full sm:w-auto">
               <button className="w-full px-5 py-2.5 bg-white border-2 border-emerald-500 text-emerald-600 rounded-xl text-sm font-semibold transition-all hover:bg-emerald-50">
                 View Active
