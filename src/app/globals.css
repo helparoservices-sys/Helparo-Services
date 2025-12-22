@@ -48,17 +48,17 @@
 
 /* Safe area utilities - only apply on iOS or when explicitly needed */
 .pt-safe { 
-  padding-top: max(1.5rem, var(--safe-area-inset-top)); 
+  padding-top: max(2rem, var(--safe-area-inset-top)); 
 }
 .pt-safe-or-4 {
-  padding-top: max(1.5rem, var(--safe-area-inset-top));
+  padding-top: max(2rem, var(--safe-area-inset-top));
 }
 /* Mobile status bar spacing - ensures content is below status bar */
 .pt-status-bar {
-  padding-top: max(3rem, env(safe-area-inset-top, 3rem));
+  padding-top: max(3.5rem, env(safe-area-inset-top, 3.5rem));
 }
 .mt-safe {
-  margin-top: max(0.5rem, var(--safe-area-inset-top));
+  margin-top: max(1rem, var(--safe-area-inset-top));
 }
 .pb-safe { 
   padding-bottom: max(16px, var(--safe-area-inset-bottom)); 

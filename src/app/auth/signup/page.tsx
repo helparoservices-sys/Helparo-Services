@@ -291,7 +291,7 @@ function SignUpForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50/30 flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
       <div id="recaptcha-container"></div>
       
       {/* Header - Fixed with safe area padding for status bar */}
@@ -599,7 +599,7 @@ function SignUpForm() {
 export default function SignUpPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50/30 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
       </div>
     }>
