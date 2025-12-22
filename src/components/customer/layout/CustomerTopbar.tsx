@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Menu, Bell, LogOut, Settings, Moon, Sun } from 'lucide-react'
+import { Menu, Bell, LogOut, Settings, Moon, Sun, User } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useDarkMode } from '@/lib/use-dark-mode'
 
@@ -15,6 +15,8 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
   const router = useRouter()
   const { isDarkMode, toggleDarkMode } = useDarkMode()
   const [user, setUser] = useState<any>(null)
+  const [userName, setUserName] = useState('')
+  const [userPhone, setUserPhone] = useState('')
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [balance, setBalance] = useState(0)
   const [unreadCount, setUnreadCount] = useState(0)
@@ -24,6 +26,29 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUser(user)
+        
+        // Fetch user profile for name and phone
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, phone')
+          .eq('id', user.id)
+          .single()
+        
+        if (profile) {
+          setUserName(profile.full_name || '')
+          // Format phone for display (mask middle digits)
+          if (profile.phone) {
+            const phone = profile.phone.replace(/\D/g, '')
+            if (phone.length >= 10) {
+              const last4 = phone.slice(-4)
+              const first2 = phone.slice(0, 2)
+              setUserPhone(`+91 ${first2}XXXXXX${last4}`)
+            } else {
+              setUserPhone(profile.phone)
+            }
+          }
+        }
+        
         // Fetch wallet balance
         const { data: wallet } = await supabase
           .from('wallet_accounts')
@@ -101,8 +126,8 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center justify-center w-10 h-10 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
             >
-              <div className="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-sm font-bold">
-                {user?.email?.[0].toUpperCase() || 'U'}
+              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 flex items-center justify-center">
+                <User className="h-4 w-4 text-white" />
               </div>
             </button>
 
@@ -110,9 +135,11 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
               <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-gray-100 dark:border-slate-700 py-2 overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
                   <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                    {user?.email}
+                    {userName || 'My Account'}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Customer Account</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {userPhone || 'Customer Account'}
+                  </p>
                 </div>
                 
                 <Link

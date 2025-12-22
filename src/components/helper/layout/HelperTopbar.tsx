@@ -27,6 +27,7 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
   const { isDarkMode, toggleDarkMode } = useDarkMode()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [userName, setUserName] = useState('')
+  const [userPhone, setUserPhone] = useState('')
   const [isVerified, setIsVerified] = useState(false)
   const [balance, setBalance] = useState(0)
   const [unreadCount, setUnreadCount] = useState(0)
@@ -42,7 +43,7 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
     if (user) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name')
+        .select('full_name, phone')
         .eq('id', user.id)
         .single()
 
@@ -59,7 +60,21 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
         .eq('user_id', user.id)
         .single()
 
-      setUserName(profile?.full_name || user.email || 'Helper')
+      // Set display name - never show internal email
+      setUserName(profile?.full_name || 'Helper')
+      
+      // Format phone for display (mask middle digits)
+      if (profile?.phone) {
+        const phone = profile.phone.replace(/\D/g, '')
+        if (phone.length >= 10) {
+          const last4 = phone.slice(-4)
+          const first2 = phone.slice(0, 2)
+          setUserPhone(`+91 ${first2}XXXXXX${last4}`)
+        } else {
+          setUserPhone(profile.phone)
+        }
+      }
+      
       setIsVerified(helperProfile?.is_approved || false)
       if (wallet) setBalance(Number(wallet.available_balance))
       
@@ -166,8 +181,8 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
                 ></div>
                 <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-50">
                   <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-700">
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">{userName}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Helper Account</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{userName || 'My Account'}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{userPhone || 'Helper Account'}</p>
                   </div>
 
                   <Link
