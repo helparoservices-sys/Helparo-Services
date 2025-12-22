@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   Briefcase, 
@@ -15,7 +15,8 @@ import {
   X,
   CreditCard,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Camera
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -451,9 +452,9 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
         setDetecting(false)
       },
       {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0
+        enableHighAccuracy: false,
+        timeout: 8000,
+        maximumAge: 60000
       }
     )
   }
@@ -1087,12 +1088,13 @@ function Step5Documents({ data, onChange, onSubmit, onBack, submitting, t }: any
     photo: null,
   })
   const backLabel = translateWithFallback(t, 'common.back', 'Back')
+  const cameraInputRef = useRef<HTMLInputElement>(null)
 
   const documentTypes = [
-    { key: 'id_proof', label: t('onboarding.step5.idProof'), description: t('onboarding.step5.idProofDesc'), required: true },
-    { key: 'photo', label: t('onboarding.step5.photo'), description: t('onboarding.step5.photoDesc'), required: true },
-    { key: 'address_proof', label: t('onboarding.step5.addressProof'), description: t('onboarding.step5.addressProofDesc'), required: false },
-    { key: 'professional_cert', label: t('onboarding.step5.professionalCert'), description: t('onboarding.step5.professionalCertDesc'), required: false },
+    { key: 'id_proof', label: 'ID Proof', description: 'Aadhaar, PAN, License', required: true },
+    { key: 'photo', label: 'Profile Photo', description: 'Clear selfie', required: true, allowCamera: true },
+    { key: 'address_proof', label: 'Address Proof', description: 'Utility bill (optional)', required: false },
+    { key: 'professional_cert', label: 'Certificate', description: 'Trade license (optional)', required: false },
   ]
 
   const handleSelectFile = (docKey: string, file: File) => {
@@ -1101,31 +1103,63 @@ function Step5Documents({ data, onChange, onSubmit, onBack, submitting, t }: any
     onChange({ documents: updated })
   }
 
+  const openCamera = () => {
+    cameraInputRef.current?.click()
+  }
+
   return (
-    <div className="space-y-5">
-      {/* Header - Compact */}
-      <div>
-        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-1">
-          {t('onboarding.step5.title')}
+    <div className="flex flex-col">
+      {/* Hidden camera input for selfie */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="user"
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file) handleSelectFile('photo', file)
+        }}
+        className="hidden"
+        disabled={submitting}
+      />
+
+      {/* Header - Smaller */}
+      <div className="pb-1.5">
+        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+          📄 Upload Documents
         </h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          {t('onboarding.step5.subtitle')}
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Quick verification (24-48 hrs)
         </p>
       </div>
 
-      {/* Documents - Compact cards */}
+      {/* Documents - Very compact */}
       <div className="space-y-2">
         {documentTypes.map((docType) => (
-          <div key={docType.key} className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-sm text-slate-900 dark:text-white flex items-center gap-1">
-                  {docType.label}
-                  {docType.required && <span className="text-red-500">*</span>}
-                </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{docType.description}</p>
-              </div>
-              <label className="cursor-pointer flex-shrink-0">
+          <div
+            key={docType.key}
+            className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700"
+          >
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-slate-800 dark:text-white truncate">
+                {docType.label}{docType.required && <span className="text-red-500 ml-0.5">*</span>}
+              </p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{docType.description}</p>
+            </div>
+            
+            {/* Show camera + upload for photo, just upload for others */}
+            <div className="flex gap-1.5 flex-shrink-0">
+              {docType.allowCamera && (
+                <button
+                  type="button"
+                  onClick={openCamera}
+                  disabled={submitting}
+                  className="w-9 h-8 rounded bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 disabled:opacity-50"
+                >
+                  <Camera className="h-4 w-4" />
+                </button>
+              )}
+              <label className="cursor-pointer">
                 <input
                   type="file"
                   accept="image/*,.pdf"
@@ -1136,66 +1170,57 @@ function Step5Documents({ data, onChange, onSubmit, onBack, submitting, t }: any
                   className="hidden"
                   disabled={submitting}
                 />
-                <div className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                  files[docType.key] 
-                    ? 'bg-green-600 text-white' 
-                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                }`}> 
-                  {files[docType.key] ? (
-                    <>
-                      <Check className="h-3.5 w-3.5" />
-                      Done
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-3.5 w-3.5" />
-                      Upload
-                    </>
-                  )}
+                <div
+                  className={`w-9 h-8 rounded flex items-center justify-center ${
+                    files[docType.key]
+                      ? 'bg-green-600 text-white'
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  }`}
+                >
+                  {files[docType.key] ? <Check className="h-4 w-4" /> : <Upload className="h-4 w-4" />}
                 </div>
               </label>
             </div>
-            {files[docType.key] && (
-              <p className="mt-1.5 text-xs text-green-600 truncate pl-0">{files[docType.key]?.name}</p>
-            )}
           </div>
         ))}
       </div>
 
-      {/* Note - Compact */}
-      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-        <p className="text-xs text-yellow-800 dark:text-yellow-300">
-          <strong>{t('common.note')}</strong> {t('onboarding.step5.note')}
+      {/* Note - Smaller */}
+      <div className="mt-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded p-2">
+        <p className="text-[10px] text-yellow-800 dark:text-yellow-300">
+          <strong>Note:</strong> ID + Photo required. Verified in 24-48 hrs.
         </p>
       </div>
 
-      {/* Navigation */}
-      <div className="flex gap-3 pt-2">
-        <button
-          onClick={onBack}
-          disabled={submitting}
-          className="flex-1 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-50 flex items-center justify-center gap-1 text-sm"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          {backLabel}
-        </button>
-        <button
-          onClick={() => onSubmit(files)}
-          disabled={submitting || !files.id_proof || !files.photo}
-          className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1 text-sm"
-        >
-          {submitting ? (
-            <>
-              <LoadingSpinner size="sm" />
-              {t('onboarding.step5.submitting')}
-            </>
-          ) : (
-            <>
-              <Check className="h-4 w-4" />
-              {t('onboarding.step5.completeOnboarding')}
-            </>
-          )}
-        </button>
+      {/* Navigation - natural flow, padding for safe-area */}
+      <div className="pt-4 pb-2">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button
+            onClick={onBack}
+            disabled={submitting}
+            className="w-full sm:flex-1 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-50 flex items-center justify-center gap-1 text-sm"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            {backLabel}
+          </button>
+          <button
+            onClick={() => onSubmit(files)}
+            disabled={submitting || !files.id_proof || !files.photo}
+            className="w-full sm:flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1 text-sm"
+          >
+            {submitting ? (
+              <>
+                <LoadingSpinner size="sm" />
+                {t('onboarding.step5.submitting')}
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4" />
+                {t('onboarding.step5.completeOnboarding')}
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -1205,6 +1230,7 @@ function Step5Documents({ data, onChange, onSubmit, onBack, submitting, t }: any
 export default function HelperOnboarding() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
+  const formContainerRef = useRef<HTMLDivElement | null>(null)
   const [formData, setFormData] = useState<any>({
     service_categories: [],
     skills: [],
@@ -1248,6 +1274,15 @@ export default function HelperOnboarding() {
     checkOnboardingStatus()
   }, [])
 
+  // Keep the view anchored to the top of the form when moving between steps
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const target = formContainerRef.current
+    const top = target ? target.getBoundingClientRect().top + window.scrollY : 0
+    const offset = Math.max(top - 80, 0)
+    window.scrollTo({ top: offset, behavior: 'smooth' })
+  }, [currentStep])
+
   const checkOnboardingStatus = async () => {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -1279,62 +1314,65 @@ export default function HelperOnboarding() {
 
   const handleSubmit = async (files?: Record<string, File | null>) => {
     setSubmitting(true)
-    
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      toast.error(t('onboarding.toast.loginRequired'))
-      setSubmitting(false)
-      return
-    }
-
-    // Upload documents first if provided (Step 5)
-    if (files) {
-      const formFiles = new FormData()
-      if (files.id_proof) formFiles.append('id_proof', files.id_proof)
-      if (files.address_proof) formFiles.append('address_proof', files.address_proof)
-      if (files.professional_cert) formFiles.append('professional_cert', files.professional_cert)
-      if (files.photo) formFiles.append('photo', files.photo)
-      const uploadResult = await uploadOnboardingDocuments(formFiles)
-      if ('error' in uploadResult && uploadResult.error) {
-        toast.error(uploadResult.error)
-        setSubmitting(false)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        toast.error(t('onboarding.toast.loginRequired'))
         return
       }
-      toast.success(t('onboarding.toast.documentsUploaded'))
-    }
 
-    // Save complete onboarding data
-    const result = await completeHelperOnboarding({
-      service_categories: formData.service_categories,
-      skills: formData.skills,
-      skills_specialization: formData.skills_specialization,
-      experience_years: formData.experience_years,
-      hourly_rate: formData.hourly_rate || 500,
-      address: formData.address,
-      pincode: formData.pincode,
-      service_radius_km: formData.service_radius_km,
-      service_areas: formData.service_areas,
-      service_area_ids: formData.service_area_ids,
-      latitude: formData.latitude,
-      longitude: formData.longitude,
-      working_hours: formData.working_hours,
-      is_available_now: formData.is_available_now,
-      emergency_availability: formData.emergency_availability,
-      bank_account: formData.bank_account
-    })
+      // Upload documents first if provided (Step 5)
+      if (files) {
+        const formFiles = new FormData()
+        if (files.id_proof) formFiles.append('id_proof', files.id_proof)
+        if (files.address_proof) formFiles.append('address_proof', files.address_proof)
+        if (files.professional_cert) formFiles.append('professional_cert', files.professional_cert)
+        if (files.photo) formFiles.append('photo', files.photo)
+        const uploadResult = await uploadOnboardingDocuments(formFiles)
+        if ('error' in uploadResult && uploadResult.error) {
+          toast.error(uploadResult.error)
+          return
+        }
+        toast.success(t('onboarding.toast.documentsUploaded'))
+      }
 
-    if ('error' in result && result.error) {
-      toast.error(result.error)
+      // Save complete onboarding data
+      const result = await completeHelperOnboarding({
+        service_categories: formData.service_categories,
+        skills: formData.skills,
+        skills_specialization: formData.skills_specialization,
+        experience_years: formData.experience_years,
+        hourly_rate: formData.hourly_rate || 500,
+        address: formData.address,
+        pincode: formData.pincode,
+        service_radius_km: formData.service_radius_km,
+        service_areas: formData.service_areas,
+        service_area_ids: formData.service_area_ids,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+        working_hours: formData.working_hours,
+        is_available_now: formData.is_available_now,
+        emergency_availability: formData.emergency_availability,
+        bank_account: formData.bank_account
+      })
+
+      if ('error' in result && result.error) {
+        toast.error(result.error)
+        return
+      }
+
+      toast.success(result.message || t('onboarding.toast.completeDefault'))
+      setTimeout(() => {
+        router.push('/helper/dashboard')
+      }, 2000)
+    } catch (err) {
+      console.error('Onboarding submit error', err)
+      toast.error(t('common.error') || 'Something went wrong')
+    } finally {
       setSubmitting(false)
-      return
     }
-
-    toast.success(result.message || t('onboarding.toast.completeDefault'))
-    setTimeout(() => {
-      router.push('/helper/dashboard')
-    }, 2000)
   }
 
   if (checking) {
@@ -1354,7 +1392,7 @@ export default function HelperOnboarding() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-slate-900 dark:via-teal-950 dark:to-emerald-950 py-4 px-3 sm:py-8 sm:px-4">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-slate-900 dark:via-teal-950 dark:to-emerald-950 py-4 px-3 sm:py-8 sm:px-4 overflow-x-hidden">
       {/* Language Selector Modal - shows on first visit */}
       {showLanguageModal && (
         <LanguageSelectorModal 
@@ -1363,7 +1401,7 @@ export default function HelperOnboarding() {
         />
       )}
 
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto" ref={formContainerRef}>
         {/* Language Button - top right */}
         <div className="flex justify-end mb-3">
           <button
@@ -1378,8 +1416,8 @@ export default function HelperOnboarding() {
           </button>
         </div>
 
-        {/* Progress Steps - Mobile optimized */}
-        <div className="mb-4 sm:mb-6 overflow-x-auto pb-2 -mx-3 px-3 scrollbar-hide">
+        {/* Progress Steps - Mobile optimized and sticky under the top bar */}
+        <div className="mb-4 sm:mb-6 overflow-x-auto pb-2 -mx-3 px-3 scrollbar-hide sticky top-[5.5rem] z-30 bg-gradient-to-b from-emerald-50 via-teal-50 to-cyan-50 dark:from-slate-900 dark:via-teal-950 dark:to-emerald-950">
           <div className="flex items-center justify-between min-w-[320px]">
             {steps.map((step, index) => {
               const Icon = step.icon
@@ -1416,7 +1454,7 @@ export default function HelperOnboarding() {
         </div>
 
         {/* Form Content - Reduced padding on mobile */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border border-slate-200 dark:border-slate-700">
+        <div className="bg-white dark:bg-slate-800 rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-6 border border-slate-200 dark:border-slate-700 overflow-hidden">
           {currentStep === 1 && (
             <Step1ServiceDetails
               data={formData}

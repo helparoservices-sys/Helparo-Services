@@ -847,7 +847,7 @@ export default function AIRequestPage() {
       
       {/* Premium Header */}
       <div className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-slate-950/85 border-b border-white/20 dark:border-slate-800 shadow-lg shadow-black/5 dark:shadow-black/10 pt-safe">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-4">
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-4 min-h-[88px] sm:min-h-[96px]">
           <button 
             onClick={() => {
               if (step > 1) {
@@ -883,41 +883,51 @@ export default function AIRequestPage() {
 
       {/* Premium Progress Steps */}
       <div className="bg-gradient-to-r from-white/60 via-white/80 to-white/60 dark:from-slate-950/70 dark:via-slate-950/60 dark:to-slate-900/60 backdrop-blur-sm border-b border-gray-100/50 dark:border-slate-800/70">
-        <div className="max-w-2xl mx-auto px-4 py-5">
-          <div className="flex items-center justify-between relative">
-            {/* Progress Line Background */}
-            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-gray-200 rounded-full mx-12" />
-            <div 
-              className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full mx-12 transition-all duration-500"
-              style={{ width: `${((step - 1) / 2) * (100 - 24)}%` }}
-            />
-            
-            {[
-              { num: 1, label: 'Upload', icon: Upload, desc: 'Add photos & details' },
-              { num: 2, label: 'Review', icon: FileCheck, desc: 'Verify AI analysis' },
-              { num: 3, label: 'Done', icon: PartyPopper, desc: 'Request posted!' },
-            ].map((s) => {
-              const Icon = s.icon
-              return (
-                <div key={s.num} className="flex flex-col items-center relative z-10">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-lg ${
-                    step > s.num 
-                      ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-500/30 scale-100' 
-                      : step === s.num 
-                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-500/40 scale-110 ring-4 ring-emerald-100 dark:ring-emerald-900/40' 
-                        : 'bg-white dark:bg-slate-900 text-gray-400 dark:text-slate-500 shadow-gray-200/50 dark:shadow-none border-2 border-gray-200 dark:border-slate-700'
-                  }`}>
-                    {step > s.num ? <CheckCircle2 className="w-6 h-6" /> : <Icon className="w-6 h-6" />}
+        <div className="max-w-2xl mx-auto px-4 pt-6 pb-7">
+          <div className="relative">
+            {/* Progress Line sits behind icons; spacing keeps labels clear */}
+            <div className="absolute left-3 right-3 sm:left-6 sm:right-6 top-9 pointer-events-none">
+              <div className="h-1 bg-gray-200/80 dark:bg-slate-800/80 rounded-full" />
+              <div
+                className="absolute left-0 top-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
+                style={{ width: `${((step - 1) / 2) * 100}%`, maxWidth: '100%' }}
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 sm:gap-6 text-center relative z-10">
+              {[
+                { num: 1, label: 'Upload', icon: Upload, desc: 'Add photos & details' },
+                { num: 2, label: 'Review', icon: FileCheck, desc: 'Verify AI analysis' },
+                { num: 3, label: 'Done', icon: PartyPopper, desc: 'Request posted!' },
+              ].map((s) => {
+                const Icon = s.icon
+                const isActive = step === s.num
+                const isDone = step > s.num
+                return (
+                  <div key={s.num} className="flex flex-col items-center gap-2 sm:gap-2.5 px-1">
+                    <div
+                      className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-lg ${
+                        isDone
+                          ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-500/30'
+                          : isActive
+                            ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-500/40 scale-105 ring-4 ring-emerald-100 dark:ring-emerald-900/40'
+                            : 'bg-white dark:bg-slate-900 text-gray-400 dark:text-slate-500 shadow-gray-200/50 dark:shadow-none border-2 border-gray-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {isDone ? <CheckCircle2 className="w-6 h-6" /> : <Icon className="w-6 h-6" />}
+                    </div>
+                    <div className="space-y-1 max-w-[110px] sm:max-w-none">
+                      <p className={`text-sm font-semibold leading-tight ${step >= s.num ? 'text-gray-900 dark:text-slate-100' : 'text-gray-400 dark:text-slate-500'}`}>
+                        {s.label}
+                      </p>
+                      <p className={`text-xs leading-snug ${step >= s.num ? 'text-gray-500 dark:text-slate-400' : 'text-gray-300 dark:text-slate-600'}`}>
+                        {s.desc}
+                      </p>
+                    </div>
                   </div>
-                  <span className={`mt-2 text-sm font-semibold transition-colors ${step >= s.num ? 'text-gray-900' : 'text-gray-400'}`}>
-                    {s.label}
-                  </span>
-                  <span className={`text-xs transition-colors ${step >= s.num ? 'text-gray-500' : 'text-gray-300'}`}>
-                    {s.desc}
-                  </span>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -1363,9 +1373,9 @@ export default function AIRequestPage() {
 
       {/* Step 2: Review - Premium Design */}
       {step === 2 && aiResult && (
-        <div className="max-w-2xl mx-auto px-4 py-6 pb-32 space-y-5 relative">
+        <div className="max-w-3xl mx-auto px-4 pt-4 pb-[140px] space-y-4 sm:space-y-5 relative min-h-screen">
           {/* AI Result - Premium Gradient Card */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 rounded-[32px] p-6 shadow-2xl shadow-emerald-500/30">
+          <div className="relative overflow-hidden bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 rounded-[28px] p-5 sm:p-6 shadow-2xl shadow-emerald-500/25">
             {/* Decorative Elements */}
             <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-2xl -translate-y-20 translate-x-20" />
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-xl translate-y-16 -translate-x-16" />
@@ -1384,11 +1394,11 @@ export default function AIRequestPage() {
                 </div>
               </div>
               
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 mb-4">
-                <div className="text-5xl font-black text-white mb-1">
+              <div className="bg-white/12 backdrop-blur-sm rounded-2xl p-5 mb-4 border border-white/15">
+                <div className="text-4xl sm:text-5xl font-black text-white mb-1">
                   ₹<AnimatedCounter end={aiResult.estimatedPrice} duration={1500} />
                 </div>
-                <div className="flex items-center gap-4 text-white/80 text-sm mt-2">
+                <div className="flex items-center gap-4 text-white/80 text-sm mt-2 flex-wrap">
                   <span className="flex items-center gap-1">
                     <Star className="w-4 h-4 text-amber-300" />
                     {aiResult.categoryName}
@@ -1403,7 +1413,7 @@ export default function AIRequestPage() {
                 <p className="text-white/60 text-xs mt-2">Final price may vary based on actual work</p>
               </div>
               
-              <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2.5 flex-wrap">
                 <div className="flex items-center gap-2 px-3 py-2 bg-white/20 rounded-xl">
                   <Shield className="w-4 h-4 text-white" />
                   <span className="text-white text-sm font-medium">Price Protection</span>
@@ -1418,14 +1428,14 @@ export default function AIRequestPage() {
 
           {/* Work Overview Card */}
           {aiResult.workOverview && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-[28px] p-6 shadow-xl shadow-black/5 border border-white/60">
-              <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
+            <div className="bg-white dark:bg-slate-900/90 rounded-2xl p-5 sm:p-6 shadow-md border border-slate-100 dark:border-slate-800">
+              <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg mb-4 flex items-center gap-2">
                 <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
                   <ClipboardList className="w-5 h-5 text-white" />
                 </div>
                 What Will Happen
               </h3>
-              <p className="text-gray-700 leading-relaxed bg-gradient-to-r from-violet-50 to-purple-50 p-4 rounded-xl border border-violet-100">
+              <p className="text-gray-800 dark:text-gray-200 leading-relaxed bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/30 dark:to-purple-900/30 p-4 rounded-xl border border-violet-100 dark:border-violet-800">
                 {aiResult.workOverview}
               </p>
             </div>
@@ -1435,7 +1445,7 @@ export default function AIRequestPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Helper Brings */}
             {aiResult.helperBrings && aiResult.helperBrings.length > 0 && (
-              <div className="bg-white/80 backdrop-blur-sm rounded-[28px] p-5 shadow-xl shadow-black/5 border border-white/60">
+              <div className="bg-white dark:bg-slate-900/90 rounded-2xl p-5 shadow-md border border-slate-100 dark:border-slate-800">
                 <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
                   <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
                     <Wrench className="w-4 h-4 text-white" />
@@ -1455,7 +1465,7 @@ export default function AIRequestPage() {
 
             {/* Customer Provides */}
             {aiResult.customerProvides && aiResult.customerProvides.length > 0 && (
-              <div className="bg-white/80 backdrop-blur-sm rounded-[28px] p-5 shadow-xl shadow-black/5 border border-white/60">
+              <div className="bg-white dark:bg-slate-900/90 rounded-2xl p-5 shadow-md border border-slate-100 dark:border-slate-800">
                 <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
                   <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
                     <User className="w-4 h-4 text-white" />
@@ -1476,8 +1486,8 @@ export default function AIRequestPage() {
 
           {/* Materials Needed */}
           {aiResult.materialsNeeded && aiResult.materialsNeeded.length > 0 && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-[28px] p-5 shadow-xl shadow-black/5 border border-white/60">
-              <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <div className="bg-white dark:bg-slate-900/90 rounded-2xl p-5 shadow-md border border-slate-100 dark:border-slate-800">
+              <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
                 <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
                   <Package className="w-4 h-4 text-white" />
                 </div>
@@ -1485,17 +1495,17 @@ export default function AIRequestPage() {
               </h4>
               <div className="flex flex-wrap gap-2">
                 {aiResult.materialsNeeded.map((item, idx) => (
-                  <span key={idx} className="px-3 py-1.5 bg-amber-50 text-amber-700 rounded-full text-sm font-medium border border-amber-200">
+                  <span key={idx} className="px-3 py-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-200 rounded-full text-sm font-medium border border-amber-200 dark:border-amber-700">
                     {item}
                   </span>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-3">* Additional materials cost will be informed before purchase</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">* Additional materials cost will be informed before purchase</p>
             </div>
           )}
 
           {/* Summary - Premium Card */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-[28px] p-6 shadow-xl shadow-black/5 border border-white/60">
+          <div className="bg-white dark:bg-slate-900/90 rounded-2xl p-5 sm:p-6 shadow-md border border-slate-100 dark:border-slate-800">
             <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                 <FileCheck className="w-5 h-5 text-white" />
@@ -1504,92 +1514,95 @@ export default function AIRequestPage() {
             </h3>
             
             <div className="space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 p-3 bg-gray-50 rounded-xl">
-                <span className="text-gray-500 font-medium">Service</span>
-                <span className="font-semibold text-gray-900 break-words sm:text-right">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Service</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100 break-words sm:text-right">
                   {selectedService
                     ? `${selectedService.group.emoji} ${selectedService.group.name} → ${selectedService.name}`
                     : aiResult.categoryName}
                 </span>
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 p-3 bg-gray-50 rounded-xl">
-                <span className="text-gray-500 font-medium">Location</span>
-                <span className="font-semibold text-gray-900 break-words sm:text-right">{formData.flatNo}, {formData.location.split(',')[0]}</span>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Location</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100 break-words sm:text-right">{formData.flatNo}, {formData.location.split(',')[0]}</span>
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 p-3 bg-gray-50 rounded-xl">
-                <span className="text-gray-500 font-medium">Urgency</span>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Urgency</span>
                 <span className={`font-semibold px-3 py-1 rounded-full text-sm ${
-                  formData.urgency === 'emergency' ? 'bg-red-100 text-red-700' :
-                  formData.urgency === 'urgent' ? 'bg-orange-100 text-orange-700' :
-                  'bg-emerald-100 text-emerald-700'
+                  formData.urgency === 'emergency' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200' :
+                  formData.urgency === 'urgent' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-200' :
+                  'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200'
                 }`}>{selectedUrgency?.label}</span>
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 p-3 bg-gray-50 rounded-xl">
-                <span className="text-gray-500 font-medium">Mobile</span>
-                <span className="font-semibold text-gray-900 flex items-center gap-2 sm:justify-end">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Mobile</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2 sm:justify-end">
                   <Phone className="w-4 h-4 text-emerald-600" />
                   +91 {formData.mobileNumber}
                 </span>
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 p-3 bg-gray-50 rounded-xl">
-                <span className="text-gray-500 font-medium">Media</span>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Media</span>
                 <div className="flex gap-2 sm:justify-end">
-                  <span className="font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-200 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                     <Camera className="w-3.5 h-3.5" /> {images.length}
                   </span>
-                  <span className="font-semibold text-purple-700 bg-purple-50 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                  <span className="font-semibold text-purple-700 dark:text-purple-200 bg-purple-50 dark:bg-purple-900/30 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                     <Video className="w-3.5 h-3.5" /> {videos.length}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <p className="text-sm font-semibold text-gray-500 mb-2">Problem Description</p>
-              <p className="text-gray-800 bg-gradient-to-r from-gray-50 to-white p-4 rounded-xl border border-gray-100">{formData.description}</p>
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-800">
+              <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Problem Description</p>
+              <p className="text-gray-800 dark:text-gray-200 bg-gradient-to-r from-gray-50 to-white dark:from-slate-800 dark:to-slate-900 p-4 rounded-xl border border-gray-100 dark:border-slate-800">{formData.description}</p>
             </div>
           </div>
 
           {/* Trust badges - Premium Style */}
-            <div className="flex items-center justify-center gap-3 sm:gap-4 py-3 flex-wrap">
-            <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 rounded-xl border border-emerald-200">
-              <Shield className="w-5 h-5 text-emerald-600" />
-              <span className="text-sm font-semibold text-emerald-700">Verified Helpers</span>
+          <div className="flex items-center justify-center gap-3 sm:gap-4 py-2 flex-wrap">
+            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl border border-emerald-200 dark:border-emerald-800">
+              <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-300" />
+              <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-200">Verified Helpers</span>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 rounded-xl border border-blue-200">
-              <CheckCircle2 className="w-5 h-5 text-blue-600" />
-              <span className="text-sm font-semibold text-blue-700">Money-back Guarantee</span>
+            <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-200 dark:border-blue-800">
+              <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-300" />
+              <span className="text-sm font-semibold text-blue-700 dark:text-blue-200">Money-back Guarantee</span>
             </div>
           </div>
 
-          {/* Submit Button - Premium Style */}
-          <Button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="w-full h-16 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white font-bold text-lg rounded-2xl shadow-xl shadow-emerald-500/30 hover:shadow-2xl hover:shadow-emerald-500/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100"
-          >
-            {loading ? (
-              <>
-                <div className="w-6 h-6 mr-3 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-                Posting your request...
-              </>
-            ) : (
-              <>
-                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center mr-3">
-                  <Send className="w-5 h-5" />
-                </div>
-                Confirm & Post Request
-              </>
-            )}
-          </Button>
+            {/* Spacer for sticky CTA */}
+            <div className="h-6" />
 
-          <Button
-            onClick={handleCustomPriceFlow}
-            variant="outline"
-            className="w-full h-12 mt-3 border-emerald-200 text-emerald-700 bg-white hover:bg-emerald-50"
-          >
-            Still doubt our AI pricing? Decide your own price
-          </Button>
+            {/* Sticky bottom CTA */}
+            <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-2.5 bg-white/95 dark:bg-slate-950/90 backdrop-blur-2xl border-t border-gray-200/80 dark:border-slate-800/80 shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.25)]">
+              <div className="max-w-3xl mx-auto space-y-2">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="w-full h-12 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/35 transition-all duration-300 disabled:opacity-70"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 mr-2 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      Posting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Confirm & Post – ₹{aiResult.estimatedPrice}
+                    </>
+                  )}
+                </Button>
+                <button
+                  onClick={handleCustomPriceFlow}
+                  className="w-full text-center text-sm font-medium text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 dark:hover:text-emerald-200 py-1"
+                >
+                  Or decide your own price
+                </button>
+              </div>
+            </div>
         </div>
       )}
 
