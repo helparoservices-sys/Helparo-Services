@@ -498,7 +498,10 @@ export default function HelperDashboard() {
 
   const loadDashboard = async () => {
     try {
-      setLoading(true)
+      // Don't block UI - set loading to false after basic check
+      setLoading(false)
+      
+      // Load stats in background
       const result = await getHelperDashboardStats()
       if ('error' in result) {
         setError(result.error || 'Failed to load dashboard')
@@ -507,8 +510,6 @@ export default function HelperDashboard() {
       }
     } catch {
       setError('Failed to load dashboard data')
-    } finally {
-      setLoading(false)
     }
   }
 

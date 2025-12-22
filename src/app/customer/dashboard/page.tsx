@@ -92,75 +92,71 @@ export default function CustomerDashboard() {
 
   useEffect(() => {
     async function loadData() {
-      // OPTIMIZATION: Use singleton client
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        router.push('/auth/login')
-        return
-      }
-
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('role, phone, phone_verified, full_name, avatar_url')
-        .eq('id', user.id)
-        .single()
-
-      // Check if user has customer role set
-      if (!userProfile?.role || userProfile.role !== 'customer') {
-        // User might be a helper or no role - redirect appropriately
-        if (userProfile?.role === 'helper') {
-          router.push('/helper/dashboard')
-        } else {
-          router.push('/auth/complete-signup')
+      try {
+        // Show loading immediately
+        setLoading(true)
+        
+        // FAST: Use cached session instead of getUser for speed
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session?.user) {
+          router.push('/auth/login')
+          return
         }
-        return
-      }
 
-      // Customers don't need phone verification - it's collected during booking
-      setProfile(userProfile)
+        const userId = session.user.id
 
-      // OPTIMIZATION: Combine service_requests queries to reduce from 7 to 5 requests
-      // Using Postgres aggregation to get all counts in one query
-      const [walletRes, loyaltyRes, requestsWithCounts, badgesRes, referralsRes] = await Promise.all([
-        supabase.from('wallet_accounts').select('available_balance').eq('user_id', user.id).single(),
-        supabase.from('loyalty_points').select('points_balance').eq('user_id', user.id).single(),
-        // Combined query: get recent requests + counts using Postgres aggregation
-        supabase.rpc('get_customer_requests_summary', { customer_uuid: user.id }).then(res => {
-          // Fallback to separate queries if RPC doesn't exist yet
-          if (res.error) {
-            return Promise.all([
-              supabase.from('service_requests').select('id, title, status, broadcast_status, created_at, city').eq('customer_id', user.id).order('created_at', { ascending: false }).limit(5),
-              supabase.from('service_requests').select('id', { count: 'exact', head: true }).eq('customer_id', user.id).in('broadcast_status', ['broadcasting', 'accepted', 'on_way', 'arrived', 'in_progress']),
-              supabase.from('service_requests').select('id', { count: 'exact', head: true }).eq('customer_id', user.id).eq('broadcast_status', 'completed'),
-            ]).then(([requests, active, completed]) => ({
-              data: { requests: requests.data || [], active_count: active.count || 0, completed_count: completed.count || 0 }
-            }))
+        // OPTIMIZATION: Load critical data first (profile), then secondary data
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('role, full_name, avatar_url')
+          .eq('id', userId)
+          .single()
+
+        // Check if user has customer role set
+        if (!userProfile?.role || userProfile.role !== 'customer') {
+          if (userProfile?.role === 'helper') {
+            router.push('/helper/dashboard')
+          } else {
+            router.push('/auth/complete-signup')
           }
-          return res
-        }),
-        supabase.from('user_badges').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('referrals').select('id', { count: 'exact', head: true }).eq('referrer_id', user.id),
-      ])
+          return
+        }
 
-      setWallet(walletRes.data)
-      setLoyalty(loyaltyRes.data)
-      setRequests(requestsWithCounts.data?.requests || [])
-      setActiveCount(requestsWithCounts.data?.active_count || 0)
-      setCompletedCount(requestsWithCounts.data?.completed_count || 0)
-      setBadgeCount(badgesRes.count || 0)
-      setReferralCount(referralsRes.count || 0)
-      setLoading(false)
+        // Show UI immediately with profile
+        setProfile(userProfile)
+        setLoading(false)
 
-      // Check if we should show referral code modal (only for first-time customers)
-      // Show modal if: completely new user (no requests at all) AND hasn't seen it before
-      const hasSeenReferralPrompt = localStorage.getItem('helparo_referral_prompt_completed')
-      const totalRequests = (requestsWithCounts.data?.requests?.length || 0)
-      const isFirstTimeUser = totalRequests === 0 && (requestsWithCounts.data?.completed_count || 0) === 0
-      
-      if (!hasSeenReferralPrompt && isFirstTimeUser) {
-        // Small delay to let dashboard render first
-        setTimeout(() => setShowReferralModal(true), 1000)
+        // OPTIMIZATION: Load secondary data in background (non-blocking)
+        Promise.all([
+          supabase.from('wallet_accounts').select('available_balance').eq('user_id', userId).single(),
+          supabase.from('loyalty_points').select('points_balance').eq('user_id', userId).single(),
+          supabase.from('service_requests').select('id, title, status, broadcast_status, created_at, city').eq('customer_id', userId).order('created_at', { ascending: false }).limit(5),
+          supabase.from('service_requests').select('id', { count: 'exact', head: true }).eq('customer_id', userId).in('broadcast_status', ['broadcasting', 'accepted', 'on_way', 'arrived', 'in_progress']),
+          supabase.from('service_requests').select('id', { count: 'exact', head: true }).eq('customer_id', userId).eq('broadcast_status', 'completed'),
+          supabase.from('user_badges').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+          supabase.from('referrals').select('id', { count: 'exact', head: true }).eq('referrer_id', userId),
+        ]).then(([walletRes, loyaltyRes, requestsRes, activeRes, completedRes, badgesRes, referralsRes]) => {
+          setWallet(walletRes.data)
+          setLoyalty(loyaltyRes.data)
+          setRequests(requestsRes.data || [])
+          setActiveCount(activeRes.count || 0)
+          setCompletedCount(completedRes.count || 0)
+          setBadgeCount(badgesRes.count || 0)
+          setReferralCount(referralsRes.count || 0)
+          
+          // Check referral modal
+          const hasSeenReferralPrompt = localStorage.getItem('helparo_referral_prompt_completed')
+          const totalRequests = (requestsRes.data?.length || 0)
+          const isFirstTimeUser = totalRequests === 0 && (completedRes.count || 0) === 0
+          
+          if (!hasSeenReferralPrompt && isFirstTimeUser) {
+            setTimeout(() => setShowReferralModal(true), 1000)
+          }
+        })
+      } catch (error) {
+        console.error('Dashboard load error:', error)
+        setLoading(false)
       }
     }
 
