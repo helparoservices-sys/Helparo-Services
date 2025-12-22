@@ -21,7 +21,7 @@ const config: CapacitorConfig = {
   plugins: {
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#E8F7F3',
+      backgroundColor: '#FFFFFF',  // Default white, pages can override dynamically
       overlaysWebView: false,  // This is the KEY setting - prevents overlap
     },
     Geolocation: {

@@ -8,10 +8,14 @@ import { logger } from '@/lib/logger'
 import { createBrowserClient } from '@supabase/ssr'
 import { auth, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from '@/lib/firebase'
 import { signInWithGoogle } from '@/lib/capacitor-auth'
+import { useStatusBar } from '@/lib/use-status-bar'
 
 export default function LoginPage() {
   const router = useRouter()
   const [phone, setPhone] = useState('')
+  
+  // White status bar for login page
+  useStatusBar('#FFFFFF', 'dark')
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [step, setStep] = useState<'phone' | 'otp'>('phone')
   const [maskedPhone, setMaskedPhone] = useState('')

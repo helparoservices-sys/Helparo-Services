@@ -36,6 +36,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import ReferralCodeModal from '@/components/customer/ReferralCodeModal'
+import { useStatusBar } from '@/lib/use-status-bar'
 
 // Animated Counter Component
 function AnimatedCounter({ end, duration = 1500, suffix = '', prefix = '' }: { end: number; duration?: number; suffix?: string; prefix?: string }) {
@@ -89,6 +90,9 @@ export default function CustomerDashboard() {
   const [showReferralModal, setShowReferralModal] = useState(false)
 
   const greeting = getGreeting()
+
+  // Dynamic status bar color for this page
+  useStatusBar('#E8F7F3', 'dark')
 
   useEffect(() => {
     async function loadData() {
