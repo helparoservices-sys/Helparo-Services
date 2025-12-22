@@ -203,12 +203,6 @@ export function LegalDoc({
                   >
                     Privacy Policy
                   </Link>
-                  <Link 
-                    href="/legal/consent"
-                    className="block text-sm text-emerald-700 dark:text-emerald-300 hover:underline"
-                  >
-                    User Consent
-                  </Link>
                 </div>
               </div>
             </div>
@@ -277,9 +271,6 @@ export function LegalDoc({
               </Link>
               <Link href="/" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
                 Home
-              </Link>
-              <Link href="/auth/signin" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-                Sign In
               </Link>
             </div>
           </div>
