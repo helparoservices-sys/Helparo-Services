@@ -124,7 +124,7 @@ export default function LoginPage() {
       const fullPhone = `${countryCode}${phone}`
       const result = await signInWithPhoneNumber(auth, fullPhone, recaptchaVerifier)
       setConfirmationResult(result)
-      setMaskedPhone(`******${phone.slice(-4)}`)
+      setMaskedPhone(`${countryCode} ${phone}`)
       setStep('otp')
       setCountdown(60)
     } catch (err: unknown) {

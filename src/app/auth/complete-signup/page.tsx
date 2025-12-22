@@ -443,7 +443,7 @@ export default function CompleteSignupPage() {
       const fullPhone = `${countryCode}${cleanPhone}`
       const result = await signInWithPhoneNumber(auth, fullPhone, recaptchaVerifier)
       setConfirmationResult(result)
-      setMaskedPhone(`******${phone.slice(-4)}`)
+      setMaskedPhone(`${countryCode} ${phone}`)
       
       localStorage.removeItem('pendingSignupRole')
       localStorage.removeItem('roleSelected')
