@@ -121,7 +121,10 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
     try {
       setIsLoggingOut(true)
       
-      // Sign out from Supabase
+      // First, call server-side logout to clear server cookies
+      await fetch('/api/auth/logout', { method: 'POST' })
+      
+      // Sign out from Supabase client-side
       await supabase.auth.signOut()
       
       // Clear all local storage and session storage

@@ -92,13 +92,18 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
 
   const handleLogout = async () => {
     try {
+      // First, call server-side logout to clear server cookies
+      await fetch('/api/auth/logout', { method: 'POST' })
+      // Also sign out client-side
       const supabase = createClient()
       await supabase.auth.signOut()
     } catch (error) {
       console.error('Logout error:', error)
     } finally {
-      // Always redirect to login, even if signOut fails
-      // Use window.location for a full page reload to clear all state
+      // Clear local storage
+      localStorage.clear()
+      sessionStorage.clear()
+      // Always redirect to login with full page reload
       window.location.href = '/auth/login'
     }
   }
