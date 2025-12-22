@@ -66,6 +66,7 @@ export function VerificationPageClient({
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
+    setError(undefined) // Clear any previous errors
     router.refresh()
     setTimeout(() => setRefreshing(false), 500)
   }, [router])
