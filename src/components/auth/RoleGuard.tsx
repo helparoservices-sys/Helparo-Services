@@ -4,6 +4,7 @@ import { useEffect, useState, createContext, useContext } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { LoadingSpinner } from '@/components/ui/loading'
+import { initPushNotifications } from '@/lib/push-notifications'
 
 interface UserContextType {
   userId: string | null
@@ -62,6 +63,9 @@ export function RoleGuard({ children, allowedRole }: RoleGuardProps) {
 
     setAuthorized(true)
     setLoading(false)
+    
+    // Initialize push notifications (runs in background, doesn't block)
+    initPushNotifications(user.id).catch(() => {})
   }
 
   if (loading) {

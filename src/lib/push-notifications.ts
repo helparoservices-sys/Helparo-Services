@@ -1,0 +1,83 @@
+/**
+ * Simple Push Notifications Setup
+ * Works with Capacitor + Firebase Cloud Messaging
+ */
+
+import { Capacitor } from '@capacitor/core'
+import { PushNotifications } from '@capacitor/push-notifications'
+
+/**
+ * Initialize push notifications for the current user
+ * Call this after user logs in
+ */
+export async function initPushNotifications(userId: string): Promise<string | null> {
+  // Only works on native app (not web browser)
+  if (!Capacitor.isNativePlatform()) {
+    console.log('Push notifications only work on native app')
+    return null
+  }
+
+  try {
+    // Step 1: Check/request permission
+    let permission = await PushNotifications.checkPermissions()
+    
+    if (permission.receive === 'prompt') {
+      permission = await PushNotifications.requestPermissions()
+    }
+
+    if (permission.receive !== 'granted') {
+      console.log('Push notification permission denied')
+      return null
+    }
+
+    // Step 2: Register with Firebase
+    await PushNotifications.register()
+
+    // Step 3: Wait for token
+    return new Promise((resolve) => {
+      // Success - got token
+      PushNotifications.addListener('registration', async (token) => {
+        console.log('📱 Push token received:', token.value.substring(0, 20) + '...')
+        
+        // Save token to server
+        try {
+          await fetch('/api/push/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              userId, 
+              token: token.value,
+              platform: Capacitor.getPlatform()
+            })
+          })
+          console.log('✅ Push token saved to server')
+        } catch (err) {
+          console.error('Failed to save push token:', err)
+        }
+        
+        resolve(token.value)
+      })
+
+      // Error
+      PushNotifications.addListener('registrationError', (error) => {
+        console.error('Push registration error:', error)
+        resolve(null)
+      })
+
+      // Handle incoming notification (app in foreground)
+      PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        console.log('📬 Push received (foreground):', notification)
+        // You can show a toast or update UI here
+      })
+
+      // Handle notification tap
+      PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+        console.log('👆 Push notification tapped:', action)
+        // Navigate to relevant page based on action.notification.data
+      })
+    })
+  } catch (error) {
+    console.error('Push notification init error:', error)
+    return null
+  }
+}
