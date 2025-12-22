@@ -246,7 +246,7 @@ export async function initializeCapacitor() {
   
   console.log('🚀 Initializing Capacitor app features')
   
-  // Initialize StatusBar plugin
+  // Initialize StatusBar plugin with VISIBLE TEST COLOR
   try {
     const { StatusBar, Style } = await import('@capacitor/status-bar')
     
@@ -254,11 +254,11 @@ export async function initializeCapacitor() {
     await StatusBar.setOverlaysWebView({ overlay: false })
     await StatusBar.show()
     
-    // Default to white status bar - pages can override with useStatusBar hook
-    await StatusBar.setBackgroundColor({ color: '#FFFFFF' })
-    await StatusBar.setStyle({ style: Style.Dark }) // Dark = dark text on light bg
+    // SET TEST COLOR - DARK GRAY SO IT'S VISIBLE
+    await StatusBar.setBackgroundColor({ color: '#9CA3AF' })
+    await StatusBar.setStyle({ style: Style.Dark })
     
-    console.log('✅ StatusBar initialized with white background')
+    console.log('✅ StatusBar initialized with DARK GRAY color for testing')
   } catch (error) {
     console.error('⚠️ StatusBar initialization failed:', error)
   }
