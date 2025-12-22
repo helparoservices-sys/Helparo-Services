@@ -32,18 +32,96 @@ import {
   ChevronRight,
   Check,
   Headphones,
-  TrendingUp
+  TrendingUp,
+  Search,
+  ChevronDown
 } from 'lucide-react'
 
-const categories = [
-  { id: 'cleaning', name: 'Cleaning', emoji: '🧹', icon: '✨', color: 'from-blue-400 to-cyan-400' },
-  { id: 'plumbing', name: 'Plumbing', emoji: '🔧', icon: '🚿', color: 'from-sky-400 to-blue-500' },
-  { id: 'electrical', name: 'Electrical', emoji: '⚡', icon: '💡', color: 'from-amber-400 to-yellow-500' },
-  { id: 'automotive', name: 'Automotive', emoji: '🚗', icon: '🔧', color: 'from-slate-400 to-gray-500' },
-  { id: 'tech', name: 'Tech', emoji: '💻', icon: '🖥️', color: 'from-purple-400 to-indigo-500' },
-  { id: 'delivery', name: 'Delivery', emoji: '📦', icon: '🚚', color: 'from-orange-400 to-red-400' },
-  { id: 'personal', name: 'Care', emoji: '💆', icon: '💅', color: 'from-pink-400 to-rose-400' },
-  { id: 'other', name: 'Other', emoji: '✨', icon: '🌟', color: 'from-emerald-400 to-teal-500' },
+const serviceCategories = [
+  {
+    id: 'home-services',
+    name: 'Home Services',
+    emoji: '🏠',
+    description: 'All home maintenance and repair services',
+    services: ['Plumbing', 'Electrical Work', 'Carpentry', 'Painting', 'AC Repair & Service', 'Appliance Repair']
+  },
+  {
+    id: 'cleaning-services',
+    name: 'Cleaning Services',
+    emoji: '🧹',
+    description: 'Professional cleaning for homes and offices',
+    services: ['Bathroom Cleaning', 'House Cleaning', 'Kitchen Cleaning', 'Office Cleaning', 'Sofa & Carpet Cleaning', 'Window Cleaning']
+  },
+  {
+    id: 'beauty-wellness',
+    name: 'Beauty & Wellness',
+    emoji: '💆',
+    description: 'Personal care and beauty services at home',
+    services: ['Facial Treatment', 'Haircut & Styling', 'Makeup Artist', 'Manicure & Pedicure', 'Massage Therapy', 'Waxing & Threading']
+  },
+  {
+    id: 'car-services',
+    name: 'Car Services',
+    emoji: '🚗',
+    description: 'Vehicle maintenance and repair services',
+    services: ['Battery Service', 'Car AC Service', 'Car Repair', 'Car Wash', 'Denting & Painting', 'Tire Service']
+  },
+  {
+    id: 'pest-control',
+    name: 'Pest Control',
+    emoji: '🐛',
+    description: 'Professional pest and insect control services',
+    services: ['Bed Bug Control', 'Cockroach Control', 'General Pest Control', 'Mosquito Control', 'Rodent Control', 'Termite Control']
+  },
+  {
+    id: 'moving-packing',
+    name: 'Moving & Packing',
+    emoji: '📦',
+    description: 'Relocation and packing services',
+    services: ['Furniture Moving', 'Intercity Moving', 'Local Shifting', 'Office Relocation', 'Packing Services', 'Vehicle Transport']
+  },
+  {
+    id: 'tutoring-training',
+    name: 'Tutoring & Training',
+    emoji: '🎓',
+    description: 'Educational and skill development services',
+    services: ['Academic Tutoring', 'Cooking Classes', 'Dance Classes', 'Language Classes', 'Music Lessons', 'Yoga & Fitness']
+  },
+  {
+    id: 'event-services',
+    name: 'Event Services',
+    emoji: '🎉',
+    description: 'Party planning and event management',
+    services: ['Birthday Party Planning', 'Catering Service', 'Decoration Service', 'Entertainment', 'Photography & Videography', 'Wedding Planning']
+  },
+  {
+    id: 'gardening-landscaping',
+    name: 'Gardening & Landscaping',
+    emoji: '🌱',
+    description: 'Garden maintenance and outdoor services',
+    services: ['Garden Design', 'Garden Pest Control', 'Irrigation System', 'Lawn Mowing', 'Plant Care', 'Tree Trimming']
+  },
+  {
+    id: 'pet-care',
+    name: 'Pet Care',
+    emoji: '🐶',
+    description: 'Pet grooming, training, and care services',
+    services: ['Dog Walking', 'Pet Grooming', 'Pet Sitting', 'Pet Taxi', 'Pet Training', 'Vet Consultation']
+  },
+  {
+    id: 'computer-it-services',
+    name: 'Computer & IT Services',
+    emoji: '💻',
+    description: 'Technology repair and IT support',
+    services: ['Data Recovery', 'Desktop Repair', 'Laptop Repair', 'Network Setup', 'Printer Repair', 'Software Installation']
+  },
+  {
+    id: 'laundry-services',
+    name: 'Laundry Services',
+    emoji: '🧺',
+    description: 'Washing, ironing, and dry cleaning',
+    services: ['Carpet & Curtain Cleaning', 'Dry Cleaning', 'Iron Only', 'Shoe Cleaning', 'Steam Press', 'Wash & Iron']
+  }
 ]
 
 const urgencyOptions = [
@@ -65,8 +143,11 @@ export default function NewRequestPage() {
   const [images, setImages] = useState<string[]>([])
   const [videos, setVideos] = useState<string[]>([])
   const [currentStep, setCurrentStep] = useState(1)
+  const [serviceSearch, setServiceSearch] = useState('')
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     category: '',
+    service: '',
     title: '',
     description: '',
     location: '',
@@ -102,6 +183,7 @@ export default function NewRequestPage() {
       setFormData(prev => ({
         ...prev,
         category: data.category || prev.category,
+        service: data.service || prev.service,
         description: data.description || prev.description,
         title: data.title || data.description || prev.title,
         location: data.location || prev.location,
@@ -127,10 +209,11 @@ export default function NewRequestPage() {
   // Calculate form progress
   const calculateProgress = () => {
     let progress = 0
-    if (formData.category) progress += 25
-    if (formData.title) progress += 25
-    if (formData.location && formData.latitude) progress += 25
-    if (formData.budget) progress += 25
+    if (formData.category) progress += 20
+    if (formData.service) progress += 20
+    if (formData.title) progress += 20
+    if (formData.location && formData.latitude) progress += 20
+    if (formData.budget) progress += 20
     return progress
   }
 
@@ -255,10 +338,34 @@ export default function NewRequestPage() {
     setVideos(prev => prev.filter((_, i) => i !== index))
   }
 
+  useEffect(() => {
+    if (formData.category) {
+      setExpandedCategory(formData.category)
+    }
+  }, [formData.category])
+
+  const serviceQuery = serviceSearch.trim().toLowerCase()
+  const filteredCategories = serviceCategories
+    .map(cat => {
+      const visibleServices = serviceQuery
+        ? cat.services.filter(service => service.toLowerCase().includes(serviceQuery))
+        : cat.services
+      const matchesCat = cat.name.toLowerCase().includes(serviceQuery) || cat.description.toLowerCase().includes(serviceQuery)
+      return { ...cat, visibleServices, matchesCat }
+    })
+    .filter(cat => {
+      if (!serviceQuery) return true
+      return cat.matchesCat || cat.visibleServices.length > 0
+    })
+
   const handleSubmit = async () => {
     // Validation
     if (!formData.category) {
       toast.error('Please select a category')
+      return
+    }
+    if (!formData.service) {
+      toast.error('Please choose a service')
       return
     }
     if (!formData.title.trim()) {
@@ -296,7 +403,8 @@ export default function NewRequestPage() {
         signal: controller.signal,
         body: JSON.stringify({ 
           categoryId: formData.category,
-          categoryName: categories.find(c => c.id === formData.category)?.name,
+          categoryName: serviceCategories.find(c => c.id === formData.category)?.name,
+          serviceName: formData.service,
           description: formData.description || formData.title,
           address: formData.location,
           locationLat: formData.latitude,
@@ -395,42 +503,97 @@ export default function NewRequestPage() {
       {/* Main Form Content */}
       <div className="relative max-w-3xl mx-auto px-4 py-6 space-y-5">
         
-        {/* Category Selection - Premium Card */}
+        {/* Service Selection - Searchable accordion */}
         <div className="bg-white rounded-3xl p-5 shadow-xl shadow-gray-200/50 border border-gray-100 hover:shadow-2xl hover:shadow-emerald-100/50 transition-all duration-500">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <div>
-              <label className="text-base font-bold text-gray-900 block">What do you need?</label>
-              <p className="text-xs text-gray-500">Select a service category</p>
+            <div className="flex-1">
+              <label className="text-base font-bold text-gray-900 block">Choose exact service</label>
+              <p className="text-xs text-gray-500">Search and pick a service to continue</p>
             </div>
+            <span className="px-2 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+              Required
+            </span>
           </div>
-          <div className="grid grid-cols-4 gap-3">
-            {categories.map((cat) => {
-              const isSelected = formData.category === cat.id
+
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              placeholder="Search services (e.g., plumber, cleaning)"
+              value={serviceSearch}
+              onChange={(e) => setServiceSearch(e.target.value)}
+              className="pl-9 h-11 text-sm border-gray-200 focus:border-emerald-500 focus:ring-emerald-500/20 rounded-xl bg-gray-50/70"
+            />
+          </div>
+
+          <div className="space-y-3">
+            {filteredCategories.length === 0 && (
+              <div className="text-sm text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-4 text-center">
+                No services found. Try another keyword.
+              </div>
+            )}
+
+            {filteredCategories.map((cat) => {
+              const isExpanded = expandedCategory === cat.id
+              const isCategorySelected = formData.category === cat.id
               return (
-                <button
+                <div
                   key={cat.id}
-                  onClick={() => setFormData(prev => ({ ...prev, category: cat.id }))}
-                  className={`relative p-3 rounded-2xl border-2 transition-all duration-300 text-center group overflow-hidden ${
-                    isSelected 
-                      ? 'border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50 shadow-lg shadow-emerald-100' 
-                      : 'border-gray-100 bg-white hover:border-emerald-200 hover:bg-emerald-50/50 hover:scale-105'
-                  }`}
+                  className="rounded-2xl border border-gray-100 bg-gray-50/60 shadow-sm hover:shadow-md transition-all duration-300"
                 >
-                  {isSelected && (
-                    <div className="absolute top-1 right-1">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <button
+                    type="button"
+                    onClick={() => setExpandedCategory(prev => prev === cat.id ? null : cat.id)}
+                    className="w-full flex items-center gap-3 px-4 py-3"
+                  >
+                    <div className="text-2xl">{cat.emoji}</div>
+                    <div className="flex-1 text-left">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-gray-900">{cat.name}</span>
+                        {isCategorySelected && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                            Selected
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-gray-500 line-clamp-1">{cat.description}</p>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {isExpanded && (
+                    <div className="px-4 pb-4 pt-1 space-y-2">
+                      {cat.visibleServices.map((service) => {
+                        const isSelected = formData.service === service
+                        return (
+                          <button
+                            key={service}
+                            onClick={() => setFormData(prev => ({ 
+                              ...prev, 
+                              category: cat.id,
+                              service,
+                              title: prev.title ? prev.title : service
+                            }))}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-left text-sm transition-all duration-200 ${
+                              isSelected
+                                ? 'border-emerald-500 bg-emerald-50 text-emerald-800 shadow-sm'
+                                : 'border-gray-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/50'
+                            }`}
+                          >
+                            <span>{service}</span>
+                            {isSelected ? (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4 text-gray-400" />
+                            )}
+                          </button>
+                        )
+                      })}
                     </div>
                   )}
-                  <div className={`text-2xl mb-1 transform group-hover:scale-110 transition-transform duration-300`}>
-                    {cat.emoji}
-                  </div>
-                  <div className={`text-xs font-semibold ${isSelected ? 'text-emerald-700' : 'text-gray-600'}`}>
-                    {cat.name}
-                  </div>
-                </button>
+                </div>
               )
             })}
           </div>

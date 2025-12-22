@@ -71,6 +71,21 @@ export async function POST(request: NextRequest) {
 
     // Map category to service_categories id (or use the slug)
     const categoryMapping: Record<string, string> = {
+      // New catalog
+      'home-services': 'Home Services',
+      'cleaning-services': 'Cleaning Services',
+      'beauty-wellness': 'Beauty & Wellness',
+      'car-services': 'Car Services',
+      'pest-control': 'Pest Control',
+      'moving-packing': 'Moving & Packing',
+      'tutoring-training': 'Tutoring & Training',
+      'event-services': 'Event Services',
+      'gardening-landscaping': 'Gardening & Landscaping',
+      'pet-care': 'Pet Care',
+      'computer-it-services': 'Computer & IT Services',
+      'laundry-services': 'Laundry Services',
+
+      // Legacy slugs for backward compatibility
       'electrical': 'Electrical',
       'plumbing': 'Plumbing',
       'ac_repair': 'AC & Appliance Repair',

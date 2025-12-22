@@ -2,10 +2,12 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 
 // Initialize Gemini AI (FREE tier from Google AI Studio)
 const apiKey = process.env.GEMINI_API_KEY || ''
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null
+const aiPricingEnabled = (process.env.AI_PRICING_ENABLED ?? 'true').toLowerCase() !== 'false'
+const genAI = apiKey && aiPricingEnabled ? new GoogleGenerativeAI(apiKey) : null
 
 // Log API key status on load (for debugging)
 console.log('🔑 Gemini API Key status:', apiKey ? `Set (${apiKey.substring(0, 10)}...)` : 'NOT SET')
+console.log('🧭 AI Pricing feature flag:', aiPricingEnabled ? 'ENABLED' : 'DISABLED')
 
 interface AIAnalysisResult {
   estimatedPrice: number
@@ -16,6 +18,21 @@ interface AIAnalysisResult {
   urgency: 'normal' | 'urgent' | 'emergency'
   description: string
   confidence: number
+}
+
+type PricingSource = 'ai' | 'fallback'
+
+interface AnalysisEnvelope {
+  analysis: AIAnalysisResult
+  source: PricingSource
+  usedModel?: string | null
+  diagnostics?: {
+    durationMs?: number
+    promptChars?: number
+    imageBytes?: number
+    fallbackReason?: string
+    errorMessage?: string
+  }
 }
 
 // Category-based pricing estimates (fallback when AI is not available)
@@ -123,20 +140,32 @@ export async function analyzeJobWithAI(
   images: string[], // Base64 encoded images
   description: string,
   categoryName: string,
-  _location?: string
-): Promise<AIAnalysisResult> {
+  location?: string,
+  options?: { urgency?: string; timeWindow?: string; requestId?: string }
+): Promise<AnalysisEnvelope> {
   const startTime = Date.now()
   console.log('🔍 [AI] Starting analysis:', { 
     categoryName, 
     descriptionLength: description.length, 
     imagesCount: images.length,
-    apiKeySet: !!apiKey 
+    apiKeySet: !!apiKey,
+    aiPricingEnabled
   })
   
-  // CRITICAL: If no API key, use smart fallback immediately
-  if (!genAI || !apiKey) {
-    console.log('⚠️ [AI] GEMINI_API_KEY not set, using smart estimation')
-    return estimatePriceFromDescription(description, categoryName)
+  // CRITICAL: If AI disabled or no key, flag fallback loudly
+  if (!genAI || !apiKey || !aiPricingEnabled) {
+    const fallbackReason = !aiPricingEnabled ? 'AI_PRICING_DISABLED' : 'NO_API_KEY'
+    console.warn(`⚠️ [AI] Using fallback: ${fallbackReason}`)
+    return {
+      analysis: estimatePriceFromDescription(description, categoryName),
+      source: 'fallback',
+      usedModel: null,
+      diagnostics: {
+        fallbackReason,
+        promptChars: description.length,
+        imageBytes: images.reduce((sum, img) => sum + img.length, 0)
+      }
+    }
   }
 
   try {
@@ -158,11 +187,24 @@ export async function analyzeJobWithAI(
       console.log(`📸 [AI] Using 1 image, compressed size: ${(imageData.length / 1024).toFixed(0)}KB`)
     }
 
-    // SHORT prompt for faster response
-    const prompt = `Analyze this ${categoryName} job in India. Customer says: "${description.substring(0, 200)}"
+    const safeDescription = description.substring(0, 600)
+    const prompt = `You are an Indian home-services pricing assistant. Use structured signals below and return JSON only.
 
-Return JSON only:
-{"estimatedPrice": <INR number>, "estimatedDuration": <minutes>, "severity": "<low|medium|high|critical>", "requiredSkills": ["skill"], "materialsNeeded": ["material"], "urgency": "<normal|urgent|emergency>", "description": "<brief work description>", "confidence": <0-100>}`
+  Inputs:
+  - service: ${categoryName}
+  - urgency: ${options?.urgency || 'unspecified'}
+  - timeWindow: ${options?.timeWindow || 'unspecified'}
+  - location: ${location || 'unspecified'}
+  - customer_note: "${safeDescription}"
+
+  Pricing rules:
+  - Base currency: INR.
+  - Reflect urgency/timeWindow premiums when warranted.
+  - Consider complexity hints from description.
+  - Provide concise reasoning text.
+
+  Return JSON only (no prose):
+  {"estimatedPrice": <integer INR>, "estimatedDuration": <minutes>, "severity": "<low|medium|high|critical>", "requiredSkills": ["skill"], "materialsNeeded": ["material"], "urgency": "<normal|urgent|emergency>", "description": "<brief work summary>", "confidence": <0-100>, "reasoning": "<why this price>"}`
 
     // Build content array
     const content: any[] = [prompt]
@@ -200,16 +242,36 @@ Return JSON only:
     analysis.estimatedDuration = Math.max(15, Math.min(480, analysis.estimatedDuration))
     analysis.confidence = Math.max(0, Math.min(100, analysis.confidence))
 
-    console.log(`✅ [AI] Analysis complete in ${Date.now() - startTime}ms:`, analysis)
-    return analysis
+    const durationMs = Date.now() - startTime
+    console.log(`✅ [AI] Analysis complete in ${durationMs}ms:`, analysis)
+    return {
+      analysis,
+      source: 'ai',
+      usedModel: 'gemini-2.0-flash-exp',
+      diagnostics: {
+        durationMs,
+        promptChars: prompt.length,
+        imageBytes: imageData ? imageData.length : 0
+      }
+    }
 
   } catch (error: any) {
     const elapsed = Date.now() - startTime
     console.error(`❌ [AI] Error after ${elapsed}ms:`, error.message)
     
-    // Always return fallback - never throw
     console.log('📊 [AI] Using smart estimation fallback')
-    return estimatePriceFromDescription(description, categoryName)
+    return {
+      analysis: estimatePriceFromDescription(description, categoryName),
+      source: 'fallback',
+      usedModel: 'gemini-2.0-flash-exp',
+      diagnostics: {
+        durationMs: elapsed,
+        fallbackReason: error?.message || 'unknown',
+        promptChars: description.length,
+        imageBytes: images.reduce((sum, img) => sum + img.length, 0),
+        errorMessage: error?.message
+      }
+    }
   }
 }
 

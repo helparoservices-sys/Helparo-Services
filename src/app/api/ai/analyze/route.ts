@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     console.log(`✅ [API] Auth OK in ${Date.now() - startTime}ms`)
 
     const body = await request.json()
-    const { images, description, categoryId, categoryName: providedCategoryName, location } = body
+    const { images, description, categoryId, categoryName: providedCategoryName, location, urgency, timeWindow } = body
 
     // Validation
     if (!images || images.length === 0) {
@@ -44,11 +44,12 @@ export async function POST(request: NextRequest) {
     console.log(`🔍 [API] Starting AI analysis: category=${categoryName}, images=${images.length}`)
 
     // Call AI service (it handles its own timeout and fallback)
-    const analysis = await analyzeJobWithAI(
+    const analysisEnvelope = await analyzeJobWithAI(
       images,
       description,
       categoryName,
-      location
+      location,
+      { urgency, timeWindow, requestId: body?.requestId }
     )
 
     const duration = Date.now() - startTime
@@ -56,7 +57,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      analysis,
+      analysis: analysisEnvelope.analysis,
+      pricingSource: analysisEnvelope.source,
+      usedModel: analysisEnvelope.usedModel,
+      diagnostics: {
+        ...analysisEnvelope.diagnostics,
+        apiDurationMs: duration
+      },
       duration,
     })
   } catch (error: any) {

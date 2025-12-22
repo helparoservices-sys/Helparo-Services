@@ -25,122 +25,89 @@ import { completeHelperOnboarding } from '@/app/actions/onboarding'
 import { LanguageSelectorModal, LanguageButton } from '@/components/language-selector-modal'
 import { useLanguage, hasSelectedLanguage } from '@/lib/language-context'
 
+const translateWithFallback = (t: any, key: string, fallback: string) => {
+  const value = typeof t === 'function' ? t(key) : ''
+  return !value || value === key ? fallback : value
+}
+
 // Step 1: Service Details
 function Step1ServiceDetails({ data, onChange, onNext, t }: any) {
   const [categories, setCategories] = useState<any[]>([])
   const [subcategories, setSubcategories] = useState<any[]>([])
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
-  const detectLocation = async () => {
-    setDetecting(true)
-    setLocationError('')
+  const nextLabel = translateWithFallback(t, 'common.next', 'Next')
 
-    if (!navigator.geolocation) {
-      setLocationError(t('onboarding.step2.geoNotSupported'))
-      setDetecting(false)
-      return
+  useEffect(() => {
+    const loadCategories = async () => {
+      const supabase = createClient()
+
+      const { data: rootCategories } = await supabase
+        .from('service_categories')
+        .select('id, name, slug')
+        .is('parent_id', null)
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
+
+      const { data: childCategories } = await supabase
+        .from('service_categories')
+        .select('id, name, slug, parent_id')
+        .not('parent_id', 'is', null)
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
+
+      setCategories(rootCategories || [])
+      setSubcategories(childCategories || [])
+      setLoading(false)
     }
 
-    const toastId = 'detecting-location'
-    toast.loading(t('onboarding.step2.detecting'), { id: toastId })
+    loadCategories()
+  }, [])
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords
+  useEffect(() => {
+    if (!subcategories.length) return
+    if (!data.service_categories?.length) return
 
-        // Show coords immediately so UI reflects progress
-        onChange({
-          latitude: latitude.toFixed(6),
-          longitude: longitude.toFixed(6)
-        })
+    const skillNames = subcategories
+      .filter((sub) => data.service_categories.includes(sub.slug))
+      .map((sub) => sub.name)
 
-        const geocodeGoogle = async () => {
-          try {
-            const response = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`, {
-              cache: 'no-store',
-              headers: { Accept: 'application/json' }
-            })
-            if (!response.ok) return null
-            const geo = await response.json()
-            const address = geo.formatted_address || ''
-            return {
-              address,
-              pincode: geo.pincode || ''
-            }
-          } catch (error) {
-            console.error('Geocoding error (google):', error)
-            return null
-          }
-        }
+    if (skillNames.length && JSON.stringify(skillNames) !== JSON.stringify(data.skills || [])) {
+      onChange({ skills: skillNames })
+    }
+  }, [subcategories, data.service_categories, data.skills, onChange])
 
-        const geocodeFallback = async () => {
-          try {
-            const response = await fetch(`/api/address/reverse?lat=${latitude}&lng=${longitude}`, {
-              cache: 'no-store',
-              headers: { Accept: 'application/json' }
-            })
-            if (!response.ok) return null
-            const geo = await response.json()
-            const address = geo?.address?.display_name || geo?.display_name || ''
-            return {
-              address,
-              pincode: geo?.address?.pincode || geo?.pincode || ''
-            }
-          } catch (error) {
-            console.error('Geocoding error (fallback):', error)
-            return null
-          }
-        }
+  const getSubcategoriesForParent = (parentId: string) =>
+    subcategories.filter((sub) => sub.parent_id === parentId)
 
-        let result = await geocodeGoogle()
-        if (!result || !result.address) {
-          result = await geocodeFallback()
-        }
-
-        toast.dismiss(toastId)
-
-        if (result && result.address) {
-          onChange({
-            address: result.address,
-            pincode: result.pincode || data.pincode || '',
-            latitude: latitude.toFixed(6),
-            longitude: longitude.toFixed(6)
-          })
-          setLocationError('')
-          toast.success(t('onboarding.step2.locationDetected'))
-        } else {
-          setLocationError(t('onboarding.step2.enterAddressManually'))
-          toast.warning(t('onboarding.step2.coordsSavedEnterManual'))
-        }
-
-        setDetecting(false)
-      },
-      (error) => {
-        toast.dismiss(toastId)
-        let errorMessage = t('onboarding.step2.detectFailed')
-
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = t('onboarding.step2.permissionDenied')
-            break
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = t('onboarding.step2.positionUnavailable')
-            break
-          case error.TIMEOUT:
-            errorMessage = t('onboarding.step2.timeout')
-            break
-        }
-
-        toast.error(errorMessage)
-        setLocationError(errorMessage)
-        setDetecting(false)
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0
-      }
+  const toggleCategoryExpansion = (categoryId: string) => {
+    setExpandedCategories((prev) =>
+      prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId]
     )
   }
+
+  // Toggle individual sub-service selections; category headers stay display-only
+  const toggleSubcategorySelection = (slug: string) => {
+    const current = new Set(data.service_categories || [])
+    if (current.has(slug)) {
+      current.delete(slug)
+    } else {
+      current.add(slug)
+    }
+
+    const skillNames = subcategories
+      .filter((sub) => current.has(sub.slug))
+      .map((sub) => sub.name)
+
+    onChange({
+      service_categories: Array.from(current),
+      skills: skillNames
+    })
+  }
+
+  const filteredCategories = categories.filter((cat) => {
+    if (!searchQuery.trim()) return true
     const matchesRoot = cat.name.toLowerCase().includes(searchQuery.toLowerCase())
     const subs = getSubcategoriesForParent(cat.id)
     const matchesSub = subs.some((sub: any) => sub.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -204,50 +171,34 @@ function Step1ServiceDetails({ data, onChange, onNext, t }: any) {
               {filteredCategories.map((rootCategory) => {
                 const subs = getSubcategoriesForParent(rootCategory.id)
                 const isExpanded = expandedCategories.includes(rootCategory.id)
-                const rootSelected = (data.service_categories || []).includes(rootCategory.slug)
                 const selectedSubsCount = subs.filter((sub: any) => 
                   (data.service_categories || []).includes(sub.slug)
                 ).length
-                const isPartiallySelected = selectedSubsCount > 0 && selectedSubsCount < subs.length && !rootSelected
+                const isHighlighted = selectedSubsCount > 0
 
                 return (
-                  <div key={rootCategory.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                  <div
+                    key={rootCategory.id}
+                    className={`hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors ${isHighlighted ? 'bg-emerald-50/60 dark:bg-emerald-900/20 border-l-4 border-emerald-500 dark:border-emerald-400' : ''}`}
+                  >
                     {/* Root Category Header */}
-                    <div className="flex items-center gap-3 p-3">
-                      {/* Checkbox with indeterminate state */}
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          checked={rootSelected}
-                          onChange={() => toggleCategory(rootCategory.slug)}
-                          className="h-5 w-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                        />
-                        {isPartiallySelected && (
-                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="w-2.5 h-0.5 bg-emerald-600 rounded"></div>
-                          </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleCategoryExpansion(rootCategory.id)}
+                      className="w-full flex items-center gap-3 p-3 text-left font-semibold text-slate-800 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                    >
+                      <span className="flex-1">{rootCategory.name}</span>
+                      <div className="flex items-center gap-2">
+                        {selectedSubsCount > 0 && (
+                          <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full font-medium">
+                            {selectedSubsCount}/{subs.length}
+                          </span>
+                        )}
+                        {subs.length > 0 && (
+                          <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                         )}
                       </div>
-                      
-                      {/* Category Name */}
-                      <button
-                        type="button"
-                        onClick={() => toggleCategoryExpansion(rootCategory.id)}
-                        className="flex-1 flex items-center justify-between text-left font-semibold text-slate-800 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-                      >
-                        <span>{rootCategory.name}</span>
-                        <div className="flex items-center gap-2">
-                          {selectedSubsCount > 0 && (
-                            <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full font-medium">
-                              {selectedSubsCount}/{subs.length}
-                            </span>
-                          )}
-                          {subs.length > 0 && (
-                            <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                          )}
-                        </div>
-                      </button>
-                    </div>
+                    </button>
 
                     {/* Subcategories (Collapsible) */}
                     {subs.length > 0 && isExpanded && (
@@ -263,7 +214,7 @@ function Step1ServiceDetails({ data, onChange, onNext, t }: any) {
                                 <input
                                   type="checkbox"
                                   checked={subSelected}
-                                  onChange={() => toggleCategory(sub.slug)}
+                                  onChange={() => toggleSubcategorySelection(sub.slug)}
                                   className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
                                 />
                                 <span className="text-sm text-slate-700 dark:text-slate-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
@@ -282,27 +233,27 @@ function Step1ServiceDetails({ data, onChange, onNext, t }: any) {
           )}
         </div>
 
-        {/* Selected Categories Summary */}
+        {/* Selected Sub-services Summary */}
         {selectedCount > 0 && (
           <div className="mt-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
             <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300 mb-2">
-              {t('onboarding.step1.selectedServiceCategories')} ({categories.filter(c => (data.service_categories || []).includes(c.slug)).length}):
+              {t('onboarding.step1.selectedServiceCategories')} ({selectedCount}):
             </p>
             <div className="flex flex-wrap gap-2">
-              {(data.service_categories || [])
-                .filter((slug: string) => categories.some(c => c.slug === slug))
-                .map((slug: string) => {
-                  const category = categories.find(c => c.slug === slug)
-                  return category ? (
+              {subcategories
+                .filter((sub) => (data.service_categories || []).includes(sub.slug))
+                .map((sub) => {
+                  const parent = categories.find(c => c.id === sub.parent_id)
+                  return (
                     <span
-                      key={slug}
-                      onClick={() => toggleCategory(slug)}
+                      key={sub.slug}
+                      onClick={() => toggleSubcategorySelection(sub.slug)}
                       className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 rounded-md text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-700 transition-colors"
                     >
-                      {category.name}
+                      {sub.name}{parent ? ` · ${parent.name}` : ''}
                       <X className="h-3 w-3" />
                     </span>
-                  ) : null
+                  )
                 })}
             </div>
           </div>
@@ -368,7 +319,7 @@ function Step1ServiceDetails({ data, onChange, onNext, t }: any) {
         disabled={!data.service_categories?.length || !data.skills?.length || !data.experience_years}
         className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1 text-sm"
       >
-        {t('common.next')}
+        {nextLabel}
         <ChevronRight className="h-4 w-4" />
       </button>
     </div>
@@ -383,6 +334,8 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
   
   // Preset radius options (Rapido-style)
   const radiusOptions = [5, 10, 15, 20, 25, 30]
+  const nextLabel = translateWithFallback(t, 'common.next', 'Next')
+  const backLabel = translateWithFallback(t, 'common.back', 'Back')
 
   const detectLocation = async () => {
     setDetecting(true)
@@ -394,8 +347,9 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
       return
     }
 
+    const toastId = 'detecting-location'
     // Show toast to indicate we're detecting
-    toast.loading(t('onboarding.step2.detecting'), { id: 'detecting-location' })
+    toast.loading(t('onboarding.step2.detecting'), { id: toastId })
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -408,26 +362,59 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
             longitude: longitude.toFixed(6)
           })
 
-          const response = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`, { 
-            cache: 'no-store',
-            headers: { 'Accept': 'application/json' }
-          })
-          
-          toast.dismiss('detecting-location')
-          
-          if (response.ok) {
-            const geo = await response.json()
-            const formattedAddress = geo.formatted_address || ''
-            const detectedPincode = geo.pincode || ''
+          const geocodeGoogle = async () => {
+            try {
+              const response = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`, {
+                cache: 'no-store',
+                headers: { Accept: 'application/json' }
+              })
+              if (!response.ok) return null
+              const geo = await response.json()
+              const address = geo.formatted_address || ''
+              return {
+                address,
+                pincode: geo.pincode || ''
+              }
+            } catch (error) {
+              console.error('Geocoding error (google):', error)
+              return null
+            }
+          }
 
-            // Update all fields at once
+          const geocodeFallback = async () => {
+            try {
+              const response = await fetch(`/api/address/reverse?lat=${latitude}&lng=${longitude}`, {
+                cache: 'no-store',
+                headers: { Accept: 'application/json' }
+              })
+              if (!response.ok) return null
+              const geo = await response.json()
+              const address = geo?.address?.display_name || geo?.display_name || ''
+              return {
+                address,
+                pincode: geo?.address?.pincode || geo?.pincode || ''
+              }
+            } catch (error) {
+              console.error('Geocoding error (fallback):', error)
+              return null
+            }
+          }
+
+          let result = await geocodeGoogle()
+          if (!result || !result.address) {
+            result = await geocodeFallback()
+          }
+
+          toast.dismiss(toastId)
+
+          if (result && result.address) {
             onChange({
-              address: formattedAddress,
-              pincode: detectedPincode,
+              address: result.address,
+              pincode: result.pincode || data.pincode || '',
               latitude: latitude.toFixed(6),
               longitude: longitude.toFixed(6)
             })
-
+            setLocationError('')
             toast.success(t('onboarding.step2.locationDetected'))
           } else {
             // API returned error but we still have coordinates
@@ -436,7 +423,7 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
           }
         } catch (error) {
           console.error('Geocoding error:', error)
-          toast.dismiss('detecting-location')
+          toast.dismiss(toastId)
           toast.warning(t('onboarding.step2.coordsSaved'))
           setLocationError(t('onboarding.step2.enterAddressManually'))
         }
@@ -444,7 +431,7 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
         setDetecting(false)
       },
       (error) => {
-        toast.dismiss('detecting-location')
+        toast.dismiss(toastId)
         let errorMessage = t('onboarding.step2.detectFailed')
         
         switch (error.code) {
@@ -504,7 +491,7 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5">
       {/* Header - Compact on mobile */}
       <div>
         <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-1">
@@ -669,13 +656,13 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             {t('onboarding.step2.selectWorkRadius')} <span className="text-red-500">*</span>
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {radiusOptions.map((radius) => (
               <button
                 key={radius}
                 type="button"
                 onClick={() => onChange({ service_radius_km: radius })}
-                className={`py-3 rounded-lg font-semibold text-center transition-all text-sm ${
+                className={`w-full py-3 rounded-lg font-semibold text-center transition-all text-sm ${
                   data.service_radius_km === radius
                     ? 'bg-emerald-600 text-white shadow-md'
                     : 'bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300'
@@ -688,7 +675,7 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
         </div>
 
         {/* Custom Radius Input - Inline */}
-        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
+        <div className="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
           <span className="text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">
             {t('onboarding.step2.orEnterCustom')}
           </span>
@@ -698,7 +685,7 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
             onChange={(e) => onChange({ service_radius_km: parseInt(e.target.value) || 10 })}
             min="1"
             max="100"
-            className="w-20 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-center font-semibold text-sm"
+            className="w-24 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-center font-semibold text-sm"
             placeholder="10"
           />
           <span className="text-sm text-slate-600 dark:text-slate-400">km</span>
@@ -718,21 +705,23 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
       </div>
 
       {/* Navigation Buttons */}
-      <div className="flex gap-3 pt-2">
-        <button
-          onClick={onBack}
-          className="flex-1 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-1 text-sm"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          {t('common.back')}
-        </button>
-        <button
-          onClick={handleNext}
-          className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-1 text-sm"
-        >
-          {t('common.next')}
-          <ChevronRight className="h-4 w-4" />
-        </button>
+      <div className="sticky bottom-0 left-0 right-0 z-20 -mx-4 px-4 pb-3 pt-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur sm:static sm:bg-transparent sm:px-0 sm:pb-0 sm:pt-2 border-t border-slate-200 dark:border-slate-700 sm:border-0">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button
+            onClick={onBack}
+            className="w-full sm:flex-1 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-1 text-sm"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            {backLabel}
+          </button>
+          <button
+            onClick={handleNext}
+            className="w-full sm:flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-1 text-sm"
+          >
+            {nextLabel}
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -749,6 +738,8 @@ function Step3Availability({ data, onChange, onNext, onBack, t }: any) {
   }
 
   const workingHours = data.working_hours || {}
+  const nextLabel = translateWithFallback(t, 'common.next', 'Next')
+  const backLabel = translateWithFallback(t, 'common.back', 'Back')
 
   const toggleDay = (day: string) => {
     const updated = { ...workingHours }
@@ -770,7 +761,7 @@ function Step3Availability({ data, onChange, onNext, onBack, t }: any) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="flex flex-col h-full space-y-3 sm:space-y-5">
       {/* Header - Compact */}
       <div>
         <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-1">
@@ -781,85 +772,93 @@ function Step3Availability({ data, onChange, onNext, onBack, t }: any) {
         </p>
       </div>
 
-      {/* Working Hours - Compact cards */}
-      <div className="space-y-2">
-        {days.map((day) => {
-          const hours = workingHours[day] || defaultHours
-          return (
-            <div key={day} className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer flex-1">
-                  <input
-                    type="checkbox"
-                    checked={hours.available !== false}
-                    onChange={() => toggleDay(day)}
-                    className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                  />
-                  <span className="font-medium text-sm text-slate-900 dark:text-white">{t(`day.${day}`)}</span>
-                </label>
-                
-                {hours.available !== false && (
-                  <div className="flex items-center gap-2">
+      {/* Scrollable content on mobile to avoid overflow */}
+      <div className="flex-1 flex flex-col gap-3 sm:gap-4 max-h-[calc(100vh-260px)] sm:max-h-none overflow-y-auto pr-1 sm:pr-0">
+        {/* Working Hours - Compact cards */}
+        <div className="space-y-1.5 sm:space-y-2">
+          {days.map((day) => {
+            const hours = workingHours[day] || defaultHours
+            return (
+              <div key={day} className="bg-white dark:bg-slate-800 rounded-lg p-2.5 sm:p-3 border border-slate-200 dark:border-slate-700">
+                <div className="flex items-center justify-between gap-2 sm:gap-3 min-w-0">
+                  <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
                     <input
-                      type="time"
-                      value={hours.start || '09:00'}
-                      onChange={(e) => updateTime(day, 'start', e.target.value)}
-                      className="w-[90px] px-2 py-1.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-xs"
+                      type="checkbox"
+                      checked={hours.available !== false}
+                      onChange={() => toggleDay(day)}
+                      className="w-4 h-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                     />
-                    <span className="text-slate-400 text-xs">to</span>
-                    <input
-                      type="time"
-                      value={hours.end || '18:00'}
-                      onChange={(e) => updateTime(day, 'end', e.target.value)}
-                      className="w-[90px] px-2 py-1.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-xs"
-                    />
-                  </div>
-                )}
+                    <span className="font-medium text-sm text-slate-900 dark:text-white truncate">{t(`day.${day}`)}</span>
+                  </label>
+                  
+                  {hours.available !== false && (
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                      <input
+                        type="time"
+                        value={hours.start || '09:00'}
+                        onChange={(e) => updateTime(day, 'start', e.target.value)}
+                        className="w-[78px] sm:w-[90px] px-2 py-1 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-xs"
+                      />
+                      <span className="text-slate-400 text-xs">to</span>
+                      <input
+                        type="time"
+                        value={hours.end || '18:00'}
+                        onChange={(e) => updateTime(day, 'end', e.target.value)}
+                        className="w-[78px] sm:w-[90px] px-2 py-1 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-xs"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
 
-      {/* Availability Toggles - Compact */}
-      <div className="space-y-2">
-        <label className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer">
-          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('onboarding.step3.availableNow')}</span>
-          <input
-            type="checkbox"
-            checked={data.is_available_now !== false}
-            onChange={(e) => onChange({ is_available_now: e.target.checked })}
-            className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-          />
-        </label>
+        {/* Availability Toggles - Compact */}
+        <div className="space-y-1.5 sm:space-y-2 pb-1">
+          <label className="flex items-center justify-between p-2.5 sm:p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('onboarding.step3.availableNow')}</span>
+            <input
+              type="checkbox"
+              checked={data.is_available_now !== false}
+              onChange={(e) => onChange({ is_available_now: e.target.checked })}
+              className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+            />
+          </label>
 
-        <label className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer">
-          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('onboarding.step3.emergencyAvailability')}</span>
-          <input
-            type="checkbox"
-            checked={data.emergency_availability === true}
-            onChange={(e) => onChange({ emergency_availability: e.target.checked })}
-            className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-          />
-        </label>
+          <label className="flex items-center justify-between p-2.5 sm:p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('onboarding.step3.emergencyAvailability')}</span>
+            <input
+              type="checkbox"
+              checked={data.emergency_availability === true}
+              onChange={(e) => onChange({ emergency_availability: e.target.checked })}
+              className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+            />
+          </label>
+        </div>
       </div>
 
       {/* Navigation */}
-      <div className="flex gap-3 pt-2">
-        <button
-          onClick={onBack}
-          className="flex-1 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-1 text-sm"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          {t('common.back')}
-        </button>
-        <button
-          onClick={onNext}
-          className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-1 text-sm"
-        >
-          {t('common.next')}
-          <ChevronRight className="h-4 w-4" />
-        </button>
+      <div
+        className="sticky bottom-0 left-0 right-0 z-20 -mx-4 px-4 pt-3 pb-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur sm:static sm:bg-transparent sm:px-0 sm:pb-0 sm:pt-2 border-t border-slate-200 dark:border-slate-700 sm:border-0"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
+      >
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button
+            onClick={onBack}
+            className="w-full sm:flex-1 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-1 text-sm"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            {backLabel}
+          </button>
+          <button
+            onClick={onNext}
+            className="w-full sm:flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-1 text-sm"
+          >
+            {nextLabel}
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -868,6 +867,8 @@ function Step3Availability({ data, onChange, onNext, onBack, t }: any) {
 // Step 4: Bank Account Details
 function Step4BankAccount({ data, onChange, onNext, onBack, t }: any) {
   const [accountType, setAccountType] = useState<'bank' | 'upi'>('bank')
+  const nextLabel = translateWithFallback(t, 'common.next', 'Next')
+  const backLabel = translateWithFallback(t, 'common.back', 'Back')
 
   return (
     <div className="space-y-5">
@@ -1057,7 +1058,7 @@ function Step4BankAccount({ data, onChange, onNext, onBack, t }: any) {
           className="flex-1 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-1 text-sm"
         >
           <ChevronLeft className="h-4 w-4" />
-          {t('common.back')}
+          {backLabel}
         </button>
         <button
           onClick={onNext}
@@ -1068,7 +1069,7 @@ function Step4BankAccount({ data, onChange, onNext, onBack, t }: any) {
           }
           className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1 text-sm"
         >
-          {t('common.next')}
+          {nextLabel}
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
@@ -1085,6 +1086,7 @@ function Step5Documents({ data, onChange, onSubmit, onBack, submitting, t }: any
     professional_cert: null,
     photo: null,
   })
+  const backLabel = translateWithFallback(t, 'common.back', 'Back')
 
   const documentTypes = [
     { key: 'id_proof', label: t('onboarding.step5.idProof'), description: t('onboarding.step5.idProofDesc'), required: true },
@@ -1175,7 +1177,7 @@ function Step5Documents({ data, onChange, onSubmit, onBack, submitting, t }: any
           className="flex-1 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-50 flex items-center justify-center gap-1 text-sm"
         >
           <ChevronLeft className="h-4 w-4" />
-          {t('common.back')}
+          {backLabel}
         </button>
         <button
           onClick={() => onSubmit(files)}

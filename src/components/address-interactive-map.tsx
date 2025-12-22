@@ -463,7 +463,8 @@ export function AddressInteractiveMap({
             onChange={handleInputChange}
             placeholder={placeholder}
             required={required}
-            className={`w-full px-4 py-3 pl-10 pr-10 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${className}`}
+            title={value || ''}
+            className={`w-full px-4 py-3 pl-10 pr-14 border-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base font-semibold text-gray-900 placeholder:text-gray-400 bg-white/95 dark:bg-slate-900 dark:text-slate-50 dark:placeholder:text-slate-500 border-gray-200 dark:border-slate-700 whitespace-nowrap overflow-hidden text-ellipsis ${className}`}
           />
           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
           
@@ -472,7 +473,7 @@ export function AddressInteractiveMap({
           )}
 
           {value && !isSearching && !gettingLocation && (
-            <button type="button" onClick={clearAddress} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <button type="button" onClick={clearAddress} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 dark:hover:text-slate-200">
               <X className="h-5 w-5" />
             </button>
           )}
