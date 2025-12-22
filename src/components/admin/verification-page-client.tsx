@@ -61,7 +61,10 @@ export function VerificationPageClient({
   const [helpers, setHelpers] = useState(initialHelpers)
   const [comment, setComment] = useState<Record<string, string>>({})
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({})
-  const [error, setError] = useState(initialError)
+  // Only show initial error if there are no helpers (real error scenario)
+  const [error, setError] = useState<string | undefined>(
+    initialHelpers.length === 0 ? initialError : undefined
+  )
   const [refreshing, setRefreshing] = useState(false)
 
   const handleRefresh = useCallback(async () => {
