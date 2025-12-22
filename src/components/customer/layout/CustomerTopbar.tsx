@@ -17,6 +17,7 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
   const [user, setUser] = useState<any>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [balance, setBalance] = useState(0)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -30,6 +31,14 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
           .eq('user_id', user.id)
           .single()
         if (wallet) setBalance(Number(wallet.available_balance))
+        
+        // Fetch unread notifications count
+        const { data: notifications } = await supabase
+          .from('notifications')
+          .select('id')
+          .eq('user_id', user.id)
+          .is('read_at', null)
+        setUnreadCount(notifications?.length || 0)
       }
     }
     fetchUser()
@@ -81,7 +90,9 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
             className="relative flex items-center justify-center w-10 h-10 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
             <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-slate-900"></span>
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-slate-900"></span>
+            )}
           </Link>
 
           {/* User Menu */}

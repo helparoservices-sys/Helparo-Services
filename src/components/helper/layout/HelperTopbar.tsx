@@ -24,10 +24,12 @@ interface HelperTopbarProps {
 
 export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
   const router = useRouter()
+  const { isDarkMode, toggleDarkMode } = useDarkMode()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [userName, setUserName] = useState('')
   const [isVerified, setIsVerified] = useState(false)
   const [balance, setBalance] = useState(0)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
     loadUserData()
@@ -60,6 +62,14 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
       setUserName(profile?.full_name || user.email || 'Helper')
       setIsVerified(helperProfile?.is_approved || false)
       if (wallet) setBalance(Number(wallet.available_balance))
+      
+      // Fetch unread notifications count
+      const { data: notifications } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('user_id', user.id)
+        .is('read_at', null)
+      setUnreadCount(notifications?.length || 0)
     }
   }
 
@@ -121,7 +131,9 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
             className="relative flex items-center justify-center w-10 h-10 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
             <Bell className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+            )}
           </Link>
 
           {/* === HIDDEN FOR PLAY STORE DEPLOYMENT - WALLET ===
