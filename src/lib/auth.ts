@@ -6,22 +6,24 @@
 import { createClient } from '@/lib/supabase/server'
 import { UserRole } from './constants'
 import { createUnauthorizedError, createForbiddenError } from './errors'
+import { logger } from './logger'
 
 /**
  * Profile cache to avoid repeated database queries
+ * NOTE: In serverless (Vercel), cache is per-invocation so keep duration short
  */
 const profileCache = new Map<string, { profile: Record<string, unknown>; timestamp: number }>()
-const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+const CACHE_DURATION = 30 * 1000 // 30 seconds (reduced from 5 min for serverless)
 
 /**
  * Get profile from cache or database
  */
-async function getCachedProfile(userId: string, supabase: Awaited<ReturnType<typeof createClient>>) {
+async function getCachedProfile(userId: string, supabase: Awaited<ReturnType<typeof createClient>>, bypassCache = false) {
   const cached = profileCache.get(userId)
   const now = Date.now()
   
-  // Return cached profile if still valid
-  if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+  // Return cached profile if still valid and not bypassing
+  if (!bypassCache && cached && (now - cached.timestamp) < CACHE_DURATION) {
     return cached.profile
   }
   
@@ -33,6 +35,7 @@ async function getCachedProfile(userId: string, supabase: Awaited<ReturnType<typ
     .single()
   
   if (error || !profile) {
+    logger.error('Profile fetch failed', { userId, error })
     throw createUnauthorizedError('User profile not found')
   }
   
@@ -66,15 +69,32 @@ export async function requireAuth() {
 
 /**
  * Require specific role (admin, helper, or customer)
+ * For admin role checks, we always bypass cache to ensure fresh data
  */
 export async function requireRole(role: UserRole | UserRole[]) {
   const { user, supabase } = await requireAuth()
   
-  const profile = await getCachedProfile(user.id, supabase)
-  
   const allowedRoles = Array.isArray(role) ? role : [role]
+  const isAdminCheck = allowedRoles.includes(UserRole.ADMIN)
+  
+  // Always bypass cache for admin checks (critical security)
+  const profile = await getCachedProfile(user.id, supabase, isAdminCheck)
+  
+  logger.info('Role check', { 
+    userId: user.id, 
+    userRole: profile.role, 
+    requiredRoles: allowedRoles,
+    isAdminCheck 
+  })
   
   if (!allowedRoles.includes(profile.role as UserRole)) {
+    // Clear cache so next request gets fresh data
+    clearProfileCache(user.id)
+    logger.warn('Role check failed', { 
+      userId: user.id, 
+      userRole: profile.role, 
+      requiredRoles: allowedRoles 
+    })
     throw createForbiddenError('You don\'t have permission to perform this action')
   }
   
@@ -82,7 +102,7 @@ export async function requireRole(role: UserRole | UserRole[]) {
 }
 
 /**
- * Require admin role
+ * Require admin role (always fetches fresh profile)
  */
 export async function requireAdmin() {
   return requireRole(UserRole.ADMIN)

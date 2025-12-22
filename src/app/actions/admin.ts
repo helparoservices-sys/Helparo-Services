@@ -6,6 +6,7 @@ import { validateFormData, banUserSchema } from '@/lib/validation'
 import { sanitizeText } from '@/lib/sanitize'
 import { UserRole } from '@/lib/constants'
 import { revalidateTag } from 'next/cache'
+import { logger } from '@/lib/logger'
 
 export async function approveWithdrawal(id: string) {
   try {
@@ -86,7 +87,11 @@ export async function toggleCategoryActive(id: string, active: boolean) {
 // Approve helper with string parameters (for client components)
 export async function approveHelper(helperId: string, comment: string = '') {
   try {
+    logger.info('approveHelper called', { helperId, comment: comment?.slice(0, 50) })
+    
     const { user, supabase } = await requireAdmin()
+    logger.info('Admin verified for approval', { adminId: user.id, helperId })
+    
     await rateLimit('admin-approve-helper', user.id, RATE_LIMITS.ADMIN_APPROVE)
     
     const sanitizedComment = comment ? sanitizeText(comment) : null
@@ -98,7 +103,8 @@ export async function approveHelper(helperId: string, comment: string = '') {
       .eq('id', helperId)
       .single()
     
-    const { error } = await supabase
+    // Update helper_profiles
+    const { error: helperError } = await supabase
       .from('helper_profiles')
       .update({ 
         verification_status: 'approved' as unknown, 
@@ -106,22 +112,35 @@ export async function approveHelper(helperId: string, comment: string = '') {
       })
       .eq('user_id', helperId)
     
-    if (error) throw error
+    if (helperError) {
+      logger.error('Failed to update helper_profiles', { helperId, error: helperError })
+      throw helperError
+    }
+    
+    logger.info('helper_profiles updated', { helperId })
     
     // Auto-approve bank account when approving helper
-    await supabase
+    const { error: bankError } = await supabase
       .from('helper_bank_accounts')
       .update({ status: 'verified' as unknown })
       .eq('helper_id', helperId)
     
+    if (bankError) {
+      logger.warn('Failed to update bank account (may not exist)', { helperId, error: bankError })
+    }
+    
     // Auto-approve all verification documents
-    await supabase
+    const { error: docError } = await supabase
       .from('verification_documents')
       .update({ status: 'approved' })
       .eq('helper_id', helperId)
     
+    if (docError) {
+      logger.warn('Failed to update verification_documents', { helperId, error: docError })
+    }
+    
     // Insert verification review
-    await supabase
+    const { error: reviewError } = await supabase
       .from('verification_reviews')
       .insert({
         helper_user_id: helperId,
@@ -129,6 +148,10 @@ export async function approveHelper(helperId: string, comment: string = '') {
         decision: 'approved',
         comment: sanitizedComment
       })
+    
+    if (reviewError) {
+      logger.warn('Failed to insert verification_review', { helperId, error: reviewError })
+    }
     
     // Send approval email
     if (helperProfile?.email) {
@@ -139,16 +162,22 @@ export async function approveHelper(helperId: string, comment: string = '') {
       )
     }
     
+    logger.info('Helper approved successfully', { helperId, adminId: user.id })
     revalidateTag('verification-queue')
     return { success: true }
   } catch (error: unknown) {
+    logger.error('approveHelper failed', { helperId, error })
     return handleServerActionError(error)
   }
 }
 
 export async function rejectHelper(helperId: string, comment: string = '') {
   try {
+    logger.info('rejectHelper called', { helperId, comment: comment?.slice(0, 50) })
+    
     const { user, supabase } = await requireAdmin()
+    logger.info('Admin verified for rejection', { adminId: user.id, helperId })
+    
     await rateLimit('admin-reject-helper', user.id, RATE_LIMITS.ADMIN_APPROVE)
     
     const sanitizedComment = comment ? sanitizeText(comment) : 'Your application did not meet our requirements. Please review and resubmit.'
