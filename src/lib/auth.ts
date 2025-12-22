@@ -20,7 +20,7 @@ const CACHE_DURATION = 30 * 1000 // 30 seconds (reduced from 5 min for serverles
  * Get profile from cache or database
  * Uses admin client to bypass RLS for reliable lookups
  */
-async function getCachedProfile(userId: string, bypassCache = false) {
+async function getCachedProfile(userId: string, bypassCache = false, userEmail?: string | null, userPhone?: string | null) {
   const cached = profileCache.get(userId)
   const now = Date.now()
   
@@ -32,15 +32,61 @@ async function getCachedProfile(userId: string, bypassCache = false) {
   // Use admin client to bypass RLS for profile lookups
   const adminClient = createAdminClient()
   
-  // Fetch fresh profile
-  const { data: profile, error } = await adminClient
+  // Fetch fresh profile by ID first
+  const { data: profileById, error: errorById } = await adminClient
     .from('profiles')
-    .select('id, email, role, full_name, phone, avatar_url, is_active, email_verified, created_at, updated_at')
+    .select('id, email, role, full_name, phone, avatar_url, created_at, updated_at')
     .eq('id', userId)
     .single()
+
+  // If not found by ID, attempt lookup by email or phone
+  let profile = profileById
+  if ((!profileById || errorById) && userEmail) {
+    const { data: profileByEmail } = await adminClient
+      .from('profiles')
+      .select('id, email, role, full_name, phone, avatar_url, created_at, updated_at')
+      .eq('email', userEmail)
+      .single()
+
+    profile = profileByEmail || null
+  }
   
-  if (error || !profile) {
-    logger.error('Profile fetch failed', { userId, error })
+  // If still not found and user has phone, try phone lookup
+  if (!profile && userPhone) {
+    const { data: profileByPhone } = await adminClient
+      .from('profiles')
+      .select('id, email, role, full_name, phone, avatar_url, created_at, updated_at')
+      .eq('phone', userPhone)
+      .single()
+
+    profile = profileByPhone || null
+    if (profile) {
+      logger.info('Profile found by phone', { userId, phone: userPhone })
+    }
+  }
+
+  if (!profile) {
+    const allowedEmails = (process.env.ALLOWED_ADMIN_EMAILS || '')
+      .split(',')
+      .map(e => e.trim().toLowerCase())
+      .filter(Boolean)
+    if (userEmail && allowedEmails.includes(userEmail.toLowerCase())) {
+      logger.warn('Profile missing, using allowed admin email fallback', { userId, userEmail })
+      const fallbackProfile = {
+        id: userId,
+        email: userEmail,
+        role: UserRole.ADMIN,
+        full_name: 'Admin',
+        phone: null,
+        avatar_url: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+      profileCache.set(userId, { profile: fallbackProfile, timestamp: now })
+      return fallbackProfile
+    }
+
+    logger.error('Profile fetch failed', { userId, userEmail, userPhone, error: errorById })
     throw createUnauthorizedError('User profile not found')
   }
   
@@ -84,7 +130,7 @@ export async function requireRole(role: UserRole | UserRole[]) {
   
   // Always bypass cache for admin checks (critical security)
   // Uses admin client internally to bypass RLS
-  const profile = await getCachedProfile(user.id, isAdminCheck)
+  const profile = await getCachedProfile(user.id, isAdminCheck, user.email, user.phone)
   
   logger.info('Role check', { 
     userId: user.id, 
@@ -165,7 +211,7 @@ export async function requireAdminOrOwnership(
 ) {
   const { user, supabase } = await requireAuth()
   
-  const profile = await getCachedProfile(user.id)
+  const profile = await getCachedProfile(user.id, false, user.email, user.phone)
   
   // Admins have access to everything
   if (profile.role === UserRole.ADMIN) {
@@ -202,7 +248,7 @@ export async function optionalAuth() {
       return { user: null, supabase, profile: null }
     }
     
-    const profile = await getCachedProfile(user.id)
+    const profile = await getCachedProfile(user.id, false, user.email, user.phone)
     
     return { user, supabase, profile }
   } catch {
@@ -220,7 +266,7 @@ export async function isAdmin(): Promise<boolean> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return false
     
-    const userProfile = await getCachedProfile(user.id)
+    const userProfile = await getCachedProfile(user.id, false, user.email, user.phone)
     return userProfile.role === UserRole.ADMIN
   } catch {
     return false
@@ -236,7 +282,7 @@ export async function isHelper(): Promise<boolean> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return false
     
-    const profile = await getCachedProfile(user.id)
+    const profile = await getCachedProfile(user.id, false, user.email, user.phone)
     return profile.role === UserRole.HELPER
   } catch {
     return false
@@ -252,7 +298,7 @@ export async function isCustomer(): Promise<boolean> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return false
     
-    const profile = await getCachedProfile(user.id)
+    const profile = await getCachedProfile(user.id, false, user.email, user.phone)
     return profile.role === UserRole.CUSTOMER
   } catch {
     return false
@@ -264,7 +310,7 @@ export async function isCustomer(): Promise<boolean> {
  */
 export async function getCurrentProfile() {
   const { user } = await requireAuth()
-  return getCachedProfile(user.id)
+  return getCachedProfile(user.id, false, user.email, user.phone)
 }
 
 /**

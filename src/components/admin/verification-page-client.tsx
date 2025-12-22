@@ -4,7 +4,8 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Shield, Clock, CheckCircle, XCircle, FileText, Eye, User, RefreshCw } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
-import { approveHelper, rejectHelper } from '@/app/actions/admin'
+// Server actions were intermittently returning generic unauthorized errors in prod.
+// Route-based APIs are used for approve/reject to improve reliability and observability.
 
 interface Document {
   id: string
@@ -89,65 +90,61 @@ export function VerificationPageClient({
     }
   }, [])
 
+  const callReviewApi = useCallback(async (
+    path: '/api/admin/verification/approve' | '/api/admin/verification/reject',
+    helperId: string
+  ) => {
+    const response = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ helperId, comment: comment[helperId] || '' })
+    })
+
+    const data = await response.json().catch(() => ({})) as { success?: boolean; error?: string }
+    if (!response.ok || data.error) {
+      const message = data.error || `Request failed (${response.status})`
+      throw new Error(message)
+    }
+    return data
+  }, [comment])
+
   const handleApprove = useCallback(async (helperId: string) => {
     setActionLoading(prev => ({ ...prev, [helperId]: true }))
     setError(undefined)
-    
     try {
-      const result = await approveHelper(helperId, comment[helperId] || '')
-      
-      console.log('[Approve] Result:', result)
-      
-      if (result && 'error' in result && result.error) {
-        setError(result.error)
-      } else if (result && 'success' in result && result.success) {
-        // Success - remove from list
-        setHelpers(prev => prev.filter(h => h.user_id !== helperId))
-        setComment(prev => {
-          const newComment = { ...prev }
-          delete newComment[helperId]
-          return newComment
-        })
-        setError(undefined) // Clear any existing error
-      } else {
-        // Unknown response format
-        console.warn('[Approve] Unexpected result format:', result)
-        setHelpers(prev => prev.filter(h => h.user_id !== helperId))
-      }
+      await callReviewApi('/api/admin/verification/approve', helperId)
+      setHelpers(prev => prev.filter(h => h.user_id !== helperId))
+      setComment(prev => {
+        const newComment = { ...prev }
+        delete newComment[helperId]
+        return newComment
+      })
     } catch (err) {
-      console.error('[Approve] Exception:', err)
+      console.error('[Approve] Failed:', err)
       setError(err instanceof Error ? err.message : 'Failed to approve helper')
     } finally {
       setActionLoading(prev => ({ ...prev, [helperId]: false }))
     }
-  }, [comment])
+  }, [callReviewApi])
 
   const handleReject = useCallback(async (helperId: string) => {
     setActionLoading(prev => ({ ...prev, [helperId]: true }))
     setError(undefined)
-    
     try {
-      const result = await rejectHelper(helperId, comment[helperId] || '')
-      
-      console.log('[Reject] Result:', result)
-      
-      if (result && 'error' in result && result.error) {
-        setError(result.error)
-      } else if (result && 'success' in result && result.success) {
-        // Success - remove from list
-        setHelpers(prev => prev.filter(h => h.user_id !== helperId))
-        setComment(prev => {
-          const newComment = { ...prev }
-          delete newComment[helperId]
-          return newComment
-        })
-      }
+      await callReviewApi('/api/admin/verification/reject', helperId)
+      setHelpers(prev => prev.filter(h => h.user_id !== helperId))
+      setComment(prev => {
+        const newComment = { ...prev }
+        delete newComment[helperId]
+        return newComment
+      })
     } catch (err) {
+      console.error('[Reject] Failed:', err)
       setError(err instanceof Error ? err.message : 'Failed to reject helper')
     } finally {
       setActionLoading(prev => ({ ...prev, [helperId]: false }))
     }
-  }, [comment])
+  }, [callReviewApi])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 py-8 px-4 sm:px-6 lg:px-8 animate-fade-in">
@@ -390,6 +387,8 @@ export function VerificationPageClient({
                   <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-700">
                     <textarea
                       className="w-full min-h-[80px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-white"
+                      id={`review-comment-${h.user_id}`}
+                      name="review-comment"
                       placeholder="Review comment (optional)"
                       value={comment[h.user_id] || ''}
                       onChange={(e) => setComment({ ...comment, [h.user_id]: e.target.value })}
