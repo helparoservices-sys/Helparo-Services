@@ -65,7 +65,6 @@
 }
 .pl-safe { padding-left: var(--safe-area-inset-left); }
 .pr-safe { padding-right: var(--safe-area-inset-right); }
-.mt-safe { margin-top: var(--safe-area-inset-top); }
 .mb-safe { margin-bottom: var(--safe-area-inset-bottom); }
 
 /* Fixed elements (headers, modals) need to account for status bar */
