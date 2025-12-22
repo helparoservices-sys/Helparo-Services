@@ -65,7 +65,10 @@ export function RoleGuard({ children, allowedRole }: RoleGuardProps) {
     setLoading(false)
     
     // Initialize push notifications (runs in background, doesn't block)
-    initPushNotifications(user.id).catch(() => {})
+    console.log('🔔 Starting push notification init for user:', user.id)
+    initPushNotifications(user.id)
+      .then((token) => console.log('🔔 Push init result:', token ? 'Got token' : 'No token'))
+      .catch((err) => console.error('🔔 Push init error:', err))
   }
 
   if (loading) {
