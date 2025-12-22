@@ -110,6 +110,13 @@ export default function CustomerDashboard() {
 
         const userId = session.user.id
 
+        // Only treat the current auth session as "brand new" if this is the
+        // first login immediately after signup. Older users (reinstalls, new
+        // devices, cleared storage) should not see the referral prompt.
+        const createdAtMs = session.user.created_at ? new Date(session.user.created_at).getTime() : 0
+        const lastSignInAtMs = session.user.last_sign_in_at ? new Date(session.user.last_sign_in_at).getTime() : createdAtMs
+        const isSignupSession = createdAtMs > 0 && Math.abs(lastSignInAtMs - createdAtMs) < 5 * 60 * 1000
+
         // OPTIMIZATION: Load critical data first (profile), then secondary data
         const { data: userProfile } = await supabase
           .from('profiles')
@@ -153,8 +160,9 @@ export default function CustomerDashboard() {
           const hasSeenReferralPrompt = localStorage.getItem('helparo_referral_prompt_completed')
           const totalRequests = (requestsRes.data?.length || 0)
           const isFirstTimeUser = totalRequests === 0 && (completedRes.count || 0) === 0
-          
-          if (!hasSeenReferralPrompt && isFirstTimeUser) {
+
+          // Gate by signup session so returning users never see this prompt
+          if (!hasSeenReferralPrompt && isFirstTimeUser && isSignupSession) {
             setTimeout(() => setShowReferralModal(true), 1000)
           }
         })

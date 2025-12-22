@@ -305,7 +305,7 @@ export default function MobileAppEntry() {
   // Only start splash countdown after auth check is done
   useEffect(() => {
     if (shouldShowContent) {
-      const timer = setTimeout(() => setShowSplash(false), 1800)
+      const timer = setTimeout(() => setShowSplash(false), 2500)
       return () => clearTimeout(timer)
     }
   }, [shouldShowContent])
@@ -335,10 +335,13 @@ export default function MobileAppEntry() {
           <div className="absolute bottom-32 right-10 w-40 h-40 bg-teal-400/20 rounded-full blur-3xl" />
         </div>
         <div className="relative text-center px-8">
-          <h1 className="text-5xl font-black text-white tracking-tight mb-4">helparo</h1>
-          <div className="h-0.5 w-12 bg-white/40 rounded-full mx-auto mb-4" />
-          <p className="text-base font-semibold text-white/90 mb-4">
+          <h1 className="text-5xl font-black text-white tracking-tight mb-3">helparo</h1>
+          <div className="h-0.5 w-16 bg-white/40 rounded-full mx-auto mb-4" />
+          <p className="text-lg font-bold text-white mb-2">
             India&apos;s 1st Self-Price Platform
+          </p>
+          <p className="text-sm text-white/80 max-w-[280px] mx-auto mb-6">
+            for Home Services
           </p>
           <Loader2 className="w-8 h-8 text-white animate-spin mx-auto" />
         </div>
@@ -390,13 +393,16 @@ export default function MobileAppEntry() {
         </div>
         
         <div className={`relative text-center px-8 transition-all duration-500 ${showSplash ? 'scale-100' : 'scale-95'}`}>
-          <h1 className="text-5xl font-black text-white tracking-tight mb-4">helparo</h1>
-          <div className="h-0.5 w-12 bg-white/40 rounded-full mx-auto mb-4" />
-          <p className="text-base font-semibold text-white/90 mb-2">
+          <h1 className="text-5xl font-black text-white tracking-tight mb-3">helparo</h1>
+          <div className="h-0.5 w-16 bg-white/40 rounded-full mx-auto mb-4" />
+          <p className="text-lg font-bold text-white mb-2">
             India&apos;s 1st Self-Price Platform
           </p>
-          <p className="text-sm text-white/70 max-w-[240px] mx-auto">
-            You set the price. We find the perfect pro.
+          <p className="text-sm text-white/80 max-w-[280px] mx-auto mb-3">
+            for Home Services
+          </p>
+          <p className="text-xs text-white/60 max-w-[220px] mx-auto">
+            You decide the price. We find the perfect pro.
           </p>
         </div>
       </div>
