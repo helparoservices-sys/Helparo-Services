@@ -14,8 +14,8 @@ export default function LoginPage() {
   const router = useRouter()
   const [phone, setPhone] = useState('')
   
-  // GREEN status bar for login page - TESTING DYNAMIC COLOR
-  useStatusBar('#10B981', 'light')
+  // Light gray status bar so it's visible on white background
+  useStatusBar('#F9FAFB', 'dark')
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [step, setStep] = useState<'phone' | 'otp'>('phone')
   const [maskedPhone, setMaskedPhone] = useState('')
@@ -324,7 +324,7 @@ export default function LoginPage() {
   // }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-500 via-green-500 to-teal-500 flex">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50/30 flex">
       <div id="recaptcha-container"></div>
       
       {/* Left Side - Branding & Features (Hidden on mobile) */}
@@ -411,9 +411,9 @@ export default function LoginPage() {
       {/* Right Side - Login Form */}
       <div className="flex-1 flex flex-col">
         {/* Mobile Header - Fixed with safe area padding for status bar */}
-        <div className="lg:hidden flex items-center justify-center p-4 pt-safe border-b border-green-400 bg-green-500">
+        <div className="lg:hidden flex items-center justify-center p-4 pt-safe border-b border-gray-100 bg-white">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl font-black text-white font-heading tracking-tight">helparo</span>
+            <span className="text-2xl font-black text-gray-900 font-heading tracking-tight">helparo</span>
           </Link>
         </div>
 
