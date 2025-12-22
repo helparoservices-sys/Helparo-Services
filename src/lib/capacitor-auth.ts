@@ -246,8 +246,18 @@ export async function initializeCapacitor() {
   
   console.log('🚀 Initializing Capacitor app features')
   
-  // Status bar will be dynamically configured by each page using useStatusBar hook
-  console.log('✅ Capacitor initialized - status bar will adapt per page')
+  // Initialize StatusBar plugin with proper settings
+  try {
+    const { StatusBar } = await import('@capacitor/status-bar')
+    
+    // Ensure status bar is visible and doesn't overlay content
+    await StatusBar.setOverlaysWebView({ overlay: false })
+    await StatusBar.show()
+    
+    console.log('✅ StatusBar plugin initialized - ready for dynamic colors')
+  } catch (error) {
+    console.error('⚠️ StatusBar initialization failed:', error)
+  }
   
   // Set up deep link handling
   initializeDeepLinkListener()
