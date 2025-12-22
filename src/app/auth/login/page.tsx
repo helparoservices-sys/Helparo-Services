@@ -14,8 +14,8 @@ export default function LoginPage() {
   const router = useRouter()
   const [phone, setPhone] = useState('')
   
-  // Light gray status bar so it's visible on white background
-  useStatusBar('#F9FAFB', 'dark')
+  // CLEARLY VISIBLE gray status bar - testing dynamic color
+  useStatusBar('#9CA3AF', 'dark')
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [step, setStep] = useState<'phone' | 'otp'>('phone')
   const [maskedPhone, setMaskedPhone] = useState('')
