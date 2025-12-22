@@ -73,7 +73,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
             
             {/* Main content - No left margin on mobile, with bottom padding for mobile nav */}
             <main 
-              className={`flex-1 transition-all duration-300 ease-in-out pt-14 mt-safe pb-20 md:pb-0
+              className={`flex-1 transition-all duration-300 ease-in-out pt-20 pb-20 md:pb-0
                 lg:${sidebarCollapsed ? 'ml-16' : 'ml-60'}
                 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-60'}
                 ml-0
