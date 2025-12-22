@@ -173,84 +173,70 @@ export default function CustomerBookingsPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-4 space-y-6">
+    <div className="max-w-5xl mx-auto px-3 py-4 space-y-4">
       {/* Hero Header */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 rounded-3xl p-8 text-white">
+      <div className="relative overflow-hidden bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 rounded-2xl p-5 md:p-8 text-white">
         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
         
-        <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-white/10 backdrop-blur-sm rounded-xl">
-                <History className="w-6 h-6" />
-              </div>
-              <span className="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-xs font-medium">
-                Your Activity
-              </span>
+        <div className="relative">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 bg-white/10 backdrop-blur-sm rounded-lg">
+              <History className="w-5 h-5" />
             </div>
-            <h1 className="text-3xl md:text-4xl font-black mb-2">Booking History</h1>
-            <p className="text-slate-300">
-              Track all your completed and cancelled service requests
-            </p>
+            <span className="px-2.5 py-0.5 bg-white/10 backdrop-blur-sm rounded-full text-xs font-medium">
+              Your Activity
+            </span>
           </div>
+          <h1 className="text-2xl md:text-4xl font-black mb-1">Booking History</h1>
+          <p className="text-slate-300 text-sm md:text-base mb-4">
+            Track all your completed and cancelled service requests
+          </p>
           
           <Link href="/customer/requests/new">
-            <button className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 rounded-xl font-semibold transition-all shadow-lg shadow-emerald-500/25">
-              <Plus className="w-5 h-5" />
+            <button className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-emerald-500/25">
+              <Plus className="w-4 h-4" />
               New Booking
             </button>
           </Link>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl p-5 shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
+      {/* Stats Cards - Horizontal scroll on mobile */}
+      <div className="flex gap-3 overflow-x-auto pb-1 -mx-3 px-3 scrollbar-hide">
+        <div className="flex-shrink-0 w-[120px] md:w-auto md:flex-1 bg-white rounded-xl p-3 md:p-5 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-500 font-medium mb-0.5">Total History</p>
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 font-medium mb-1">Total History</p>
-              <p className="text-3xl font-black text-gray-900">{stats.total}</p>
-            </div>
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
-              <Calendar className="w-7 h-7 text-blue-600" />
-            </div>
+            <p className="text-2xl md:text-3xl font-black text-gray-900">{stats.total}</p>
+            <Calendar className="w-5 h-5 md:w-6 md:h-6 text-blue-500" />
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
+        <div className="flex-shrink-0 w-[120px] md:w-auto md:flex-1 bg-white rounded-xl p-3 md:p-5 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-500 font-medium mb-0.5">Completed</p>
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 font-medium mb-1">Completed</p>
-              <p className="text-3xl font-black text-emerald-600">{stats.completed}</p>
-            </div>
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-100 to-green-100 flex items-center justify-center">
-              <CheckCircle2 className="w-7 h-7 text-emerald-600" />
-            </div>
+            <p className="text-2xl md:text-3xl font-black text-emerald-600">{stats.completed}</p>
+            <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 text-emerald-500" />
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
+        <div className="flex-shrink-0 w-[120px] md:w-auto md:flex-1 bg-white rounded-xl p-3 md:p-5 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-500 font-medium mb-0.5">Cancelled</p>
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 font-medium mb-1">Cancelled</p>
-              <p className="text-3xl font-black text-red-500">{stats.cancelled}</p>
-            </div>
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-100 to-rose-100 flex items-center justify-center">
-              <XCircle className="w-7 h-7 text-red-500" />
-            </div>
+            <p className="text-2xl md:text-3xl font-black text-red-500">{stats.cancelled}</p>
+            <XCircle className="w-5 h-5 md:w-6 md:h-6 text-red-500" />
           </div>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 inline-flex gap-1">
+      <div className="bg-white rounded-xl p-1.5 shadow-sm border border-gray-100 flex gap-1">
         <button
           onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+          className={`flex-1 px-3 py-2 rounded-lg text-xs md:text-sm font-semibold transition-all ${
             filter === 'all'
-              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
+              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm'
               : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
@@ -258,9 +244,9 @@ export default function CustomerBookingsPage() {
         </button>
         <button
           onClick={() => setFilter('completed')}
-          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+          className={`flex-1 px-3 py-2 rounded-lg text-xs md:text-sm font-semibold transition-all ${
             filter === 'completed'
-              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
+              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm'
               : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
@@ -268,9 +254,9 @@ export default function CustomerBookingsPage() {
         </button>
         <button
           onClick={() => setFilter('cancelled')}
-          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+          className={`flex-1 px-3 py-2 rounded-lg text-xs md:text-sm font-semibold transition-all ${
             filter === 'cancelled'
-              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
+              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm'
               : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
@@ -280,25 +266,25 @@ export default function CustomerBookingsPage() {
 
       {/* Bookings List */}
       {filteredBookings.length === 0 ? (
-        <div className="bg-white rounded-3xl p-12 shadow-md border border-gray-100 text-center">
-          <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-100 to-slate-100 flex items-center justify-center">
-            <Calendar className="w-10 h-10 text-gray-400" />
+        <div className="bg-white rounded-2xl p-6 md:p-12 shadow-sm border border-gray-100 text-center">
+          <div className="w-14 h-14 md:w-20 md:h-20 mx-auto mb-3 rounded-xl bg-gradient-to-br from-gray-100 to-slate-100 flex items-center justify-center">
+            <Calendar className="w-7 h-7 md:w-10 md:h-10 text-gray-400" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">No completed bookings yet</h3>
-          <p className="text-gray-500 mb-6">
+          <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-1">No completed bookings yet</h3>
+          <p className="text-gray-500 text-sm mb-5 max-w-xs mx-auto">
             {filter === 'all' 
               ? "Your completed and cancelled bookings will appear here. Check your active requests for ongoing services." 
               : `No ${filter} bookings to show`}
           </p>
-          <div className="flex gap-3 justify-center">
-            <Link href="/customer/active-requests">
-              <button className="px-6 py-3 bg-white border-2 border-emerald-500 text-emerald-600 rounded-xl font-semibold transition-all hover:bg-emerald-50">
-                View Active Requests
+          <div className="flex flex-col sm:flex-row gap-2 justify-center max-w-xs mx-auto">
+            <Link href="/customer/active-requests" className="w-full sm:w-auto">
+              <button className="w-full px-5 py-2.5 bg-white border-2 border-emerald-500 text-emerald-600 rounded-xl text-sm font-semibold transition-all hover:bg-emerald-50">
+                View Active
               </button>
             </Link>
-            <Link href="/customer/requests/new">
-              <button className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl font-semibold transition-all shadow-lg">
-                Create New Booking
+            <Link href="/customer/requests/new" className="w-full sm:w-auto">
+              <button className="w-full px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl text-sm font-semibold transition-all shadow-md">
+                Create New
               </button>
             </Link>
           </div>
