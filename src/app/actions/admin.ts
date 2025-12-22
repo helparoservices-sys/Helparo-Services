@@ -1,5 +1,6 @@
 'use server'
 import { requireAdmin } from '@/lib/auth'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { handleServerActionError } from '@/lib/errors'
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { validateFormData, banUserSchema } from '@/lib/validation'
@@ -89,22 +90,26 @@ export async function approveHelper(helperId: string, comment: string = '') {
   try {
     logger.info('approveHelper called', { helperId, comment: comment?.slice(0, 50) })
     
-    const { user, supabase } = await requireAdmin()
+    // Verify user is admin (this checks auth and role)
+    const { user } = await requireAdmin()
     logger.info('Admin verified for approval', { adminId: user.id, helperId })
     
     await rateLimit('admin-approve-helper', user.id, RATE_LIMITS.ADMIN_APPROVE)
     
+    // Use admin client to bypass RLS for updates
+    const adminClient = createAdminClient()
+    
     const sanitizedComment = comment ? sanitizeText(comment) : null
     
     // Get helper details for email
-    const { data: helperProfile } = await supabase
+    const { data: helperProfile } = await adminClient
       .from('profiles')
       .select('full_name, email')
       .eq('id', helperId)
       .single()
     
     // Update helper_profiles
-    const { error: helperError } = await supabase
+    const { error: helperError } = await adminClient
       .from('helper_profiles')
       .update({ 
         verification_status: 'approved' as unknown, 
@@ -120,7 +125,7 @@ export async function approveHelper(helperId: string, comment: string = '') {
     logger.info('helper_profiles updated', { helperId })
     
     // Auto-approve bank account when approving helper
-    const { error: bankError } = await supabase
+    const { error: bankError } = await adminClient
       .from('helper_bank_accounts')
       .update({ status: 'verified' as unknown })
       .eq('helper_id', helperId)
@@ -130,7 +135,7 @@ export async function approveHelper(helperId: string, comment: string = '') {
     }
     
     // Auto-approve all verification documents
-    const { error: docError } = await supabase
+    const { error: docError } = await adminClient
       .from('verification_documents')
       .update({ status: 'approved' })
       .eq('helper_id', helperId)
@@ -140,7 +145,7 @@ export async function approveHelper(helperId: string, comment: string = '') {
     }
     
     // Insert verification review
-    const { error: reviewError } = await supabase
+    const { error: reviewError } = await adminClient
       .from('verification_reviews')
       .insert({
         helper_user_id: helperId,
@@ -175,22 +180,25 @@ export async function rejectHelper(helperId: string, comment: string = '') {
   try {
     logger.info('rejectHelper called', { helperId, comment: comment?.slice(0, 50) })
     
-    const { user, supabase } = await requireAdmin()
+    const { user } = await requireAdmin()
     logger.info('Admin verified for rejection', { adminId: user.id, helperId })
     
     await rateLimit('admin-reject-helper', user.id, RATE_LIMITS.ADMIN_APPROVE)
     
+    // Use admin client to bypass RLS
+    const adminClient = createAdminClient()
+    
     const sanitizedComment = comment ? sanitizeText(comment) : 'Your application did not meet our requirements. Please review and resubmit.'
     
     // Get helper details for email
-    const { data: helperProfile } = await supabase
+    const { data: helperProfile } = await adminClient
       .from('profiles')
       .select('full_name, email')
       .eq('id', helperId)
       .single()
     
     // Set status to REJECTED (not pending) - allows helper to see rejection reason
-    const { error: updateError } = await supabase
+    const { error: updateError } = await adminClient
       .from('helper_profiles')
       .update({ 
         verification_status: 'rejected' as unknown,
@@ -201,7 +209,7 @@ export async function rejectHelper(helperId: string, comment: string = '') {
     if (updateError) throw updateError
     
     // Mark bank account as rejected
-    await supabase
+    await adminClient
       .from('helper_bank_accounts')
       .update({ 
         status: 'rejected' as unknown,
@@ -210,7 +218,7 @@ export async function rejectHelper(helperId: string, comment: string = '') {
       .eq('helper_id', helperId)
     
     // Mark all verification documents as rejected (don't delete)
-    await supabase
+    await adminClient
       .from('verification_documents')
       .update({ 
         status: 'rejected',
@@ -219,7 +227,7 @@ export async function rejectHelper(helperId: string, comment: string = '') {
       .eq('helper_id', helperId)
     
     // Insert verification review (keep rejection history)
-    await supabase
+    await adminClient
       .from('verification_reviews')
       .insert({
         helper_user_id: helperId,

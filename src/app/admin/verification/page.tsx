@@ -1,11 +1,33 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { VerificationPageClient } from '@/components/admin/verification-page-client'
+import { redirect } from 'next/navigation'
 
 export default async function AdminVerificationPage() {
+  // First, verify user is admin using regular client
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    redirect('/auth/login')
+  }
+  
+  // Check role from profiles
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+  
+  if (profile?.role !== 'admin') {
+    redirect(`/${profile?.role || 'customer'}/dashboard`)
+  }
+  
+  // Use admin client for data fetching (bypasses RLS)
+  const adminClient = createAdminClient()
 
   // Fetch pending helpers with their profiles
-  const { data: helpersData, error: helpersError } = await supabase
+  const { data: helpersData, error: helpersError } = await adminClient
     .from('helper_profiles')
     .select(`
       user_id,
@@ -18,13 +40,13 @@ export default async function AdminVerificationPage() {
 
   // Fetch all documents for pending helpers
   const helperIds = (helpersData || []).map(h => h.user_id)
-  const { data: docsData, error: docsError } = await supabase
+  const { data: docsData, error: docsError } = await adminClient
     .from('verification_documents')
     .select('id, helper_id, document_type, document_url, selfie_url, status, created_at')
     .in('helper_id', helperIds.length > 0 ? helperIds : ['00000000-0000-0000-0000-000000000000'])
 
   // Fetch complete helper profiles with onboarding data
-  const { data: completeProfiles } = await supabase
+  const { data: completeProfiles } = await adminClient
     .from('helper_profiles')
     .select(`
       user_id,
@@ -40,7 +62,7 @@ export default async function AdminVerificationPage() {
     .in('user_id', helperIds.length > 0 ? helperIds : ['00000000-0000-0000-0000-000000000000'])
 
   // Fetch bank accounts
-  const { data: bankAccounts } = await supabase
+  const { data: bankAccounts } = await adminClient
     .from('helper_bank_accounts')
     .select('helper_id, account_holder_name, account_number, ifsc_code, bank_name, upi_id, status')
     .in('helper_id', helperIds.length > 0 ? helperIds : ['00000000-0000-0000-0000-000000000000'])
