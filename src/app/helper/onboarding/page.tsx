@@ -30,117 +30,117 @@ function Step1ServiceDetails({ data, onChange, onNext, t }: any) {
   const [categories, setCategories] = useState<any[]>([])
   const [subcategories, setSubcategories] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [expandedCategories, setExpandedCategories] = useState<string[]>([])
+  const detectLocation = async () => {
+    setDetecting(true)
+    setLocationError('')
 
-  useEffect(() => {
-    loadCategories()
-  }, [])
+    if (!navigator.geolocation) {
+      setLocationError(t('onboarding.step2.geoNotSupported'))
+      setDetecting(false)
+      return
+    }
 
-  const loadCategories = async () => {
-    const supabase = createClient()
-    
-    // Fetch root categories (parent_id is null)
-    const { data: rootCategories } = await supabase
-      .from('service_categories')
-      .select('id, name, slug')
-      .is('parent_id', null)
-      .eq('is_active', true)
-      .order('display_order', { ascending: true })
+    const toastId = 'detecting-location'
+    toast.loading(t('onboarding.step2.detecting'), { id: toastId })
 
-    // Fetch all subcategories
-    const { data: allSubcategories } = await supabase
-      .from('service_categories')
-      .select('id, name, slug, parent_id')
-      .not('parent_id', 'is', null)
-      .eq('is_active', true)
-      .order('display_order', { ascending: true })
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords
 
-    setCategories(rootCategories || [])
-    setSubcategories(allSubcategories || [])
-    setLoading(false)
-  }
+        // Show coords immediately so UI reflects progress
+        onChange({
+          latitude: latitude.toFixed(6),
+          longitude: longitude.toFixed(6)
+        })
 
-  const getSubcategoriesForParent = (parentId: string) => {
-    return subcategories.filter(sub => sub.parent_id === parentId)
-  }
-
-  const toggleCategory = (categorySlug: string, isRoot: boolean = false, parentId?: string) => {
-    const current = data.service_categories || []
-    let updated = [...current]
-    
-    // Check if this is a root category
-    const rootCategory = categories.find(c => c.slug === categorySlug)
-    
-    if (rootCategory) {
-      // Toggling a ROOT category
-      if (current.includes(categorySlug)) {
-        // Unselecting root - also unselect all its subcategories
-        const subsToRemove = subcategories
-          .filter(sub => sub.parent_id === rootCategory.id)
-          .map(sub => sub.slug)
-        updated = updated.filter(slug => slug !== categorySlug && !subsToRemove.includes(slug))
-      } else {
-        // Selecting root - also select all its subcategories
-        const subsToAdd = subcategories
-          .filter(sub => sub.parent_id === rootCategory.id)
-          .map(sub => sub.slug)
-        updated = [...updated, categorySlug, ...subsToAdd]
-      }
-    } else {
-      // Toggling a SUBCATEGORY
-      const subcategory = subcategories.find(sub => sub.slug === categorySlug)
-      
-      if (subcategory) {
-        if (current.includes(categorySlug)) {
-          // Unselecting subcategory
-          updated = updated.filter(slug => slug !== categorySlug)
-          
-          // Check if this was the last selected subcategory for this parent
-          const parentCategory = categories.find(c => c.id === subcategory.parent_id)
-          if (parentCategory) {
-            const siblingSubs = subcategories.filter(sub => sub.parent_id === subcategory.parent_id)
-            const selectedSiblings = siblingSubs.filter(sub => updated.includes(sub.slug))
-            
-            // If no subcategories selected, unselect parent too
-            if (selectedSiblings.length === 0) {
-              updated = updated.filter(slug => slug !== parentCategory.slug)
+        const geocodeGoogle = async () => {
+          try {
+            const response = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`, {
+              cache: 'no-store',
+              headers: { Accept: 'application/json' }
+            })
+            if (!response.ok) return null
+            const geo = await response.json()
+            const address = geo.formatted_address || ''
+            return {
+              address,
+              pincode: geo.pincode || ''
             }
-          }
-        } else {
-          // Selecting subcategory - also select parent if not already selected
-          updated = [...updated, categorySlug]
-          
-          const parentCategory = categories.find(c => c.id === subcategory.parent_id)
-          if (parentCategory && !updated.includes(parentCategory.slug)) {
-            updated = [...updated, parentCategory.slug]
+          } catch (error) {
+            console.error('Geocoding error (google):', error)
+            return null
           }
         }
-      }
-    }
-    
-    // Auto-update skills with selected subcategories
-    const selectedSubcategories = subcategories
-      .filter(sub => updated.includes(sub.slug))
-      .map(sub => sub.name)
-    
-    onChange({ 
-      service_categories: updated,
-      skills: selectedSubcategories
-    })
-  }
 
-  const toggleCategoryExpansion = (categoryId: string) => {
-    setExpandedCategories(prev => 
-      prev.includes(categoryId) 
-        ? prev.filter(id => id !== categoryId)
-        : [...prev, categoryId]
+        const geocodeFallback = async () => {
+          try {
+            const response = await fetch(`/api/address/reverse?lat=${latitude}&lng=${longitude}`, {
+              cache: 'no-store',
+              headers: { Accept: 'application/json' }
+            })
+            if (!response.ok) return null
+            const geo = await response.json()
+            const address = geo?.address?.display_name || geo?.display_name || ''
+            return {
+              address,
+              pincode: geo?.address?.pincode || geo?.pincode || ''
+            }
+          } catch (error) {
+            console.error('Geocoding error (fallback):', error)
+            return null
+          }
+        }
+
+        let result = await geocodeGoogle()
+        if (!result || !result.address) {
+          result = await geocodeFallback()
+        }
+
+        toast.dismiss(toastId)
+
+        if (result && result.address) {
+          onChange({
+            address: result.address,
+            pincode: result.pincode || data.pincode || '',
+            latitude: latitude.toFixed(6),
+            longitude: longitude.toFixed(6)
+          })
+          setLocationError('')
+          toast.success(t('onboarding.step2.locationDetected'))
+        } else {
+          setLocationError(t('onboarding.step2.enterAddressManually'))
+          toast.warning(t('onboarding.step2.coordsSavedEnterManual'))
+        }
+
+        setDetecting(false)
+      },
+      (error) => {
+        toast.dismiss(toastId)
+        let errorMessage = t('onboarding.step2.detectFailed')
+
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = t('onboarding.step2.permissionDenied')
+            break
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = t('onboarding.step2.positionUnavailable')
+            break
+          case error.TIMEOUT:
+            errorMessage = t('onboarding.step2.timeout')
+            break
+        }
+
+        toast.error(errorMessage)
+        setLocationError(errorMessage)
+        setDetecting(false)
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
+      }
     )
   }
-
-  // Filter categories based on search
-  const filteredCategories = categories.filter(cat => {
-    if (!searchQuery) return true
     const matchesRoot = cat.name.toLowerCase().includes(searchQuery.toLowerCase())
     const subs = getSubcategoriesForParent(cat.id)
     const matchesSub = subs.some((sub: any) => sub.name.toLowerCase().includes(searchQuery.toLowerCase()))
