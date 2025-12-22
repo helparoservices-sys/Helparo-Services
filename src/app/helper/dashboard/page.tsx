@@ -145,7 +145,13 @@ export default function HelperDashboard() {
   const [fullJobDetails, setFullJobDetails] = useState<FullJobDetails | null>(null)
   const [activeJobChecked, setActiveJobChecked] = useState(false)
   const [error, setError] = useState('')
-  const [isAvailableNow, setIsAvailableNow] = useState(false)
+  // Initialize from localStorage to prevent flash of wrong state
+  const [isAvailableNow, setIsAvailableNow] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('helper_available') === 'true'
+    }
+    return false
+  })
   const [togglingAvailability, setTogglingAvailability] = useState(false)
   const [userId, setUserId] = useState<string | null>(cachedUserId)
   
@@ -230,6 +236,8 @@ export default function HelperDashboard() {
         // Set all state at once
         setStats(data.stats)
         setIsAvailableNow(data.isAvailableNow)
+        // Persist to localStorage for instant load next time
+        localStorage.setItem('helper_available', data.isAvailableNow ? 'true' : 'false')
         setUserId(data.userId)
         
         if (data.activeJob) {
@@ -432,6 +440,8 @@ export default function HelperDashboard() {
       toast.error(result.error)
     } else {
       setIsAvailableNow(newValue)
+      // Persist to localStorage for instant load next time
+      localStorage.setItem('helper_available', newValue ? 'true' : 'false')
       toast.success(newValue ? 'You are now online' : 'You are now offline')
     }
     setTogglingAvailability(false)
