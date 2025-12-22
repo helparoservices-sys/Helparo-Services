@@ -30,6 +30,7 @@ function SignUpForm() {
   const [agreedToTerms, setAgreedToTerms] = useState(false)
 
   const [loading, setLoading] = useState(false)
+  const [navigating, setNavigating] = useState(false)
   const [error, setError] = useState('')
   const [googleLoading, setGoogleLoading] = useState(false)
   const [showTerms, setShowTerms] = useState(false)
@@ -69,7 +70,7 @@ function SignUpForm() {
 
   useEffect(() => {
     if (step === 'phone') {
-      setTimeout(() => initializeRecaptcha(), 500)
+      initializeRecaptcha()
     }
   }, [step, initializeRecaptcha])
 
@@ -117,7 +118,7 @@ function SignUpForm() {
 
       if (!recaptchaVerifier || !recaptchaReady) {
         initializeRecaptcha()
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise(resolve => setTimeout(resolve, 300))
       }
       if (!recaptchaVerifier) {
         setError('Verification not ready. Please try again.')
@@ -185,7 +186,10 @@ function SignUpForm() {
         return
       }
 
+      setNavigating(true)
       router.push(`/${role}/dashboard`)
+      // Don't set loading false - keep showing loading state during navigation
+      return
       
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string }
@@ -195,7 +199,6 @@ function SignUpForm() {
         setError('OTP has expired. Please request a new one.')
         setStep('phone')
       } else setError('Verification failed. Please try again.')
-    } finally {
       setLoading(false)
     }
   }
@@ -214,9 +217,8 @@ function SignUpForm() {
     setRecaptchaInitialized(false)
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 100))
       initializeRecaptcha()
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise(resolve => setTimeout(resolve, 200))
 
       if (!recaptchaVerifier) {
         setError('Verification not ready. Please try again.')
@@ -548,13 +550,13 @@ function SignUpForm() {
                 {/* Verify Button with gradient */}
                 <button
                   onClick={handleVerifyOtp}
-                  disabled={otp.join('').length !== 6 || loading}
+                  disabled={otp.join('').length !== 6 || loading || navigating}
                   className="w-full h-14 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 disabled:shadow-none"
                 >
-                  {loading ? (
+                  {(loading || navigating) ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Creating your account...</span>
+                      <span>{navigating ? 'Redirecting...' : 'Creating your account...'}</span>
                     </>
                   ) : (
                     <>

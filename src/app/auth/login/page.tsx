@@ -26,6 +26,7 @@ export default function LoginPage() {
   const [recaptchaInitialized, setRecaptchaInitialized] = useState(false)
 
   const [loading, setLoading] = useState(false)
+  const [navigating, setNavigating] = useState(false)
   const [error, setError] = useState('')
   const [googleLoading, setGoogleLoading] = useState(false)
 
@@ -70,7 +71,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (step === 'phone') {
-      setTimeout(() => initializeRecaptcha(), 500)
+      initializeRecaptcha()
     }
   }, [step, initializeRecaptcha])
 
@@ -112,7 +113,7 @@ export default function LoginPage() {
 
       if (!recaptchaVerifier || !recaptchaReady) {
         initializeRecaptcha()
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise(resolve => setTimeout(resolve, 300))
       }
       if (!recaptchaVerifier) {
         setError('Verification not ready. Please try again.')
@@ -206,7 +207,10 @@ export default function LoginPage() {
       }
 
       // Session created successfully, redirect to dashboard
+      setNavigating(true)
       router.push(`/${profile.role}/dashboard`)
+      // Don't set loading false - keep showing loading state during navigation
+      return
       
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string }
@@ -216,7 +220,6 @@ export default function LoginPage() {
         setError('OTP has expired. Please request a new one.')
         setStep('phone')
       } else setError('Verification failed. Please try again.')
-    } finally {
       setLoading(false)
     }
   }
@@ -235,9 +238,8 @@ export default function LoginPage() {
     setRecaptchaInitialized(false)
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 100))
       initializeRecaptcha()
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise(resolve => setTimeout(resolve, 200))
 
       if (!recaptchaVerifier) {
         setError('Verification not ready. Please try again.')
@@ -574,13 +576,13 @@ export default function LoginPage() {
 
                     <button
                       onClick={handleVerifyOtp}
-                      disabled={otp.join('').length !== 6 || loading}
+                      disabled={otp.join('').length !== 6 || loading || navigating}
                       className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                      {loading ? (
+                      {(loading || navigating) ? (
                         <>
                           <Loader2 className="w-5 h-5 animate-spin" />
-                          <span>Verifying...</span>
+                          <span>{navigating ? 'Redirecting...' : 'Verifying...'}</span>
                         </>
                       ) : (
                         <>
