@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { useDarkMode } from '@/lib/use-dark-mode'
 
 interface HelperTopbarProps {
   onToggleSidebar: () => void
@@ -23,10 +24,10 @@ interface HelperTopbarProps {
 
 export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
   const router = useRouter()
+  const { isDarkMode, toggleDarkMode } = useDarkMode()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [userName, setUserName] = useState('')
   const [isVerified, setIsVerified] = useState(false)
-  const [darkMode, setDarkMode] = useState(false)
   const [balance, setBalance] = useState(0)
 
   useEffect(() => {
@@ -99,6 +100,19 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
 
         {/* Right Section */}
         <div className="flex items-center gap-2">
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={toggleDarkMode}
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            aria-label="Toggle dark mode"
+          >
+            {isDarkMode ? (
+              <Sun className="h-5 w-5 text-yellow-500" />
+            ) : (
+              <Moon className="h-5 w-5 text-slate-600" />
+            )}
+          </button>
+
           {/* Notifications */}
           <Link
             href="/helper/notifications"

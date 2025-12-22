@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Menu, Bell, LogOut, Settings } from 'lucide-react'
+import { Menu, Bell, LogOut, Settings, Moon, Sun } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
+import { useDarkMode } from '@/lib/use-dark-mode'
 
 interface TopbarProps {
   onToggleSidebar: () => void
@@ -12,6 +13,7 @@ interface TopbarProps {
 
 export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
   const router = useRouter()
+  const { isDarkMode, toggleDarkMode } = useDarkMode()
   const [user, setUser] = useState<any>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [balance, setBalance] = useState(0)
@@ -57,6 +59,19 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
 
         {/* Right Section */}
         <div className="flex items-center gap-2">
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={toggleDarkMode}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            aria-label="Toggle dark mode"
+          >
+            {isDarkMode ? (
+              <Sun className="h-5 w-5 text-yellow-500" />
+            ) : (
+              <Moon className="h-5 w-5 text-gray-600" />
+            )}
+          </button>
+
           {/* Notifications */}
           <Link
             href="/customer/notifications"

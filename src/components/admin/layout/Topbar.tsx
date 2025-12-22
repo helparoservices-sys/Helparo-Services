@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/components/ui/toast-notification'
+import { useDarkMode } from '@/lib/use-dark-mode'
 
 interface TopbarProps {
   onToggleSidebar: () => void
@@ -33,7 +34,7 @@ interface Notification {
 export default function Topbar({ onToggleSidebar }: TopbarProps) {
   const router = useRouter()
   const { showError } = useToast()
-  const [darkMode, setDarkMode] = useState(false)
+  const { isDarkMode, toggleDarkMode } = useDarkMode()
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -60,13 +61,6 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
         fetchNotifications(user.id)
       }
     }, 30000)
-
-    // Check dark mode preference
-    const isDark = localStorage.getItem('darkMode') === 'true'
-    setDarkMode(isDark)
-    if (isDark) {
-      document.documentElement.classList.add('dark')
-    }
 
     // Handle click outside to close dropdowns
     const handleClickOutside = (event: MouseEvent) => {
@@ -121,13 +115,6 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
     } catch (error) {
       console.error('Error marking notification as read:', error)
     }
-  }
-
-  const toggleDarkMode = () => {
-    const newMode = !darkMode
-    setDarkMode(newMode)
-    localStorage.setItem('darkMode', String(newMode))
-    document.documentElement.classList.toggle('dark')
   }
 
   const handleLogout = async () => {

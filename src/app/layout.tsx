@@ -4,6 +4,7 @@ import { PageTransition } from '@/components/page-transition'
 import { LanguageProvider } from '@/lib/language-context'
 import { CapacitorBackButton } from '@/components/capacitor-back-button'
 import { CapacitorInit } from '@/components/capacitor-init'
+import { DarkModeProvider } from '@/lib/use-dark-mode'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://helparo.in'),
@@ -274,11 +275,13 @@ export default function RootLayout({
       <body className="antialiased">
         <CapacitorInit />
         <CapacitorBackButton />
-        <LanguageProvider>
-          <PageTransition>
-            {children}
-          </PageTransition>
-        </LanguageProvider>
+        <DarkModeProvider>
+          <LanguageProvider>
+            <PageTransition>
+              {children}
+            </PageTransition>
+          </LanguageProvider>
+        </DarkModeProvider>
       </body>
     </html>
   )
