@@ -1,15 +1,14 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
-import { DollarSign, MapPin, CreditCard, Star, Trophy, Save, X } from 'lucide-react'
+import { DollarSign, MapPin, CreditCard, Star, Trophy, Save, X, ShieldCheck } from 'lucide-react'
 import { updateCommissionSettings } from '@/app/actions/admin'
 import { useToast } from '@/components/ui/toast-notification'
-import { ChangePasswordForm } from '@/components/change-password-form'
 
 interface SettingsData {
   commission: {
@@ -381,7 +380,20 @@ export function SettingsPageClient({ settings }: SettingsPageClientProps) {
         </Card>
 
         {/* Security Settings */}
-        <ChangePasswordForm />
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-emerald-600" />
+              OTP-Only Authentication
+            </CardTitle>
+            <CardDescription>
+              Password changes are disabled because accounts sign in with one-time passcodes. No password is stored for admins.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <p>Admins continue to authenticate via OTP. If you suspect account access issues, revoke sessions or rotate contact methods instead of resetting a password.</p>
+          </CardContent>
+        </Card>
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-3">

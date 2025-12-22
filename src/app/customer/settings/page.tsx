@@ -7,8 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { User, Bell, Lock, CreditCard, Shield, Save, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react'
-import { ChangePasswordForm } from '@/components/change-password-form'
+import { User, Bell, Lock, CreditCard, Shield, Save, AlertCircle, CheckCircle, ShieldCheck } from 'lucide-react'
 
 export default function CustomerSettingsPage() {
   const router = useRouter()
@@ -17,7 +16,6 @@ export default function CustomerSettingsPage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
   const [activeTab, setActiveTab] = useState('profile')
-  const [showPassword, setShowPassword] = useState(false)
 
   const [profile, setProfile] = useState({
     full_name: '',
@@ -43,12 +41,6 @@ export default function CustomerSettingsPage() {
     show_phone: true,
     show_address: false,
     allow_marketing: false,
-  })
-
-  const [password, setPassword] = useState({
-    current: '',
-    new: '',
-    confirm: '',
   })
 
   useEffect(() => {
@@ -177,39 +169,10 @@ export default function CustomerSettingsPage() {
     }
   }
 
-  const changePassword = async () => {
-    setSaving(true)
-    setMessage({ type: '', text: '' })
-
-    try {
-      if (password.new !== password.confirm) {
-        throw new Error('New passwords do not match')
-      }
-
-      if (password.new.length < 8) {
-        throw new Error('Password must be at least 8 characters')
-      }
-
-      const { error } = await supabase.auth.updateUser({
-        password: password.new
-      })
-
-      if (error) throw error
-
-      setPassword({ current: '', new: '', confirm: '' })
-      setMessage({ type: 'success', text: 'Password changed successfully!' })
-    } catch (error) {
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'An error occurred' })
-    } finally {
-      setSaving(false)
-    }
-  }
-
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'privacy', label: 'Privacy', icon: Shield },
-    { id: 'security', label: 'Security', icon: Lock },
     { id: 'payments', label: 'Payments', icon: CreditCard },
   ]
 
@@ -427,7 +390,28 @@ export default function CustomerSettingsPage() {
             )}
 
             {activeTab === 'security' && (
-              <ChangePasswordForm />
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                    OTP-Only Login
+                  </CardTitle>
+                  <CardDescription>
+                    Password changes are disabled because this account uses one-time passcodes for authentication.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-slate-600 dark:text-slate-300">
+                    You will continue signing in with OTPs sent to your registered phone or email. If you suspect account issues, log out of all devices from Security or contact support.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push('/customer/notifications')}
+                  >
+                    Manage Login Alerts
+                  </Button>
+                </CardContent>
+              </Card>
             )}
 
             {activeTab === 'payments' && (

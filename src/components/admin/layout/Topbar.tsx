@@ -122,14 +122,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
       setIsLoggingOut(true)
       
       // Sign out from Supabase
-      const { error } = await supabase.auth.signOut()
-      
-      if (error) {
-        console.error('Logout error:', error)
-        showError('Logout Failed', 'Please try again')
-        setIsLoggingOut(false)
-        return
-      }
+      await supabase.auth.signOut()
       
       // Clear all local storage and session storage
       localStorage.clear()
@@ -141,16 +134,12 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
           .replace(/^ +/, "")
           .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
       })
-      
-      // Small delay to ensure cleanup is complete
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      // Use router for client-side navigation
-      router.push('/auth/login')
     } catch (error) {
       console.error('Logout error:', error)
-      showError('Logout Failed', 'Please try again')
-      setIsLoggingOut(false)
+    } finally {
+      // Always redirect to login, even if signOut fails
+      // Use window.location.href for a full page reload to clear all state
+      window.location.href = '/auth/login'
     }
   }
 

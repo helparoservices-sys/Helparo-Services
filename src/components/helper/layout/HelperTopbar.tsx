@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { 
@@ -31,6 +31,8 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
   const [isVerified, setIsVerified] = useState(false)
   const [balance, setBalance] = useState(0)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const cancelButtonRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
     loadUserData()
@@ -89,11 +91,24 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
   }
 
   const handleLogout = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    toast.success('Logged out successfully')
-    router.push('/auth/login')
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      // Always redirect to login, even if signOut fails
+      // Use window.location for a full page reload to clear all state
+      window.location.href = '/auth/login'
+    }
   }
+
+  // Focus the cancel button when confirmation opens for better accessibility
+  useEffect(() => {
+    if (showLogoutConfirm && cancelButtonRef.current) {
+      cancelButtonRef.current.focus()
+    }
+  }, [showLogoutConfirm])
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-50">
@@ -204,7 +219,10 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
                   </Link>
 
                   <button
-                    onClick={handleLogout}
+                    onClick={() => {
+                      setShowUserMenu(false)
+                      setShowLogoutConfirm(true)
+                    }}
                     className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
                     <LogOut className="h-4 w-4" />
@@ -216,6 +234,45 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
           </div>
         </div>
       </div>
+
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/50" aria-hidden="true"></div>
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/30">
+                <LogOut className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="space-y-1">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Are you sure you want to log out?</h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400">You will need to sign in again to access your helper dashboard.</p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                ref={cancelButtonRef}
+                onClick={() => setShowLogoutConfirm(false)}
+                className="w-full sm:w-auto rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setShowLogoutConfirm(false)
+                  await handleLogout()
+                }}
+                className="w-full sm:w-auto rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+              >
+                Yes, Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   )
 }
