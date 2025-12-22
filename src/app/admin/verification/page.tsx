@@ -173,6 +173,11 @@ export default async function AdminVerificationPage() {
   const totalDocuments = (docsData || []).length
   const avgDocsPerHelper = helpers.length > 0 ? Math.round(totalDocuments / helpers.length) : 0
 
+  // Only pass error if we have no data (don't show error if data loaded successfully)
+  const errorToShow = (helpers.length === 0 && (helpersError || docsError)) 
+    ? (helpersError?.message || docsError?.message) 
+    : undefined
+
   return (
     <VerificationPageClient
       helpers={helpers}
@@ -181,7 +186,7 @@ export default async function AdminVerificationPage() {
         totalDocuments,
         avgDocsPerHelper
       }}
-      error={helpersError?.message || docsError?.message}
+      error={errorToShow}
     />
   )
 }

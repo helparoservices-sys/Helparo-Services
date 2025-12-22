@@ -93,18 +93,26 @@ export function VerificationPageClient({
     try {
       const result = await approveHelper(helperId, comment[helperId] || '')
       
-      if ('error' in result) {
+      console.log('[Approve] Result:', result)
+      
+      if (result && 'error' in result && result.error) {
         setError(result.error)
-      } else {
-        // Remove from list
+      } else if (result && 'success' in result && result.success) {
+        // Success - remove from list
         setHelpers(prev => prev.filter(h => h.user_id !== helperId))
         setComment(prev => {
           const newComment = { ...prev }
           delete newComment[helperId]
           return newComment
         })
+        setError(undefined) // Clear any existing error
+      } else {
+        // Unknown response format
+        console.warn('[Approve] Unexpected result format:', result)
+        setHelpers(prev => prev.filter(h => h.user_id !== helperId))
       }
     } catch (err) {
+      console.error('[Approve] Exception:', err)
       setError(err instanceof Error ? err.message : 'Failed to approve helper')
     } finally {
       setActionLoading(prev => ({ ...prev, [helperId]: false }))
@@ -118,10 +126,12 @@ export function VerificationPageClient({
     try {
       const result = await rejectHelper(helperId, comment[helperId] || '')
       
-      if ('error' in result) {
+      console.log('[Reject] Result:', result)
+      
+      if (result && 'error' in result && result.error) {
         setError(result.error)
-      } else {
-        // Remove from list
+      } else if (result && 'success' in result && result.success) {
+        // Success - remove from list
         setHelpers(prev => prev.filter(h => h.user_id !== helperId))
         setComment(prev => {
           const newComment = { ...prev }
