@@ -41,13 +41,16 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 z-50 pt-8 pb-3">
-      <div className="flex items-center justify-between h-full px-4">
+    <header className="fixed top-0 left-0 right-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 z-50">
+      {/* Spacer for status bar */}
+      <div className="h-8" />
+      {/* Main header content */}
+      <div className="flex items-center justify-between h-14 px-4">
         {/* Left Section */}
         <div className="flex items-center gap-3">
           <button
             onClick={onToggleSidebar}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="flex items-center justify-center w-10 h-10 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
             <Menu className="h-5 w-5 text-gray-600 dark:text-gray-300" />
           </button>
@@ -62,7 +65,7 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
           {/* Dark Mode Toggle */}
           <button
             onClick={toggleDarkMode}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="flex items-center justify-center w-10 h-10 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
             aria-label="Toggle dark mode"
           >
             {isDarkMode ? (
@@ -75,7 +78,7 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
           {/* Notifications */}
           <Link
             href="/customer/notifications"
-            className="relative p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="relative flex items-center justify-center w-10 h-10 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
             <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
             <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-slate-900"></span>
@@ -85,7 +88,7 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              className="flex items-center justify-center w-10 h-10 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
             >
               <div className="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-sm font-bold">
                 {user?.email?.[0].toUpperCase() || 'U'}

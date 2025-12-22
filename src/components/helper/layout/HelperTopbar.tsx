@@ -71,13 +71,16 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-50 pt-8 pb-3">
-      <div className="h-full px-4 flex items-center justify-between">
+    <header className="fixed top-0 left-0 right-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-50">
+      {/* Spacer for status bar */}
+      <div className="h-8" />
+      {/* Main header content */}
+      <div className="flex items-center justify-between h-14 px-4">
         {/* Left Section */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <button
             onClick={onToggleSidebar}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="flex items-center justify-center w-10 h-10 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
             <Menu className="h-5 w-5 text-slate-600 dark:text-slate-400" />
           </button>
@@ -102,7 +105,7 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
           {/* Dark Mode Toggle */}
           <button
             onClick={toggleDarkMode}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="flex items-center justify-center w-10 h-10 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
             aria-label="Toggle dark mode"
           >
             {isDarkMode ? (
@@ -115,10 +118,10 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
           {/* Notifications */}
           <Link
             href="/helper/notifications"
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors relative"
+            className="relative flex items-center justify-center w-10 h-10 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
             <Bell className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
           </Link>
 
           {/* === HIDDEN FOR PLAY STORE DEPLOYMENT - WALLET ===
@@ -136,14 +139,11 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              className="flex items-center justify-center w-10 h-10 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
             >
               <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
                 <User className="h-4 w-4 text-white" />
               </div>
-              <span className="hidden md:block text-sm font-medium text-slate-700 dark:text-slate-300">
-                {userName}
-              </span>
             </button>
 
             {showUserMenu && (

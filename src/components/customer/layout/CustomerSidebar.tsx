@@ -115,7 +115,7 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden lg:block fixed top-14 left-0 h-[calc(100vh-3.5rem)] bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 transition-all duration-300 ease-in-out overflow-y-auto ${
+        className={`hidden lg:block fixed top-[5.5rem] left-0 h-[calc(100vh-5.5rem)] bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 transition-all duration-300 ease-in-out overflow-y-auto ${
           collapsed ? 'w-16' : 'w-60'
         }`}
       >
@@ -170,7 +170,7 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
 
       {/* Mobile Sidebar - Slides in from left, positioned below topbar */}
       <aside
-        className={`lg:hidden fixed top-14 left-0 h-[calc(100vh-3.5rem)] w-72 bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
+        className={`lg:hidden fixed top-[5.5rem] left-0 h-[calc(100vh-5.5rem)] w-72 bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
           mobileOpen ? 'translate-x-0 visible pointer-events-auto' : '-translate-x-full invisible pointer-events-none'
         }`}
       >

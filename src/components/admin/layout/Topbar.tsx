@@ -155,14 +155,17 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-white/20 dark:border-slate-800/50 shadow-lg z-50 pt-8 pb-3">
-      <div className="h-full px-4 flex items-center justify-between gap-4">
+    <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-white/20 dark:border-slate-800/50 shadow-lg z-50">
+      {/* Spacer for status bar */}
+      <div className="h-8" />
+      {/* Main header content */}
+      <div className="flex items-center justify-between h-14 px-4 gap-4">
         {/* Left Section */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {/* Sidebar Toggle */}
           <button
             onClick={onToggleSidebar}
-            className="p-2 rounded-lg hover:bg-primary-50 dark:hover:bg-slate-800 transition-colors"
+            className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-primary-50 dark:hover:bg-slate-800 transition-colors"
             aria-label="Toggle Sidebar"
           >
             <Menu className="h-5 w-5 text-slate-700 dark:text-slate-300" />
@@ -213,7 +216,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
           {/* Dark Mode Toggle */}
           <button
             onClick={toggleDarkMode}
-            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             aria-label="Toggle Dark Mode"
           >
             {isDarkMode ? (
@@ -227,12 +230,12 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
           <div className="relative notification-dropdown">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="relative flex items-center justify-center w-10 h-10 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               aria-label="Notifications"
             >
               <Bell className={`h-5 w-5 text-slate-700 dark:text-slate-300 transition-all ${unreadCount > 0 ? 'animate-bounce text-red-500 dark:text-red-400' : ''}`} />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse">
+                <span className="absolute top-0.5 right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}

@@ -251,7 +251,7 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden lg:block fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-all duration-300 ease-in-out z-40 ${
+        className={`hidden lg:block fixed left-0 top-[5.5rem] h-[calc(100vh-5.5rem)] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-all duration-300 ease-in-out z-40 ${
           collapsed ? 'w-20' : 'w-64'
         }`}
       >

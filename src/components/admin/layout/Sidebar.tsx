@@ -210,7 +210,7 @@ export default function Sidebar({ collapsed, mobileOpen = false, onMobileClose }
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden lg:block fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-r border-white/20 dark:border-slate-800/50 shadow-xl transition-all duration-300 ease-in-out z-40 ${
+        className={`hidden lg:block fixed left-0 top-[5.5rem] h-[calc(100vh-5.5rem)] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-r border-white/20 dark:border-slate-800/50 shadow-xl transition-all duration-300 ease-in-out z-40 ${
           collapsed ? 'w-20' : 'w-64'
         }`}
       >
