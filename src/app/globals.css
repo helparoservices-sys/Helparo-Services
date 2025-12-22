@@ -53,6 +53,10 @@
 .pt-safe-or-4 {
   padding-top: max(1rem, var(--safe-area-inset-top));
 }
+/* Mobile status bar spacing - ensures content is below status bar */
+.pt-status-bar {
+  padding-top: max(2.5rem, env(safe-area-inset-top, 2.5rem));
+}
 .pb-safe { 
   padding-bottom: max(16px, var(--safe-area-inset-bottom)); 
 }
