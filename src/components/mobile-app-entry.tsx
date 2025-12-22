@@ -245,6 +245,9 @@ function RecentBooking({ name, service, time, location, savings }: {
   )
 }
 
+// Minimum splash duration in milliseconds
+const SPLASH_DURATION = 2500
+
 export default function MobileAppEntry() {
   const router = useRouter()
   const [showSplash, setShowSplash] = useState(true)
@@ -265,10 +268,12 @@ export default function MobileAppEntry() {
 
   const recentBookings = RECENT_BOOKINGS
 
-  // Check if user is logged in and redirect to dashboard - MUST run first
+  // Check if user is logged in and redirect to dashboard - with splash delay
   useEffect(() => {
     // Initialize deep link listener for OAuth callbacks
     initializeDeepLinkListener()
+    
+    const splashStartTime = Date.now()
     
     const checkAuth = async () => {
       try {
@@ -283,29 +288,40 @@ export default function MobileAppEntry() {
             .eq('id', user.id)
             .single()
           
+          // Calculate remaining splash time
+          const elapsed = Date.now() - splashStartTime
+          const remainingTime = Math.max(0, SPLASH_DURATION - elapsed)
+          
+          // Wait for splash to complete before redirecting
           if (profile?.role === 'helper') {
-            router.replace('/helper/dashboard')
-            return // Keep checkingAuth true while redirecting
+            setTimeout(() => router.replace('/helper/dashboard'), remainingTime)
+            return
           } else if (profile?.role === 'customer') {
-            router.replace('/customer/dashboard')
-            return // Keep checkingAuth true while redirecting
+            setTimeout(() => router.replace('/customer/dashboard'), remainingTime)
+            return
           }
         }
       } catch (error) {
-        alert('Not logged in')
+        // Silent fail - user not logged in
       }
-      // Only show content if user is NOT logged in
-      setCheckingAuth(false)
-      setShouldShowContent(true)
+      
+      // For non-logged-in users, wait for splash then show content
+      const elapsed = Date.now() - splashStartTime
+      const remainingTime = Math.max(0, SPLASH_DURATION - elapsed)
+      
+      setTimeout(() => {
+        setCheckingAuth(false)
+        setShouldShowContent(true)
+      }, remainingTime)
     }
     
     checkAuth()
   }, [router])
 
-  // Only start splash countdown after auth check is done
+  // Hide splash overlay once content is ready
   useEffect(() => {
     if (shouldShowContent) {
-      const timer = setTimeout(() => setShowSplash(false), 2500)
+      const timer = setTimeout(() => setShowSplash(false), 300) // Quick fade after content ready
       return () => clearTimeout(timer)
     }
   }, [shouldShowContent])
