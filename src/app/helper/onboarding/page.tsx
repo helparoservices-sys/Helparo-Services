@@ -158,39 +158,38 @@ function Step1ServiceDetails({ data, onChange, onNext, t }: any) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Header - Compact on mobile */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-1">
           {t('onboarding.step1.title')}
         </h2>
-        <p className="text-slate-600 dark:text-slate-400">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           {t('onboarding.step1.subtitle')}
         </p>
       </div>
 
       {/* Service Categories */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
           {t('onboarding.step1.chooseServices')} <span className="text-red-500">*</span>
+          <span className="ml-2 text-xs font-normal text-emerald-600">({selectedCount} {t('common.selected')})</span>
         </label>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-          {t('onboarding.step1.tapCategories')} ({selectedCount} {t('common.selected')})
-        </p>
 
-        {/* Search Box */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+        {/* Search Box - Compact */}
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
             type="text"
             placeholder={t('onboarding.step1.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-slate-800 dark:text-white"
+            className="w-full pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-slate-800 dark:text-white text-sm"
           />
         </div>
 
         {/* Scrollable Categories Container */}
-        <div className="border border-slate-200 dark:border-slate-700 rounded-lg max-h-96 overflow-y-auto bg-white dark:bg-slate-800">
+        <div className="border border-slate-200 dark:border-slate-700 rounded-lg max-h-72 sm:max-h-80 overflow-y-auto bg-white dark:bg-slate-800">
           {loading ? (
             <div className="p-8 text-center text-slate-500">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-2"></div>
@@ -312,23 +311,23 @@ function Step1ServiceDetails({ data, onChange, onNext, t }: any) {
 
       {/* Skills - Auto-populated from selected subcategories */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
           {t('onboarding.step1.yourSkills')} <span className="text-red-500">*</span>
         </label>
-        <div className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white min-h-[80px]">
+        <div className="w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white min-h-[60px]">
           {(data.skills || []).length > 0 ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {(data.skills || []).map((skill: string, idx: number) => (
                 <span
                   key={idx}
-                  className="inline-flex items-center px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full text-sm font-medium"
+                  className="inline-flex items-center px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-medium"
                 >
                   {skill}
                 </span>
               ))}
             </div>
           ) : (
-            <p className="text-slate-400 dark:text-slate-500 italic">{t('onboarding.step1.selectSubcategories')}</p>
+            <p className="text-slate-400 dark:text-slate-500 italic text-sm">{t('onboarding.step1.selectSubcategories')}</p>
           )}
         </div>
         <p className="text-xs text-slate-500 mt-1">{t('onboarding.step1.autoFilled')}</p>
@@ -336,21 +335,21 @@ function Step1ServiceDetails({ data, onChange, onNext, t }: any) {
 
       {/* Specialization */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
           {t('onboarding.step1.specialization')}
         </label>
         <textarea
           value={data.skills_specialization || ''}
           onChange={(e) => onChange({ skills_specialization: e.target.value })}
           placeholder={t('onboarding.step1.specializationPlaceholder')}
-          className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+          className="w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
           rows={2}
         />
       </div>
 
-      {/* Experience & Rate */}
+      {/* Experience */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
           {t('onboarding.step1.yearsExperience')} <span className="text-red-500">*</span>
         </label>
         <input
@@ -359,7 +358,7 @@ function Step1ServiceDetails({ data, onChange, onNext, t }: any) {
           onChange={(e) => onChange({ experience_years: parseInt(e.target.value) || 0 })}
           min="0"
           max="50"
-          className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+          className="w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
           placeholder="5"
         />
       </div>
@@ -367,10 +366,10 @@ function Step1ServiceDetails({ data, onChange, onNext, t }: any) {
       <button
         onClick={onNext}
         disabled={!data.service_categories?.length || !data.skills?.length || !data.experience_years}
-        className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-6 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1 text-sm"
       >
-        {t('onboarding.step1.continueToLocation')}
-        <ChevronRight className="h-5 w-5" />
+        {t('common.next')}
+        <ChevronRight className="h-4 w-4" />
       </button>
     </div>
   )
@@ -395,17 +394,33 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
       return
     }
 
+    // Show toast to indicate we're detecting
+    toast.loading(t('onboarding.step2.detecting'), { id: 'detecting-location' })
+
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords
         
         try {
-          const response = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`, { cache: 'no-store' })
+          // Update coordinates immediately so user sees progress
+          onChange({
+            latitude: latitude.toFixed(6),
+            longitude: longitude.toFixed(6)
+          })
+
+          const response = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`, { 
+            cache: 'no-store',
+            headers: { 'Accept': 'application/json' }
+          })
+          
+          toast.dismiss('detecting-location')
+          
           if (response.ok) {
             const geo = await response.json()
             const formattedAddress = geo.formatted_address || ''
             const detectedPincode = geo.pincode || ''
 
+            // Update all fields at once
             onChange({
               address: formattedAddress,
               pincode: detectedPincode,
@@ -415,25 +430,21 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
 
             toast.success(t('onboarding.step2.locationDetected'))
           } else {
-            onChange({
-              latitude: latitude.toFixed(6),
-              longitude: longitude.toFixed(6)
-            })
-            toast.success(t('onboarding.step2.coordsSavedEnterManual'))
+            // API returned error but we still have coordinates
+            toast.warning(t('onboarding.step2.coordsSavedEnterManual'))
+            setLocationError(t('onboarding.step2.enterAddressManually'))
           }
         } catch (error) {
           console.error('Geocoding error:', error)
-          onChange({
-            latitude: latitude.toFixed(6),
-            longitude: longitude.toFixed(6)
-          })
-          toast.success(t('onboarding.step2.coordsSaved'))
+          toast.dismiss('detecting-location')
+          toast.warning(t('onboarding.step2.coordsSaved'))
           setLocationError(t('onboarding.step2.enterAddressManually'))
         }
         
         setDetecting(false)
       },
       (error) => {
+        toast.dismiss('detecting-location')
         let errorMessage = t('onboarding.step2.detectFailed')
         
         switch (error.code) {
@@ -448,12 +459,13 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
             break
         }
         
+        toast.error(errorMessage)
         setLocationError(errorMessage)
         setDetecting(false)
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
+        timeout: 15000,
         maximumAge: 0
       }
     )
@@ -492,87 +504,82 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
+      {/* Header - Compact on mobile */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-1">
           {t('onboarding.step2.title')}
         </h2>
-        <p className="text-slate-600 dark:text-slate-400">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           {t('onboarding.step2.subtitle')}
         </p>
       </div>
 
       {validationError && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-center gap-2 text-red-700 dark:text-red-300">
-          <AlertCircle className="h-5 w-5 flex-shrink-0" />
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-center gap-2 text-red-700 dark:text-red-300 text-sm">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
           <span className="font-medium">{validationError}</span>
         </div>
       )}
 
-      {/* ===== SECTION 1: YOUR ADDRESS ===== */}
-      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-6 space-y-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 bg-blue-600 rounded-lg">
-            <MapPin className="h-6 w-6 text-white" />
+      {/* ===== YOUR ADDRESS SECTION ===== */}
+      <div className="space-y-4">
+        {/* Section Header */}
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-blue-600 rounded-lg text-white">
+            <MapPin className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-blue-900 dark:text-blue-300">
+            <h3 className="font-semibold text-slate-900 dark:text-white">
               {t('onboarding.step2.yourAddress')}
             </h3>
-            <p className="text-sm text-blue-700 dark:text-blue-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {t('onboarding.step2.whereYouAreBased')}
             </p>
           </div>
         </div>
 
-        {/* Auto-Detect Location Button */}
-        <div className="bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">
-                {t('onboarding.step2.autoDetect')}
-              </h4>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
-                {t('onboarding.step2.autoDetectDesc')}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={detectLocation}
-              disabled={detecting}
-              className="ml-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-            >
-              {detecting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  {t('onboarding.step2.detecting')}
-                </>
-              ) : (
-                <>
-                  <MapPin className="h-4 w-4" />
-                  {t('onboarding.step2.detect')}
-                </>
-              )}
-            </button>
-          </div>
+        {/* Auto-Detect Button */}
+        <div className="bg-blue-50 dark:bg-blue-900/30 rounded-xl p-3 space-y-2">
+          <p className="text-xs text-slate-600 dark:text-slate-400">
+            {t('onboarding.step2.autoDetectDesc')}
+          </p>
+          <button
+            type="button"
+            onClick={detectLocation}
+            disabled={detecting}
+            className="w-full py-3 rounded-lg font-semibold flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-400 transition-colors text-sm"
+          >
+            {detecting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                {t('onboarding.step2.detecting')}
+              </>
+            ) : (
+              <>
+                <MapPin className="h-4 w-4" />
+                {t('onboarding.step2.detect')}
+              </>
+            )}
+          </button>
           {locationError && (
-            <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-300">
+            <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg p-2">
               {locationError}
             </div>
           )}
         </div>
 
-        {/* Address */}
+        {/* Full Address */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
             {t('onboarding.step2.fullAddress')} <span className="text-red-500">*</span>
           </label>
           <textarea
             value={data.address || ''}
             onChange={(e) => onChange({ address: e.target.value })}
             placeholder={t('onboarding.step2.addressPlaceholder')}
-            className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            rows={3}
+            className="w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            rows={2}
           />
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             {t('onboarding.step2.addressTip')}
@@ -581,7 +588,7 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
 
         {/* Pincode */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
             {t('onboarding.step2.pincode')} <span className="text-red-500">*</span>
           </label>
           <input
@@ -590,12 +597,11 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
             pattern="[0-9]{6}"
             value={data.pincode || ''}
             onChange={(e) => {
-              // Only allow numeric input, max 6 digits
               const value = e.target.value.replace(/\D/g, '').slice(0, 6)
               onChange({ pincode: value })
             }}
             maxLength={6}
-            className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             placeholder="400001"
           />
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -603,10 +609,10 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
           </p>
         </div>
 
-        {/* Coordinates (Optional) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Coordinates - Compact row */}
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
               {t('onboarding.step2.latitudeOptional')}
             </label>
             <input
@@ -614,13 +620,12 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
               value={data.latitude || ''}
               onChange={(e) => onChange({ latitude: parseFloat(e.target.value) || null })}
               step="0.000001"
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="19.0760"
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm"
+              placeholder="16.3139"
             />
           </div>
-
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
               {t('onboarding.step2.longitudeOptional')}
             </label>
             <input
@@ -628,126 +633,105 @@ function Step2Location({ data, onChange, onNext, onBack, t }: any) {
               value={data.longitude || ''}
               onChange={(e) => onChange({ longitude: parseFloat(e.target.value) || null })}
               step="0.000001"
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="72.8777"
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm"
+              placeholder="80.4535"
             />
           </div>
         </div>
       </div>
 
-      {/* Divider */}
-      <div className="border-t-4 border-dashed border-slate-300 dark:border-slate-600"></div>
-
-      {/* ===== SECTION 2: SERVICE RADIUS (Rapido-style) ===== */}
-      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border-2 border-emerald-200 dark:border-emerald-800 rounded-xl p-6 space-y-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 bg-emerald-600 rounded-lg">
-            <MapPin className="h-6 w-6 text-white" />
+      {/* ===== SERVICE RADIUS SECTION ===== */}
+      <div className="space-y-4">
+        {/* Section Header */}
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-emerald-600 rounded-lg text-white">
+            <MapPin className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-emerald-900 dark:text-emerald-300">
+            <h3 className="font-semibold text-slate-900 dark:text-white">
               {t('onboarding.step2.workRadius')}
             </h3>
-            <p className="text-sm text-emerald-700 dark:text-emerald-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {t('onboarding.step2.workRadiusDesc')}
             </p>
           </div>
         </div>
 
-        {/* Radius Info Card */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <div className="p-1.5 bg-blue-600 rounded-full flex-shrink-0">
-              <MapPin className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-blue-900 dark:text-blue-300">
-                {t('onboarding.step2.howItWorks')}
-              </p>
-              <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
-                {t('onboarding.step2.radiusExplanation')}
-              </p>
-            </div>
-          </div>
+        {/* Radius Info */}
+        <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3">
+          <p className="text-xs text-slate-600 dark:text-slate-400">
+            {t('onboarding.step2.radiusExplanation')}
+          </p>
         </div>
 
-        {/* Radius Preset Buttons */}
+        {/* Radius Preset Buttons - Mobile optimized grid */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             {t('onboarding.step2.selectWorkRadius')} <span className="text-red-500">*</span>
           </label>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             {radiusOptions.map((radius) => (
               <button
                 key={radius}
                 type="button"
                 onClick={() => onChange({ service_radius_km: radius })}
-                className={`py-3 px-4 rounded-xl font-semibold text-center transition-all ${
+                className={`py-3 rounded-lg font-semibold text-center transition-all text-sm ${
                   data.service_radius_km === radius
-                    ? 'bg-emerald-600 text-white shadow-lg scale-105 ring-2 ring-emerald-400'
-                    : 'bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                    ? 'bg-emerald-600 text-white shadow-md'
+                    : 'bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300'
                 }`}
               >
-                {radius} {t('onboarding.step2.km')}
+                {radius} km
               </button>
             ))}
           </div>
         </div>
 
-        {/* Custom Radius Input */}
-        <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+        {/* Custom Radius Input - Inline */}
+        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
+          <span className="text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">
             {t('onboarding.step2.orEnterCustom')}
-          </label>
-          <div className="flex items-center gap-3">
-            <input
-              type="number"
-              value={data.service_radius_km || ''}
-              onChange={(e) => onChange({ service_radius_km: parseInt(e.target.value) || 10 })}
-              min="1"
-              max="100"
-              className="w-32 px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-center font-semibold"
-              placeholder="10"
-            />
-            <span className="text-slate-600 dark:text-slate-400 font-medium">{t('onboarding.step2.kilometers')}</span>
-          </div>
-          <p className="text-xs text-slate-500 mt-2">{t('onboarding.step2.radiusRange')}</p>
+          </span>
+          <input
+            type="number"
+            value={data.service_radius_km || ''}
+            onChange={(e) => onChange({ service_radius_km: parseInt(e.target.value) || 10 })}
+            min="1"
+            max="100"
+            className="w-20 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-center font-semibold text-sm"
+            placeholder="10"
+          />
+          <span className="text-sm text-slate-600 dark:text-slate-400">km</span>
         </div>
 
-        {/* Current Selection Summary */}
+        {/* Selection Summary - Compact */}
         {data.service_radius_km && (
-          <div className="bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 rounded-lg p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-600 rounded-full">
-                <Check className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-300">
-                  {t('onboarding.step2.radiusSelected', { radius: data.service_radius_km })}
-                </p>
-                <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">
-                  {t('onboarding.step2.radiusSelectedDesc')}
-                </p>
-              </div>
+          <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3 flex items-center gap-2">
+            <Check className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
+                {t('onboarding.step2.radiusSelected', { radius: data.service_radius_km })}
+              </p>
             </div>
           </div>
         )}
       </div>
 
-      <div className="flex gap-4">
+      {/* Navigation Buttons */}
+      <div className="flex gap-3 pt-2">
         <button
           onClick={onBack}
-          className="flex-1 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 px-6 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+          className="flex-1 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-1 text-sm"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-4 w-4" />
           {t('common.back')}
         </button>
         <button
           onClick={handleNext}
-          className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-6 rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2"
+          className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-1 text-sm"
         >
-          {t('onboarding.step2.continueToAvailability')}
-          <ChevronRight className="h-5 w-5" />
+          {t('common.next')}
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
     </div>
@@ -786,98 +770,95 @@ function Step3Availability({ data, onChange, onNext, onBack, t }: any) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Header - Compact */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-1">
           {t('onboarding.step3.title')}
         </h2>
-        <p className="text-slate-600 dark:text-slate-400">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           {t('onboarding.step3.subtitle')}
         </p>
       </div>
 
-      {/* Working Hours */}
-      <div className="space-y-3">
+      {/* Working Hours - Compact cards */}
+      <div className="space-y-2">
         {days.map((day) => {
           const hours = workingHours[day] || defaultHours
           return (
-            <div key={day} className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center justify-between mb-3">
-                <label className="flex items-center gap-3 cursor-pointer">
+            <div key={day} className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer flex-1">
                   <input
                     type="checkbox"
                     checked={hours.available !== false}
                     onChange={() => toggleDay(day)}
-                    className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                   />
-                  <span className="font-medium text-slate-900 dark:text-white">{t(`day.${day}`)}</span>
+                  <span className="font-medium text-sm text-slate-900 dark:text-white">{t(`day.${day}`)}</span>
                 </label>
-              </div>
-              
-              {hours.available !== false && (
-                <div className="grid grid-cols-2 gap-4 ml-8">
-                  <div>
-                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t('onboarding.step3.startTime')}</label>
+                
+                {hours.available !== false && (
+                  <div className="flex items-center gap-2">
                     <input
                       type="time"
                       value={hours.start || '09:00'}
                       onChange={(e) => updateTime(day, 'start', e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      className="w-[90px] px-2 py-1.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-xs"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t('onboarding.step3.endTime')}</label>
+                    <span className="text-slate-400 text-xs">to</span>
                     <input
                       type="time"
                       value={hours.end || '18:00'}
                       onChange={(e) => updateTime(day, 'end', e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      className="w-[90px] px-2 py-1.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-xs"
                     />
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )
         })}
       </div>
 
-      {/* Availability Toggles */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <label className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer">
+      {/* Availability Toggles - Compact */}
+      <div className="space-y-2">
+        <label className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer">
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('onboarding.step3.availableNow')}</span>
           <input
             type="checkbox"
             checked={data.is_available_now !== false}
             onChange={(e) => onChange({ is_available_now: e.target.checked })}
-            className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+            className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
           />
         </label>
 
-        <label className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer">
+        <label className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer">
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('onboarding.step3.emergencyAvailability')}</span>
           <input
             type="checkbox"
             checked={data.emergency_availability === true}
             onChange={(e) => onChange({ emergency_availability: e.target.checked })}
-            className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+            className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
           />
         </label>
       </div>
 
-      <div className="flex gap-4">
+      {/* Navigation */}
+      <div className="flex gap-3 pt-2">
         <button
           onClick={onBack}
-          className="flex-1 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 px-6 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+          className="flex-1 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-1 text-sm"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-4 w-4" />
           {t('common.back')}
         </button>
         <button
           onClick={onNext}
-          className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-6 rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2"
+          className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-1 text-sm"
         >
-          {t('onboarding.step3.continueToBankDetails')}
-          <ChevronRight className="h-5 w-5" />
+          {t('common.next')}
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
     </div>
@@ -889,25 +870,24 @@ function Step4BankAccount({ data, onChange, onNext, onBack, t }: any) {
   const [accountType, setAccountType] = useState<'bank' | 'upi'>('bank')
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Header - Compact */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-1">
           {t('onboarding.step4.title')}
         </h2>
-        <p className="text-slate-600 dark:text-slate-400">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           {t('onboarding.step4.subtitle')}
         </p>
       </div>
 
-      {/* IMPORTANT NOTE */}
-      <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl p-6 text-white shadow-lg">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-white/20 rounded-lg flex-shrink-0">
-            <AlertCircle className="h-6 w-6" />
-          </div>
+      {/* Important Note - Compact */}
+      <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg p-4 text-white">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-bold text-lg mb-2">{t('onboarding.step4.important')}</h3>
-            <p className="text-green-50 text-sm leading-relaxed">
+            <h3 className="font-bold text-sm mb-1">{t('onboarding.step4.important')}</h3>
+            <p className="text-green-50 text-xs leading-relaxed">
               {t('onboarding.step4.importantDesc')}
             </p>
           </div>
@@ -916,42 +896,42 @@ function Step4BankAccount({ data, onChange, onNext, onBack, t }: any) {
 
       {/* Account Type Selection */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
           {t('onboarding.step4.paymentMethod')} <span className="text-red-500">*</span>
         </label>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
             onClick={() => setAccountType('bank')}
-            className={`p-4 rounded-lg border-2 transition-all ${
+            className={`p-3 rounded-lg border-2 transition-all text-left ${
               accountType === 'bank'
-                ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
-                : 'border-slate-200 dark:border-slate-700 hover:border-emerald-300'
+                ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20'
+                : 'border-slate-200 dark:border-slate-700'
             }`}
           >
-            <div className="font-medium">{t('onboarding.step4.bankAccount')}</div>
-            <div className="text-xs text-slate-500 mt-1">{t('onboarding.step4.neftImps')}</div>
+            <div className="font-medium text-sm text-slate-900 dark:text-white">{t('onboarding.step4.bankAccount')}</div>
+            <div className="text-xs text-slate-500 mt-0.5">{t('onboarding.step4.neftImps')}</div>
           </button>
           <button
             type="button"
             onClick={() => setAccountType('upi')}
-            className={`p-4 rounded-lg border-2 transition-all ${
+            className={`p-3 rounded-lg border-2 transition-all text-left ${
               accountType === 'upi'
-                ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
-                : 'border-slate-200 dark:border-slate-700 hover:border-emerald-300'
+                ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20'
+                : 'border-slate-200 dark:border-slate-700'
             }`}
           >
-            <div className="font-medium">{t('onboarding.step4.upiId')}</div>
-            <div className="text-xs text-slate-500 mt-1">{t('onboarding.step4.instantPayment')}</div>
+            <div className="font-medium text-sm text-slate-900 dark:text-white">{t('onboarding.step4.upiId')}</div>
+            <div className="text-xs text-slate-500 mt-0.5">{t('onboarding.step4.instantPayment')}</div>
           </button>
         </div>
       </div>
 
       {accountType === 'bank' ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Account Holder Name */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
               {t('onboarding.step4.accountHolderName')} <span className="text-red-500">*</span>
             </label>
             <input
@@ -960,14 +940,14 @@ function Step4BankAccount({ data, onChange, onNext, onBack, t }: any) {
               onChange={(e) => onChange({ 
                 bank_account: { ...data.bank_account, account_holder_name: e.target.value }
               })}
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              className="w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm"
               placeholder={t('onboarding.step4.placeholders.accountHolderName')}
             />
           </div>
 
           {/* Account Number */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
               {t('onboarding.step4.accountNumber')} <span className="text-red-500">*</span>
             </label>
             <input
@@ -976,14 +956,14 @@ function Step4BankAccount({ data, onChange, onNext, onBack, t }: any) {
               onChange={(e) => onChange({ 
                 bank_account: { ...data.bank_account, account_number: e.target.value }
               })}
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              className="w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm"
               placeholder={t('onboarding.step4.placeholders.accountNumber')}
             />
           </div>
 
           {/* IFSC Code */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
               {t('onboarding.step4.ifscCode')} <span className="text-red-500">*</span>
             </label>
             <input
@@ -993,15 +973,15 @@ function Step4BankAccount({ data, onChange, onNext, onBack, t }: any) {
                 bank_account: { ...data.bank_account, ifsc_code: e.target.value.toUpperCase() }
               })}
               maxLength={11}
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent uppercase"
+              className="w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm uppercase"
               placeholder={t('onboarding.step4.placeholders.ifsc')}
             />
           </div>
 
-          {/* Bank Name & Branch */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Bank Name & Branch - Stacked on mobile */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                 {t('onboarding.step4.bankName')} <span className="text-red-500">*</span>
               </label>
               <input
@@ -1010,13 +990,13 @@ function Step4BankAccount({ data, onChange, onNext, onBack, t }: any) {
                 onChange={(e) => onChange({ 
                   bank_account: { ...data.bank_account, bank_name: e.target.value }
                 })}
-                className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm"
                 placeholder={t('onboarding.step4.placeholders.bankName')}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                 {t('onboarding.step4.branchName')}
               </label>
               <input
@@ -1025,7 +1005,7 @@ function Step4BankAccount({ data, onChange, onNext, onBack, t }: any) {
                 onChange={(e) => onChange({ 
                   bank_account: { ...data.bank_account, branch_name: e.target.value }
                 })}
-                className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm"
                 placeholder={t('onboarding.step4.placeholders.branchName')}
               />
             </div>
@@ -1033,7 +1013,7 @@ function Step4BankAccount({ data, onChange, onNext, onBack, t }: any) {
         </div>
       ) : (
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
             {t('onboarding.step4.upiId')} <span className="text-red-500">*</span>
           </label>
           <input
@@ -1042,45 +1022,41 @@ function Step4BankAccount({ data, onChange, onNext, onBack, t }: any) {
             onChange={(e) => onChange({ 
               bank_account: { ...data.bank_account, upi_id: e.target.value }
             })}
-            className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            className="w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm"
             placeholder={t('onboarding.step4.placeholders.upi')}
           />
           <p className="text-xs text-slate-500 mt-1">{t('onboarding.step4.upiHelp')}</p>
         </div>
       )}
 
-      {/* Real-time Validation Feedback */}
+      {/* Validation Feedback - Compact */}
       {accountType === 'bank' && data.bank_account?.account_number && data.bank_account?.ifsc_code && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <CheckCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-700 dark:text-blue-300">
-              <strong>Account Details Captured</strong><br />
-              {data.bank_account.bank_name && `Bank: ${data.bank_account.bank_name}`}<br />
-              Account ending in ...{data.bank_account.account_number.slice(-4)}
-            </div>
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-start gap-2">
+          <CheckCircle className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="text-xs text-blue-700 dark:text-blue-300">
+            <strong>Account Details Captured</strong><br />
+            {data.bank_account.bank_name && `${data.bank_account.bank_name} • `}
+            ****{data.bank_account.account_number.slice(-4)}
           </div>
         </div>
       )}
 
       {accountType === 'upi' && data.bank_account?.upi_id && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <CheckCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-700 dark:text-blue-300">
-              <strong>UPI ID Captured</strong><br />
-              {data.bank_account.upi_id}
-            </div>
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-start gap-2">
+          <CheckCircle className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="text-xs text-blue-700 dark:text-blue-300">
+            <strong>UPI ID:</strong> {data.bank_account.upi_id}
           </div>
         </div>
       )}
 
-      <div className="flex gap-4">
+      {/* Navigation */}
+      <div className="flex gap-3 pt-2">
         <button
           onClick={onBack}
-          className="flex-1 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 px-6 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+          className="flex-1 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-1 text-sm"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-4 w-4" />
           {t('common.back')}
         </button>
         <button
@@ -1090,10 +1066,10 @@ function Step4BankAccount({ data, onChange, onNext, onBack, t }: any) {
               ? !data.bank_account?.account_holder_name || !data.bank_account?.account_number || !data.bank_account?.ifsc_code || !data.bank_account?.bank_name
               : !data.bank_account?.upi_id
           }
-          className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-6 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1 text-sm"
         >
-          {t('onboarding.step4.continueToDocuments')}
-          <ChevronRight className="h-5 w-5" />
+          {t('common.next')}
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
     </div>
@@ -1111,10 +1087,10 @@ function Step5Documents({ data, onChange, onSubmit, onBack, submitting, t }: any
   })
 
   const documentTypes = [
-    { key: 'id_proof', label: t('onboarding.step5.idProof'), description: t('onboarding.step5.idProofDesc') },
-    { key: 'address_proof', label: t('onboarding.step5.addressProof'), description: t('onboarding.step5.addressProofDesc') },
-    { key: 'professional_cert', label: t('onboarding.step5.professionalCert'), description: t('onboarding.step5.professionalCertDesc') },
-    { key: 'photo', label: t('onboarding.step5.photo'), description: t('onboarding.step5.photoDesc') },
+    { key: 'id_proof', label: t('onboarding.step5.idProof'), description: t('onboarding.step5.idProofDesc'), required: true },
+    { key: 'photo', label: t('onboarding.step5.photo'), description: t('onboarding.step5.photoDesc'), required: true },
+    { key: 'address_proof', label: t('onboarding.step5.addressProof'), description: t('onboarding.step5.addressProofDesc'), required: false },
+    { key: 'professional_cert', label: t('onboarding.step5.professionalCert'), description: t('onboarding.step5.professionalCertDesc'), required: false },
   ]
 
   const handleSelectFile = (docKey: string, file: File) => {
@@ -1124,25 +1100,30 @@ function Step5Documents({ data, onChange, onSubmit, onBack, submitting, t }: any
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Header - Compact */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-1">
           {t('onboarding.step5.title')}
         </h2>
-        <p className="text-slate-600 dark:text-slate-400">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           {t('onboarding.step5.subtitle')}
         </p>
       </div>
 
-      <div className="space-y-4">
+      {/* Documents - Compact cards */}
+      <div className="space-y-2">
         {documentTypes.map((docType) => (
-          <div key={docType.key} className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <h4 className="font-medium text-slate-900 dark:text-white mb-1">{docType.label}</h4>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{docType.description}</p>
+          <div key={docType.key} className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-sm text-slate-900 dark:text-white flex items-center gap-1">
+                  {docType.label}
+                  {docType.required && <span className="text-red-500">*</span>}
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{docType.description}</p>
               </div>
-              <label className="cursor-pointer">
+              <label className="cursor-pointer flex-shrink-0">
                 <input
                   type="file"
                   accept="image/*,.pdf"
@@ -1153,38 +1134,53 @@ function Step5Documents({ data, onChange, onSubmit, onBack, submitting, t }: any
                   className="hidden"
                   disabled={submitting}
                 />
-                <div className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${files[docType.key] ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}> 
-                  <Upload className="h-4 w-4" />
-                  {files[docType.key] ? t('onboarding.step5.selected') : t('onboarding.step5.selectFile')}
+                <div className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                  files[docType.key] 
+                    ? 'bg-green-600 text-white' 
+                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                }`}> 
+                  {files[docType.key] ? (
+                    <>
+                      <Check className="h-3.5 w-3.5" />
+                      Done
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-3.5 w-3.5" />
+                      Upload
+                    </>
+                  )}
                 </div>
               </label>
             </div>
             {files[docType.key] && (
-              <p className="mt-2 text-xs text-green-600 truncate">{files[docType.key]?.name}</p>
+              <p className="mt-1.5 text-xs text-green-600 truncate pl-0">{files[docType.key]?.name}</p>
             )}
           </div>
         ))}
       </div>
 
-      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-        <p className="text-sm text-yellow-800 dark:text-yellow-300">
+      {/* Note - Compact */}
+      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+        <p className="text-xs text-yellow-800 dark:text-yellow-300">
           <strong>{t('common.note')}</strong> {t('onboarding.step5.note')}
         </p>
       </div>
 
-      <div className="flex gap-4">
+      {/* Navigation */}
+      <div className="flex gap-3 pt-2">
         <button
           onClick={onBack}
           disabled={submitting}
-          className="flex-1 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 px-6 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          className="flex-1 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-50 flex items-center justify-center gap-1 text-sm"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-4 w-4" />
           {t('common.back')}
         </button>
         <button
           onClick={() => onSubmit(files)}
           disabled={submitting || !files.id_proof || !files.photo}
-          className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-6 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1 text-sm"
         >
           {submitting ? (
             <>
@@ -1193,7 +1189,7 @@ function Step5Documents({ data, onChange, onSubmit, onBack, submitting, t }: any
             </>
           ) : (
             <>
-              <Check className="h-5 w-5" />
+              <Check className="h-4 w-4" />
               {t('onboarding.step5.completeOnboarding')}
             </>
           )}
@@ -1356,7 +1352,7 @@ export default function HelperOnboarding() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-slate-900 dark:via-teal-950 dark:to-emerald-950 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-slate-900 dark:via-teal-950 dark:to-emerald-950 py-4 px-3 sm:py-8 sm:px-4">
       {/* Language Selector Modal - shows on first visit */}
       {showLanguageModal && (
         <LanguageSelectorModal 
@@ -1365,24 +1361,24 @@ export default function HelperOnboarding() {
         />
       )}
 
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-2xl mx-auto">
         {/* Language Button - top right */}
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-end mb-3">
           <button
             onClick={() => setShowLanguageModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm text-sm"
             title={t('language.changeLanguage')}
           >
-            <span className="text-lg">{languageInfo?.flag}</span>
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <span className="text-base">{languageInfo?.flag}</span>
+            <span className="font-medium text-slate-700 dark:text-slate-300">
               {languageInfo?.nativeName}
             </span>
           </button>
         </div>
 
-        {/* Progress Steps */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+        {/* Progress Steps - Mobile optimized */}
+        <div className="mb-4 sm:mb-6 overflow-x-auto pb-2 -mx-3 px-3 scrollbar-hide">
+          <div className="flex items-center justify-between min-w-[320px]">
             {steps.map((step, index) => {
               const Icon = step.icon
               const isActive = currentStep === step.number
@@ -1391,23 +1387,23 @@ export default function HelperOnboarding() {
               return (
                 <div key={step.number} className="flex items-center flex-1">
                   <div className="flex flex-col items-center flex-1">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all ${
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center border-2 transition-all ${
                       isCompleted 
                         ? 'bg-green-600 border-green-600 text-white'
                         : isActive
                         ? 'bg-emerald-600 border-emerald-600 text-white'
                         : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-400'
                     }`}>
-                      {isCompleted ? <Check className="h-6 w-6" /> : <Icon className="h-6 w-6" />}
+                      {isCompleted ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
                     </div>
-                    <span className={`text-xs mt-2 font-medium hidden md:block ${
+                    <span className={`text-[10px] sm:text-xs mt-1.5 font-medium text-center hidden sm:block ${
                       isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'
                     }`}>
                       {step.title}
                     </span>
                   </div>
                   {index < steps.length - 1 && (
-                    <div className={`h-0.5 flex-1 mx-2 ${
+                    <div className={`h-0.5 w-4 sm:w-full sm:flex-1 mx-1 sm:mx-2 ${
                       currentStep > step.number ? 'bg-green-600' : 'bg-slate-300 dark:bg-slate-600'
                     }`} />
                   )}
@@ -1417,8 +1413,8 @@ export default function HelperOnboarding() {
           </div>
         </div>
 
-        {/* Form Content */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-700">
+        {/* Form Content - Reduced padding on mobile */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border border-slate-200 dark:border-slate-700">
           {currentStep === 1 && (
             <Step1ServiceDetails
               data={formData}
