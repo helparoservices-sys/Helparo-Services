@@ -389,13 +389,23 @@ export default function CustomerBadgesPage() {
             {/* Progress Circle */}
             <div className="flex-shrink-0">
               <div className="relative w-36 h-36 sm:w-44 sm:h-44">
-                <svg className="w-full h-full transform -rotate-90">
-                  <circle cx="50%" cy="50%" r="45%" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="8" />
-                  <circle cx="50%" cy="50%" r="45%" fill="none" stroke="white" strokeWidth="8" strokeLinecap="round" strokeDasharray={`${(unlockedBadges / totalBadges) * 283} 283`} />
+                <svg className="w-full h-full" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="6" />
+                  <circle 
+                    cx="50" 
+                    cy="50" 
+                    r="42" 
+                    fill="none" 
+                    stroke="white" 
+                    strokeWidth="6" 
+                    strokeLinecap="round" 
+                    strokeDasharray={`${(unlockedBadges / totalBadges) * 264} 264`}
+                    transform="rotate(-90 50 50)"
+                  />
                 </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-4xl sm:text-5xl font-black">{unlockedBadges}</span>
-                  <span className="text-emerald-200 text-sm font-medium">of {totalBadges} badges</span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <span className="text-4xl sm:text-5xl font-black leading-none">{unlockedBadges}</span>
+                  <span className="text-emerald-200 text-xs sm:text-sm font-medium mt-1">of {totalBadges} badges</span>
                 </div>
               </div>
             </div>

@@ -35,6 +35,13 @@ interface SidebarProps {
   onMobileClose?: () => void
 }
 
+type MenuItem = {
+  icon: typeof LayoutDashboard
+  label: string
+  href: string
+  matchPaths?: string[]
+}
+
 
 export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
@@ -51,13 +58,13 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
     }
   }, [pathname])
 
-  const menuSections = [
+  const menuSections: { title: string; items: MenuItem[] }[] = [
     {
       title: 'Main',
       items: [
         { icon: LayoutDashboard, label: 'Dashboard', href: '/customer/dashboard' },
         { icon: Radio, label: 'Active Requests', href: '/customer/active-requests' },
-        { icon: ClipboardList, label: 'Past Bookings', href: '/customer/past-bookings' },
+        { icon: ClipboardList, label: 'Past Bookings', href: '/customer/bookings', matchPaths: ['/customer/past-bookings', '/customer/bookings'] },
         { icon: AlertTriangle, label: 'My SOS Alerts', href: '/customer/sos' },
       ]
     },
@@ -114,6 +121,24 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
     }
   ]
 
+  const isItemActive = (item: MenuItem) => {
+    const matchPaths = item.matchPaths?.length ? item.matchPaths : [item.href]
+    let isActive = matchPaths.some(path => pathname === path || pathname.startsWith(path + '/'))
+
+    // Special logic for tracking page
+    if (pathname.match(/^\/customer\/requests\/[^/]+\/track/)) {
+      if (item.label === 'Active Requests' && trackingStatus && ['broadcasting','accepted','on_way','arrived','in_progress'].includes(trackingStatus)) {
+        isActive = true
+      } else if (item.label === 'Past Bookings' && trackingStatus && ['completed','cancelled'].includes(trackingStatus)) {
+        isActive = true
+      } else if (item.label === 'Active Requests' || item.label === 'Past Bookings') {
+        isActive = false
+      }
+    }
+
+    return isActive
+  }
+
   return (
     <>
       {/* Desktop Sidebar */}
@@ -133,18 +158,7 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
               <ul className="space-y-0.5">
                 {section.items.map((item, itemIdx) => {
                   const Icon = item.icon
-                  let isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-
-                  // Special logic for tracking page
-                  if (pathname.match(/^\/customer\/requests\/[^/]+\/track/)) {
-                    if (item.label === 'Active Requests' && trackingStatus && ['broadcasting','accepted','on_way','arrived','in_progress'].includes(trackingStatus)) {
-                      isActive = true
-                    } else if (item.label === 'Past Bookings' && trackingStatus && ['completed','cancelled'].includes(trackingStatus)) {
-                      isActive = true
-                    } else if (item.label === 'Active Requests' || item.label === 'Past Bookings') {
-                      isActive = false
-                    }
-                  }
+                  const isActive = isItemActive(item)
 
                   return (
                     <li key={itemIdx}>
@@ -188,18 +202,7 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
               <ul className="space-y-0.5">
                 {section.items.map((item, itemIdx) => {
                   const Icon = item.icon
-                  let isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-
-                  // Special logic for tracking page
-                  if (pathname.match(/^\/customer\/requests\/[^/]+\/track/)) {
-                    if (item.label === 'Active Requests' && trackingStatus && ['broadcasting','accepted','on_way','arrived','in_progress'].includes(trackingStatus)) {
-                      isActive = true
-                    } else if (item.label === 'Past Bookings' && trackingStatus && ['completed','cancelled'].includes(trackingStatus)) {
-                      isActive = true
-                    } else if (item.label === 'Active Requests' || item.label === 'Past Bookings') {
-                      isActive = false
-                    }
-                  }
+                  const isActive = isItemActive(item)
 
                   return (
                     <li key={itemIdx}>

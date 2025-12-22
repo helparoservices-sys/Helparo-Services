@@ -54,90 +54,99 @@ export default function CustomerBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'completed' | 'cancelled'>('all')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
     loadBookings()
   }, [])
 
   async function loadBookings() {
-    const supabase = createClient()
-    const { data: authData } = await supabase.auth.getUser()
-    const user = authData?.user
-    if (!user) {
-      setLoading(false)
-      return
-    }
+    setLoading(true)
+    setErrorMessage(null)
 
-    // Fetch bookings that are completed or cancelled (check both status and broadcast_status)
-    // Fetch ALL user's bookings first, then filter for completed/cancelled
-    const { data: allBookingsData, error } = await supabase
-      .from('service_requests')
-      .select(`
-        id,
-        booking_number,
-        title,
-        description,
-        status,
-        broadcast_status,
-        created_at,
-        assigned_at,
-        job_completed_at,
-        assigned_helper_id,
-        service_address,
-        service_city,
-        service_state,
-        service_pincode,
-        budget_min,
-        budget_max
-      `)
-      .eq('customer_id', user.id)
-      .order('created_at', { ascending: false })
-    
-    // Filter for completed or cancelled (check both status and broadcast_status)
-    const bookingsData = allBookingsData?.filter(b => 
-      b.status === 'completed' || 
-      b.status === 'cancelled' || 
-      b.broadcast_status === 'completed' || 
-      b.broadcast_status === 'cancelled'
-    ) || []
+    try {
+      const supabase = createClient()
+      const { data: authData, error: authError } = await supabase.auth.getUser()
+      if (authError) throw authError
 
-    // Fetch helper profiles for assigned helpers
-    let helperProfiles: Record<string, { full_name: string; avatar_url: string | null; phone: string | null }> = {}
-    
-    if (!error && bookingsData) {
-      const helperIds = bookingsData
-        .map(b => b.assigned_helper_id)
-        .filter((id): id is string => id !== null)
-      
-      if (helperIds.length > 0) {
-        // Get helper info from profiles table (assigned_helper_id references profiles.id)
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, full_name, avatar_url, phone')
-          .in('id', helperIds)
-        
-        if (profiles) {
-          profiles.forEach(p => {
-            helperProfiles[p.id] = {
-              full_name: p.full_name || 'Helper',
-              avatar_url: p.avatar_url,
-              phone: p.phone
-            }
-          })
+      const user = authData?.user
+      if (!user) {
+        setBookings([])
+        setErrorMessage('Please log in to view your past bookings.')
+      } else {
+        const { data: allBookingsData, error: bookingsError } = await supabase
+          .from('service_requests')
+          .select(`
+            id,
+            booking_number,
+            title,
+            description,
+            status,
+            broadcast_status,
+            created_at,
+            assigned_at,
+            job_completed_at,
+            assigned_helper_id,
+            service_address,
+            service_city,
+            service_state,
+            service_pincode,
+            budget_min,
+            budget_max
+          `)
+          .eq('customer_id', user.id)
+          .order('created_at', { ascending: false })
+
+        if (bookingsError) throw bookingsError
+
+        const bookingsData = (allBookingsData ?? []).filter(b => 
+          b?.status === 'completed' || 
+          b?.status === 'cancelled' || 
+          b?.broadcast_status === 'completed' || 
+          b?.broadcast_status === 'cancelled'
+        )
+
+        let helperProfiles: Record<string, { full_name: string; avatar_url: string | null; phone: string | null }> = {}
+
+        if (bookingsData.length > 0) {
+          const helperIds = bookingsData
+            .map(b => b?.assigned_helper_id)
+            .filter((id): id is string => Boolean(id))
+
+          if (helperIds.length > 0) {
+            const { data: profiles, error: profilesError } = await supabase
+              .from('profiles')
+              .select('id, full_name, avatar_url, phone')
+              .in('id', helperIds)
+
+            if (profilesError) throw profilesError
+
+            profiles?.forEach(p => {
+              helperProfiles[p.id] = {
+                full_name: p.full_name || 'Helper',
+                avatar_url: p.avatar_url,
+                phone: p.phone
+              }
+            })
+          }
         }
-      }
-    }
 
-    if (!error && bookingsData) {
-      const transformedBookings = bookingsData.map((booking: typeof bookingsData[0]) => ({
-        ...booking,
-        helper_profile: booking.assigned_helper_id 
-          ? helperProfiles[booking.assigned_helper_id]
-          : undefined
-      }))
-      setBookings(transformedBookings as Booking[])
+        const transformedBookings = bookingsData.map((booking) => ({
+          ...booking,
+          helper_profile: booking?.assigned_helper_id 
+            ? helperProfiles[booking.assigned_helper_id]
+            : undefined
+        }))
+
+        setBookings(transformedBookings as Booking[])
+      }
+    } catch (error) {
+      console.error('Failed to load past bookings', error)
+      setBookings([])
+      setErrorMessage('Unable to load your past bookings right now. Please refresh or tap retry.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   // Helper function to determine if booking is completed or cancelled
@@ -154,6 +163,14 @@ export default function CustomerBookingsPage() {
     if (filter === 'cancelled') return isCancelled(booking)
     return true
   })
+
+  const formatDate = (value?: string | null) => {
+    if (!value) return 'Date unavailable'
+    const parsed = new Date(value)
+    return Number.isNaN(parsed.getTime())
+      ? 'Date unavailable'
+      : parsed.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+  }
 
   const stats = {
     total: bookings.length,
@@ -174,6 +191,30 @@ export default function CustomerBookingsPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-3 py-4 space-y-4">
+      {errorMessage && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+          <AlertCircle className="h-5 w-5 mt-0.5 text-amber-700" />
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">We could not load your past bookings.</div>
+            <p className="text-sm leading-relaxed">{errorMessage}</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={loadBookings}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-amber-700"
+              >
+                Retry
+              </button>
+              <Link
+                href="/customer/active-requests"
+                className="inline-flex items-center justify-center rounded-lg border border-amber-200 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100"
+              >
+                Go to Active Requests
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero Header */}
       <div className="relative overflow-hidden bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 rounded-2xl p-5 md:p-8 text-white">
         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
@@ -340,7 +381,7 @@ export default function CustomerBookingsPage() {
                       
                       <div className="flex items-center gap-2 text-gray-500">
                         <Calendar className="w-4 h-4 text-blue-500" />
-                        <span>Created {new Date(booking.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                        <span>Created {formatDate(booking.created_at)}</span>
                       </div>
 
                       {(booking.budget_min || booking.budget_max) && (
