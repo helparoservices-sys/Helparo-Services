@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { UserRole } from './constants'
 import { createUnauthorizedError, createForbiddenError } from './errors'
 import { logger } from './logger'
@@ -17,8 +18,9 @@ const CACHE_DURATION = 30 * 1000 // 30 seconds (reduced from 5 min for serverles
 
 /**
  * Get profile from cache or database
+ * Uses admin client to bypass RLS for reliable lookups
  */
-async function getCachedProfile(userId: string, supabase: Awaited<ReturnType<typeof createClient>>, bypassCache = false) {
+async function getCachedProfile(userId: string, bypassCache = false) {
   const cached = profileCache.get(userId)
   const now = Date.now()
   
@@ -27,8 +29,11 @@ async function getCachedProfile(userId: string, supabase: Awaited<ReturnType<typ
     return cached.profile
   }
   
+  // Use admin client to bypass RLS for profile lookups
+  const adminClient = createAdminClient()
+  
   // Fetch fresh profile
-  const { data: profile, error } = await supabase
+  const { data: profile, error } = await adminClient
     .from('profiles')
     .select('id, email, role, full_name, phone, avatar_url, is_active, email_verified, created_at, updated_at')
     .eq('id', userId)
@@ -78,7 +83,8 @@ export async function requireRole(role: UserRole | UserRole[]) {
   const isAdminCheck = allowedRoles.includes(UserRole.ADMIN)
   
   // Always bypass cache for admin checks (critical security)
-  const profile = await getCachedProfile(user.id, supabase, isAdminCheck)
+  // Uses admin client internally to bypass RLS
+  const profile = await getCachedProfile(user.id, isAdminCheck)
   
   logger.info('Role check', { 
     userId: user.id, 
@@ -159,7 +165,7 @@ export async function requireAdminOrOwnership(
 ) {
   const { user, supabase } = await requireAuth()
   
-  const profile = await getCachedProfile(user.id, supabase)
+  const profile = await getCachedProfile(user.id)
   
   // Admins have access to everything
   if (profile.role === UserRole.ADMIN) {
@@ -196,7 +202,7 @@ export async function optionalAuth() {
       return { user: null, supabase, profile: null }
     }
     
-    const profile = await getCachedProfile(user.id, supabase)
+    const profile = await getCachedProfile(user.id)
     
     return { user, supabase, profile }
   } catch {
@@ -214,7 +220,7 @@ export async function isAdmin(): Promise<boolean> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return false
     
-    const userProfile = await getCachedProfile(user.id, supabase)
+    const userProfile = await getCachedProfile(user.id)
     return userProfile.role === UserRole.ADMIN
   } catch {
     return false
@@ -230,7 +236,7 @@ export async function isHelper(): Promise<boolean> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return false
     
-    const profile = await getCachedProfile(user.id, supabase)
+    const profile = await getCachedProfile(user.id)
     return profile.role === UserRole.HELPER
   } catch {
     return false
@@ -246,7 +252,7 @@ export async function isCustomer(): Promise<boolean> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return false
     
-    const profile = await getCachedProfile(user.id, supabase)
+    const profile = await getCachedProfile(user.id)
     return profile.role === UserRole.CUSTOMER
   } catch {
     return false
@@ -257,8 +263,8 @@ export async function isCustomer(): Promise<boolean> {
  * Get current user profile (throws if not authenticated)
  */
 export async function getCurrentProfile() {
-  const { user, supabase } = await requireAuth()
-  return getCachedProfile(user.id, supabase)
+  const { user } = await requireAuth()
+  return getCachedProfile(user.id)
 }
 
 /**

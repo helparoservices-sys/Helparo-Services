@@ -6,25 +6,57 @@ import { redirect } from 'next/navigation'
 export default async function AdminVerificationPage() {
   // First, verify user is admin using regular client
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
   
-  if (!user) {
+  if (!user || authError) {
+    console.error('[AdminVerification] Auth error or no user:', authError)
     redirect('/auth/login')
   }
   
-  // Check role from profiles
-  const { data: profile } = await supabase
+  console.log('[AdminVerification] Auth user ID:', user.id, 'Email:', user.email)
+  
+  // Check role from profiles using admin client to bypass RLS
+  const adminClient = createAdminClient()
+  
+  const { data: profile, error: profileError } = await adminClient
     .from('profiles')
-    .select('role')
+    .select('id, role, email')
     .eq('id', user.id)
     .single()
   
-  if (profile?.role !== 'admin') {
-    redirect(`/${profile?.role || 'customer'}/dashboard`)
+  console.log('[AdminVerification] Profile lookup for ID', user.id, ':', profile, 'Error:', profileError)
+  
+  // Also check if there's a profile with same email but different ID
+  const { data: profileByEmail } = await adminClient
+    .from('profiles')
+    .select('id, role, email')
+    .eq('email', user.email || '')
+    .single()
+  
+  console.log('[AdminVerification] Profile by email', user.email, ':', profileByEmail)
+  
+  if (!profile) {
+    // Profile doesn't exist for this auth user - check if there's one by email
+    if (profileByEmail && profileByEmail.role === 'admin') {
+      console.log('[AdminVerification] Found admin profile by email, but ID mismatch! Auth:', user.id, 'Profile:', profileByEmail.id)
+      // Return an error explaining the mismatch
+      return (
+        <VerificationPageClient
+          helpers={[]}
+          stats={{ pendingHelpers: 0, totalDocuments: 0, avgDocsPerHelper: 0 }}
+          error={`Auth ID mismatch: Your login created a new auth user (${user.id}) but your admin profile has a different ID (${profileByEmail.id}). Please contact support to fix this.`}
+        />
+      )
+    }
+    redirect(`/customer/dashboard`)
   }
   
-  // Use admin client for data fetching (bypasses RLS)
-  const adminClient = createAdminClient()
+  if (profile.role !== 'admin') {
+    console.log('[AdminVerification] User is not admin, role:', profile.role)
+    redirect(`/${profile.role || 'customer'}/dashboard`)
+  }
+  
+  console.log('[AdminVerification] Admin verified, proceeding with data fetch')
 
   // Fetch pending helpers with their profiles
   const { data: helpersData, error: helpersError } = await adminClient
