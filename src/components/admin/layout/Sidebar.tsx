@@ -133,11 +133,14 @@ const menuItems = [
     icon: CheckCircle,
     href: '/admin/verification',
   },
+  /* === HIDDEN - VIDEO CALLS ===
+  * TODO: Enable when video call feature is ready for production
   {
     label: 'Video Calls',
     icon: Video,
     href: '/admin/video-calls/analytics',
   },
+  === END HIDDEN VIDEO CALLS === */
   {
     label: 'Gamification',
     icon: Award,

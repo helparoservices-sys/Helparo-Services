@@ -95,7 +95,10 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
     {
       title: 'Other',
       items: [
+        /* === HIDDEN - VIDEO CALLS ===
+        * TODO: Enable when video call feature is ready for production
         { icon: Video, label: 'Video Calls', href: '/customer/video-calls/history' },
+        === END HIDDEN VIDEO CALLS === */
         { icon: HeadphonesIcon, label: 'Support', href: '/customer/support' },
         { icon: Bell, label: 'Notifications', href: '/customer/notifications' },
       ]
