@@ -5,6 +5,7 @@
 
 import { Capacitor } from '@capacitor/core'
 import { PushNotifications } from '@capacitor/push-notifications'
+import { toast } from 'sonner'
 
 /**
  * Initialize push notifications for the current user
@@ -19,7 +20,7 @@ export async function initPushNotifications(userId: string): Promise<string | nu
     return null
   }
 
-  console.log('🔔 Running on native platform:', Capacitor.getPlatform())
+  toast.info('Setting up notifications...')
 
   try {
     // Step 1: Check/request permission
@@ -33,21 +34,20 @@ export async function initPushNotifications(userId: string): Promise<string | nu
     }
 
     if (permission.receive !== 'granted') {
-      console.log('🔔 Push notification permission denied')
+      toast.error('Notification permission denied')
       return null
     }
 
-    console.log('🔔 Permission granted, registering...')
+    toast.success('Permission granted!')
     
     // Step 2: Register with Firebase
     await PushNotifications.register()
-    console.log('🔔 Register called, waiting for token...')
 
     // Step 3: Wait for token
     return new Promise((resolve) => {
       // Success - got token
       PushNotifications.addListener('registration', async (token) => {
-        console.log('📱 Push token received:', token.value.substring(0, 20) + '...')
+        toast.info('Got FCM token, saving...')
         
         // Save token to server (use absolute URL for Capacitor)
         try {
@@ -63,12 +63,12 @@ export async function initPushNotifications(userId: string): Promise<string | nu
           })
           
           if (response.ok) {
-            console.log('✅ Push token saved to server')
+            toast.success('Push notifications enabled!')
           } else {
-            console.error('Failed to save token, status:', response.status)
+            toast.error('Failed to save token: ' + response.status)
           }
         } catch (err) {
-          console.error('Failed to save push token:', err)
+          toast.error('Token save error: ' + String(err))
         }
         
         resolve(token.value)
@@ -76,24 +76,22 @@ export async function initPushNotifications(userId: string): Promise<string | nu
 
       // Error
       PushNotifications.addListener('registrationError', (error) => {
-        console.error('Push registration error:', error)
+        toast.error('FCM registration failed: ' + JSON.stringify(error))
         resolve(null)
       })
 
       // Handle incoming notification (app in foreground)
       PushNotifications.addListener('pushNotificationReceived', (notification) => {
-        console.log('📬 Push received (foreground):', notification)
-        // You can show a toast or update UI here
+        toast.info(notification.title || 'New notification')
       })
 
       // Handle notification tap
       PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
         console.log('👆 Push notification tapped:', action)
-        // Navigate to relevant page based on action.notification.data
       })
     })
   } catch (error) {
-    console.error('Push notification init error:', error)
+    toast.error('Push init error: ' + String(error))
     return null
   }
 }

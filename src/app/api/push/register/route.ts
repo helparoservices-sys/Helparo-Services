@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(request: Request) {
   try {
@@ -9,24 +9,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing userId or token' }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    // Use admin client to bypass RLS (server-side API doesn't have auth.uid())
+    const supabase = createAdminClient()
     
-    // Upsert token (insert or update if exists)
+    // Upsert the device token
     const { error } = await supabase
       .from('device_tokens')
       .upsert(
         { 
           user_id: userId, 
           token, 
-          platform: platform || 'android',
-          updated_at: new Date().toISOString()
+          provider: 'fcm',
+          device_type: platform || 'android',
+          is_active: true,
+          last_seen_at: new Date().toISOString()
         },
-        { onConflict: 'user_id,token' }
+        { onConflict: 'token' }
       )
 
     if (error) {
       console.error('Failed to save device token:', error)
-      return NextResponse.json({ error: 'Failed to save token' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to save token', details: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
