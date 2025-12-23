@@ -112,32 +112,65 @@ export function JobAlertPermissionSetup({
     }
   ]
 
-  const openAndroidSettings = async (intentAction: string) => {
+  const openAndroidSettings = async (stepId: string) => {
     if (!isNative) {
       alert('This feature only works in the mobile app')
       return
     }
 
     try {
-      // Use Capacitor App plugin to open settings
-      const { App } = await import('@capacitor/app')
+      const { Browser } = await import('@capacitor/browser')
       
-      // For Android, we need to use a custom intent
-      // Since Capacitor doesn't have direct intent support, we'll use a URL scheme workaround
-      // or show instructions to manually navigate
-      
-      if (intentAction === 'android.settings.APP_NOTIFICATION_SETTINGS') {
-        // Try to open app notification settings
-        window.open('intent:#Intent;action=android.settings.APP_NOTIFICATION_SETTINGS;S.android.provider.extra.APP_PACKAGE=in.helparo.app;end', '_system')
-      } else if (intentAction === 'android.settings.action.MANAGE_OVERLAY_PERMISSION') {
-        window.open('intent:#Intent;action=android.settings.action.MANAGE_OVERLAY_PERMISSION;data=package:in.helparo.app;end', '_system')
-      } else if (intentAction === 'android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS') {
-        window.open('intent:#Intent;action=android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS;end', '_system')
+      // Use Android's package scheme to open app settings directly
+      if (stepId === 'notifications') {
+        // Open app notification settings
+        await Browser.open({ 
+          url: 'package:in.helparo.app',
+          presentationStyle: 'popover'
+        }).catch(() => {
+          // Fallback: Open general app settings
+          window.location.href = 'intent://settings/apps/in.helparo.app#Intent;scheme=android-app;end'
+        })
+      } else if (stepId === 'overlay') {
+        // For overlay permission
+        await Browser.open({
+          url: 'package:in.helparo.app',
+          presentationStyle: 'popover'  
+        }).catch(() => {})
+      } else if (stepId === 'battery') {
+        // For battery optimization
+        await Browser.open({
+          url: 'package:in.helparo.app',
+          presentationStyle: 'popover'
+        }).catch(() => {})
       }
+      
+      // Show toast with manual instructions as backup
+      showManualInstructions(stepId)
+      
     } catch (error) {
       console.error('Error opening settings:', error)
-      // Fallback: Show manual instructions
-      alert('Please go to Settings > Apps > Helparo to configure this permission')
+      showManualInstructions(stepId)
+    }
+  }
+
+  const showManualInstructions = (stepId: string) => {
+    let message = ''
+    if (stepId === 'notifications') {
+      message = '📱 Go to: Settings → Apps → Helparo → Notifications → Enable All'
+    } else if (stepId === 'overlay') {
+      message = '📱 Go to: Settings → Apps → Helparo → Display over other apps → Allow'
+    } else if (stepId === 'battery') {
+      message = '📱 Go to: Settings → Apps → Helparo → Battery → Unrestricted'
+    }
+    
+    // Use toast if available, otherwise alert
+    if (typeof window !== 'undefined') {
+      import('sonner').then(({ toast }) => {
+        toast.info(message, { duration: 8000 })
+      }).catch(() => {
+        alert(message)
+      })
     }
   }
 
@@ -170,43 +203,43 @@ export function JobAlertPermissionSetup({
   }
 
   const content = (
-    <div className={`bg-white ${showAsModal ? 'rounded-2xl shadow-2xl max-w-md w-full mx-4' : ''}`}>
+    <div className={`bg-white ${showAsModal ? 'rounded-2xl shadow-2xl max-w-sm w-full mx-3 max-h-[90vh] overflow-y-auto' : ''}`}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-6 text-white rounded-t-2xl">
-        <div className="flex items-center justify-between mb-3">
-          <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
-            <BellRing className="w-8 h-8" />
+      <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-4 text-white rounded-t-2xl">
+        <div className="flex items-center justify-between mb-2">
+          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+            <BellRing className="w-5 h-5" />
           </div>
           {showAsModal && (
-            <button onClick={handleDismiss} className="p-2 hover:bg-white/20 rounded-full">
-              <X className="w-5 h-5" />
+            <button onClick={handleDismiss} className="p-1.5 hover:bg-white/20 rounded-full">
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>
-        <h2 className="text-2xl font-bold mb-1">Setup Job Alerts</h2>
-        <p className="text-white/90 text-sm">
-          Get Rapido-style alerts even when your phone is locked!
+        <h2 className="text-lg font-bold mb-0.5">Setup Job Alerts</h2>
+        <p className="text-white/90 text-xs">
+          Get alerts even when phone is locked!
         </p>
       </div>
 
       {/* Benefits */}
-      <div className="px-6 py-4 bg-amber-50 border-b border-amber-100">
-        <p className="text-sm font-medium text-amber-800 mb-2">✨ After setup, you'll get:</p>
-        <div className="flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1 text-xs bg-white px-2 py-1 rounded-full text-amber-700 border border-amber-200">
-            <Volume2 className="w-3 h-3" /> Loud Alert Sound
+      <div className="px-4 py-2.5 bg-amber-50 border-b border-amber-100">
+        <p className="text-xs font-medium text-amber-800 mb-1.5">✨ After setup:</p>
+        <div className="flex flex-wrap gap-1.5">
+          <span className="inline-flex items-center gap-1 text-[10px] bg-white px-1.5 py-0.5 rounded-full text-amber-700 border border-amber-200">
+            <Volume2 className="w-2.5 h-2.5" /> Sound
           </span>
-          <span className="inline-flex items-center gap-1 text-xs bg-white px-2 py-1 rounded-full text-amber-700 border border-amber-200">
-            <Vibrate className="w-3 h-3" /> Vibration
+          <span className="inline-flex items-center gap-1 text-[10px] bg-white px-1.5 py-0.5 rounded-full text-amber-700 border border-amber-200">
+            <Vibrate className="w-2.5 h-2.5" /> Vibration
           </span>
-          <span className="inline-flex items-center gap-1 text-xs bg-white px-2 py-1 rounded-full text-amber-700 border border-amber-200">
-            <Smartphone className="w-3 h-3" /> Lock Screen Popup
+          <span className="inline-flex items-center gap-1 text-[10px] bg-white px-1.5 py-0.5 rounded-full text-amber-700 border border-amber-200">
+            <Smartphone className="w-2.5 h-2.5" /> Lock Screen
           </span>
         </div>
       </div>
 
       {/* Steps */}
-      <div className="p-6 space-y-4">
+      <div className="p-4 space-y-3">
         {steps.map((step, index) => {
           const Icon = step.icon
           const isActive = index === currentStep
@@ -215,7 +248,7 @@ export function JobAlertPermissionSetup({
           return (
             <div 
               key={step.id}
-              className={`rounded-xl border-2 transition-all ${
+              className={`rounded-lg border-2 transition-all ${
                 isCompleted 
                   ? 'border-green-200 bg-green-50' 
                   : isActive 
@@ -225,39 +258,39 @@ export function JobAlertPermissionSetup({
             >
               {/* Step Header */}
               <div 
-                className="p-4 flex items-center gap-3 cursor-pointer"
+                className="p-3 flex items-center gap-2.5 cursor-pointer"
                 onClick={() => !isCompleted && setCurrentStep(index)}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                   isCompleted ? 'bg-green-500' : step.color
                 }`}>
                   {isCompleted ? (
-                    <CheckCircle2 className="w-6 h-6 text-white" />
+                    <CheckCircle2 className="w-4 h-4 text-white" />
                   ) : (
-                    <Icon className="w-5 h-5 text-white" />
+                    <Icon className="w-4 h-4 text-white" />
                   )}
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-800">{step.title}</h3>
-                  <p className="text-xs text-gray-500">{step.description}</p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-800 text-sm leading-tight">{step.title}</h3>
+                  <p className="text-[10px] text-gray-500 truncate">{step.description}</p>
                 </div>
-                <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">
+                <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600 flex-shrink-0">
                   {index + 1}
                 </div>
               </div>
 
               {/* Step Details (expanded) */}
               {isActive && !isCompleted && (
-                <div className="px-4 pb-4 border-t border-orange-200 pt-3">
-                  <div className="bg-white rounded-lg p-3 mb-3">
-                    <p className="text-xs font-medium text-gray-600 mb-2">Follow these steps:</p>
-                    <ol className="space-y-1.5">
+                <div className="px-3 pb-3 border-t border-orange-200 pt-2">
+                  <div className="bg-white rounded-lg p-2 mb-2">
+                    <p className="text-[10px] font-medium text-gray-600 mb-1.5">Follow these steps:</p>
+                    <ol className="space-y-1">
                       {step.instructions.map((instruction, i) => (
-                        <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
-                          <span className="w-5 h-5 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                        <li key={i} className="text-[11px] text-gray-700 flex items-start gap-1.5">
+                          <span className="w-4 h-4 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-[9px] font-bold flex-shrink-0 mt-0.5">
                             {i + 1}
                           </span>
-                          {instruction}
+                          <span className="leading-tight">{instruction}</span>
                         </li>
                       ))}
                     </ol>
@@ -265,16 +298,18 @@ export function JobAlertPermissionSetup({
                   
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => openAndroidSettings(step.androidIntent)}
-                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+                      onClick={() => openAndroidSettings(step.id)}
+                      size="sm"
+                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white text-xs h-8"
                     >
                       Open Settings
-                      <ChevronRight className="w-4 h-4 ml-1" />
+                      <ChevronRight className="w-3 h-3 ml-1" />
                     </Button>
                     <Button
                       onClick={() => markStepComplete(step.id)}
                       variant="outline"
-                      className="border-green-300 text-green-600 hover:bg-green-50"
+                      size="sm"
+                      className="border-green-300 text-green-600 hover:bg-green-50 text-xs h-8"
                     >
                       Done ✓
                     </Button>
@@ -287,13 +322,13 @@ export function JobAlertPermissionSetup({
       </div>
 
       {/* Footer */}
-      <div className="px-6 pb-6">
+      <div className="px-4 pb-4">
         {allDone ? (
           <Button 
             onClick={handleComplete}
-            className="w-full bg-green-500 hover:bg-green-600 text-white h-12 text-lg font-semibold"
+            className="w-full bg-green-500 hover:bg-green-600 text-white h-10 text-sm font-semibold"
           >
-            <Zap className="w-5 h-5 mr-2" />
+            <Zap className="w-4 h-4 mr-1.5" />
             All Set! Start Receiving Jobs
           </Button>
         ) : (
@@ -301,14 +336,16 @@ export function JobAlertPermissionSetup({
             <Button
               onClick={handleDismiss}
               variant="ghost"
-              className="flex-1 text-gray-500"
+              size="sm"
+              className="flex-1 text-gray-500 text-xs"
             >
               Skip for now
             </Button>
             <Button
               onClick={handleComplete}
               variant="outline"
-              className="flex-1"
+              size="sm"
+              className="flex-1 text-xs"
               disabled={!permissions.notifications}
             >
               Continue
