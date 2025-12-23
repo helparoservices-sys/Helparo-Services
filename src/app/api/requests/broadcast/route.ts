@@ -404,29 +404,64 @@ export async function POST(request: NextRequest) {
       // Check category match by UUID or slug - REQUIRED for notification
       const categories = helper.service_categories || []
       
-      // If helper has NO categories defined, they accept ALL work types
-      // If helper HAS specific categories, they must match the requested category
-      const categoryMatch = categories.length === 0 || categories.some((cat: string) => {
-        // Match by exact UUID
-        if (cat === finalCategoryId) return true
-        // Match by parent UUID (if category is a subcategory)
-        if (categoryParentId && cat === categoryParentId) return true
-        // Match by slug (some helpers have slug-based categories)
-        if (categorySlug && cat.toLowerCase() === categorySlug.toLowerCase()) return true
-        // Match by partial slug (e.g., "electrical" matches "electrical-work")
-        if (categorySlug && cat.toLowerCase().includes(categorySlug.split('-')[0].toLowerCase())) return true
-        // Match by name similarity
-        if (finalCategoryName && cat.toLowerCase().includes(finalCategoryName.toLowerCase().split(' ')[0])) return true
-        return false
-      })
-      
-      // EXCLUDE helpers who don't match the category (if they have categories set)
-      if (!categoryMatch) {
-        console.log(`❌ Helper ${helper.id}: category mismatch. Requested: ${finalCategoryName}, Has: ${categories.slice(0,3).join(', ')}`)
+      // STRICT MATCHING: Helpers MUST have specific categories defined
+      // Helpers with NO categories will NOT receive ANY job notifications
+      // This prevents plumbers from getting pet grooming jobs, etc.
+      if (categories.length === 0) {
+        console.log(`❌ Helper ${helper.id}: NO service_categories defined - skipping (must define skills to receive jobs)`)
         return false
       }
       
-      console.log(`✅ Helper ${helper.id}: category match`)
+      // Log the helper's categories for debugging
+      console.log(`🔍 Helper ${helper.id} categories: ${JSON.stringify(categories.slice(0, 5))}`)
+      console.log(`🔍 Looking for: categoryId=${finalCategoryId}, slug=${categorySlug}, name=${finalCategoryName}, parent=${categoryParentId}`)
+      
+      // Check if helper's categories match the requested job category
+      const categoryMatch = categories.some((cat: string) => {
+        const catLower = (cat || '').toLowerCase()
+        const slugLower = (categorySlug || '').toLowerCase()
+        const nameLower = (finalCategoryName || '').toLowerCase()
+        
+        // Match by exact UUID
+        if (cat === finalCategoryId) {
+          console.log(`   ✅ UUID match: ${cat}`)
+          return true
+        }
+        // Match by parent UUID (if category is a subcategory)
+        if (categoryParentId && cat === categoryParentId) {
+          console.log(`   ✅ Parent UUID match: ${cat}`)
+          return true
+        }
+        // Match by exact slug
+        if (slugLower && catLower === slugLower) {
+          console.log(`   ✅ Exact slug match: ${cat}`)
+          return true
+        }
+        // Match by slug prefix (e.g., helper has "plumbing", job is "plumbing-repair")
+        if (slugLower && slugLower.startsWith(catLower)) {
+          console.log(`   ✅ Slug prefix match: ${cat} -> ${categorySlug}`)
+          return true
+        }
+        // Match by category name contains (e.g., helper has "Plumbing", job is "Plumbing Service")
+        if (nameLower && nameLower.includes(catLower)) {
+          console.log(`   ✅ Name contains match: ${cat} in ${finalCategoryName}`)
+          return true
+        }
+        // Match by helper's category contains job category (e.g., helper has "Pet Care", job is "Pet")
+        if (nameLower && catLower.includes(nameLower.split(' ')[0])) {
+          console.log(`   ✅ Reverse name match: ${cat} contains ${nameLower.split(' ')[0]}`)
+          return true
+        }
+        return false
+      })
+      
+      // EXCLUDE helpers who don't match the category
+      if (!categoryMatch) {
+        console.log(`❌ Helper ${helper.id}: category MISMATCH. Requested: "${finalCategoryName}" (${categorySlug}), Has: [${categories.slice(0,5).join(', ')}]`)
+        return false
+      }
+      
+      console.log(`✅ Helper ${helper.id}: category MATCH for "${finalCategoryName}"`)
       
       // Attach distance and category match for later use
       ;(helper as any).distance_km = distance
@@ -458,14 +493,24 @@ export async function POST(request: NextRequest) {
         // Skip busy helpers
         if (busyHelperUserIds.has(helper.user_id)) return false
         
-        // Check category match
+        // Check category match - STRICT: must have categories defined
         const categories = helper.service_categories || []
-        const categoryMatch = categories.length === 0 || categories.some((cat: string) => {
+        
+        // Skip helpers with no categories
+        if (categories.length === 0) return false
+        
+        // Check for category match
+        const categoryMatch = categories.some((cat: string) => {
+          const catLower = (cat || '').toLowerCase()
+          const slugLower = (categorySlug || '').toLowerCase()
+          const nameLower = (finalCategoryName || '').toLowerCase()
+          
           if (cat === finalCategoryId) return true
           if (categoryParentId && cat === categoryParentId) return true
-          if (categorySlug && cat.toLowerCase() === categorySlug.toLowerCase()) return true
-          if (categorySlug && cat.toLowerCase().includes(categorySlug.split('-')[0].toLowerCase())) return true
-          if (finalCategoryName && cat.toLowerCase().includes(finalCategoryName.toLowerCase().split(' ')[0])) return true
+          if (slugLower && catLower === slugLower) return true
+          if (slugLower && slugLower.startsWith(catLower)) return true
+          if (nameLower && nameLower.includes(catLower)) return true
+          if (nameLower && catLower.includes(nameLower.split(' ')[0])) return true
           return false
         })
         
