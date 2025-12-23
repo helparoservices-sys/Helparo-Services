@@ -1154,7 +1154,7 @@ function Step5Documents({ data, onChange, onSubmit, onBack, submitting, t }: any
                   type="button"
                   onClick={openCamera}
                   disabled={submitting}
-                  className="w-9 h-8 rounded bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 disabled:opacity-50"
+                  className="w-9 h-8 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white flex items-center justify-center hover:from-emerald-600 hover:to-teal-600 disabled:opacity-50 shadow-sm"
                 >
                   <Camera className="h-4 w-4" />
                 </button>
@@ -1171,7 +1171,7 @@ function Step5Documents({ data, onChange, onSubmit, onBack, submitting, t }: any
                   disabled={submitting}
                 />
                 <div
-                  className={`w-9 h-8 rounded flex items-center justify-center ${
+                  className={`w-9 h-8 rounded-lg flex items-center justify-center shadow-sm ${
                     files[docType.key]
                       ? 'bg-green-600 text-white'
                       : 'bg-emerald-600 text-white hover:bg-emerald-700'
