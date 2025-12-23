@@ -79,6 +79,7 @@ export default function ActiveRequestsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      // OPTIMIZED: Single query with JOIN to get helper profile
       const { data, error } = await supabase
         .from('service_requests')
         .select(`
@@ -93,49 +94,28 @@ export default function ActiveRequestsPage() {
           urgency_level,
           images,
           service_type_details,
-          category:category_id (name, icon)
+          assigned_helper_id,
+          category:category_id (name, icon),
+          assigned_helper:assigned_helper_id (full_name, avatar_url)
         `)
         .eq('customer_id', user.id)
         .in('broadcast_status', ['broadcasting', 'accepted', 'on_way', 'arrived', 'in_progress'])
         .order('created_at', { ascending: false })
-        .limit(100) // 🟢 SAFE: Customers rarely have >100 concurrent active requests
+        .limit(50)
 
       if (!error && data) {
-        // Fetch assigned helpers for each request
-        const requestsWithHelpers = await Promise.all(
-          data.map(async (req) => {
-            const category = Array.isArray(req.category) ? req.category[0] : req.category
-            
-            // Fetch helper if assigned
-            let assigned_helper = null
-            if (['accepted', 'on_way', 'arrived', 'in_progress'].includes(req.broadcast_status)) {
-              const { data: fullReq } = await supabase
-                .from('service_requests')
-                .select('assigned_helper_id')
-                .eq('id', req.id)
-                .single()
-              
-              if (fullReq?.assigned_helper_id) {
-                const { data: profile } = await supabase
-                  .from('profiles')
-                  .select('full_name, avatar_url')
-                  .eq('id', fullReq.assigned_helper_id)
-                  .single()
-                
-                if (profile) {
-                  assigned_helper = { profile }
-                }
-              }
-            }
-
-            return {
-              ...req,
-              category,
-              assigned_helper,
-              service_type_details: req.service_type_details || {}
-            }
-          })
-        )
+        // Process data - no additional queries needed!
+        const requestsWithHelpers = data.map((req) => {
+          const category = Array.isArray(req.category) ? req.category[0] : req.category
+          const helperProfile = Array.isArray(req.assigned_helper) ? req.assigned_helper[0] : req.assigned_helper
+          
+          return {
+            ...req,
+            category,
+            assigned_helper: helperProfile ? { profile: helperProfile } : null,
+            service_type_details: req.service_type_details || {}
+          }
+        })
 
         setRequests(requestsWithHelpers)
       }

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect, useMemo } from 'react'
+import { supabase } from '@/lib/supabase/client'
 import { ChevronDown, X } from 'lucide-react'
 
 interface ServiceArea {
@@ -17,88 +17,74 @@ interface Props {
   onChange: (areaIds: string[]) => void
 }
 
+// Cache for service areas - loaded once, reused across component mounts
+let serviceAreasCache: ServiceArea[] | null = null
+let cacheTimestamp = 0
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
 export function CascadingAreaSelector({ selectedAreaIds, onChange }: Props) {
-  const [states, setStates] = useState<ServiceArea[]>([])
-  const [districts, setDistricts] = useState<ServiceArea[]>([])
-  const [cities, setCities] = useState<ServiceArea[]>([])
-  const [areas, setAreas] = useState<ServiceArea[]>([])
-  
+  const [allAreas, setAllAreas] = useState<ServiceArea[]>([])
   const [selectedState, setSelectedState] = useState<string>('')
   const [selectedDistrict, setSelectedDistrict] = useState<string>('')
   const [selectedCity, setSelectedCity] = useState<string>('')
-  
   const [loading, setLoading] = useState(true)
 
+  // Load ALL areas in ONE query, then filter client-side
   useEffect(() => {
-    loadStates()
+    loadAllAreas()
   }, [])
 
-  useEffect(() => {
-    if (selectedState) loadDistricts(selectedState)
-  }, [selectedState])
+  const loadAllAreas = async () => {
+    // Check cache first
+    if (serviceAreasCache && Date.now() - cacheTimestamp < CACHE_DURATION) {
+      setAllAreas(serviceAreasCache)
+      setLoading(false)
+      return
+    }
 
-  useEffect(() => {
-    if (selectedDistrict) loadCities(selectedDistrict)
-  }, [selectedDistrict])
-
-  useEffect(() => {
-    if (selectedCity) loadAreas(selectedCity)
-  }, [selectedCity])
-
-  const loadStates = async () => {
-    const supabase = createClient()
+    // Single query to get all active service areas
     const { data } = await supabase
       .from('service_areas')
       .select('id, name, level, parent_id, display_order, is_active')
-      .eq('level', 'state')
       .eq('is_active', true)
       .order('display_order')
 
-    setStates(data || [])
+    if (data) {
+      serviceAreasCache = data
+      cacheTimestamp = Date.now()
+      setAllAreas(data)
+    }
     setLoading(false)
   }
 
-  const loadDistricts = async (stateId: string) => {
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('service_areas')
-      .select('id, name, level, parent_id, display_order, is_active')
-      .eq('level', 'district')
-      .eq('parent_id', stateId)
-      .eq('is_active', true)
-      .order('display_order')
+  // Filter areas client-side (no additional queries!)
+  const states = useMemo(() => 
+    allAreas.filter(a => a.level === 'state'), [allAreas])
+  
+  const districts = useMemo(() => 
+    selectedState 
+      ? allAreas.filter(a => a.level === 'district' && a.parent_id === selectedState)
+      : [], [allAreas, selectedState])
+  
+  const cities = useMemo(() => 
+    selectedDistrict
+      ? allAreas.filter(a => a.level === 'city' && a.parent_id === selectedDistrict)
+      : [], [allAreas, selectedDistrict])
+  
+  const areas = useMemo(() => 
+    selectedCity
+      ? allAreas.filter(a => a.level === 'area' && a.parent_id === selectedCity)
+      : [], [allAreas, selectedCity])
 
-    setDistricts(data || [])
-    setCities([])
-    setAreas([])
-  }
+  // Reset child selections when parent changes
+  useEffect(() => {
+    setSelectedDistrict('')
+    setSelectedCity('')
+  }, [selectedState])
 
-  const loadCities = async (districtId: string) => {
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('service_areas')
-      .select('id, name, level, parent_id, display_order, is_active')
-      .eq('level', 'city')
-      .eq('parent_id', districtId)
-      .eq('is_active', true)
-      .order('display_order')
-
-    setCities(data || [])
-    setAreas([])
-  }
-
-  const loadAreas = async (cityId: string) => {
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('service_areas')
-      .select('id, name, level, parent_id, display_order, is_active')
-      .eq('level', 'area')
-      .eq('parent_id', cityId)
-      .eq('is_active', true)
-      .order('display_order')
-
-    setAreas(data || [])
-  }
+  useEffect(() => {
+    setSelectedCity('')
+  }, [selectedDistrict])
 
   const toggleArea = (areaId: string) => {
     if (selectedAreaIds.includes(areaId)) {

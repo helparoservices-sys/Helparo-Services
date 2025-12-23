@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useEffect, useState, useRef } from 'react'
+import { supabase } from '@/lib/supabase/client'
 import { MapPin, Navigation, Clock, Loader2 } from 'lucide-react'
 
 interface HelperTrackingMapProps {
@@ -22,6 +22,7 @@ export default function HelperTrackingMap({ requestId, helperId, className = '' 
   const [distance, setDistance] = useState<number | null>(null)
   const [eta, setEta] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
+  const userIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     loadLocations()
@@ -31,55 +32,49 @@ export default function HelperTrackingMap({ requestId, helperId, className = '' 
   }, [requestId, helperId])
 
   async function loadLocations() {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    // Use cached session instead of getUser() for speed
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) return
+    
+    userIdRef.current = session.user.id
 
-    // Load helper location
-    const { data: helperProfile } = await supabase
+    // OPTIMIZED: Single query for both helper and customer locations
+    const { data: profiles } = await supabase
       .from('profiles')
-      .select('location_lat, location_lng, location_updated_at')
-      .eq('id', helperId)
-      .single()
+      .select('id, location_lat, location_lng, location_updated_at')
+      .in('id', [helperId, session.user.id])
 
-    if (helperProfile?.location_lat && helperProfile?.location_lng) {
-      setHelperLocation({
-        latitude: helperProfile.location_lat,
-        longitude: helperProfile.location_lng,
-        timestamp: helperProfile.location_updated_at || new Date().toISOString(),
-      })
-    }
+    if (profiles) {
+      const helperProfile = profiles.find(p => p.id === helperId)
+      const customerProfile = profiles.find(p => p.id === session.user.id)
 
-    // Load customer location
-    const { data: customerProfile } = await supabase
-      .from('profiles')
-      .select('location_lat, location_lng, location_updated_at')
-      .eq('id', user.id)
-      .single()
+      if (helperProfile?.location_lat && helperProfile?.location_lng) {
+        setHelperLocation({
+          latitude: helperProfile.location_lat,
+          longitude: helperProfile.location_lng,
+          timestamp: helperProfile.location_updated_at || new Date().toISOString(),
+        })
+      }
 
-    if (customerProfile?.location_lat && customerProfile?.location_lng) {
-      setCustomerLocation({
-        latitude: customerProfile.location_lat,
-        longitude: customerProfile.location_lng,
-        timestamp: customerProfile.location_updated_at || new Date().toISOString(),
-      })
-    }
+      if (customerProfile?.location_lat && customerProfile?.location_lng) {
+        setCustomerLocation({
+          latitude: customerProfile.location_lat,
+          longitude: customerProfile.location_lng,
+          timestamp: customerProfile.location_updated_at || new Date().toISOString(),
+        })
+      }
 
-    // Calculate distance and ETA
-    if (helperProfile?.location_lat && helperProfile?.location_lng && 
-        customerProfile?.location_lat && customerProfile?.location_lng) {
-      
-      const { data: distanceData } = await supabase.rpc('calculate_distance', {
-        lat1: helperProfile.location_lat,
-        lon1: helperProfile.location_lng,
-        lat2: customerProfile.location_lat,
-        lon2: customerProfile.location_lng,
-      })
-
-      if (distanceData) {
-        setDistance(distanceData as number)
+      // Calculate distance and ETA locally instead of RPC call
+      if (helperProfile?.location_lat && helperProfile?.location_lng && 
+          customerProfile?.location_lat && customerProfile?.location_lng) {
+        
+        const dist = calculateDistanceKm(
+          helperProfile.location_lat, helperProfile.location_lng,
+          customerProfile.location_lat, customerProfile.location_lng
+        )
+        setDistance(dist)
         // Estimate ETA: assume average speed of 30 km/h in city
-        const etaMinutes = Math.round((distanceData as number / 30) * 60)
+        const etaMinutes = Math.round((dist / 30) * 60)
         setEta(etaMinutes)
       }
     }
@@ -87,9 +82,19 @@ export default function HelperTrackingMap({ requestId, helperId, className = '' 
     setLoading(false)
   }
 
+  // Haversine formula for distance calculation (no RPC needed!)
+  function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371 // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLon = (lon2 - lon1) * Math.PI / 180
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+    return R * c
+  }
+
   function subscribeToLocationUpdates() {
-    const supabase = createClient()
-    
     const channel = supabase
       .channel(`helper-location-${helperId}`)
       .on(
@@ -108,7 +113,15 @@ export default function HelperTrackingMap({ requestId, helperId, className = '' 
               longitude: updated.location_lng,
               timestamp: updated.location_updated_at || new Date().toISOString(),
             })
-            loadLocations() // Recalculate distance and ETA
+            // Recalculate distance without full reload
+            if (customerLocation) {
+              const dist = calculateDistanceKm(
+                updated.location_lat, updated.location_lng,
+                customerLocation.latitude, customerLocation.longitude
+              )
+              setDistance(dist)
+              setEta(Math.round((dist / 30) * 60))
+            }
           }
         }
       )

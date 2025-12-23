@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { MapPin, X, AlertCircle, Check } from 'lucide-react'
 import { useLocation } from '@/lib/use-location'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 
 interface LocationPermissionModalProps {
   onLocationGranted?: (coordinates: { latitude: number; longitude: number }) => void
@@ -14,7 +14,7 @@ export function LocationPermissionModal({ onLocationGranted, onSkip }: LocationP
   const [show, setShow] = useState(false)
   const [hasAsked, setHasAsked] = useState(false)
   const { requestLocation, isLoading, error, hasPermission, coordinates, address } = useLocation()
-  const supabase = createClient()
+  const userIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     // Check if we've already asked for location
@@ -32,6 +32,15 @@ export function LocationPermissionModal({ onLocationGranted, onSkip }: LocationP
     return () => clearTimeout(timer)
   }, [hasPermission])
 
+  // Get user ID once on mount
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        userIdRef.current = session.user.id
+      }
+    })
+  }, [])
+
   useEffect(() => {
     // Save location to user profile when granted
     if (coordinates && address) {
@@ -44,10 +53,9 @@ export function LocationPermissionModal({ onLocationGranted, onSkip }: LocationP
   }, [coordinates, address])
 
   const saveUserLocation = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user || !coordinates || !address) return
+    if (!userIdRef.current || !coordinates || !address) return
 
-    // Update user profile with location
+    // Update user profile with location - no auth call needed!
     await supabase
       .from('profiles')
       .update({
@@ -58,7 +66,7 @@ export function LocationPermissionModal({ onLocationGranted, onSkip }: LocationP
         state: address.state,
         pincode: address.pincode
       })
-      .eq('id', user.id)
+      .eq('id', userIdRef.current)
   }
 
   const handleAllow = async () => {
