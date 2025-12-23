@@ -82,13 +82,14 @@ export async function POST(request: Request) {
     // Calculate expiration timestamp
     const expiresAt = Date.now() + (expiresInSeconds * 1000)
 
-    // Build the high-priority FCM message with job_alerts channel
+    // Build the high-priority FCM message 
+    // IMPORTANT: Use DATA-ONLY message (no notification payload)
+    // This ensures our MyFirebaseMessagingService.onMessageReceived() is ALWAYS called
+    // even when app is in background/killed. The notification field would cause
+    // Android to handle the notification automatically and bypass our service.
     const message = {
       tokens: tokenList,
-      notification: {
-        title: `🚨 ${title}`,
-        body: `₹${price} • ${location}${distance ? ` • ${distance}` : ''}`
-      },
+      // NO notification field - we handle display in MyFirebaseMessagingService
       data: {
         // Type indicator for the app to show full-screen alert
         type: 'new_job',
@@ -111,20 +112,6 @@ export async function POST(request: Request) {
         priority: 'high' as const,
         // Time-to-live: expire after the job expires
         ttl: expiresInSeconds * 1000,
-        notification: {
-          // Use the job_alerts channel with custom sound & vibration
-          channelId: 'job_alerts',
-          // Custom sound (must be in res/raw folder)
-          sound: 'job_alert',
-          // High priority to wake device
-          priority: 'high' as const,
-          // Show on lock screen
-          visibility: 'public' as const,
-          // Tag to replace previous job alerts
-          tag: `job_${jobId}`,
-          // Don't auto-cancel - user must interact
-          sticky: true
-        },
         // Direct boot mode - show even before device unlock
         directBootOk: true
       },

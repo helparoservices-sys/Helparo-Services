@@ -65,7 +65,7 @@ function useCurrentCity() {
         const data = await response.json()
         if (data.city) return data.city
       } catch (e) {
-        alert('ipapi.co failed: ' + e)
+        console.warn('ipapi.co failed:', e)
       }
 
       try {
@@ -73,7 +73,7 @@ function useCurrentCity() {
         const data = await response.json()
         if (data.city) return data.city
       } catch (e) {
-        alert('ipinfo.io failed: ' + e)
+        console.warn('ipinfo.io failed:', e)
       }
 
       try {
@@ -81,7 +81,7 @@ function useCurrentCity() {
         const data = await response.json()
         if (data.cityName) return data.cityName
       } catch (e) {
-        alert('freeipapi.com failed: ' + e)
+        console.warn('freeipapi.com failed:', e)
       }
 
       return null

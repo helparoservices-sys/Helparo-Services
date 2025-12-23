@@ -344,17 +344,7 @@ function LiveTrackingMap({
   const displayHelperLat = hasHelperLocation ? helperLat! : (customerLat + 0.01) // ~1km north
   const displayHelperLng = hasHelperLocation ? helperLng! : (customerLng + 0.005) // slight east
 
-  // Debug logging
-  useEffect(() => {
-    alert('🗺️ LiveTrackingMap props: ' + JSON.stringify({
-      customerLat, customerLng,
-      helperLat, helperLng,
-      helperName, isBroadcasting,
-      hasHelperLocation,
-      showHelperMarker,
-      displayHelperLat, displayHelperLng
-    }))
-  }, [customerLat, customerLng, helperLat, helperLng, helperName, isBroadcasting, hasHelperLocation, showHelperMarker, displayHelperLat, displayHelperLng])
+
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.google) {
@@ -462,22 +452,11 @@ function LiveTrackingMap({
 
   // Helper marker - show when helper is assigned (even if location not yet available)
   useEffect(() => {
-    alert('🚨 Helper marker effect triggered: ' + JSON.stringify({ 
-      mapInstance: !!mapInstanceRef.current, 
-      googleLoaded: typeof window !== 'undefined' && !!window.google, 
-      showHelperMarker,
-      mapLoaded,
-      displayHelperLat,
-      displayHelperLng
-    }))
-    
     if (!mapLoaded || !mapInstanceRef.current || typeof window === 'undefined' || !window.google || !showHelperMarker) {
-      alert('⚠️ Skipping helper marker creation - conditions not met')
       return
     }
 
     const markerColor = hasHelperLocation ? '#10B981' : '#F59E0B' // Green if live, amber if estimated
-    alert('✅ Creating/updating helper marker at: ' + displayHelperLat + ', ' + displayHelperLng + ', color: ' + markerColor)
     
     if (helperMarkerRef.current) {
       helperMarkerRef.current.setPosition({ lat: displayHelperLat, lng: displayHelperLng })
@@ -625,7 +604,10 @@ export default function JobTrackingPage() {
 
   async function loadJobDetails() {
     try {
-      const response = await fetch(`/api/requests/${requestId}`)
+      // Add cache-busting to ensure fresh data after realtime updates
+      const response = await fetch(`/api/requests/${requestId}?t=${Date.now()}`, {
+        cache: 'no-store'
+      })
       if (!response.ok) throw new Error('Failed')
       const data = await response.json()
 
@@ -653,7 +635,6 @@ export default function JobTrackingPage() {
 
       const helperLatParsed = toNumberOrNull(data.helper_location_lat)
       const helperLngParsed = toNumberOrNull(data.helper_location_lng)
-      alert('📍 After parsing: ' + JSON.stringify({ helperLatParsed, helperLngParsed }))
       
       const transformed: JobDetails = {
         id: data.id, title: data.title || 'Service Request', description: data.description || '',
@@ -672,12 +653,6 @@ export default function JobTrackingPage() {
         images: data.images || [],
         service_type_details: data.service_type_details || {}
       }
-      alert('📍 Transformed job: ' + JSON.stringify({ 
-        helper_location_lat: transformed.helper_location_lat, 
-        helper_location_lng: transformed.helper_location_lng,
-        service_location_lat: transformed.service_location_lat,
-        service_location_lng: transformed.service_location_lng
-      }))
       setJob(transformed)
       
       if (transformed.broadcast_status === 'broadcasting' && !transformed.assigned_helper) {
@@ -808,16 +783,6 @@ export default function JobTrackingPage() {
   const hasHelper = job.helper_location_lat !== null && job.helper_location_lng !== null && job.helper_location_lat !== 0 && job.helper_location_lng !== 0
   const helperAssigned = !!job.assigned_helper_id || !!job.assigned_helper
   
-  alert('🎯 Main page computed values: ' + JSON.stringify({
-    isBroadcasting,
-    hasHelper,
-    helperAssigned,
-    assigned_helper_id: job.assigned_helper_id,
-    helper_location_lat: job.helper_location_lat,
-    helper_location_lng: job.helper_location_lng,
-    broadcast_status: job.broadcast_status,
-    assigned_helper: job.assigned_helper?.profile?.full_name
-  }))
   const hasImages = job.images && job.images.length > 0
   const hasMaterials = job.service_type_details?.materials_needed && job.service_type_details.materials_needed.length > 0
   const hasHelperBrings = job.service_type_details?.helper_brings && job.service_type_details.helper_brings.length > 0

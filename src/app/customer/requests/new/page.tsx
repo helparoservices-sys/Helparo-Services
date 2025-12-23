@@ -391,8 +391,6 @@ export default function NewRequestPage() {
         return
       }
 
-      alert('Submitting request... ' + JSON.stringify(formData))
-
       // Call broadcast API with timeout
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
@@ -425,7 +423,6 @@ export default function NewRequestPage() {
       }
 
       const broadcastData = await broadcastResponse.json()
-      alert('Broadcast result: ' + JSON.stringify(broadcastData))
       
       if (broadcastData.helpersNotified > 0) {
         toast.success(`🎉 Request posted! Notified ${broadcastData.helpersNotified} helpers nearby`)
