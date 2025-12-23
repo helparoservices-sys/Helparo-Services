@@ -27,6 +27,7 @@ import {
   Sparkles,
   MapPin,
   Briefcase,
+  Bell,
   X
 } from 'lucide-react'
 
@@ -96,6 +97,11 @@ const menuItems = [
     label: 'Campaigns',
     icon: Gift,
     href: '/admin/campaigns',
+  },
+  {
+    label: 'Push Notifications',
+    icon: Bell,
+    href: '/admin/push',
   },
   {
     label: 'Referrals',
