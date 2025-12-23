@@ -119,37 +119,33 @@ export function JobAlertPermissionSetup({
     }
 
     try {
-      const { Browser } = await import('@capacitor/browser')
+      // Import Capacitor's core to call native plugin
+      const { Capacitor, registerPlugin } = await import('@capacitor/core')
       
-      // Use Android's package scheme to open app settings directly
+      // Register and get the native SettingsPlugin
+      const SettingsPlugin = registerPlugin<{
+        openNotificationSettings: () => Promise<{ success: boolean }>
+        openOverlaySettings: () => Promise<{ success: boolean }>
+        openBatterySettings: () => Promise<{ success: boolean }>
+        openAppSettings: () => Promise<{ success: boolean }>
+        canDrawOverlays: () => Promise<{ granted: boolean }>
+      }>('SettingsPlugin')
+      
+      // Open the appropriate settings screen
       if (stepId === 'notifications') {
-        // Open app notification settings
-        await Browser.open({ 
-          url: 'package:in.helparo.app',
-          presentationStyle: 'popover'
-        }).catch(() => {
-          // Fallback: Open general app settings
-          window.location.href = 'intent://settings/apps/in.helparo.app#Intent;scheme=android-app;end'
-        })
+        await SettingsPlugin.openNotificationSettings()
+        console.log('✅ Opened notification settings')
       } else if (stepId === 'overlay') {
-        // For overlay permission
-        await Browser.open({
-          url: 'package:in.helparo.app',
-          presentationStyle: 'popover'  
-        }).catch(() => {})
+        await SettingsPlugin.openOverlaySettings()
+        console.log('✅ Opened overlay settings')
       } else if (stepId === 'battery') {
-        // For battery optimization
-        await Browser.open({
-          url: 'package:in.helparo.app',
-          presentationStyle: 'popover'
-        }).catch(() => {})
+        await SettingsPlugin.openBatterySettings()
+        console.log('✅ Opened battery settings')
       }
       
-      // Show toast with manual instructions as backup
-      showManualInstructions(stepId)
-      
     } catch (error) {
-      console.error('Error opening settings:', error)
+      console.error('Error opening settings via native plugin:', error)
+      // Fallback to showing manual instructions
       showManualInstructions(stepId)
     }
   }

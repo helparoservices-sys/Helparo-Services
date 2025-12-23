@@ -12,6 +12,9 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
+    // Register custom plugins BEFORE super.onCreate
+    registerPlugin(SettingsPlugin.class);
+    
     super.onCreate(savedInstanceState);
     
     // Create notification channels
