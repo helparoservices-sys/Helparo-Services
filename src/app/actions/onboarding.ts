@@ -188,7 +188,7 @@ export async function completeHelperOnboarding(data: {
       const notifications = admins.map(admin => ({
         user_id: admin.id,
         title: 'New Helper Onboarding Complete',
-        message: `${profile.full_name || 'A helper'} has completed onboarding and is ready for verification.`,
+        message: `${data.full_name || profile.full_name || 'A helper'} has completed onboarding and is ready for verification.`,
         type: 'verification_pending',
         action_url: `/admin/helpers/${user.id}`,
         related_user_id: user.id,
@@ -196,6 +196,33 @@ export async function completeHelperOnboarding(data: {
       }))
 
       await supabase.from('notifications').insert(notifications)
+    }
+
+    // 4. Create notification for the helper (confirmation)
+    await supabase.from('notifications').insert({
+      user_id: user.id,
+      title: '📋 Profile Under Review',
+      message: 'Thank you for completing your profile! Our team is reviewing your documents. You will be notified once verified (usually within 24-48 hours).',
+      type: 'onboarding_complete',
+      action_url: '/helper/dashboard',
+      priority: 'medium'
+    })
+
+    // 5. Send push notification to helper
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helparo.in'
+      await fetch(`${baseUrl}/api/push/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          title: '📋 Profile Under Review',
+          body: 'We are reviewing your profile & documents. You will be notified once verified!',
+          data: { type: 'onboarding_complete' }
+        })
+      })
+    } catch (pushError) {
+      logger.warn('Failed to send onboarding push notification', { error: pushError })
     }
 
     logger.info('Helper onboarding completed', { userId: user.id })
