@@ -38,6 +38,7 @@ import { useUser } from '@/components/auth/RoleGuard'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { JobAlertPermissionBanner, JobAlertPermissionSetup } from '@/components/job-alert-permission-setup'
 
 interface AssignedJob {
   id: string
@@ -170,6 +171,7 @@ export default function HelperDashboard() {
   const [locationWatchId, setLocationWatchId] = useState<number | null>(null)
   const [showCompletionModal, setShowCompletionModal] = useState(false)
   const [completedJobDetails, setCompletedJobDetails] = useState<FullJobDetails | null>(null)
+  const [showPermissionSetup, setShowPermissionSetup] = useState(false)
 
   const defaultStats: DashboardStats = {
     earnings: { today: 0, thisWeek: 0, thisMonth: 0, pending: 0 },
@@ -1039,6 +1041,17 @@ export default function HelperDashboard() {
   // ...existing code...
   return (
     <div className="space-y-4">
+      {/* Job Alert Permission Setup Modal */}
+      {showPermissionSetup && (
+        <JobAlertPermissionSetup 
+          showAsModal={true} 
+          onComplete={() => setShowPermissionSetup(false)} 
+        />
+      )}
+
+      {/* Job Alert Permission Banner */}
+      <JobAlertPermissionBanner onSetup={() => setShowPermissionSetup(true)} />
+
       {/* Online/Offline Toggle - Compact */}
       <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-between">
