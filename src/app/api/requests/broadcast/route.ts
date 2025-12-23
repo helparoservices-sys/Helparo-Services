@@ -319,7 +319,11 @@ export async function POST(request: NextRequest) {
       console.error('❌ Error fetching helpers:', helpersError)
     }
 
+    const onlineHelpers = relevantHelpers?.filter(h => h.is_online) || []
+    const offlineHelpers = relevantHelpers?.filter(h => !h.is_online) || []
+    
     console.log(`📢 Found ${relevantHelpers?.length || 0} approved helpers total`)
+    console.log(`📢 Online: ${onlineHelpers.length}, Offline: ${offlineHelpers.length}`)
     console.log(`📢 Looking for category: ${finalCategoryName} (ID: ${finalCategoryId})`)
     
     // Get the category slug for matching helpers who stored slugs instead of UUIDs
@@ -354,6 +358,12 @@ export async function POST(request: NextRequest) {
     const busyHelperUserIds = new Set((activeAssignments || []).map(a => a.assigned_helper_id))
     
     let filteredHelpers = relevantHelpers?.filter(helper => {
+      // FIRST CHECK: Helper must be ONLINE to receive job notifications
+      if (!helper.is_online) {
+        console.log(`❌ Helper ${helper.id} excluded: is_online=false (helper is offline)`)
+        return false
+      }
+      
       // Check if helper ACTUALLY has an active job (more reliable than is_on_job flag)
       const actuallyBusy = busyHelperUserIds.has(helper.user_id)
       
@@ -490,6 +500,9 @@ export async function POST(request: NextRequest) {
       const EXTENDED_RADIUS_KM = 50
       
       const extendedHelpers = relevantHelpers.filter(helper => {
+        // Skip OFFLINE helpers - only online helpers get notifications
+        if (!helper.is_online) return false
+        
         // Skip busy helpers
         if (busyHelperUserIds.has(helper.user_id)) return false
         
