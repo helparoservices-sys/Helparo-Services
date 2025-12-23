@@ -372,3 +372,62 @@ export async function getHelperOnboardingStatus() {
     return handleServerActionError(error)
   }
 }
+
+/**
+ * Switch user from customer to helper role
+ * Used when a customer wants to become a helper
+ */
+export async function switchToHelperRole() {
+  try {
+    const supabase = await createClient()
+    
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return { error: 'Please log in to continue' }
+    }
+
+    await rateLimit('switch-to-helper', user.id, RATE_LIMITS.API_MODERATE)
+
+    // Check current role
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile) {
+      return { error: 'Profile not found' }
+    }
+
+    if (profile.role === 'helper') {
+      return { error: 'You are already a helper' }
+    }
+
+    if (profile.role === 'admin') {
+      return { error: 'Admin accounts cannot be switched' }
+    }
+
+    // Update role to helper
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ role: 'helper' })
+      .eq('id', user.id)
+
+    if (updateError) {
+      logger.error('Failed to switch role to helper', { error: updateError, userId: user.id })
+      return { error: 'Failed to switch to helper. Please try again.' }
+    }
+
+    logger.info('User switched from customer to helper', { userId: user.id, userName: profile.full_name })
+    
+    revalidatePath('/customer')
+    revalidatePath('/helper')
+
+    return { success: true }
+  } catch (error) {
+    logger.error('Switch to helper role error', { error })
+    return handleServerActionError(error)
+  }
+}
