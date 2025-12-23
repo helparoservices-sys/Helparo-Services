@@ -36,6 +36,7 @@ function SignUpForm() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [showTerms, setShowTerms] = useState(false)
   const [showPrivacy, setShowPrivacy] = useState(false)
+  const [rateLimitCooldown, setRateLimitCooldown] = useState(0) // Minutes remaining for rate limit
 
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([])
   const countryCode = '+91'
@@ -75,6 +76,29 @@ function SignUpForm() {
     }
   }, [step, initializeRecaptcha])
 
+  // Check for existing rate limit on mount
+  useEffect(() => {
+    const remaining = getRemainingCooldown()
+    if (remaining > 0) {
+      setRateLimitCooldown(remaining)
+      setError(`Too many OTP requests. Please wait ${remaining} minute${remaining > 1 ? 's' : ''} before trying again.`)
+    }
+  }, [])
+
+  // Rate limit cooldown timer
+  useEffect(() => {
+    if (rateLimitCooldown > 0) {
+      const timer = setTimeout(() => {
+        const remaining = getRemainingCooldown()
+        setRateLimitCooldown(remaining)
+        if (remaining === 0) {
+          setError('')
+        }
+      }, 60000) // Update every minute
+      return () => clearTimeout(timer)
+    }
+  }, [rateLimitCooldown])
+
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
@@ -93,6 +117,14 @@ function SignUpForm() {
     }
     if (!agreedToTerms) {
       setError('Please agree to Terms & Privacy Policy first')
+      return
+    }
+
+    // Check client-side rate limit first
+    const rateLimitCheck = canRequestOTP()
+    if (!rateLimitCheck.allowed) {
+      setError(rateLimitCheck.message || 'Too many requests. Please try again later.')
+      setRateLimitCooldown(rateLimitCheck.waitMinutes || 15)
       return
     }
 
@@ -127,6 +159,9 @@ function SignUpForm() {
         return
       }
 
+      // Record the OTP attempt before making the request
+      recordOTPAttempt()
+
       const fullPhone = `${countryCode}${phone}`
       const result = await signInWithPhoneNumber(auth, fullPhone, recaptchaVerifier)
       setConfirmationResult(result)
@@ -136,9 +171,16 @@ function SignUpForm() {
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string }
       logger.error('Phone signup error', { error: err })
-      if (error.code === 'auth/invalid-phone-number') setError('Invalid phone number format')
-      else if (error.code === 'auth/too-many-requests') setError('Too many requests. Please try again later.')
-      else setError(error.message || 'Failed to send OTP')
+      if (error.code === 'auth/invalid-phone-number') {
+        setError('Invalid phone number format')
+      } else if (error.code === 'auth/too-many-requests') {
+        // Firebase rate limit hit - set a longer cooldown
+        const rateLimitInfo = handleFirebaseRateLimit()
+        setError(rateLimitInfo.message)
+        setRateLimitCooldown(rateLimitInfo.waitMinutes)
+      } else {
+        setError(error.message || 'Failed to send OTP')
+      }
       
       if (recaptchaVerifier) {
         try { recaptchaVerifier.clear() } catch { /* ignore */ }

@@ -1,12 +1,17 @@
 /**
  * Client-side OTP Rate Limiting
  * Prevents users from hitting Firebase's rate limit by tracking attempts locally
+ * 
+ * NOTE: Rate limiting is currently DISABLED for testing
+ * Set RATE_LIMIT_ENABLED = true to enable rate limiting
  */
 
+const RATE_LIMIT_ENABLED = false // Set to true to enable rate limiting
+
 const OTP_STORAGE_KEY = 'otp_rate_limit'
-const MAX_ATTEMPTS = 3 // Max OTP requests before cooldown
-const COOLDOWN_MINUTES = 15 // Cooldown period in minutes
-const ATTEMPT_WINDOW_MINUTES = 10 // Time window to track attempts
+const MAX_ATTEMPTS = 999 // Max OTP requests before cooldown (effectively unlimited)
+const COOLDOWN_MINUTES = 1 // Cooldown period in minutes
+const ATTEMPT_WINDOW_MINUTES = 1 // Time window to track attempts
 
 interface OTPRateLimitData {
   attempts: number
@@ -47,6 +52,11 @@ function setStorageData(data: OTPRateLimitData): void {
  * Returns: { allowed: boolean, waitMinutes?: number, message?: string }
  */
 export function canRequestOTP(): { allowed: boolean; waitMinutes?: number; message?: string } {
+  // If rate limiting is disabled, always allow
+  if (!RATE_LIMIT_ENABLED) {
+    return { allowed: true }
+  }
+
   const data = getStorageData()
   const now = Date.now()
   
@@ -93,6 +103,11 @@ export function canRequestOTP(): { allowed: boolean; waitMinutes?: number; messa
  * Record an OTP request attempt
  */
 export function recordOTPAttempt(): void {
+  // If rate limiting is disabled, don't record anything
+  if (!RATE_LIMIT_ENABLED) {
+    return
+  }
+
   const data = getStorageData()
   const now = Date.now()
   
@@ -122,6 +137,14 @@ export function recordOTPAttempt(): void {
  * Sets a longer cooldown when Firebase blocks us
  */
 export function handleFirebaseRateLimit(): { waitMinutes: number; message: string } {
+  // If rate limiting is disabled, return minimal wait time
+  if (!RATE_LIMIT_ENABLED) {
+    return {
+      waitMinutes: 1,
+      message: 'Firebase rate limit reached. Please wait a moment and try again.'
+    }
+  }
+
   const now = Date.now()
   const cooldownMinutes = 30 // Firebase typically blocks for ~30 minutes
   const cooldownUntil = now + (cooldownMinutes * 60 * 1000)
@@ -143,6 +166,11 @@ export function handleFirebaseRateLimit(): { waitMinutes: number; message: strin
  * Get remaining cooldown time in minutes (for display)
  */
 export function getRemainingCooldown(): number {
+  // If rate limiting is disabled, always return 0
+  if (!RATE_LIMIT_ENABLED) {
+    return 0
+  }
+
   const data = getStorageData()
   const now = Date.now()
   
