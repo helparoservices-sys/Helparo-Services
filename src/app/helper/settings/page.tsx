@@ -262,7 +262,7 @@ export default function HelperSettingsPage() {
                         type="tel"
                         value={profile.phone}
                         onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                        placeholder="+91 XXXXXXXXXX"
+                        placeholder="+91 9154781126"
                       />
                     </div>
 
