@@ -10,6 +10,7 @@ import { ToastProvider } from '@/components/ui/toast-notification'
 import { LocationPermissionPrompt } from '@/components/helper/location-permission'
 import { JobNotificationPopup, useJobNotifications } from '@/components/helper/job-notification-popup'
 import SOSAlertPopup from '@/components/helper/sos-alert-popup'
+import JobAlertOverlay from '@/components/job-alert-overlay'
 import { Toaster } from 'sonner'
 
 interface HelperLayoutProps {
@@ -52,6 +53,12 @@ function HelperLayoutContent({ children }: HelperLayoutProps) {
 
       {/* SOS Emergency Alert Popup - Persistent with Sound */}
       <SOSAlertPopup />
+
+      {/* Push Notification Job Alert Overlay - Rapido Style with Sound & Vibration */}
+      <JobAlertOverlay
+        onAccept={acceptJob}
+        onReject={declineJob}
+      />
     
       {/* Main Layout */}
       <div className="relative z-10">

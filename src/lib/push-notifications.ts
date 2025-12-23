@@ -6,6 +6,7 @@
 import { Capacitor } from '@capacitor/core'
 import { PushNotifications } from '@capacitor/push-notifications'
 import { toast } from 'sonner'
+import { JobAlertService, parseJobNotification } from './job-alert-service'
 
 // Track if push notifications have been initialized to prevent duplicate setup
 let pushInitialized = false
@@ -91,13 +92,35 @@ export async function initPushNotifications(userId: string): Promise<string | nu
 
       // Handle incoming notification (app in foreground)
       PushNotifications.addListener('pushNotificationReceived', (notification) => {
-        // Show toast for incoming notifications
-        toast.info(notification.title || 'New notification')
+        console.log('📲 Push notification received:', notification)
+        
+        // Check if this is a job notification
+        const data = notification.data || {}
+        const jobData = parseJobNotification(data)
+        
+        if (jobData) {
+          // Show urgent job alert overlay
+          console.log('🚨 Job notification detected, showing alert overlay')
+          JobAlertService.showAlert(jobData)
+        } else {
+          // Show regular toast for other notifications
+          toast.info(notification.title || 'New notification')
+        }
       })
 
-      // Handle notification tap
+      // Handle notification tap (app was in background/closed)
       PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
         console.log('👆 Push notification tapped:', action)
+        
+        // Check if this is a job notification
+        const data = action.notification.data || {}
+        const jobData = parseJobNotification(data)
+        
+        if (jobData) {
+          // Show urgent job alert overlay when user taps notification
+          console.log('🚨 Job notification tapped, showing alert overlay')
+          JobAlertService.showAlert(jobData)
+        }
       })
     })
   } catch (error) {

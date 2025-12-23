@@ -526,6 +526,40 @@ export async function POST(request: NextRequest) {
           console.log(`✅ Created ${notifications.length} push notifications for helpers`)
         }
       }
+
+      // 🚨 Send URGENT job alerts via FCM (high-priority with sound & vibration)
+      // This will trigger full-screen overlay on helper's app
+      const helperUserIds = filteredHelpers.map(h => h.user_id).filter(Boolean)
+      if (helperUserIds.length > 0) {
+        try {
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helparo.in'
+          const jobAlertResponse = await fetch(`${baseUrl}/api/push/job-alert`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              helperUserIds,
+              jobId: serviceRequest.id,
+              title: `New ${finalCategoryName} Job!`,
+              description: description,
+              price: estimatedPrice,
+              location: address,
+              customerName: customerProfile?.full_name || 'A customer',
+              urgency: urgency || 'urgent',
+              expiresInSeconds: 30
+            })
+          })
+          
+          if (jobAlertResponse.ok) {
+            const alertResult = await jobAlertResponse.json()
+            console.log(`🚨 Urgent job alerts sent: ${alertResult.sent} success, ${alertResult.failed} failed`)
+          } else {
+            console.error('Failed to send urgent job alerts:', await jobAlertResponse.text())
+          }
+        } catch (alertError) {
+          console.error('Error sending urgent job alerts:', alertError)
+          // Don't fail the whole request if alerts fail
+        }
+      }
     }
 
     // Also create a confirmation notification for the customer
