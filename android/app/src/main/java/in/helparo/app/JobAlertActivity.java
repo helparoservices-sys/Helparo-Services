@@ -1,40 +1,51 @@
 package in.helparo.app;
 
 import android.app.KeyguardManager;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.VibratorManager;
-import android.view.View;
+import android.util.Log;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.util.Timer;
-import java.util.TimerTask;
-
 /**
- * Full-screen Job Alert Activity
- * Shows on lock screen, over other apps
- * Like Rapido/Uber driver app
+ * Full-screen Job Alert Activity - Rapido/Uber style
+ * 
+ * Shows on lock screen with:
+ * - Continuous loud alarm sound
+ * - Continuous vibration
+ * - Accept/Reject buttons
+ * 
+ * The user MUST interact - cannot be dismissed by back button.
  */
 public class JobAlertActivity extends AppCompatActivity {
 
+    private static final String TAG = "JobAlertActivity";
+    
     private Vibrator vibrator;
+    private Ringtone ringtone;
     private MediaPlayer mediaPlayer;
-    private Timer soundTimer;
     private PowerManager.WakeLock wakeLock;
+    private Handler handler;
+    private Runnable vibrationRunnable;
+    private boolean isAlertActive = true;
     
     // Job data
     private String jobId;
@@ -47,9 +58,10 @@ public class JobAlertActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG, "JobAlertActivity onCreate");
         
-        // Wake up screen and show on lock screen
-        wakeUpScreen();
+        // CRITICAL: Set up window flags BEFORE setContentView
+        setupWindowForLockScreen();
         
         setContentView(R.layout.activity_job_alert);
         
@@ -62,16 +74,29 @@ public class JobAlertActivity extends AppCompatActivity {
         jobLocation = intent.getStringExtra("location");
         customerName = intent.getStringExtra("customerName");
         
+        Log.d(TAG, "Job: " + jobTitle + " - ₹" + jobPrice);
+        
         // Set up UI
         setupUI();
         
+        // Initialize handler for repeating tasks
+        handler = new Handler(Looper.getMainLooper());
+        
         // Start alert effects
-        startVibration();
-        startAlertSound();
+        startContinuousVibration();
+        startAlarmSound();
+        
+        // Cancel the notification since we're now showing the activity
+        cancelNotification();
     }
 
-    private void wakeUpScreen() {
-        // Show on lock screen
+    /**
+     * Configure window to show on lock screen and wake up device
+     */
+    private void setupWindowForLockScreen() {
+        Log.d(TAG, "Setting up window for lock screen display");
+        
+        // For Android O_MR1 (8.1) and above
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true);
             setTurnScreenOn(true);
@@ -80,19 +105,18 @@ public class JobAlertActivity extends AppCompatActivity {
             if (keyguardManager != null) {
                 keyguardManager.requestDismissKeyguard(this, null);
             }
-        } else {
-            getWindow().addFlags(
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
-                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD |
-                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
-                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-            );
         }
         
-        // Keep screen on
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        // Set window flags for all versions
+        getWindow().addFlags(
+            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
+            WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD |
+            WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
+            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
+            WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON
+        );
         
-        // Wake lock to turn on screen
+        // Acquire wake lock to ensure screen stays on
         PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
         if (powerManager != null) {
             wakeLock = powerManager.newWakeLock(
@@ -101,7 +125,8 @@ public class JobAlertActivity extends AppCompatActivity {
                 PowerManager.ON_AFTER_RELEASE,
                 "helparo:jobalert"
             );
-            wakeLock.acquire(60 * 1000L); // 60 seconds max
+            wakeLock.acquire(120 * 1000L); // 2 minutes max
+            Log.d(TAG, "WakeLock acquired");
         }
     }
 
@@ -116,17 +141,17 @@ public class JobAlertActivity extends AppCompatActivity {
         Button rejectButton = findViewById(R.id.btn_reject);
         
         // Set data
-        if (titleView != null && jobTitle != null) {
-            titleView.setText(jobTitle);
+        if (titleView != null) {
+            titleView.setText(jobTitle != null ? jobTitle : "New Job Alert!");
         }
-        if (priceView != null && jobPrice != null) {
-            priceView.setText("₹" + jobPrice);
+        if (priceView != null) {
+            priceView.setText("₹" + (jobPrice != null ? jobPrice : "0"));
         }
-        if (locationView != null && jobLocation != null) {
-            locationView.setText(jobLocation);
+        if (locationView != null) {
+            locationView.setText(jobLocation != null ? jobLocation : "Nearby");
         }
-        if (customerView != null && customerName != null) {
-            customerView.setText(customerName);
+        if (customerView != null && customerName != null && !customerName.isEmpty()) {
+            customerView.setText("Customer: " + customerName);
         }
         if (descriptionView != null && jobDescription != null) {
             descriptionView.setText(jobDescription);
@@ -135,7 +160,9 @@ public class JobAlertActivity extends AppCompatActivity {
         // Accept button
         if (acceptButton != null) {
             acceptButton.setOnClickListener(v -> {
-                stopAlertEffects();
+                Log.d(TAG, "Accept button clicked for job: " + jobId);
+                stopAllAlerts();
+                
                 // Open main app with job ID
                 Intent mainIntent = new Intent(this, MainActivity.class);
                 mainIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -149,42 +176,76 @@ public class JobAlertActivity extends AppCompatActivity {
         // Reject button
         if (rejectButton != null) {
             rejectButton.setOnClickListener(v -> {
-                stopAlertEffects();
+                Log.d(TAG, "Reject button clicked");
+                stopAllAlerts();
                 finish();
             });
         }
     }
 
-    private void startVibration() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            VibratorManager vibratorManager = (VibratorManager) getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
-            vibrator = vibratorManager.getDefaultVibrator();
-        } else {
-            vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-        }
+    /**
+     * Start continuous vibration that repeats until stopped
+     */
+    private void startContinuousVibration() {
+        Log.d(TAG, "Starting continuous vibration");
         
-        if (vibrator != null && vibrator.hasVibrator()) {
-            // Long continuous vibration pattern: vibrate 500ms, pause 200ms, repeat
-            long[] pattern = {0, 500, 200, 500, 200, 500, 200};
-            
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createWaveform(pattern, 0)); // 0 = repeat from start
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                VibratorManager vibratorManager = (VibratorManager) getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
+                vibrator = vibratorManager.getDefaultVibrator();
             } else {
-                vibrator.vibrate(pattern, 0);
+                vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
             }
+            
+            if (vibrator != null && vibrator.hasVibrator()) {
+                // Vibration pattern: wait 0ms, vibrate 800ms, wait 400ms, vibrate 800ms...
+                // Index 0 = repeat from beginning
+                long[] pattern = {0, 800, 400, 800, 400, 800, 400};
+                
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    VibrationEffect effect = VibrationEffect.createWaveform(pattern, 0);
+                    vibrator.vibrate(effect);
+                } else {
+                    vibrator.vibrate(pattern, 0); // 0 = repeat from index 0
+                }
+                Log.d(TAG, "Vibration started successfully");
+            } else {
+                Log.w(TAG, "No vibrator available on this device");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting vibration: " + e.getMessage());
         }
     }
 
-    private void startAlertSound() {
+    /**
+     * Start loud alarm sound that loops
+     */
+    private void startAlarmSound() {
+        Log.d(TAG, "Starting alarm sound");
+        
         try {
-            // Get alarm sound
-            Uri alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-            if (alertSound == null) {
-                alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            // Set volume to maximum
+            AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            if (audioManager != null) {
+                int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM);
+                audioManager.setStreamVolume(AudioManager.STREAM_ALARM, maxVolume, 0);
+                Log.d(TAG, "Volume set to max: " + maxVolume);
             }
             
+            // Get alarm sound URI
+            Uri alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+            if (alarmUri == null) {
+                alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+            }
+            if (alarmUri == null) {
+                alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            }
+            
+            Log.d(TAG, "Using sound URI: " + alarmUri);
+            
+            // Use MediaPlayer for better control
             mediaPlayer = new MediaPlayer();
-            mediaPlayer.setDataSource(this, alertSound);
+            mediaPlayer.setDataSource(this, alarmUri);
             
             // Set audio attributes for alarm
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -201,54 +262,108 @@ public class JobAlertActivity extends AppCompatActivity {
             mediaPlayer.prepare();
             mediaPlayer.start();
             
-            // Also set volume to max
-            AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-            if (audioManager != null) {
-                int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM);
-                audioManager.setStreamVolume(AudioManager.STREAM_ALARM, maxVolume, 0);
-            }
+            Log.d(TAG, "Alarm sound started");
+            
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, "Error starting alarm sound: " + e.getMessage());
+            
+            // Fallback to Ringtone API
+            try {
+                Uri uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+                ringtone = RingtoneManager.getRingtone(this, uri);
+                if (ringtone != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        ringtone.setLooping(true);
+                    }
+                    ringtone.play();
+                    Log.d(TAG, "Fallback ringtone started");
+                }
+            } catch (Exception e2) {
+                Log.e(TAG, "Fallback ringtone also failed: " + e2.getMessage());
+            }
         }
     }
 
-    private void stopAlertEffects() {
+    /**
+     * Cancel the notification that triggered this activity
+     */
+    private void cancelNotification() {
+        NotificationManager notificationManager = 
+            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (notificationManager != null) {
+            notificationManager.cancel(999); // Same ID used in FCM service
+            Log.d(TAG, "Notification cancelled");
+        }
+    }
+
+    /**
+     * Stop all alert effects (sound, vibration, wake lock)
+     */
+    private void stopAllAlerts() {
+        Log.d(TAG, "Stopping all alerts");
+        isAlertActive = false;
+        
         // Stop vibration
         if (vibrator != null) {
             vibrator.cancel();
+            Log.d(TAG, "Vibration stopped");
         }
         
-        // Stop sound
+        // Stop MediaPlayer
         if (mediaPlayer != null) {
             try {
-                mediaPlayer.stop();
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.stop();
+                }
                 mediaPlayer.release();
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e(TAG, "Error stopping MediaPlayer: " + e.getMessage());
             }
             mediaPlayer = null;
         }
         
-        // Stop timer
-        if (soundTimer != null) {
-            soundTimer.cancel();
-            soundTimer = null;
+        // Stop Ringtone
+        if (ringtone != null) {
+            try {
+                ringtone.stop();
+            } catch (Exception e) {
+                Log.e(TAG, "Error stopping ringtone: " + e.getMessage());
+            }
+            ringtone = null;
+        }
+        
+        // Cancel handler callbacks
+        if (handler != null && vibrationRunnable != null) {
+            handler.removeCallbacks(vibrationRunnable);
         }
         
         // Release wake lock
         if (wakeLock != null && wakeLock.isHeld()) {
             wakeLock.release();
+            Log.d(TAG, "WakeLock released");
         }
+        
+        // Cancel notification
+        cancelNotification();
     }
 
     @Override
     protected void onDestroy() {
+        Log.d(TAG, "onDestroy called");
+        stopAllAlerts();
         super.onDestroy();
-        stopAlertEffects();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Don't stop alerts on pause - user might have just locked screen
+        Log.d(TAG, "onPause - alerts still active");
     }
 
     @Override
     public void onBackPressed() {
-        // Prevent back button from dismissing - user must Accept or Reject
+        // Prevent back button from dismissing - user MUST Accept or Reject
+        Log.d(TAG, "Back button pressed - ignored");
     }
 }
