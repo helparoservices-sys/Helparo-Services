@@ -12,6 +12,7 @@ import { revalidatePath } from 'next/cache'
  * Complete helper onboarding - save profile and notify admin
  */
 export async function completeHelperOnboarding(data: {
+  full_name?: string
   service_categories: string[]
   skills: string[]
   skills_specialization?: string
@@ -41,6 +42,18 @@ export async function completeHelperOnboarding(data: {
     await rateLimit('complete-onboarding', user.id, RATE_LIMITS.API_MODERATE)
 
     const supabase = await createClient()
+
+    // 0. Update full_name in profiles table if provided
+    if (data.full_name?.trim()) {
+      const { error: nameError } = await supabase
+        .from('profiles')
+        .update({ full_name: data.full_name.trim() })
+        .eq('id', user.id)
+      
+      if (nameError) {
+        logger.error('Failed to update full_name', { error: nameError })
+      }
+    }
 
     // 1. Save helper profile
     // Convert skills_specialization string to array if needed

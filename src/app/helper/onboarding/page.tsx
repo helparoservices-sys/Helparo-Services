@@ -137,6 +137,22 @@ function Step1ServiceDetails({ data, onChange, onNext, t }: any) {
         </p>
       </div>
 
+      {/* Full Name */}
+      <div>
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+          Your Full Name <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          value={data.full_name || ''}
+          onChange={(e) => onChange({ full_name: e.target.value })}
+          placeholder="Enter your full name"
+          className="w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+          maxLength={100}
+        />
+        <p className="text-xs text-slate-500 mt-1">This name will be shown to customers</p>
+      </div>
+
       {/* Service Categories */}
       <div>
         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -317,7 +333,7 @@ function Step1ServiceDetails({ data, onChange, onNext, t }: any) {
 
       <button
         onClick={onNext}
-        disabled={!data.service_categories?.length || !data.skills?.length || !data.experience_years}
+        disabled={!data.full_name?.trim() || !data.service_categories?.length || !data.skills?.length || !data.experience_years}
         className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1 text-sm"
       >
         {nextLabel}
@@ -1232,6 +1248,7 @@ export default function HelperOnboarding() {
   const [currentStep, setCurrentStep] = useState(1)
   const formContainerRef = useRef<HTMLDivElement | null>(null)
   const [formData, setFormData] = useState<any>({
+    full_name: '',
     service_categories: [],
     skills: [],
     skills_specialization: '',
@@ -1340,6 +1357,7 @@ export default function HelperOnboarding() {
 
       // Save complete onboarding data
       const result = await completeHelperOnboarding({
+        full_name: formData.full_name,
         service_categories: formData.service_categories,
         skills: formData.skills,
         skills_specialization: formData.skills_specialization,
