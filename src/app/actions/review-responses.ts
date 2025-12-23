@@ -31,6 +31,7 @@ export async function getHelperReviews() {
     }
 
     // Get ratings from job_ratings table (where customers submit ratings)
+    // First try with inner join, if no results, try without to debug
     const { data: ratings, error } = await supabase
       .from('job_ratings')
       .select(`
@@ -44,15 +45,22 @@ export async function getHelperReviews() {
         tip_amount,
         created_at,
         request_id,
-        service_requests!inner(id, title, category_id),
+        helper_id,
+        customer_id,
+        service_requests(id, title, category_id),
         profiles!job_ratings_customer_id_fkey(full_name, email, avatar_url)
       `)
       .eq('helper_id', helperProfile.id)
       .order('created_at', { ascending: false })
 
     if (error) {
-      logger.error('Failed to fetch helper ratings', { error })
+      logger.error('Failed to fetch helper ratings', { error, helperId: helperProfile.id })
       return { error: 'Failed to load ratings' }
+    }
+    
+    // Log for debugging if no ratings found
+    if (!ratings || ratings.length === 0) {
+      logger.info('No ratings found for helper', { helperId: helperProfile.id, userId: user.id })
     }
 
     type RatingWithRelations = {
@@ -66,8 +74,10 @@ export async function getHelperReviews() {
       tip_amount: number | null
       created_at: string
       request_id: string
-      service_requests: { id: string; title: string | null; category_id: string | null }
-      profiles: { full_name: string | null; email: string; avatar_url: string | null }
+      helper_id: string
+      customer_id: string
+      service_requests: { id: string; title: string | null; category_id: string | null } | null
+      profiles: { full_name: string | null; email: string; avatar_url: string | null } | null
     }
 
     // Transform data for frontend

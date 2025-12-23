@@ -82,11 +82,11 @@ export default function HelperRatingsPage() {
         </div>
       </div>
 
-      <div className="px-4 py-4 space-y-4">
+      <div className="px-3 py-3 space-y-3">
         {/* Header Card */}
-        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-          <h1 className="text-xl font-bold text-emerald-600">Ratings & Reviews</h1>
-          <p className="text-gray-500 text-sm">See what customers are saying about your service</p>
+        <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
+          <h1 className="text-lg font-bold text-emerald-600">Ratings & Reviews</h1>
+          <p className="text-gray-500 text-xs">See what customers are saying about your service</p>
         </div>
 
         {error && (
@@ -97,21 +97,21 @@ export default function HelperRatingsPage() {
 
         {/* Rating Summary - Compact */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="p-4 text-center">
-            <div className="text-5xl font-bold text-amber-500">{stats.average.toFixed(1)}</div>
-            <div className="flex justify-center gap-0.5 mt-2">
+          <div className="p-3 text-center">
+            <div className="text-4xl font-bold text-amber-500">{stats.average.toFixed(1)}</div>
+            <div className="flex justify-center gap-0.5 mt-1.5">
               {[1, 2, 3, 4, 5].map(i => (
-                <Star key={i} className={`w-5 h-5 ${i <= Math.round(stats.average) ? 'fill-amber-400 text-amber-400' : 'text-gray-200'}`} />
+                <Star key={i} className={`w-4 h-4 ${i <= Math.round(stats.average) ? 'fill-amber-400 text-amber-400' : 'text-gray-200'}`} />
               ))}
             </div>
-            <p className="text-sm text-gray-500 mt-1">{stats.total} reviews</p>
+            <p className="text-xs text-gray-500 mt-1">{stats.total} reviews</p>
           </div>
         </div>
 
         {/* Rating Distribution - Compact */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <h2 className="font-semibold text-gray-800 mb-3">Rating Distribution</h2>
-          <div className="space-y-2">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3">
+          <h2 className="font-semibold text-gray-800 text-sm mb-2">Rating Distribution</h2>
+          <div className="space-y-1.5">
             {[
               { rating: 5, count: stats.fiveStar },
               { rating: 4, count: stats.fourStar },
