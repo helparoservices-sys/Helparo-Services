@@ -3,12 +3,13 @@
 import { useState, useRef, useCallback, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Loader2, ArrowLeft, ArrowRight, Phone, RefreshCw, AlertCircle, User, Briefcase } from 'lucide-react'
+import { Loader2, ArrowLeft, ArrowRight, Phone, RefreshCw, AlertCircle, User, Briefcase, Clock } from 'lucide-react'
 import { LegalModal } from '@/components/legal/legal-modal'
 import { logger } from '@/lib/logger'
 import { createBrowserClient } from '@supabase/ssr'
 import { auth, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from '@/lib/firebase'
 import { signInWithGoogle } from '@/lib/capacitor-auth'
+import { canRequestOTP, recordOTPAttempt, handleFirebaseRateLimit, getRemainingCooldown } from '@/lib/otp-rate-limit'
 
 function SignUpForm() {
   const router = useRouter()

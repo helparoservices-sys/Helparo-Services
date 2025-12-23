@@ -3,12 +3,13 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Loader2, ArrowLeft, ArrowRight, Shield, Star, Sparkles, Phone, RefreshCw, AlertCircle } from 'lucide-react'
+import { Loader2, ArrowLeft, ArrowRight, Shield, Star, Sparkles, Phone, RefreshCw, AlertCircle, Clock } from 'lucide-react'
 import { logger } from '@/lib/logger'
 import { createBrowserClient } from '@supabase/ssr'
 import { auth, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from '@/lib/firebase'
 import { signInWithGoogle } from '@/lib/capacitor-auth'
 import { useStatusBar } from '@/lib/use-status-bar'
+import { canRequestOTP, recordOTPAttempt, handleFirebaseRateLimit, getRemainingCooldown } from '@/lib/otp-rate-limit'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -29,6 +30,7 @@ export default function LoginPage() {
   const [navigating, setNavigating] = useState(false)
   const [error, setError] = useState('')
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [rateLimitCooldown, setRateLimitCooldown] = useState(0) // Minutes remaining for rate limit
 
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([])
   const countryCode = '+91'
@@ -75,6 +77,29 @@ export default function LoginPage() {
     }
   }, [step, initializeRecaptcha])
 
+  // Check for existing rate limit on mount
+  useEffect(() => {
+    const remaining = getRemainingCooldown()
+    if (remaining > 0) {
+      setRateLimitCooldown(remaining)
+      setError(`Too many OTP requests. Please wait ${remaining} minute${remaining > 1 ? 's' : ''} before trying again.`)
+    }
+  }, [])
+
+  // Rate limit cooldown timer
+  useEffect(() => {
+    if (rateLimitCooldown > 0) {
+      const timer = setTimeout(() => {
+        const remaining = getRemainingCooldown()
+        setRateLimitCooldown(remaining)
+        if (remaining === 0) {
+          setError('')
+        }
+      }, 60000) // Update every minute
+      return () => clearTimeout(timer)
+    }
+  }, [rateLimitCooldown])
+
   // Countdown timer
   useEffect(() => {
     if (countdown > 0) {
@@ -86,6 +111,14 @@ export default function LoginPage() {
   const handlePhoneLogin = async () => {
     if (phone.length !== 10) {
       setError('Please enter a valid 10-digit phone number')
+      return
+    }
+
+    // Check client-side rate limit first
+    const rateLimitCheck = canRequestOTP()
+    if (!rateLimitCheck.allowed) {
+      setError(rateLimitCheck.message || 'Too many requests. Please try again later.')
+      setRateLimitCooldown(rateLimitCheck.waitMinutes || 15)
       return
     }
 
@@ -121,6 +154,9 @@ export default function LoginPage() {
         return
       }
 
+      // Record the OTP attempt before making the request
+      recordOTPAttempt()
+
       const fullPhone = `${countryCode}${phone}`
       const result = await signInWithPhoneNumber(auth, fullPhone, recaptchaVerifier)
       setConfirmationResult(result)
@@ -130,9 +166,16 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string }
       logger.error('Phone login error', { error: err })
-      if (error.code === 'auth/invalid-phone-number') setError('Invalid phone number format')
-      else if (error.code === 'auth/too-many-requests') setError('Too many requests. Please try again later.')
-      else setError(error.message || 'Failed to send OTP')
+      if (error.code === 'auth/invalid-phone-number') {
+        setError('Invalid phone number format')
+      } else if (error.code === 'auth/too-many-requests') {
+        // Firebase rate limit hit - set a longer cooldown
+        const rateLimitInfo = handleFirebaseRateLimit()
+        setError(rateLimitInfo.message)
+        setRateLimitCooldown(rateLimitInfo.waitMinutes)
+      } else {
+        setError(error.message || 'Failed to send OTP')
+      }
       
       if (recaptchaVerifier) {
         try { recaptchaVerifier.clear() } catch { /* ignore */ }
