@@ -619,7 +619,40 @@ export default function JobTrackingPage() {
     const supabase = createClient()
     const channel = supabase
       .channel(`job-${requestId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `id=eq.${requestId}` }, () => debouncedLoadJobDetails())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `id=eq.${requestId}` }, (payload) => {
+        // For critical status fields (OTP verification), apply immediately from payload
+        // This avoids debounce delay and doesn't add egress since payload is already received
+        if (payload.new && typeof payload.new === 'object') {
+          const newData = payload.new as Record<string, any>
+          
+          // Check for completion and show popup instantly (before debounced refresh)
+          const isCompleted = newData.status === 'completed' || newData.broadcast_status === 'completed'
+          if (isCompleted && !completionPopupShownRef.current) {
+            completionPopupShownRef.current = true
+            localStorage.setItem(`completion_popup_shown_${requestId}`, 'true')
+            setShowCompletionPopup(true)
+            console.log('🎉 Job completed - showing popup instantly')
+          }
+          
+          setJob(prev => {
+            if (!prev) return prev
+            // Only update critical fields instantly from realtime payload
+            const criticalUpdates: Partial<JobDetails> = {}
+            if (newData.work_started_at !== undefined) criticalUpdates.work_started_at = newData.work_started_at
+            if (newData.work_completed_at !== undefined) criticalUpdates.work_completed_at = newData.work_completed_at
+            if (newData.status !== undefined) criticalUpdates.status = newData.status
+            if (newData.broadcast_status !== undefined) criticalUpdates.broadcast_status = newData.broadcast_status
+            if (newData.assigned_helper_id !== undefined) criticalUpdates.assigned_helper_id = newData.assigned_helper_id
+            if (newData.helper_location_lat !== undefined) criticalUpdates.helper_location_lat = newData.helper_location_lat !== null ? Number(newData.helper_location_lat) : null
+            if (newData.helper_location_lng !== undefined) criticalUpdates.helper_location_lng = newData.helper_location_lng !== null ? Number(newData.helper_location_lng) : null
+            
+            console.log('🔄 Instant realtime update (no egress):', criticalUpdates)
+            return { ...prev, ...criticalUpdates }
+          })
+        }
+        // Still do debounced full refresh for non-critical updates (helper info, etc.)
+        debouncedLoadJobDetails()
+      })
       .subscribe()
     
     return () => { 
