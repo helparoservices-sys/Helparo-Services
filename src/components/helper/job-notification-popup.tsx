@@ -1034,49 +1034,61 @@ export function useJobNotifications() {
       )
       .subscribe()
 
-    // Also subscribe to service_request changes to detect cancellations/assignment by others
+    // EGRESS FIX: Don't subscribe to all service_requests - that sends ALL updates to ALL helpers!
+    // Instead, we use a separate effect that subscribes ONLY to the specific request_id being viewed
+    // The cancellation tracking is handled in a separate useEffect below that watches `notification`
+
+    return () => {
+      console.log('🔔 Cleaning up subscription')
+      supabase.removeChannel(channel)
+      supabase.removeChannel(statusChannel)
+    }
+  }, [helperProfile, isOnJob])
+
+  // EGRESS FIX: Subscribe to cancellation updates ONLY for the specific request_id being viewed
+  // This replaces the previous unfiltered subscription that was sending ALL service_request updates to ALL helpers
+  useEffect(() => {
+    if (!notification?.request_id) return
+
+    const supabase = createClient()
+    const currentUserId = authUserIdRef.current
+    
+    console.log('🔔 [CANCELLATION] Subscribing to cancellation updates for request:', notification.request_id)
+    
     const cancellationChannel = supabase
-      .channel(`job-cancellations-${helperProfile.id}`)
+      .channel(`job-cancellation-${notification.request_id}`)
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'service_requests'
+          table: 'service_requests',
+          filter: `id=eq.${notification.request_id}` // EGRESS FIX: Only this specific request!
         },
         (payload) => {
-          console.log('🔔 Service request update received:', payload)
+          console.log('🔔 Service request update received for current job:', payload)
           const newData = payload.new as { id: string; status?: string; broadcast_status?: string; assigned_helper_id?: string | null }
           
-          const currentNotification = notificationRef.current
-          const currentUserId = authUserIdRef.current
-          
-          // If job is re-broadcast (status back to open with broadcasting), clear seen IDs for this request
-          // so the helper can see the new notification
+          // If job is re-broadcast (status back to open with broadcasting), clear seen IDs
           if (newData.status === 'open' && newData.broadcast_status === 'broadcasting') {
             console.log('🔔 Job re-broadcast detected, clearing seen notification IDs')
-            // Clear all seen IDs to allow re-broadcast notifications to show
-            // This is safe because new notifications have new IDs anyway
             seenNotificationIds.current.clear()
           }
           
-          // Check if this is the currently displayed notification being cancelled
-          if (currentNotification && currentNotification.request_id === newData.id) {
-            if (newData.status === 'cancelled') {
-              console.log('🔔 Current notification cancelled, dismissing popup')
-              toast.info('This job has been cancelled by the customer')
-              setNotification(null)
-              return
-            }
+          // Check if cancelled
+          if (newData.status === 'cancelled') {
+            console.log('🔔 Current notification cancelled, dismissing popup')
+            toast.info('This job has been cancelled by the customer')
+            setNotification(null)
+            return
+          }
 
-            // If this job was assigned (accepted) and it wasn't assigned to this logged-in helper,
-            // show the "late" message and dismiss.
-            if (newData.status === 'assigned') {
-              if (newData.assigned_helper_id && currentUserId && newData.assigned_helper_id !== currentUserId) {
-                console.log('🔔 Job assigned to another helper, dismissing popup')
-                toast.error('Ooops, you are late — better luck next time! 😅')
-                setNotification(null)
-              }
+          // If assigned to another helper
+          if (newData.status === 'assigned') {
+            if (newData.assigned_helper_id && currentUserId && newData.assigned_helper_id !== currentUserId) {
+              console.log('🔔 Job assigned to another helper, dismissing popup')
+              toast.error('Ooops, you are late — better luck next time! 😅')
+              setNotification(null)
             }
           }
         }
@@ -1084,12 +1096,10 @@ export function useJobNotifications() {
       .subscribe()
 
     return () => {
-      console.log('🔔 Cleaning up subscription')
-      supabase.removeChannel(channel)
-      supabase.removeChannel(statusChannel)
+      console.log('🔔 Cleaning up cancellation subscription for request:', notification.request_id)
       supabase.removeChannel(cancellationChannel)
     }
-  }, [helperProfile, isOnJob])
+  }, [notification?.request_id]) // Re-subscribe when viewing a different request
 
   const acceptJob = useCallback(async (requestId: string) => {
     if (!helperProfile) return

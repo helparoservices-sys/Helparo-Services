@@ -96,6 +96,7 @@ export default function CustomerBookingsPage() {
           `)
           .eq('customer_id', user.id)
           .order('created_at', { ascending: false })
+          .limit(100) // EGRESS FIX: Limit past bookings to prevent large data transfer
 
         if (bookingsError) throw bookingsError
 
