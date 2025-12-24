@@ -5,6 +5,7 @@ import { LanguageProvider } from '@/lib/language-context'
 import { CapacitorBackButton } from '@/components/capacitor-back-button'
 import { CapacitorInit } from '@/components/capacitor-init'
 import { DarkModeProvider } from '@/lib/use-dark-mode'
+import { ServiceWorkerRegister } from '@/components/service-worker-register'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://helparo.in'),
@@ -284,6 +285,7 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
+        <ServiceWorkerRegister />
         <CapacitorInit />
         <CapacitorBackButton />
         <DarkModeProvider>
