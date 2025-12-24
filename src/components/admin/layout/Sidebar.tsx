@@ -78,6 +78,8 @@ const menuItems = [
     icon: CreditCard,
     href: '/admin/payments',
   },
+  /* === HIDDEN - BUNDLES/SUBSCRIPTIONS/PROMOS/CAMPAIGNS ===
+  * Removed to reduce egress - not currently in use
   {
     label: 'Bundles',
     icon: ShoppingBag,
@@ -98,6 +100,7 @@ const menuItems = [
     icon: Gift,
     href: '/admin/campaigns',
   },
+  === END HIDDEN === */
   {
     label: 'Push Notifications',
     icon: Bell,
