@@ -41,9 +41,30 @@ self.addEventListener('fetch', (event) => {
   // Only handle navigation requests (page loads)
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match(OFFLINE_URL);
-      })
+      fetch(event.request)
+        .then((response) => {
+          // If response is a 404 or other error, still show the page (let Next.js handle it)
+          return response;
+        })
+        .catch(() => {
+          // Network failed - show offline page
+          // Store the URL user was trying to visit
+          return caches.match(OFFLINE_URL).then((response) => {
+            // Inject script to save original URL to sessionStorage
+            if (response) {
+              return response.text().then((html) => {
+                const modifiedHtml = html.replace(
+                  '</head>',
+                  `<script>sessionStorage.setItem('helparo_offline_url', '${event.request.url}');</script></head>`
+                );
+                return new Response(modifiedHtml, {
+                  headers: { 'Content-Type': 'text/html' }
+                });
+              });
+            }
+            return response;
+          });
+        })
     );
     return;
   }

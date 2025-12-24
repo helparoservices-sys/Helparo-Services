@@ -404,8 +404,58 @@
   </div>
 
   <script>
-    function tryReconnect() {
-      window.location.reload();
+    // Get the original URL the user was trying to visit
+    const originalUrl = sessionStorage.getItem('helparo_offline_url') || '/';
+    
+    async function tryReconnect() {
+      const btn = document.querySelector('.retry-btn');
+      btn.innerHTML = '<span class="retry-icon spinning">↻</span> Checking...';
+      btn.disabled = true;
+      
+      try {
+        // First check if we have internet
+        const response = await fetch('/api/health', { 
+          method: 'HEAD',
+          cache: 'no-store'
+        }).catch(() => null);
+        
+        if (response && response.ok) {
+          // Internet is back, try the original URL
+          const targetUrl = originalUrl || '/';
+          const pageCheck = await fetch(targetUrl, { 
+            method: 'GET',
+            cache: 'no-store'
+          }).catch(() => null);
+          
+          if (pageCheck && pageCheck.ok) {
+            // Page exists, navigate to it
+            window.location.href = targetUrl;
+          } else {
+            // Page doesn't exist, go to home
+            window.location.href = '/';
+          }
+        } else {
+          // Still no internet
+          btn.innerHTML = '<span class="retry-icon">↻</span> Try Again';
+          btn.disabled = false;
+          showError('Still offline. Please check your connection.');
+        }
+      } catch (e) {
+        // Network error - still offline
+        btn.innerHTML = '<span class="retry-icon">↻</span> Try Again';
+        btn.disabled = false;
+        showError('Still offline. Please check your connection.');
+      }
+    }
+    
+    function showError(message) {
+      const status = document.querySelector('.status span');
+      status.textContent = message;
+      status.style.color = '#f87171';
+      setTimeout(() => {
+        status.textContent = 'Waiting for connection...';
+        status.style.color = '';
+      }, 3000);
     }
 
     // Auto-detect when back online
@@ -414,14 +464,19 @@
       toast.classList.add('show');
       
       setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+        tryReconnect();
+      }, 1000);
     });
 
     // Vibrate on load (mobile feedback)
     if ('vibrate' in navigator) {
       navigator.vibrate([100, 50, 100]);
     }
+    
+    // Add spinning animation style
+    const style = document.createElement('style');
+    style.textContent = '.retry-icon.spinning { animation: spin 1s linear infinite; } @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
+    document.head.appendChild(style);
   </script>
 </body>
 </html>
