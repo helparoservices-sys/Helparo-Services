@@ -5,7 +5,7 @@ import {
   Users,
   UserCheck,
   ShoppingCart,
-  DollarSign,
+  IndianRupee,
   AlertCircle,
   CheckCircle,
   Clock,

@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
-  ArrowLeft, Package, DollarSign, Clock, Star, 
+  ArrowLeft, Package, IndianRupee, Clock, Star, 
   Edit, Trash2, Eye, EyeOff, TrendingUp, Users
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -260,7 +260,7 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
 
               {/* Pricing Info */}
               <div className="flex items-center gap-2 mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <IndianRupee className="h-5 w-5 text-green-600 dark:text-green-400" />
                 <div>
                   <span className="font-bold text-xl text-green-700 dark:text-green-400">₹{service.base_price}</span>
                   {service.price_type !== 'custom' && service.unit_name && (
@@ -335,7 +335,7 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
           <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/20 dark:border-slate-700/50 shadow-lg rounded-xl p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <DollarSign className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                <IndianRupee className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
                 <p className="text-sm text-slate-600 dark:text-slate-400">Avg. per Booking</p>

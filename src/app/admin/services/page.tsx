@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Package, Plus, Edit, CheckCircle, XCircle, FolderTree, Grid3x3, DollarSign, AlertCircle, Trash2, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Package, Plus, Edit, CheckCircle, XCircle, FolderTree, Grid3x3, IndianRupee, AlertCircle, Trash2, Loader2, Eye, EyeOff } from 'lucide-react'
 import { PageLoader } from '@/components/admin/PageLoader'
 import { getServiceCategoryTree, deleteServiceCategory, toggleServiceStatus } from '@/app/actions/services'
 import { useToast } from '@/components/ui/toast-notification'
@@ -240,7 +240,7 @@ export default function AdminServicesPage() {
 
               <div className="flex items-center gap-4 mb-4 flex-wrap">
                 <div className="flex items-center gap-1 text-sm">
-                  <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <IndianRupee className="h-4 w-4 text-green-600 dark:text-green-400" />
                   <span className="font-semibold text-slate-900 dark:text-white">₹{parent.base_price}</span>
                   {parent.price_type !== 'custom' && parent.unit_name && (
                     <span className="text-xs text-slate-500 dark:text-slate-400">/{parent.unit_name}</span>
@@ -351,7 +351,7 @@ export default function AdminServicesPage() {
                   <div>
                     <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Base Price</p>
                     <div className="flex items-center gap-1">
-                      <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      <IndianRupee className="h-4 w-4 text-green-600 dark:text-green-400" />
                       <span className="font-semibold text-slate-900 dark:text-white">₹{selectedCategory.base_price}</span>
                       {selectedCategory.price_type !== 'custom' && selectedCategory.unit_name && (
                         <span className="text-xs text-slate-500 dark:text-slate-400">/{selectedCategory.unit_name}</span>
@@ -436,7 +436,7 @@ export default function AdminServicesPage() {
                             )}
                             <div className="flex items-center gap-4 flex-wrap">
                               <div className="flex items-center gap-1 text-sm">
-                                <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                <IndianRupee className="h-4 w-4 text-green-600 dark:text-green-400" />
                                 <span className="font-semibold text-slate-900 dark:text-white">₹{child.base_price}</span>
                                 {child.price_type !== 'custom' && child.unit_name && (
                                   <span className="text-xs text-slate-500 dark:text-slate-400">/{child.unit_name}</span>

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
-import { TrendingUp, DollarSign, ShoppingCart, Users, UserCheck, BarChart3, RefreshCw } from 'lucide-react'
+import { TrendingUp, IndianRupee, ShoppingCart, Users, UserCheck, BarChart3, RefreshCw } from 'lucide-react'
 import { getAnalyticsData } from '@/app/actions/admin'
 import { useToast } from '@/components/ui/toast-notification'
 
@@ -136,7 +136,7 @@ export function AnalyticsPageClient({ analytics }: AnalyticsPageClientProps) {
             title="Total Revenue"
             value={analytics.stats.revenue.total}
             growth={analytics.stats.revenue.growth}
-            icon={<DollarSign className="h-6 w-6" />}
+            icon={<IndianRupee className="h-6 w-6" />}
             iconBg="bg-green-100"
             iconColor="text-green-600"
             trend={analytics.stats.revenue.data}

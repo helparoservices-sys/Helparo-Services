@@ -10,7 +10,7 @@ import { PaymentSafetyInfo } from '@/components/trust-badges'
 import { PaymentButton } from '@/components/payment-button'
 import ChatWindow from '@/components/chat-window'
 import { 
-  MapPin, Clock, DollarSign, CheckCircle2, XCircle, 
+  MapPin, Clock, IndianRupee, CheckCircle2, XCircle, 
   Phone, MessageSquare, Star, AlertCircle, Loader2,
   Calendar, User, Award, CreditCard
 } from 'lucide-react'
@@ -443,7 +443,7 @@ export default function RequestDetailPage() {
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
-                        <DollarSign className="h-5 w-5" />
+                        <IndianRupee className="h-5 w-5" />
                         Budget Range
                       </CardTitle>
                     </CardHeader>
@@ -492,7 +492,7 @@ export default function RequestDetailPage() {
                                 <div className="text-sm text-slate-600 dark:text-slate-400 space-y-1 mt-1">
                                   {app.proposed_rate && (
                                     <div className="flex items-center gap-1">
-                                      <DollarSign className="h-3 w-3" />
+                                      <IndianRupee className="h-3 w-3" />
                                       Bid: ₹{app.proposed_rate.toLocaleString()}
                                     </div>
                                   )}

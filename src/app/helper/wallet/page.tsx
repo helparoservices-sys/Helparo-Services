@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { 
-  DollarSign, 
+  IndianRupee, 
   TrendingUp, 
   TrendingDown,
   ArrowUpRight,
@@ -136,7 +136,7 @@ export default function HelperWalletPage() {
       case 'commission':
         return <TrendingDown className="h-4 w-4 text-orange-600" />
       default:
-        return <DollarSign className="h-4 w-4 text-blue-600" />
+        return <IndianRupee className="h-4 w-4 text-blue-600" />
     }
   }
 
@@ -220,7 +220,7 @@ export default function HelperWalletPage() {
                 <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
                   Available Balance
                 </CardTitle>
-                <DollarSign className="h-5 w-5 text-green-500" />
+                <IndianRupee className="h-5 w-5 text-green-500" />
               </div>
             </CardHeader>
             <CardContent>

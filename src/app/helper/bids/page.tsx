@@ -10,7 +10,7 @@ import {
   CheckCircle, 
   XCircle, 
   Clock, 
-  DollarSign, 
+  IndianRupee, 
   MapPin, 
   Calendar,
   TrendingUp,
@@ -359,7 +359,7 @@ export default function HelperBidsPage() {
                     {/* Bid Amount */}
                     <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
                       <div className="flex items-center gap-2">
-                        <DollarSign className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        <IndianRupee className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                         <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Your Bid</span>
                       </div>
                       <span className="text-xl font-bold text-blue-600 dark:text-blue-400">

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { 
-  DollarSign, Clock, User, Star, CheckCircle2, 
+  IndianRupee, Clock, User, Star, CheckCircle2, 
   XCircle, MessageSquare, TrendingDown, Award, Loader2 
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -275,7 +275,7 @@ export default function CustomerBidsPage() {
                       <div className="flex flex-wrap gap-4 text-sm">
                         {bid.bid_amount && (
                           <div className="flex items-center gap-2">
-                            <DollarSign className="h-4 w-4 text-green-600" />
+                            <IndianRupee className="h-4 w-4 text-green-600" />
                             <span className="font-bold text-green-600 dark:text-green-400">
                               ₹{bid.bid_amount.toLocaleString()}
                             </span>

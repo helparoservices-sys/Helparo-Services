@@ -26,8 +26,7 @@ import {
   Shield,
   FileText,
   Info,
-  IndianRupee,
-  BadgeDollarSign
+  IndianRupee
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -87,7 +86,7 @@ export default function CustomerSidebar({ collapsed, mobileOpen = false, onMobil
         === END HIDDEN === */
         { icon: Award, label: 'Badges', href: '/customer/badges' },
         { icon: Users, label: 'Referrals', href: '/customer/referrals' },
-        { icon: BadgeDollarSign, label: 'Earn Money', href: '/customer/earn-money' },
+        { icon: IndianRupee, label: 'Earn Money', href: '/customer/earn-money' },
       ]
     },
     /* === HIDDEN FOR PLAY STORE DEPLOYMENT - DEALS FEATURES ===

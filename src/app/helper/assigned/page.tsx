@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { 
   MapPin, 
   Clock, 
-  DollarSign, 
+  IndianRupee, 
   Calendar,
   CheckCircle,
   AlertCircle,

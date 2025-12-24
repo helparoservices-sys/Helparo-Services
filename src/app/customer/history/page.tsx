@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { 
-  MapPin, Calendar, DollarSign, Star, Clock, 
+  MapPin, Calendar, IndianRupee, Star, Clock, 
   Loader2, Map as MapIcon, List, Filter 
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
@@ -181,7 +181,7 @@ export default function CustomerHistoryPage() {
                   </div>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                  <DollarSign className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  <IndianRupee className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                 </div>
               </div>
             </CardContent>
@@ -288,7 +288,7 @@ export default function CustomerHistoryPage() {
                           )}
                           {service.budget_max && (
                             <div className="flex items-center gap-1">
-                              <DollarSign className="h-4 w-4" />
+                              <IndianRupee className="h-4 w-4" />
                               ₹{service.budget_max.toLocaleString()}
                             </div>
                           )}

@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarImage, AvatarFallback } from '@radix-ui/react-avatar'
-import { CheckCircle2, Clock, DollarSign, Star, Zap, ExternalLink } from 'lucide-react'
+import { CheckCircle2, Clock, IndianRupee, Star, Zap, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 
 interface InstantHelper {
@@ -110,7 +110,7 @@ export function InstantHelperCard({ helper, onSelect, selected }: InstantHelperC
             {/* Price & Duration */}
             <div className="flex items-center gap-4 mb-3">
               <div className={`flex items-center gap-1 font-bold ${isOffline ? 'text-gray-400' : 'text-teal-700'}`}>
-                <DollarSign className="h-4 w-4" />
+                <IndianRupee className="h-4 w-4" />
                 <span className="text-xl">₹{helper.instant_booking_price}</span>
               </div>
               <div className={`flex items-center gap-1 text-sm ${isOffline ? 'text-gray-400' : 'text-gray-500'}`}>

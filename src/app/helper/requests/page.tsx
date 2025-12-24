@@ -6,7 +6,7 @@ import {
   Search, 
   Filter, 
   MapPin, 
-  DollarSign, 
+  IndianRupee, 
   Clock, 
   Calendar,
   Briefcase,
@@ -362,7 +362,7 @@ export default function HelperRequestsPage() {
 
                   {/* Budget */}
                   <div className="flex items-center gap-2 text-sm">
-                    <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <IndianRupee className="h-4 w-4 text-green-600 dark:text-green-400" />
                     <span className="font-semibold text-green-600 dark:text-green-400">
                       Budget: ₹{request.budget_min?.toLocaleString()} - ₹{request.budget_max?.toLocaleString()}
                     </span>

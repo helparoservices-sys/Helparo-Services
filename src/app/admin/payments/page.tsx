@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { DollarSign, Wallet, Lock, CheckCircle, TrendingUp, CreditCard, AlertCircle, ArrowUpRight, RefreshCcw, FileText, Banknote } from 'lucide-react'
+import { IndianRupee, Wallet, Lock, CheckCircle, TrendingUp, CreditCard, AlertCircle, ArrowUpRight, RefreshCcw, FileText, Banknote } from 'lucide-react'
 import Link from 'next/link'
 
 interface PlatformWallet {
@@ -160,7 +160,7 @@ export default async function AdminPaymentsPage() {
               <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{formatAmount(platformEarnings)}</p>
             </div>
             <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center shadow-lg">
-              <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
+              <IndianRupee className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">Total commission earned</p>
@@ -247,7 +247,7 @@ export default async function AdminPaymentsPage() {
           <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <IndianRupee className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-900 dark:text-white">Available Balance</p>

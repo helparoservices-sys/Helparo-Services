@@ -17,7 +17,7 @@ import {
   Gift,
   Phone,
   Lock,
-  DollarSign,
+  IndianRupee,
   X,
   AlertTriangle,
   Shield,

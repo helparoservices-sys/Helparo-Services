@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingSpinner, SkeletonCard } from '@/components/ui/loading'
 import { getHelperNotifications, markNotificationRead, markAllAsRead } from '@/app/actions/helper-notifications'
-import { Bell, Check, CheckCheck, DollarSign, Briefcase, MessageSquare, AlertCircle, Filter } from 'lucide-react'
+import { Bell, Check, CheckCheck, IndianRupee, Briefcase, MessageSquare, AlertCircle, Filter } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Notification {
@@ -64,7 +64,7 @@ export default function HelperNotificationsPage() {
   const getChannelIcon = (channel: string) => {
     const icons: Record<string, React.ReactNode> = {
       jobs: <Briefcase className="h-5 w-5 text-blue-600" />,
-      payments: <DollarSign className="h-5 w-5 text-green-600" />,
+      payments: <IndianRupee className="h-5 w-5 text-green-600" />,
       messages: <MessageSquare className="h-5 w-5 text-purple-600" />,
       system: <AlertCircle className="h-5 w-5 text-orange-600" />,
     }
@@ -136,7 +136,7 @@ export default function HelperNotificationsPage() {
                 onClick={() => setFilter('payments')}
                 className="gap-2"
               >
-                <DollarSign className="h-4 w-4" />
+                <IndianRupee className="h-4 w-4" />
                 Payments
               </Button>
               <Button

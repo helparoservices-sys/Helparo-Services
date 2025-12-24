@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
-import { DollarSign, MapPin, CreditCard, Star, Trophy, Save, X, ShieldCheck } from 'lucide-react'
+import { IndianRupee, MapPin, CreditCard, Star, Trophy, Save, X, ShieldCheck } from 'lucide-react'
 import { updateCommissionSettings } from '@/app/actions/admin'
 import { useToast } from '@/components/ui/toast-notification'
 
@@ -146,7 +146,7 @@ export function SettingsPageClient({ settings }: SettingsPageClientProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-green-600" />
+                <IndianRupee className="h-5 w-5 text-green-600" />
               </div>
               Commission & Pricing
             </CardTitle>

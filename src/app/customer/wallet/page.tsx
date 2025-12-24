@@ -10,7 +10,7 @@ import {
   ArrowUpRight, 
   Lock,
   TrendingUp,
-  DollarSign,
+  IndianRupee,
   CreditCard,
   History,
   Gift
@@ -415,7 +415,7 @@ export default function CustomerWalletPage() {
 
         {transactions.length === 0 ? (
           <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-            <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-50" />
+            <IndianRupee className="h-12 w-12 mx-auto mb-3 opacity-50" />
             <p>No transactions yet</p>
           </div>
         ) : (

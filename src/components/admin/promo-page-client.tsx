@@ -1,7 +1,7 @@
 "use client"
 import React, { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Tag, Plus, CheckCircle, XCircle, Percent, DollarSign, Calendar, Edit } from 'lucide-react'
+import { Tag, Plus, CheckCircle, XCircle, Percent, IndianRupee, Calendar, Edit } from 'lucide-react'
 import { PromoRowActions } from '@/components/admin/promo-row-actions'
 import { PromoModal } from '@/components/admin/promo-modal'
 
@@ -71,7 +71,7 @@ export function PromoPageClient({ promos, usageMap }: { promos: PromoCode[] | nu
         <StatCard label='Total Codes' value={totalPromos} icon={<Tag className='h-6 w-6 text-blue-600 dark:text-blue-400' />} />
         <StatCard label='Active' value={activePromos} icon={<CheckCircle className='h-6 w-6 text-green-600 dark:text-green-400' />} />
         <StatCard label='Percent Type' value={percentPromos} icon={<Percent className='h-6 w-6 text-purple-600 dark:text-purple-400' />} />
-        <StatCard label='Flat Type' value={flatPromos} icon={<DollarSign className='h-6 w-6 text-orange-600 dark:text-orange-400' />} />
+        <StatCard label='Flat Type' value={flatPromos} icon={<IndianRupee className='h-6 w-6 text-orange-600 dark:text-orange-400' />} />
       </div>
 
       <div className='bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-lg border border-white/20 dark:border-slate-700/50 shadow-lg overflow-hidden'>
@@ -111,7 +111,7 @@ export function PromoPageClient({ promos, usageMap }: { promos: PromoCode[] | nu
                     </td>
                     <td className='px-6 py-4'>
                       <div className='flex items-center gap-2'>
-                        {isPercent ? <Percent className='h-4 w-4 text-purple-600 dark:text-purple-400' /> : <DollarSign className='h-4 w-4 text-orange-600 dark:text-orange-400' />}
+                        {isPercent ? <Percent className='h-4 w-4 text-purple-600 dark:text-purple-400' /> : <IndianRupee className='h-4 w-4 text-orange-600 dark:text-orange-400' />}
                         <div>
                           <div className={`text-sm font-semibold ${isPercent ? 'text-purple-600 dark:text-purple-400' : 'text-orange-600 dark:text-orange-400'}`}>{discountLabel}</div>
                           {capLabel && <div className='text-xs text-slate-500 dark:text-slate-400'>{capLabel}</div>}

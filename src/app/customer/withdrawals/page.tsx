@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { 
-  DollarSign, Clock, CheckCircle2, XCircle, 
+  IndianRupee, Clock, CheckCircle2, XCircle, 
   AlertCircle, Loader2, Wallet, TrendingUp 
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'

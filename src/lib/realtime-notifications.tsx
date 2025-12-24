@@ -7,7 +7,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { Bell, MessageSquare, DollarSign, AlertCircle, CheckCircle } from 'lucide-react'
+import { Bell, MessageSquare, IndianRupee, AlertCircle, CheckCircle } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -330,9 +330,9 @@ function playNotificationSound() {
 export function getNotificationIcon(type: NotificationType) {
   const icons = {
     new_message: MessageSquare,
-    new_bid: DollarSign,
+    new_bid: IndianRupee,
     bid_accepted: CheckCircle,
-    payment_received: DollarSign,
+    payment_received: IndianRupee,
     service_completed: CheckCircle,
     review_received: Bell,
     sos_alert: AlertCircle,

@@ -10,7 +10,7 @@ import {
   MapPin, 
   Phone, 
   Clock, 
-  DollarSign, 
+  IndianRupee, 
   Zap,
   AlertCircle,
   ArrowLeft
@@ -192,7 +192,7 @@ export default function InstantBookingConfirmPage() {
 
             <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-teal-600" />
+                <IndianRupee className="h-5 w-5 text-teal-600" />
                 <div>
                   <p className="text-xs text-gray-500">Service Price</p>
                   <p className="text-xl font-bold text-teal-700">₹{booking.price}</p>

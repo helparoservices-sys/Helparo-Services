@@ -16,7 +16,7 @@ import {
   Linkedin,
   Globe,
   Building2,
-  DollarSign,
+  IndianRupee,
   MoreVertical,
   Search,
   Filter,
@@ -583,7 +583,7 @@ export default function AdminCandidatesPage() {
                 {selectedApplication.expected_salary && (
                   <div className="bg-gray-50 rounded-xl p-4">
                     <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                      <DollarSign className="w-4 h-4" />
+                      <IndianRupee className="w-4 h-4" />
                       Expected Salary
                     </div>
                     <p className="font-semibold text-gray-900">{selectedApplication.expected_salary}</p>

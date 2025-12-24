@@ -9,7 +9,7 @@ import {
   AlertCircle,
   ExternalLink,
   Calendar,
-  DollarSign,
+  IndianRupee,
   Package
 } from 'lucide-react'
 
@@ -200,7 +200,7 @@ export default async function AdminBookingsPage({ searchParams }: { searchParams
             <p className="text-sm opacity-90 mt-2">From {totalBookings} bookings</p>
           </div>
           <div className="w-16 h-16 rounded-lg bg-white/20 flex items-center justify-center">
-            <DollarSign className="h-8 w-8" />
+            <IndianRupee className="h-8 w-8" />
           </div>
         </div>
       </div>
