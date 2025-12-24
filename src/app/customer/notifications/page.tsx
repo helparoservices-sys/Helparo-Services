@@ -73,24 +73,32 @@ export default function CustomerNotificationsPage() {
   }
 
   const subscribeToNotifications = () => {
-    const channel = supabase
-      .channel('notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications'
-        },
-        (payload) => {
-          setNotifications(prev => [payload.new as Notification, ...prev])
-        }
-      )
-      .subscribe()
+    // Get user ID synchronously from the already-loaded state
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
 
-    return () => {
-      supabase.removeChannel(channel)
-    }
+      const channel = supabase
+        .channel(`notifications:${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}`  // Only receive YOUR notifications
+          },
+          (payload) => {
+            setNotifications(prev => [payload.new as Notification, ...prev])
+          }
+        )
+        .subscribe()
+
+      return () => {
+        supabase.removeChannel(channel)
+      }
+    })
+
+    return () => {} // Return empty cleanup if user not loaded yet
   }
 
   const markAsRead = async (id: string) => {

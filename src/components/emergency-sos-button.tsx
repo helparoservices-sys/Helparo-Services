@@ -35,11 +35,12 @@ async function notifyNearbyHelpers(
   try {
     console.log('🚨 SOS: Starting to notify helpers...', { alertId, lat, lng, sosType, customerName })
     
-    // Get ALL verified helpers - use user_id for notifications (not helper_profiles.id)
+    // Get verified helpers - limit to 200 nearest for performance
     const { data: helpers, error: helperError } = await supabase
       .from('helper_profiles')
       .select('id, user_id, latitude, longitude')
       .eq('verification_status', 'approved')
+      .limit(200)  // Reasonable limit for emergency response
 
     if (helperError) {
       console.error('🚨 SOS: Error fetching helpers:', helperError)

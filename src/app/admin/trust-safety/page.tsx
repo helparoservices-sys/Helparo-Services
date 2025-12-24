@@ -4,7 +4,7 @@ import { TrustSafetyPageClient } from '@/components/admin/trust-safety-page-clie
 export default async function AdminTrustSafetyPage() {
   const supabase = await createClient()
 
-  // Fetch background checks
+  // Fetch background checks - limited to most recent
   const { data: checksData, error: checksError } = await supabase
     .from('background_check_results')
     .select(`
@@ -19,8 +19,9 @@ export default async function AdminTrustSafetyPage() {
       helper:profiles!background_check_results_helper_id_fkey(full_name, email)
     `)
     .order('created_at', { ascending: false })
+    .limit(100)
 
-  // Fetch trust scores
+  // Fetch trust scores - limited
   const { data: scoresData, error: scoresError } = await supabase
     .from('helper_trust_scores')
     .select(`
@@ -30,6 +31,7 @@ export default async function AdminTrustSafetyPage() {
       helper:profiles!helper_trust_scores_helper_id_fkey(full_name, email)
     `)
     .order('overall_score', { ascending: false })
+    .limit(100)
 
   // Transform checks data
   const checks = (checksData || []).map((check) => {

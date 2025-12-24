@@ -329,6 +329,7 @@ export async function getReportedReviews() {
 
     const supabase = await createClient()
 
+    // Single query with JOIN to avoid N+1 problem (was making 100 queries before!)
     const { data, error } = await supabase
       .from('reviews')
       .select(`
@@ -342,40 +343,25 @@ export async function getReportedReviews() {
         updated_at,
         customer:customer_id(full_name, avatar_url),
         helper:helper_id(full_name, avatar_url),
-        request:request_id(id, category_id)
+        request:request_id(
+          id, 
+          category_id,
+          category:service_categories(name)
+        )
       `)
       .order('created_at', { ascending: false })
       .limit(100)
 
     if (error) throw error
 
-    // Get category names for each request
-    const reviewsWithCategories = await Promise.all(
-      (data || []).map(async (review: any) => {
-        if (review.request?.category_id) {
-          const { data: category } = await supabase
-            .from('service_categories')
-            .select('name')
-            .eq('id', review.request.category_id)
-            .single()
-          
-          return {
-            ...review,
-            booking: {
-              id: review.request?.id,
-              category_name: category?.name || 'Unknown'
-            }
-          }
-        }
-        return {
-          ...review,
-          booking: {
-            id: review.request?.id,
-            category_name: 'Unknown'
-          }
-        }
-      })
-    )
+    // Transform data to expected format (no more N+1 queries!)
+    const reviewsWithCategories = (data || []).map((review: any) => ({
+      ...review,
+      booking: {
+        id: review.request?.id,
+        category_name: review.request?.category?.name || 'Unknown'
+      }
+    }))
 
     return { success: true, reviews: reviewsWithCategories }
   } catch (error: any) {
