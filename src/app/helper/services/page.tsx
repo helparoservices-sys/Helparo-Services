@@ -585,8 +585,64 @@ export default function HelperServicesPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{profile.service_radius_km || 10} km</p>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2">Maximum distance you'll travel for services</p>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{editedServiceRadius} km</p>
+                      {saving ? (
+                        <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                      ) : null}
+                    </div>
+                    
+                    {/* Radius Slider */}
+                    <div className="space-y-2">
+                      <input
+                        type="range"
+                        min="5"
+                        max="50"
+                        step="5"
+                        value={editedServiceRadius}
+                        onChange={(e) => setEditedServiceRadius(parseInt(e.target.value))}
+                        className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                        <span>5km</span>
+                        <span>25km</span>
+                        <span>50km</span>
+                      </div>
+                    </div>
+                    
+                    {/* Quick Select Buttons */}
+                    <div className="flex flex-wrap gap-2">
+                      {[10, 15, 20, 30, 50].map((km) => (
+                        <button
+                          key={km}
+                          onClick={() => setEditedServiceRadius(km)}
+                          className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                            editedServiceRadius === km
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'
+                          }`}
+                        >
+                          {km} km
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* Save Button - only show if changed from original */}
+                    {editedServiceRadius !== (profile.service_radius_km || 10) && (
+                      <Button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        {saving ? 'Saving...' : `Save (${editedServiceRadius} km)`}
+                      </Button>
+                    )}
+                    
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                      💡 Increase radius to receive more job notifications
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
 

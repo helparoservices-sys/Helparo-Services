@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { 
   Bell, 
   BellRing, 
@@ -13,10 +13,22 @@ import {
   X,
   Zap,
   Volume2,
-  Vibrate
+  Vibrate,
+  RefreshCw
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Capacitor } from '@capacitor/core'
+import { Capacitor, registerPlugin } from '@capacitor/core'
+import { PushNotifications } from '@capacitor/push-notifications'
+
+// Register the native settings plugin
+const SettingsPlugin = registerPlugin<{
+  openNotificationSettings: () => Promise<{ success: boolean }>
+  openOverlaySettings: () => Promise<{ success: boolean }>
+  openBatterySettings: () => Promise<{ success: boolean }>
+  openAppSettings: () => Promise<{ success: boolean }>
+  canDrawOverlays: () => Promise<{ granted: boolean }>
+  isBatteryOptimizationDisabled: () => Promise<{ disabled: boolean }>
+}>('SettingsPlugin')
 
 interface PermissionStatus {
   notifications: boolean
@@ -36,10 +48,12 @@ interface PermissionStatus {
  */
 export function JobAlertPermissionSetup({ 
   onComplete,
-  showAsModal = false 
+  showAsModal = false,
+  mandatory = false  // If true, can't be dismissed
 }: { 
   onComplete?: () => void
-  showAsModal?: boolean 
+  showAsModal?: boolean
+  mandatory?: boolean
 }) {
   const [currentStep, setCurrentStep] = useState(0)
   const [permissions, setPermissions] = useState<PermissionStatus>({
@@ -50,22 +64,86 @@ export function JobAlertPermissionSetup({
   })
   const [isNative, setIsNative] = useState(false)
   const [dismissed, setDismissed] = useState(false)
+  const [checking, setChecking] = useState(false)
 
-  useEffect(() => {
-    setIsNative(Capacitor.isNativePlatform())
+  // Auto-check all permissions
+  const checkAllPermissions = useCallback(async () => {
+    if (!Capacitor.isNativePlatform()) return
     
-    // Check if user already dismissed this
-    const wasDismissed = localStorage.getItem('job_alert_permissions_dismissed')
-    if (wasDismissed === 'true') {
-      setDismissed(true)
-    }
-    
-    // Check if permissions were already set up
-    const wasSetup = localStorage.getItem('job_alert_permissions_setup')
-    if (wasSetup === 'true') {
-      setPermissions(prev => ({ ...prev, checked: true }))
+    setChecking(true)
+    try {
+      // Check notification permission
+      const notifStatus = await PushNotifications.checkPermissions()
+      const hasNotifications = notifStatus.receive === 'granted'
+      
+      // Check overlay permission
+      let hasOverlay = false
+      try {
+        const overlayResult = await SettingsPlugin.canDrawOverlays()
+        hasOverlay = overlayResult.granted
+      } catch (e) {
+        console.log('Overlay check not available:', e)
+        hasOverlay = true // Assume granted if can't check (older Android)
+      }
+      
+      // Battery optimization - we'll assume it needs setup (can't easily check)
+      // User marks this manually
+      const batterySetup = localStorage.getItem('battery_optimization_disabled') === 'true'
+      
+      setPermissions({
+        notifications: hasNotifications,
+        overlay: hasOverlay,
+        battery: batterySetup,
+        checked: true
+      })
+      
+      // Auto-advance to first incomplete step
+      if (!hasNotifications) {
+        setCurrentStep(0)
+      } else if (!hasOverlay) {
+        setCurrentStep(1)
+      } else if (!batterySetup) {
+        setCurrentStep(2)
+      }
+      
+      console.log('📋 Permission check:', { hasNotifications, hasOverlay, batterySetup })
+      
+    } catch (error) {
+      console.error('Error checking permissions:', error)
+    } finally {
+      setChecking(false)
     }
   }, [])
+
+  useEffect(() => {
+    const isNativePlatform = Capacitor.isNativePlatform()
+    setIsNative(isNativePlatform)
+    
+    if (!isNativePlatform) return
+    
+    // Check if user already dismissed this (only if not mandatory)
+    if (!mandatory) {
+      const wasDismissed = localStorage.getItem('job_alert_permissions_dismissed')
+      if (wasDismissed === 'true') {
+        setDismissed(true)
+        return
+      }
+    }
+    
+    // Auto-check permissions on mount
+    checkAllPermissions()
+    
+    // Re-check when app comes back to foreground
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('🔄 App resumed, re-checking permissions...')
+        checkAllPermissions()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [mandatory, checkAllPermissions])
 
   const steps = [
     {
@@ -119,18 +197,6 @@ export function JobAlertPermissionSetup({
     }
 
     try {
-      // Import Capacitor's core to call native plugin
-      const { Capacitor, registerPlugin } = await import('@capacitor/core')
-      
-      // Register and get the native SettingsPlugin
-      const SettingsPlugin = registerPlugin<{
-        openNotificationSettings: () => Promise<{ success: boolean }>
-        openOverlaySettings: () => Promise<{ success: boolean }>
-        openBatterySettings: () => Promise<{ success: boolean }>
-        openAppSettings: () => Promise<{ success: boolean }>
-        canDrawOverlays: () => Promise<{ granted: boolean }>
-      }>('SettingsPlugin')
-      
       // Open the appropriate settings screen
       if (stepId === 'notifications') {
         await SettingsPlugin.openNotificationSettings()
@@ -171,6 +237,11 @@ export function JobAlertPermissionSetup({
   }
 
   const markStepComplete = (stepId: string) => {
+    // For battery, save to localStorage since we can't easily check it
+    if (stepId === 'battery') {
+      localStorage.setItem('battery_optimization_disabled', 'true')
+    }
+    
     setPermissions(prev => ({
       ...prev,
       [stepId]: true
@@ -187,6 +258,11 @@ export function JobAlertPermissionSetup({
   }
 
   const handleDismiss = () => {
+    if (mandatory) {
+      // Can't dismiss if mandatory - just re-check permissions
+      checkAllPermissions()
+      return
+    }
     localStorage.setItem('job_alert_permissions_dismissed', 'true')
     setDismissed(true)
     onComplete?.()
@@ -194,27 +270,55 @@ export function JobAlertPermissionSetup({
 
   const allDone = permissions.notifications && permissions.overlay && permissions.battery
 
+  // Auto-complete when all permissions are granted
+  useEffect(() => {
+    if (allDone && permissions.checked) {
+      handleComplete()
+    }
+  }, [allDone, permissions.checked])
+
   if (dismissed || !isNative) {
     return null
   }
 
+  // If all permissions granted, don't show anything
+  if (allDone && !showAsModal) {
+    return null
+  }
+
   const content = (
-    <div className={`bg-white ${showAsModal ? 'rounded-2xl shadow-2xl max-w-sm w-full mx-3 max-h-[90vh] overflow-y-auto' : ''}`}>
+    <div className={`bg-white dark:bg-slate-800 ${showAsModal ? 'rounded-2xl shadow-2xl max-w-sm w-full mx-3 max-h-[90vh] overflow-y-auto' : ''}`}>
       {/* Header */}
       <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-4 text-white rounded-t-2xl">
         <div className="flex items-center justify-between mb-2">
           <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
             <BellRing className="w-5 h-5" />
           </div>
-          {showAsModal && (
-            <button onClick={handleDismiss} className="p-1.5 hover:bg-white/20 rounded-full">
-              <X className="w-4 h-4" />
+          <div className="flex items-center gap-2">
+            {/* Refresh button to re-check permissions */}
+            <button 
+              onClick={checkAllPermissions} 
+              disabled={checking}
+              className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
+              title="Re-check permissions"
+            >
+              <RefreshCw className={`w-4 h-4 ${checking ? 'animate-spin' : ''}`} />
             </button>
-          )}
+            {showAsModal && !mandatory && (
+              <button onClick={handleDismiss} className="p-1.5 hover:bg-white/20 rounded-full">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
-        <h2 className="text-lg font-bold mb-0.5">Setup Job Alerts</h2>
+        <h2 className="text-lg font-bold mb-0.5">
+          {mandatory ? '⚠️ Setup Required' : 'Setup Job Alerts'}
+        </h2>
         <p className="text-white/90 text-xs">
-          Get alerts even when phone is locked!
+          {mandatory 
+            ? 'Enable these to receive job alerts on lock screen!'
+            : 'Get alerts even when phone is locked!'
+          }
         </p>
       </div>
 
@@ -369,21 +473,61 @@ export function JobAlertPermissionSetup({
 
 /**
  * Small banner that shows if permissions aren't set up
+ * Now auto-checks permissions and shows if any are missing
  */
 export function JobAlertPermissionBanner({ onSetup }: { onSetup: () => void }) {
   const [show, setShow] = useState(false)
   const [isNative, setIsNative] = useState(false)
+  const [missingCount, setMissingCount] = useState(0)
 
   useEffect(() => {
-    setIsNative(Capacitor.isNativePlatform())
+    const isNativePlatform = Capacitor.isNativePlatform()
+    setIsNative(isNativePlatform)
     
-    const wasSetup = localStorage.getItem('job_alert_permissions_setup')
-    const wasDismissed = localStorage.getItem('job_alert_permissions_dismissed')
+    if (!isNativePlatform) return
     
-    // Show banner if not setup and not dismissed
-    if (wasSetup !== 'true' && wasDismissed !== 'true') {
-      setShow(true)
+    // Auto-check permissions
+    const checkPermissions = async () => {
+      try {
+        let missing = 0
+        
+        // Check notification permission
+        const notifStatus = await PushNotifications.checkPermissions()
+        if (notifStatus.receive !== 'granted') missing++
+        
+        // Check overlay permission
+        try {
+          const overlayResult = await SettingsPlugin.canDrawOverlays()
+          if (!overlayResult.granted) missing++
+        } catch (e) {
+          // Can't check overlay - don't count as missing
+        }
+        
+        // Check battery (from localStorage)
+        const batterySetup = localStorage.getItem('battery_optimization_disabled') === 'true'
+        if (!batterySetup) missing++
+        
+        setMissingCount(missing)
+        setShow(missing > 0)
+        
+      } catch (error) {
+        console.error('Error checking permissions:', error)
+        // Show banner if we can't check
+        const wasSetup = localStorage.getItem('job_alert_permissions_setup')
+        setShow(wasSetup !== 'true')
+      }
     }
+    
+    checkPermissions()
+    
+    // Re-check when app comes back
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkPermissions()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [])
 
   if (!show || !isNative) return null
@@ -395,8 +539,10 @@ export function JobAlertPermissionBanner({ onSetup }: { onSetup: () => void }) {
           <AlertTriangle className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm">Setup Job Alerts</p>
-          <p className="text-xs text-white/80">Enable permissions to get alerts on lock screen</p>
+          <p className="font-semibold text-sm">
+            {missingCount > 0 ? `${missingCount} Permission${missingCount > 1 ? 's' : ''} Needed` : 'Setup Job Alerts'}
+          </p>
+          <p className="text-xs text-white/80">Enable to get alerts on lock screen</p>
         </div>
         <Button
           onClick={onSetup}

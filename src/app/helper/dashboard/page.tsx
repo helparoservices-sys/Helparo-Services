@@ -1056,15 +1056,16 @@ export default function HelperDashboard() {
   // ...existing code...
   return (
     <div className="space-y-4">
-      {/* Job Alert Permission Setup Modal */}
+      {/* Job Alert Permission Setup Modal - mandatory mode */}
       {showPermissionSetup && (
         <JobAlertPermissionSetup 
-          showAsModal={true} 
+          showAsModal={true}
+          mandatory={true}
           onComplete={() => setShowPermissionSetup(false)} 
         />
       )}
 
-      {/* Job Alert Permission Banner */}
+      {/* Job Alert Permission Banner - auto-checks permissions */}
       <JobAlertPermissionBanner onSetup={() => setShowPermissionSetup(true)} />
 
       {/* Online/Offline Toggle - Compact */}

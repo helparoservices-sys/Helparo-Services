@@ -249,7 +249,7 @@ export async function updateHelperProfileServices(data: {
       .from('helper_profiles')
       .update(updateData)
       .eq('user_id', user.id)
-      .select('id, user_id, bio, hourly_rate, service_areas, service_area_ids, is_available, availability_schedule')
+      .select('id, user_id, bio, hourly_rate, service_areas, service_area_ids, is_available')
       .single()
 
     if (updateError) {

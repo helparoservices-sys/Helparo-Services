@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { sendPushNotification } from '@/lib/firebase-admin'
 
 export async function POST(request: NextRequest) {
   console.log('🎯 Accept Job API called')
@@ -171,6 +172,27 @@ export async function POST(request: NextRequest) {
         },
         status: 'queued'
       })
+
+    // SEND ACTUAL FCM PUSH TO CUSTOMER - so they see update instantly without polling
+    const { data: customerTokens } = await supabase
+      .from('device_tokens')
+      .select('token')
+      .eq('user_id', serviceRequest.customer_id)
+      .eq('is_active', true)
+
+    if (customerTokens && customerTokens.length > 0) {
+      const tokens = customerTokens.map(t => t.token)
+      await sendPushNotification(tokens, {
+        title: '🎉 Helper Found!',
+        body: `${helperUserProfile?.full_name || 'A helper'} has accepted your request!`,
+        data: {
+          type: 'helper_accepted',
+          request_id: requestId,
+          click_action: `/customer/requests/${requestId}/track`
+        }
+      })
+      console.log('📱 FCM sent to customer:', tokens.length, 'devices')
+    }
 
     // Also notify the helper so their dashboard subscription triggers
     await supabase

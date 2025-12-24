@@ -621,6 +621,7 @@ export default function JobTrackingPage() {
       .channel(`job-${requestId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `id=eq.${requestId}` }, () => debouncedLoadJobDetails())
       .subscribe()
+    
     return () => { 
       supabase.removeChannel(channel)
       if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current)
