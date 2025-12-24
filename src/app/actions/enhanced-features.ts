@@ -296,7 +296,7 @@ export async function getLoyaltyPoints() {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('loyalty_points')
-      .select('*')
+      .select('id, user_id, points_balance, tier_level, current_balance, lifetime_earned')
       .eq('user_id', user.id)
       .single();
 

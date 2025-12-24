@@ -219,7 +219,7 @@ export default function LoginPage() {
       const cleanPhone = phone.replace(/[\s-]/g, '')
       const { data: profile } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, phone, role')
         .eq('phone', cleanPhone)
         .maybeSingle()
 

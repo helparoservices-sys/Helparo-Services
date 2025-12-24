@@ -57,18 +57,19 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
     }
     init()
 
-    // Use Realtime instead of polling for notifications
-    const channel = supabase
-      .channel('admin-notifications')
+    // Use Realtime instead of polling for notifications - filtered by user
+    const channel = userId ? supabase
+      .channel(`admin-notifications-${userId}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: 'notifications'
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`
       }, () => {
         // Refetch notifications when any change happens
-        if (userId) fetchNotifications(userId)
+        fetchNotifications(userId)
       })
-      .subscribe()
+      .subscribe() : null
 
     // Handle click outside to close dropdowns
     const handleClickOutside = (event: MouseEvent) => {
@@ -83,7 +84,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
-      supabase.removeChannel(channel)
+      if (channel) supabase.removeChannel(channel)
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])

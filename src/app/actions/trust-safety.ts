@@ -129,7 +129,7 @@ export async function getHelperBackgroundChecks(helperId: string) {
   try {
     const { data, error } = await supabase
       .from('background_check_results')
-      .select('*')
+      .select('id, helper_id, check_type, status, result, provider, external_id, created_at, updated_at, valid_until')
       .eq('helper_id', helperId)
       .order('created_at', { ascending: false })
 
@@ -261,7 +261,7 @@ export async function getHelperInsurance(helperId: string) {
   try {
     const { data, error } = await supabase
       .from('service_insurance')
-      .select('*')
+      .select('id, helper_id, provider_name, policy_number, coverage_amount, coverage_type, start_date, end_date, status, document_url, created_at')
       .eq('helper_id', helperId)
       .order('created_at', { ascending: false })
 
@@ -637,7 +637,7 @@ export async function getHelperTrustScore(helperId: string) {
   try {
     const { data, error } = await supabase
       .from('helper_trust_scores')
-      .select('*')
+      .select('id, helper_id, overall_score, trust_level, background_check_score, verification_score, rating_score, completion_score, updated_at')
       .eq('helper_id', helperId)
       .maybeSingle()
 

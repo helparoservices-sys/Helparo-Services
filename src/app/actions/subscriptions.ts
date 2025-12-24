@@ -192,7 +192,7 @@ export async function getAllSubscriptionPlans() {
     
     const { data, error } = await supabase
       .from('subscription_plans')
-      .select('*')
+      .select('id, name, description, price_rupees, billing_cycle, features, is_active, trial_days, created_at')
       .order('price_rupees', { ascending: true })
     
     if (error) throw error

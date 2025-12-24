@@ -43,7 +43,7 @@ export default function EditServiceAreaPage() {
     const supabase = createClient()
     const { data, error } = await supabase
       .from('service_areas')
-      .select('*')
+      .select('id, name, slug, description, level, parent_id, is_active, display_order, latitude, longitude, radius_km, metadata')
       .eq('id', areaId)
       .single()
 
@@ -75,7 +75,7 @@ export default function EditServiceAreaPage() {
 
     const { data, error } = await supabase
       .from('service_areas')
-      .select('*')
+      .select('id, name, slug, level')
       .eq('level', parentLevel)
       .eq('is_active', true)
       .order('name')

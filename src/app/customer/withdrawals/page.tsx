@@ -42,9 +42,10 @@ export default function CustomerWithdrawalsPage() {
     setIsHelper(profile?.role === 'helper')
 
     // Load withdrawal requests
+    // EGRESS FIX: Select only needed columns
     const { data, error } = await supabase
       .from('withdrawal_requests')
-      .select('*')
+      .select('id, amount_paise, status, requested_at, approved_at, rejected_at, admin_note')
       .eq('helper_id', user.id)
       .order('requested_at', { ascending: false })
       .limit(50) // 🟢 SAFE: Most recent 50 withdrawals sufficient for UI

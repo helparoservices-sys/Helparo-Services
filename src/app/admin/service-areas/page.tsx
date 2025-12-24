@@ -40,7 +40,7 @@ export default function ServiceAreasPage() {
     const supabase = createClient()
     const { data, error } = await supabase
       .from('service_areas')
-      .select('*')
+      .select('id, name, slug, level, parent_id, is_active, display_order, latitude, longitude')
       .order('level', { ascending: true })
       .order('display_order', { ascending: true })
 

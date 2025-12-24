@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
@@ -592,15 +592,40 @@ export default function JobTrackingPage() {
     } catch (err) { console.error(err) }
   }
 
+  // Debounce ref to prevent rapid refetches (egress optimization)
+  const lastFetchRef = useRef<number>(0)
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
+  const debouncedLoadJobDetails = useCallback(() => {
+    const now = Date.now()
+    // Minimum 2 seconds between fetches to reduce egress
+    if (now - lastFetchRef.current < 2000) {
+      // If already scheduled, skip
+      if (fetchTimeoutRef.current) return
+      // Schedule for later
+      fetchTimeoutRef.current = setTimeout(() => {
+        fetchTimeoutRef.current = null
+        lastFetchRef.current = Date.now()
+        loadJobDetails()
+      }, 2000 - (now - lastFetchRef.current))
+      return
+    }
+    lastFetchRef.current = now
+    loadJobDetails()
+  }, [])
+
   useEffect(() => {
     loadJobDetails()
     const supabase = createClient()
     const channel = supabase
       .channel(`job-${requestId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `id=eq.${requestId}` }, () => loadJobDetails())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `id=eq.${requestId}` }, () => debouncedLoadJobDetails())
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [requestId])
+    return () => { 
+      supabase.removeChannel(channel)
+      if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current)
+    }
+  }, [requestId, debouncedLoadJobDetails])
 
   async function loadJobDetails() {
     try {

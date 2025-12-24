@@ -50,9 +50,10 @@ export default function CustomerCampaignsPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setLoading(false); return }
 
+    // EGRESS FIX: Select only needed columns
     const { data: campaignsData } = await supabase
       .from('campaigns')
-      .select('*')
+      .select('id, title, description, campaign_type, discount_type, discount_value, max_discount_amount, min_order_value, start_date, end_date, banner_url, max_redemptions_per_user, is_active')
       .eq('is_active', true)
       .gte('end_date', new Date().toISOString())
       .order('start_date', { ascending: false })

@@ -150,7 +150,7 @@ export async function getUserSessions() {
 
     const { data: sessions, error } = await supabase
       .from('user_sessions')
-      .select('*')
+      .select('id, user_id, device_info, ip_address, user_agent, last_active_at, created_at, revoked')
       .eq('user_id', user.id)
       .eq('revoked', false)
       .order('last_active_at', { ascending: false })
@@ -290,7 +290,7 @@ export async function getLoginAttempts(limit: number = 10) {
 
     const { data: attempts, error } = await supabase
       .from('login_attempts')
-      .select('*')
+      .select('id, user_id, ip_address, user_agent, success, failure_reason, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(limit)

@@ -81,7 +81,7 @@ export async function joinVideoCall(sessionId: string) {
     // Get session details
     const { data: session, error: sessionError } = await supabase
       .from('video_call_sessions')
-      .select('*')
+      .select('id, service_request_id, channel_name, status, started_at, duration_minutes')
       .eq('id', sessionId)
       .single()
 
@@ -398,7 +398,7 @@ export async function getSessionRecordings(sessionId: string) {
   try {
     const { data, error } = await supabase
       .from('call_recordings')
-      .select('*')
+      .select('id, session_id, recording_url, file_size, duration_seconds, status, created_at')
       .eq('session_id', sessionId)
       .order('created_at', { ascending: false })
 
@@ -422,7 +422,7 @@ export async function createCallAnalytics(sessionId: string) {
     // Get session details
     const { data: session } = await supabase
       .from('video_call_sessions')
-      .select('*')
+      .select('id, duration_minutes, status')
       .eq('id', sessionId)
       .single()
 
@@ -492,7 +492,7 @@ export async function getCallAnalytics(sessionId: string) {
   try {
     const { data, error } = await supabase
       .from('call_analytics')
-      .select('*')
+      .select('id, session_id, total_participants, peak_participants, average_call_quality, total_duration_minutes, network_issues_count, reconnection_attempts, created_at')
       .eq('session_id', sessionId)
       .single()
 

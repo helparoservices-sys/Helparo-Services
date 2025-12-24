@@ -592,7 +592,7 @@ export async function getActiveCampaigns() {
     const now = new Date().toISOString()
     const { data, error } = await supabase
       .from('seasonal_campaigns')
-      .select('*')
+      .select('id, name, description, discount_type, discount_value, min_order_amount, max_discount_amount, start_date, end_date, is_active, max_redemptions_per_user')
       .eq('is_active', true)
       .lte('start_date', now)
       .gte('end_date', now)
@@ -615,7 +615,7 @@ export async function applyCampaignToOrder(campaignId: string, serviceRequestId:
     // Get campaign details
     const { data: campaign } = await supabase
       .from('seasonal_campaigns')
-      .select('*')
+      .select('id, name, discount_type, discount_value, min_order_amount, max_discount_amount, start_date, end_date, is_active, max_redemptions_per_user')
       .eq('id', campaignId)
       .single()
 

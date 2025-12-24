@@ -54,7 +54,7 @@ export default function NewServiceAreaPage() {
 
     const { data, error } = await supabase
       .from('service_areas')
-      .select('*')
+      .select('id, name, slug, level')
       .eq('level', parentLevel)
       .eq('is_active', true)
       .order('name')

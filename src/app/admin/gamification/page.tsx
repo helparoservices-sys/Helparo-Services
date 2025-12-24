@@ -9,12 +9,12 @@ export default async function AdminGamificationPage() {
   const [badgesResult, achievementsResult, userBadgesResult, userAchievementsResult] = await Promise.all([
     supabase
       .from('badge_definitions')
-      .select('*')
+      .select('id, name, description, badge_type, icon_url, criteria, is_active, created_at')
       .order('created_at', { ascending: false }),
     
     supabase
       .from('achievements')
-      .select('*')
+      .select('id, name, description, achievement_type, target_value, points_reward, is_active, created_at')
       .order('created_at', { ascending: false }),
     
     supabase

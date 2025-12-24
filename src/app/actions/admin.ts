@@ -624,7 +624,7 @@ export async function getSystemSettings() {
     // Get commission settings
     const { data: commissionData } = await supabase
       .from('commission_settings')
-      .select('*')
+      .select('id, percent, surge_multiplier, service_radius_km, emergency_radius_km, min_withdrawal_amount, auto_payout_threshold, created_at')
       .order('created_at', { ascending: false })
       .limit(1)
       .single()
@@ -632,7 +632,7 @@ export async function getSystemSettings() {
     // Get gamification settings
     const { data: gamificationData } = await supabase
       .from('system_settings')
-      .select('*')
+      .select('key, value')
       .eq('key', 'gamification_config')
       .single()
     
@@ -908,7 +908,7 @@ export async function sendTestNotification(templateId: string) {
     // Get template
     const { data: template } = await supabase
       .from('notification_templates')
-      .select('*')
+      .select('id, name, channel, title, body, is_active')
       .eq('id', templateId)
       .single()
 

@@ -33,9 +33,10 @@ export default function CustomerBundlesPage() {
   const loadBundles = async () => {
     setLoading(true)
 
+    // EGRESS FIX: Select only needed columns
     const { data } = await supabase
       .from('service_bundles')
-      .select('*')
+      .select('id, name, description, bundle_type, total_original_price, bundle_price, discount_percentage, validity_days, max_redemptions, is_active, icon_url, banner_url')
       .eq('is_active', true)
       .order('bundle_price', { ascending: true })
 

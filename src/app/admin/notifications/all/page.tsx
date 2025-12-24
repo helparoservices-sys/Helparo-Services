@@ -15,7 +15,7 @@ export default async function AdminNotificationsList() {
   // Fetch actual notifications for the admin user
   const { data: notifications } = await supabase
     .from('notifications')
-    .select('*')
+    .select('id, user_id, title, body, type, channel, status, read_at, created_at, metadata')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(50)

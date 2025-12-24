@@ -210,7 +210,7 @@ export async function updateUserAchievementProgress(userId: string, achievementI
     // Check if user achievement record exists
     const { data: existing } = await supabase
       .from('user_achievements')
-      .select('*')
+      .select('id, user_id, achievement_id, current_value, progress_percent, is_completed, completed_at')
       .eq('user_id', userId)
       .eq('achievement_id', achievementId)
       .maybeSingle()
@@ -327,7 +327,7 @@ export async function addLoyaltyPoints(userId: string, points: number, transacti
     // Get or create loyalty account
     let { data: account } = await supabase
       .from('loyalty_points')
-      .select('*')
+      .select('id, user_id, current_balance, lifetime_earned, lifetime_spent')
       .eq('user_id', userId)
       .maybeSingle()
 
@@ -401,7 +401,7 @@ export async function redeemLoyaltyPoints(formData: FormData) {
     // Get loyalty account
     const { data: account } = await supabase
       .from('loyalty_points')
-      .select('*')
+      .select('id, user_id, current_balance, lifetime_earned, lifetime_spent')
       .eq('user_id', user.id)
       .single()
 
@@ -453,7 +453,7 @@ export async function getLoyaltyBalance(userId: string) {
 
     const { data, error } = await supabase
       .from('loyalty_points')
-      .select('*')
+      .select('id, user_id, current_balance, lifetime_earned, lifetime_spent, tier')
       .eq('user_id', userId)
       .maybeSingle()
 
@@ -474,7 +474,7 @@ export async function getLoyaltyTransactions(userId: string, limit = 50) {
 
     const { data, error } = await supabase
       .from('loyalty_transactions')
-      .select('*')
+      .select('id, user_id, points_change, transaction_type, description, balance_after, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit)

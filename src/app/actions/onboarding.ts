@@ -395,7 +395,7 @@ export async function getHelperOnboardingStatus() {
 
     const { data: bankAccount } = await supabase
       .from('helper_bank_accounts')
-      .select('*')
+      .select('id, helper_id, account_holder_name, account_number, ifsc_code, bank_name, is_primary, is_verified')
       .eq('helper_id', user.id)
       .eq('is_primary', true)
       .single()

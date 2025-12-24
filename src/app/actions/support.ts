@@ -346,7 +346,7 @@ export async function getSLAConfigurations() {
   try {
     const { data, error } = await supabase
       .from('sla_configurations')
-      .select('*')
+      .select('id, priority, response_time_hours, resolution_time_hours, escalation_threshold_hours, is_active')
       .order('priority')
 
     if (error) throw error
@@ -453,7 +453,7 @@ export async function getTicketAnalytics(startDate?: string, endDate?: string) {
 
     let query = supabase
       .from('support_tickets')
-      .select('*')
+      .select('id, status, priority, created_at, first_response_at, resolved_at')
 
     if (startDate) {
       query = query.gte('created_at', startDate)

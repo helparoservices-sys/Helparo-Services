@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -54,25 +54,58 @@ export default function ActiveRequestsPage() {
   const router = useRouter()
   const [requests, setRequests] = useState<ActiveRequest[]>([])
   const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
   const supabase = createClient()
+  
+  // EGRESS FIX: Debounce ref to prevent rapid refetches
+  const lastFetchRef = useRef<number>(0)
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
+  const debouncedLoadRequests = useCallback(() => {
+    const now = Date.now()
+    if (now - lastFetchRef.current < 2000) {
+      if (fetchTimeoutRef.current) return
+      fetchTimeoutRef.current = setTimeout(() => {
+        fetchTimeoutRef.current = null
+        lastFetchRef.current = Date.now()
+        loadActiveRequests()
+      }, 2000 - (now - lastFetchRef.current))
+      return
+    }
+    lastFetchRef.current = now
+    loadActiveRequests()
+  }, [])
+
+  // Get user ID first
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) setUserId(user.id)
+    }
+    getUser()
+  }, [])
 
   useEffect(() => {
     loadActiveRequests()
     
-    // Real-time subscription
+    // EGRESS FIX: Only subscribe once we have user ID, and filter to their requests
+    if (!userId) return
+    
     const channel = supabase
       .channel('active-requests')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: 'service_requests'
-      }, () => loadActiveRequests())
+        table: 'service_requests',
+        filter: `customer_id=eq.${userId}`  // Only this user's requests
+      }, () => debouncedLoadRequests())
       .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
+      if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current)
     }
-  }, [])
+  }, [userId, debouncedLoadRequests])
 
   async function loadActiveRequests() {
     try {

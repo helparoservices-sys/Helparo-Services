@@ -746,10 +746,14 @@ export function useJobNotifications() {
           }
           
           // Fetch full notification details
+          // EGRESS FIX: Select only needed columns instead of *
           const { data: rawData, error } = await supabase
             .from('broadcast_notifications')
             .select(`
-              *,
+              id,
+              request_id,
+              distance_km,
+              sent_at,
               service_request:request_id (
                 id,
                 title,
@@ -881,10 +885,14 @@ export function useJobNotifications() {
           return
         }
 
+        // EGRESS FIX: Select only needed columns instead of *
         const { data: rawData, error } = await supabase
           .from('broadcast_notifications')
           .select(`
-            *,
+            id,
+            request_id,
+            distance_km,
+            sent_at,
             service_request:request_id (
               id,
               title,

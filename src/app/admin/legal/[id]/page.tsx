@@ -11,7 +11,7 @@ export default async function EditLegalDocumentPage({ params }: { params: { id: 
   // Fetch document
   const { data: document, error } = await supabase
     .from('legal_documents')
-    .select('*')
+    .select('id, title, slug, content, document_type, version, is_active, effective_date, created_at, updated_at')
     .eq('id', params.id)
     .single()
 

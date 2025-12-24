@@ -59,7 +59,7 @@ export default function EditServicePage() {
       // Load current service data
       const { data: service, error: fetchError } = await supabase
         .from('service_categories')
-        .select('*')
+        .select('id, name, slug, description, parent_id, is_active, icon, base_price, price_type, unit_name, requires_location, supports_emergency, display_order')
         .eq('id', serviceId)
         .single()
 

@@ -143,9 +143,10 @@ export default function HelperAchievementsPage() {
       .single()
 
     // Load achievements
+    // EGRESS FIX: Select only needed columns
     const { data: achievementsData } = await supabase
       .from('achievements')
-      .select('*')
+      .select('id, user_id, achievement_type, unlocked_at, title, description, icon')
       .eq('user_id', user.id)
       .order('unlocked_at', { ascending: false })
 

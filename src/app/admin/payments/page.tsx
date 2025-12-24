@@ -56,7 +56,7 @@ export default async function AdminPaymentsPage() {
   // Platform wallet
   const { data: platformWallet, error: walletError } = await supabase
     .from('wallet_accounts')
-    .select('*')
+    .select('id, user_id, balance, currency, created_at, updated_at')
     .eq('user_id', platformId)
     .maybeSingle()
   if (walletError) error = walletError.message

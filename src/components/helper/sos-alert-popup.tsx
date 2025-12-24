@@ -160,9 +160,10 @@ export default function SOSAlertPopup() {
 
     const checkForSOSAlerts = async (userId: string) => {
       // Check for any existing unread SOS notifications (identify by data.is_sos)
+      // EGRESS FIX: Select only needed columns instead of '*'
       const { data: existingAlerts, error } = await supabase
         .from('notifications')
-        .select('*')
+        .select('id, title, body, data, created_at')
         .eq('user_id', userId)
         .is('read_at', null)
         .order('created_at', { ascending: false })

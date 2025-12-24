@@ -14,9 +14,10 @@ export async function GET() {
     }
 
     const adminClient = createAdminClient()
+    // EGRESS FIX: Select only needed columns for debug
     const { data: profile } = await adminClient
       .from('profiles')
-      .select('*')
+      .select('id, full_name, role, phone, email, avatar_url')
       .eq('id', user.id)
       .single()
 

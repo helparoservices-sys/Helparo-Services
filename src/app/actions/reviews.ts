@@ -230,7 +230,7 @@ export async function getHelperRatingSummary(helperId: string) {
   try {
     const { data, error } = await supabase
       .from('helper_rating_summary')
-      .select('*')
+      .select('helper_id, average_rating, total_reviews, five_star, four_star, three_star, two_star, one_star')
       .eq('helper_id', helperId)
       .maybeSingle()
 

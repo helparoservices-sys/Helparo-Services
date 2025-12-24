@@ -67,9 +67,10 @@ export default function HelperReferralsPage() {
     const code = `HPRO${user.id.substring(0, 6).toUpperCase()}`
     setReferralCode(code)
 
+    // EGRESS FIX: Select only needed columns
     const { data: refData } = await supabase
       .from('helper_referrals')
-      .select('*')
+      .select('id, referred_helper_id, referral_code, status, created_at, jobs_completed, helper_name')
       .eq('referrer_id', user.id)
       .order('created_at', { ascending: false })
 

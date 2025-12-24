@@ -185,7 +185,7 @@ export async function getLegalDocument(id: string) {
 
   const { data, error } = await supabase
     .from('legal_documents')
-    .select('*')
+    .select('id, title, slug, content, document_type, version, is_active, effective_date, created_at, updated_at')
     .eq('id', id)
     .single()
 

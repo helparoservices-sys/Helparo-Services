@@ -51,9 +51,10 @@ export default function CustomerSubscriptionsPage() {
     setCurrentStatus(status as any)
 
     // Load available plans for customers only
+    // EGRESS FIX: Select only needed columns
     const { data: plansData } = await supabase
       .from('subscription_plans')
-      .select('*')
+      .select('id, code, name, description, price_rupees, interval, included_features, commission_discount_percent, extra_radius_km, priority_level, trial_days, is_active')
       .eq('is_active', true)
       .like('code', 'CUSTOMER_%')
       .order('price_rupees')

@@ -821,7 +821,7 @@ export async function getHelperFullDetails(userId: string): Promise<{ data: Help
     // Helper profile first (needed for helper_location_history FK)
     const helperProfileResult = await supabase
       .from('helper_profiles')
-      .select('*')
+      .select('id, user_id, address, city, state, pincode, latitude, longitude, service_categories, service_radius_km, bio, verification_status, is_available, rating_avg, completed_jobs_count')
       .eq('user_id', userId)
       .single()
 
@@ -900,13 +900,13 @@ export async function getHelperFullDetails(userId: string): Promise<{ data: Help
       // Background Checks
       supabase
         .from('background_check_results')
-        .select('*')
+        .select('id, helper_id, check_type, status, result, provider, created_at, valid_until')
         .eq('helper_id', userId),
       
       // Trust Score
       supabase
         .from('helper_trust_scores')
-        .select('*')
+        .select('helper_id, overall_score, trust_level, background_check_score, verification_score, rating_score, completion_score, updated_at')
         .eq('helper_id', userId)
         .single(),
       
@@ -922,7 +922,7 @@ export async function getHelperFullDetails(userId: string): Promise<{ data: Help
       // Earnings History
       supabase
         .from('helper_earnings')
-        .select('*')
+        .select('id, helper_id, request_id, amount, commission, net_amount, status, created_at')
         .eq('helper_id', userId)
         .order('created_at', { ascending: false })
         .limit(50),
@@ -943,7 +943,7 @@ export async function getHelperFullDetails(userId: string): Promise<{ data: Help
       // Bank Accounts
       supabase
         .from('helper_bank_accounts')
-        .select('*')
+        .select('id, helper_id, account_holder_name, bank_name, is_primary, is_verified, created_at')
         .eq('helper_id', userId)
         .order('created_at', { ascending: false }),
 

@@ -20,7 +20,7 @@ export async function getWalletBalance() {
     const supabase = await createClient()
     const { data, error } = await supabase
       .from('wallet_accounts')
-      .select('*')
+      .select('id, user_id, balance, currency, created_at, updated_at')
       .eq('user_id', user.id)
       .maybeSingle()
 
@@ -195,7 +195,7 @@ export async function getEscrowDetails(requestId: string) {
     const supabase = await createClient()
     const { data, error } = await supabase
       .from('escrows')
-      .select('*')
+      .select('id, request_id, amount, status, funded_at, released_at, created_at')
       .eq('request_id', requestId)
       .maybeSingle()
 
@@ -222,7 +222,7 @@ export async function getPlatformStats() {
     
     const { data: platformWallet, error: walletError } = await supabase
       .from('wallet_accounts')
-      .select('*')
+      .select('id, user_id, balance, currency, created_at, updated_at')
       .eq('user_id', platformId)
       .maybeSingle()
 

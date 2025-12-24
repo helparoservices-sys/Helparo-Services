@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { 
@@ -375,13 +375,33 @@ export default function HelperDashboard() {
     }
   }
 
+  // Debounce ref to prevent rapid refetches (egress optimization)
+  const lastDashboardFetchRef = useRef<number>(0)
+  const dashboardFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
+  const debouncedRefreshDashboard = useCallback(() => {
+    const now = Date.now()
+    // Minimum 3 seconds between dashboard fetches
+    if (now - lastDashboardFetchRef.current < 3000) {
+      if (dashboardFetchTimeoutRef.current) return
+      dashboardFetchTimeoutRef.current = setTimeout(() => {
+        dashboardFetchTimeoutRef.current = null
+        lastDashboardFetchRef.current = Date.now()
+        refreshDashboard()
+      }, 3000 - (now - lastDashboardFetchRef.current))
+      return
+    }
+    lastDashboardFetchRef.current = now
+    refreshDashboard()
+  }, [])
+
   useEffect(() => {
     if (!userId) return
     const supabase = createClient()
     
-    // Subscribe to service_requests assigned to this helper
-    const assignedChannel = supabase
-      .channel('dashboard-assigned-jobs')
+    // EGRESS FIX: Merged into single channel with multiple listeners
+    const dashboardChannel = supabase
+      .channel('dashboard-updates')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -389,13 +409,8 @@ export default function HelperDashboard() {
         filter: `assigned_helper_id=eq.${userId}`
       }, () => {
         console.log('📬 Assigned job update received')
-        refreshDashboard()
+        debouncedRefreshDashboard()
       })
-      .subscribe()
-    
-    // Subscribe to helper_profiles to catch availability changes
-    const helperProfileChannel = supabase
-      .channel('dashboard-helper-profile')
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
@@ -403,15 +418,15 @@ export default function HelperDashboard() {
         filter: `user_id=eq.${userId}`
       }, () => {
         console.log('👤 Helper profile update received')
-        refreshDashboard()
+        debouncedRefreshDashboard()
       })
       .subscribe()
 
     return () => { 
-      supabase.removeChannel(assignedChannel)
-      supabase.removeChannel(helperProfileChannel)
+      supabase.removeChannel(dashboardChannel)
+      if (dashboardFetchTimeoutRef.current) clearTimeout(dashboardFetchTimeoutRef.current)
     }
-  }, [userId])
+  }, [userId, debouncedRefreshDashboard])
 
   const handleAvailabilityToggle = async (newValue: boolean) => {
     setTogglingAvailability(true)

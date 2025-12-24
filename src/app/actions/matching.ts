@@ -130,7 +130,7 @@ export async function getHelperStatistics(helperId: string) {
 
     const { data, error } = await supabase
       .from('helper_statistics')
-      .select('*')
+      .select('helper_id, total_jobs, completed_jobs, cancelled_jobs, average_rating, total_earnings, response_rate, acceptance_rate')
       .eq('helper_id', helperId)
       .maybeSingle()
 

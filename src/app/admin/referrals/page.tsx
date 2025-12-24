@@ -8,7 +8,7 @@ export default async function AdminReferralsPage() {
   // Fetch referrals
   const { data: referralsData } = await supabase
     .from('referrals')
-    .select('*')
+    .select('id, referrer_id, referred_user_id, referral_code, status, created_at, converted_at, rewarded_at')
     .order('created_at', { ascending: false })
     .limit(50)
 
