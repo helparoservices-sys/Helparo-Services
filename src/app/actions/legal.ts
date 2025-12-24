@@ -69,7 +69,7 @@ export async function createLegalDocument(input: CreateDocumentInput) {
       is_active: input.is_active,
       published_at: input.is_active ? new Date().toISOString() : null
     }])
-    .select()
+    .select('id, type, version, title, is_active, published_at, created_at')
     .single()
 
   if (error) {
@@ -131,7 +131,7 @@ export async function updateLegalDocument(input: UpdateDocumentInput) {
       published_at: input.is_active && !current.is_active ? new Date().toISOString() : undefined
     })
     .eq('id', input.id)
-    .select()
+    .select('id, type, version, title, is_active, published_at, updated_at')
     .single()
 
   if (error) {

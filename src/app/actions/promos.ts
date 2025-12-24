@@ -152,7 +152,7 @@ export async function createPromo(input: {
         allowed_roles: input.allowedRoles && input.allowedRoles.length > 0 ? input.allowedRoles : ['customer'],
         created_by: profile.id
       })
-      .select()
+      .select('id, code, description, discount_type, discount_value, is_active, start_date, end_date')
       .maybeSingle()
     if (error) throw error
     logger.info('Promo created', { code: safeCode, adminId: user.id })
@@ -243,7 +243,7 @@ export async function updatePromo(promoId: string, changes: {
       .from('promo_codes')
       .update(payload)
       .eq('id', promoId)
-      .select()
+      .select('id, code, description, discount_type, discount_value, is_active, start_date, end_date')
       .maybeSingle()
     if (error) throw error
     logger.info('Promo updated', { promoId, adminId: user.id, fields: Object.keys(payload) })

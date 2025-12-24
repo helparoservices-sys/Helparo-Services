@@ -199,7 +199,7 @@ export async function addHelperSpecialization(data: {
         experience_years: data.experienceYears || 0,
         certification_url: data.certificationUrl,
       })
-      .select()
+      .select('id, helper_id, service_id, experience_years, certification_url')
       .single();
 
     if (error) throw error;
@@ -489,7 +489,7 @@ export async function uploadVerificationDocument(data: {
         expiry_date: data.expiryDate || null,
         status: 'pending',
       })
-      .select()
+      .select('id, helper_id, document_type, document_url, status, created_at')
       .single();
 
     if (insertError) throw insertError;

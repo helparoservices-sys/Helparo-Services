@@ -83,7 +83,7 @@ export async function createServiceRequest(formData: z.infer<typeof createServic
         status: 'open',
         created_at: new Date().toISOString(),
       })
-      .select()
+      .select('id, customer_id, category_id, description, service_address, service_city, status, budget_min, budget_max, created_at')
       .single()
 
     if (error) {
@@ -203,7 +203,7 @@ export async function updateServiceRequestStatus(
         updated_at: new Date().toISOString() 
       })
       .eq('id', requestId)
-      .select()
+      .select('id, customer_id, status, updated_at')
       .single()
 
     if (error) {

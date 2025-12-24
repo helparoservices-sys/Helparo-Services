@@ -74,7 +74,7 @@ export async function createReview(formData: FormData) {
         communication_rating: communication,
         professionalism_rating: professionalism
       })
-      .select()
+      .select('id, service_request_id, helper_id, customer_id, rating, comment, created_at')
       .single()
 
     if (reviewError) throw reviewError
@@ -122,7 +122,7 @@ export async function addReviewPhotos(reviewId: string, photoUrls: string[]) {
     const { data, error } = await supabase
       .from('review_photos')
       .insert(photos)
-      .select()
+      .select('id, review_id, photo_url')
 
     if (error) throw error
 

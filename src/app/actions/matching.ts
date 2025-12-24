@@ -182,7 +182,7 @@ export async function addHelperSpecialization(formData: FormData) {
         years_of_experience: yearsOfExperience,
         certifications: certifications ? certifications.split(',').map(c => c.trim()) : []
       })
-      .select()
+      .select('id, helper_id, category_id, years_of_experience, certifications, is_verified')
       .single()
 
     if (error) throw error
@@ -246,7 +246,7 @@ export async function updateHelperSpecialization(formData: FormData) {
       .from('helper_specializations')
       .update(updateData)
       .eq('id', specializationId)
-      .select()
+      .select('id, helper_id, category_id, years_of_experience, certifications, is_verified, verified_at')
       .single()
 
     if (error) throw error

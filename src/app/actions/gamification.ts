@@ -46,7 +46,7 @@ export async function createBadgeDefinition(formData: FormData) {
         requirement,
         points_reward: points
       })
-      .select()
+      .select('id, name, description, icon_url, badge_type, requirement, points_reward')
       .single()
 
     if (error) throw error
@@ -95,7 +95,7 @@ export async function awardBadgeToUser(userId: string, badgeId: string) {
         user_id: userId,
         badge_id: badgeId
       })
-      .select()
+      .select('id, user_id, badge_id, earned_at')
       .single()
 
     if (error) throw error
@@ -177,7 +177,7 @@ export async function createAchievement(formData: FormData) {
         target_value: targetValue,
         points_reward: points
       })
-      .select()
+      .select('id, title, description, icon_url, category, target_value, points_reward')
       .single()
 
     if (error) throw error
@@ -234,7 +234,7 @@ export async function updateUserAchievementProgress(userId: string, achievementI
           completed_at: isCompleted ? new Date().toISOString() : null
         })
         .eq('id', existing.id)
-        .select()
+        .select('id, user_id, achievement_id, current_value, progress_percent, is_completed, completed_at')
         .single()
 
       if (error) throw error
@@ -260,7 +260,7 @@ export async function updateUserAchievementProgress(userId: string, achievementI
           is_completed: isCompleted,
           completed_at: isCompleted ? new Date().toISOString() : null
         })
-        .select()
+        .select('id, user_id, achievement_id, current_value, progress_percent, is_completed, completed_at')
         .single()
 
       if (error) throw error
@@ -340,7 +340,7 @@ export async function addLoyaltyPoints(userId: string, points: number, transacti
           lifetime_earned: 0,
           lifetime_spent: 0
         })
-        .select()
+        .select('id, user_id, current_balance, lifetime_earned, lifetime_spent')
         .single()
 
       if (createError) throw createError
@@ -368,7 +368,7 @@ export async function addLoyaltyPoints(userId: string, points: number, transacti
         description: safeDescription,
         balance_after: account.current_balance + points
       })
-      .select()
+      .select('id, user_id, points_change, transaction_type, description, balance_after, created_at')
       .single()
 
     if (txError) throw txError
@@ -430,7 +430,7 @@ export async function redeemLoyaltyPoints(formData: FormData) {
         description,
         balance_after: account.current_balance - points
       })
-      .select()
+      .select('id, user_id, points_change, transaction_type, description, balance_after, created_at')
       .single()
 
     if (txError) throw txError

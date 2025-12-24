@@ -151,7 +151,7 @@ export async function completeHelperOnboarding(data: {
           .from('helper_bank_accounts')
           .update(bankData)
           .eq('id', existingBank.id)
-          .select()
+          .select('id, helper_id, account_holder_name, is_primary')
         bankError = result.error
         bankResult = result.data
         logger.info('Updating existing bank account', { existingBankId: existingBank.id })
@@ -160,7 +160,7 @@ export async function completeHelperOnboarding(data: {
         const result = await supabase
           .from('helper_bank_accounts')
           .insert(bankData)
-          .select()
+          .select('id, helper_id, account_holder_name, is_primary')
         bankError = result.error
         bankResult = result.data
         logger.info('Inserting new bank account')

@@ -44,7 +44,7 @@ export async function initiateBackgroundCheck(helperId: string, checkType: strin
         status: 'pending',
         initiated_by: user.id
       })
-      .select()
+      .select('id, helper_id, check_type, status, created_at')
       .single()
 
     if (error) throw error
@@ -98,7 +98,7 @@ export async function updateBackgroundCheckResult(formData: FormData) {
       .from('background_check_results')
       .update(updateData)
       .eq('id', checkId)
-      .select()
+      .select('id, helper_id, check_type, status, result, reviewed_by, reviewed_at, completed_at')
       .single()
 
     if (error) throw error
@@ -186,7 +186,7 @@ export async function createInsurancePolicy(formData: FormData) {
         policy_document_url: documentUrl,
         is_active: true
       })
-      .select()
+      .select('id, helper_id, provider_name, policy_number, coverage_amount, coverage_type, start_date, end_date, is_active, created_at')
       .single()
 
     if (error) throw error
@@ -230,7 +230,7 @@ export async function verifyInsurancePolicy(policyId: string, isVerified: boolea
       .from('service_insurance')
       .update(updateData)
       .eq('id', policyId)
-      .select()
+      .select('id, helper_id, provider_name, policy_number, is_verified, verified_by, verified_at')
       .single()
 
     if (error) throw error
@@ -304,7 +304,7 @@ export async function fileInsuranceClaim(formData: FormData) {
         filed_by: user.id,
         status: 'submitted'
       })
-      .select()
+      .select('id, policy_id, service_request_id, claim_amount, status, created_at')
       .single()
 
     if (error) throw error
@@ -360,7 +360,7 @@ export async function updateClaimStatus(formData: FormData) {
       .from('insurance_claims')
       .update(updateData)
       .eq('id', claimId)
-      .select()
+      .select('id, policy_id, claim_amount, status, resolution_notes, settled_at')
       .single()
 
     if (error) throw error
@@ -438,7 +438,7 @@ export async function recordGeofenceViolation(formData: FormData) {
         distance_meters: distance,
         severity: distance > 1000 ? 'high' : distance > 500 ? 'medium' : 'low'
       })
-      .select()
+      .select('id, helper_id, distance_meters, severity, created_at')
       .single()
 
     if (error) throw error
@@ -481,7 +481,7 @@ export async function reviewGeofenceViolation(violationId: string, actionTaken: 
         reviewed_at: new Date().toISOString()
       })
       .eq('id', violationId)
-      .select()
+      .select('id, helper_id, action_taken, admin_notes, reviewed_by, reviewed_at')
       .single()
 
     if (error) throw error

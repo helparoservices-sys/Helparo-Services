@@ -367,7 +367,7 @@ export async function createBadge(formData: {
         points_value: formData.points_value,
         is_active: formData.is_active
       })
-      .select()
+      .select('id, name, description, badge_type, requirement_type, requirement_value, rarity, points_value, is_active')
       .single()
     
     if (error) throw error
@@ -405,7 +405,7 @@ export async function updateBadge(badgeId: string, formData: {
         is_active: formData.is_active
       })
       .eq('id', badgeId)
-      .select()
+      .select('id, name, description, badge_type, requirement_type, requirement_value, rarity, points_value, is_active')
       .single()
     
     if (error) throw error
@@ -476,7 +476,7 @@ export async function createAchievement(formData: {
         reward_points: formData.reward_points,
         is_active: formData.is_active
       })
-      .select()
+      .select('id, name, description, category, achievement_type, reward_points, is_active')
       .single()
     
     if (error) throw error
@@ -512,7 +512,7 @@ export async function updateAchievement(achievementId: string, formData: {
         is_active: formData.is_active
       })
       .eq('id', achievementId)
-      .select()
+      .select('id, name, description, category, achievement_type, reward_points, is_active')
       .single()
     
     if (error) throw error

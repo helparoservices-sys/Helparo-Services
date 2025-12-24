@@ -436,6 +436,10 @@ export default function HelperJobPage() {
     }
   }
 
+  // Track last location update time to debounce (30 seconds minimum between updates)
+  const lastLocationUpdateRef = useRef<number>(0)
+  const LOCATION_UPDATE_INTERVAL = 30000 // 30 seconds
+
   function startLocationTracking() {
     if (!navigator.geolocation) {
       console.log('Geolocation not supported')
@@ -446,6 +450,13 @@ export default function HelperJobPage() {
 
     const watchId = navigator.geolocation.watchPosition(
       async (position) => {
+        // Debounce: Only update every 30 seconds to reduce egress
+        const now = Date.now()
+        if (now - lastLocationUpdateRef.current < LOCATION_UPDATE_INTERVAL) {
+          return
+        }
+        lastLocationUpdateRef.current = now
+
         try {
           console.log('📍 Location update:', position.coords.latitude, position.coords.longitude)
 

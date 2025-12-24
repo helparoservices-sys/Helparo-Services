@@ -99,7 +99,7 @@ export async function createSessionRecord(sessionToken: string) {
         is_current: true,
         expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
       })
-      .select()
+      .select('id, user_id, device_name, browser, os, location, is_current, created_at, last_active_at')
       .single()
 
     if (error) {

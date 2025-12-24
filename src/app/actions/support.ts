@@ -285,7 +285,7 @@ export async function sendTicketMessage(formData: FormData) {
         attachments: attachments ? JSON.parse(attachments) : null,
         is_internal: isInternal
       })
-      .select()
+      .select('id, ticket_id, sender_id, message, is_internal, created_at')
       .single()
 
     if (error) throw error

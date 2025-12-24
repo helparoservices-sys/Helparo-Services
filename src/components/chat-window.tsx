@@ -64,17 +64,19 @@ export function ChatWindow({ requestId, currentUserId, otherUser }: ChatWindowPr
     const { data } = await supabase
       .from('messages')
       .select(`
-        *,
+        id, sender_id, content, created_at, read_at, attachment_url, attachment_type, attachment_name, is_edited,
         sender:profiles!sender_id (
           full_name,
           avatar_url
         )
       `)
       .eq('request_id', requestId)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
+      .limit(50)
 
     if (data) {
-      setMessages(data as any)
+      // Reverse to show oldest first, but we fetched newest first for pagination
+      setMessages((data as any).reverse())
     }
   }
 

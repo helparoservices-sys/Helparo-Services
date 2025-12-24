@@ -73,7 +73,7 @@ export async function sendChatMessage(formData: z.infer<typeof sendMessageSchema
         content: sanitizedContent,
         created_at: new Date().toISOString(),
       })
-      .select()
+      .select('id, request_id, sender_id, content, created_at, read_at')
       .single()
 
     if (error) {

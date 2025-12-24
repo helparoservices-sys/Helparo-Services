@@ -60,7 +60,7 @@ export async function createServiceBundle(formData: FormData) {
         max_redemptions: maxRedemptions || 1,
         is_active: true
       })
-      .select()
+      .select('id, name, description, bundle_type, bundle_price, total_original_price, discount_percentage, validity_days, is_active')
       .single()
 
     if (error) throw error
@@ -119,7 +119,7 @@ export async function updateServiceBundle(bundleId: string, formData: FormData) 
       .from('service_bundles')
       .update(updates)
       .eq('id', bundleId)
-      .select()
+      .select('id, name, description, bundle_type, bundle_price, total_original_price, discount_percentage, validity_days, is_active')
       .single()
 
     if (error) throw error
@@ -190,7 +190,7 @@ export async function addServiceToBundle(bundleId: string, categoryId: string, q
         quantity,
         price_per_service: pricePerService
       })
-      .select()
+      .select('id, bundle_id, category_id, quantity, price_per_service')
       .single()
 
     if (error) throw error
@@ -275,7 +275,7 @@ export async function purchaseBundle(bundleId: string) {
         remaining_redemptions: bundle.max_redemptions,
         expiry_date: expiryDate.toISOString()
       })
-      .select()
+      .select('id, bundle_id, customer_id, purchase_price, remaining_redemptions, expiry_date, created_at')
       .single()
 
     if (purchaseError) throw purchaseError
@@ -438,7 +438,7 @@ export async function createCampaign(formData: FormData) {
         max_redemptions_per_user: maxRedemptionsPerUser,
         is_active: true
       })
-      .select()
+      .select('id, name, description, discount_type, discount_value, start_date, end_date, is_active')
       .single()
 
     if (error) throw error
@@ -489,7 +489,7 @@ export async function updateCampaign(campaignId: string, formData: FormData) {
       .from('seasonal_campaigns')
       .update(updates)
       .eq('id', campaignId)
-      .select()
+      .select('id, name, description, discount_type, discount_value, start_date, end_date, is_active')
       .single()
 
     if (error) throw error
