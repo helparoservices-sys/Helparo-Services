@@ -3,10 +3,14 @@ package in.helparo.app;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.ContentResolver;
+import android.graphics.Color;
 import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -17,8 +21,37 @@ public class MainActivity extends BridgeActivity {
     
     super.onCreate(savedInstanceState);
     
+    // CRITICAL: Force status bar configuration for light theme visibility
+    configureStatusBar();
+    
     // Create notification channels
     createNotificationChannels();
+  }
+  
+  /**
+   * Configure status bar to show dark icons on light background
+   * This ensures status bar icons are VISIBLE in light theme
+   */
+  private void configureStatusBar() {
+    Window window = getWindow();
+    
+    // Clear any translucent flags that might cause issues
+    window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+    
+    // Add flag to draw behind status bar if needed
+    window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+    
+    // Set status bar color to TEAL (matches app header gradient)
+    window.setStatusBarColor(Color.parseColor("#14B8A6"));
+    
+    // Use LIGHT status bar icons (white) on teal background
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      View decorView = window.getDecorView();
+      int flags = decorView.getSystemUiVisibility();
+      // REMOVE SYSTEM_UI_FLAG_LIGHT_STATUS_BAR for WHITE icons on teal
+      flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+      decorView.setSystemUiVisibility(flags);
+    }
   }
   
   private void createNotificationChannels() {

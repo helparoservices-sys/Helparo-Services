@@ -20,9 +20,9 @@ const config: CapacitorConfig = {
   
   plugins: {
     StatusBar: {
-      style: 'DARK',
-      backgroundColor: '#FFFFFF',  // Default white, pages can override dynamically
-      overlaysWebView: false,  // This is the KEY setting - prevents overlap
+      style: 'LIGHT',  // LIGHT = white icons on colored background
+      backgroundColor: '#14B8A6',  // Teal to match header gradient
+      overlaysWebView: false,  // CRITICAL: prevents status bar overlap
     },
     Geolocation: {
       enableHighAccuracy: true,
@@ -32,11 +32,6 @@ const config: CapacitorConfig = {
       appUrlOpen: {
         enabled: true,
       },
-    },
-    // SystemBars: NEW Capacitor 8.0+ plugin for edge-to-edge support
-    SystemBars: {
-      style: 'DARK',  // Dark text on light background  
-      insetsHandling: 'css',  // Injects CSS variables for safe area
     },
   },
 };

@@ -116,8 +116,8 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
   }, [showLogoutConfirm])
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-50">
-      {/* Spacer for status bar */}
+    <header className="fixed top-0 left-0 right-0 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 shadow-lg z-50">
+      {/* Spacer for status bar - now with matching gradient background */}
       <div className="h-8" />
       {/* Main header content */}
       <div className="flex items-center justify-between h-14 px-4">
@@ -125,20 +125,20 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
         <div className="flex items-center gap-3">
           <button
             onClick={onToggleSidebar}
-            className="flex items-center justify-center w-10 h-10 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="flex items-center justify-center w-10 h-10 hover:bg-white/20 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
-            <Menu className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+            <Menu className="h-5 w-5 text-white dark:text-slate-400" />
           </button>
 
           <Link href="/helper/dashboard" className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Helparo" className="w-8 h-8 rounded-lg shadow-md" />
-            <span className="font-bold text-lg bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent hidden md:block">
+            <img src="/logo.svg" alt="Helparo" className="w-8 h-8 rounded-lg shadow-md bg-white/20 p-1" />
+            <span className="font-bold text-lg text-white hidden md:block">
               Helparo Helper
             </span>
           </Link>
 
           {isVerified && (
-            <div className="hidden md:flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
+            <div className="hidden md:flex items-center gap-1 px-3 py-1 bg-white/20 text-white rounded-full text-xs font-medium">
               <Shield className="h-3 w-3" />
               Verified
             </div>
@@ -150,24 +150,24 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
           {/* Dark Mode Toggle */}
           <button
             onClick={toggleDarkMode}
-            className="flex items-center justify-center w-10 h-10 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="flex items-center justify-center w-10 h-10 hover:bg-white/20 dark:hover:bg-slate-800 rounded-lg transition-colors"
             aria-label="Toggle dark mode"
           >
             {isDarkMode ? (
-              <Sun className="h-5 w-5 text-yellow-500" />
+              <Sun className="h-5 w-5 text-yellow-300" />
             ) : (
-              <Moon className="h-5 w-5 text-slate-600" />
+              <Moon className="h-5 w-5 text-white" />
             )}
           </button>
 
           {/* Notifications */}
           <Link
             href="/helper/notifications"
-            className="relative flex items-center justify-center w-10 h-10 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="relative flex items-center justify-center w-10 h-10 hover:bg-white/20 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
-            <Bell className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+            <Bell className="h-5 w-5 text-white dark:text-slate-400" />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
             )}
           </Link>
 

@@ -34,22 +34,28 @@ export function CapacitorBackButton() {
         // Configure Capacitor StatusBar to avoid overlapping content on Android
         const { StatusBar, Style } = await import('@capacitor/status-bar')
 
-        // Dark icons on light background
-        await StatusBar.setStyle({ style: Style.Dark })
-
-        // Critical: prevent the WebView from drawing under the system status bar
+        // Check current theme from localStorage
+        const isDarkMode = localStorage.getItem('darkMode') === 'true'
+        
+        // CRITICAL: Prevent the WebView from drawing under the system status bar
         await StatusBar.setOverlaysWebView({ overlay: false })
 
-        // Match the native status bar background with the web UI header
-        await StatusBar.setBackgroundColor({ color: '#FFFFFF' })
+        if (isDarkMode) {
+          // Dark mode: Dark background with LIGHT (white) icons/text
+          await StatusBar.setBackgroundColor({ color: '#1F2937' }) // gray-800
+          await StatusBar.setStyle({ style: Style.Light }) // Light = white icons on dark bg
+        } else {
+          // Light mode: Teal header - use matching teal color with white icons
+          await StatusBar.setBackgroundColor({ color: '#14B8A6' }) // teal-500 to match header
+          await StatusBar.setStyle({ style: Style.Light }) // Light = white icons on teal bg
+        }
 
         // Ensure the bar is visible after applying the settings
         await StatusBar.show()
 
-        console.log('✅ StatusBar configured correctly')
+        console.log(`✅ StatusBar configured for ${isDarkMode ? 'DARK' : 'LIGHT'} mode`)
       } catch (error) {
         console.log('StatusBar not available:', error)
-        toast.error('Status bar setup failed. Please restart the app.')
       }
 
       try {

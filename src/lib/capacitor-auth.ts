@@ -246,19 +246,28 @@ export async function initializeCapacitor() {
   
   console.log('🚀 Initializing Capacitor app features')
   
-  // Initialize StatusBar plugin with VISIBLE TEST COLOR
+  // Initialize StatusBar plugin with theme-aware colors
   try {
     const { StatusBar, Style } = await import('@capacitor/status-bar')
     
-    // Ensure status bar is visible and doesn't overlay content
+    // Check current theme from localStorage
+    const isDarkMode = localStorage.getItem('darkMode') === 'true'
+    
+    // CRITICAL: Ensure status bar is visible and doesn't overlay content
     await StatusBar.setOverlaysWebView({ overlay: false })
     await StatusBar.show()
     
-    // SET TEST COLOR - DARK GRAY SO IT'S VISIBLE
-    await StatusBar.setBackgroundColor({ color: '#9CA3AF' })
-    await StatusBar.setStyle({ style: Style.Dark })
+    if (isDarkMode) {
+      // Dark mode: Dark background with LIGHT (white) icons/text
+      await StatusBar.setBackgroundColor({ color: '#1F2937' }) // gray-800
+      await StatusBar.setStyle({ style: Style.Light }) // Light = white icons on dark bg
+    } else {
+      // Light mode: Teal header - use matching teal color with white icons
+      await StatusBar.setBackgroundColor({ color: '#14B8A6' }) // teal-500 to match header
+      await StatusBar.setStyle({ style: Style.Light }) // Light = white icons on teal bg
+    }
     
-    console.log('✅ StatusBar initialized with DARK GRAY color for testing')
+    console.log(`✅ StatusBar initialized for ${isDarkMode ? 'DARK' : 'LIGHT'} mode`)
   } catch (error) {
     console.error('⚠️ StatusBar initialization failed:', error)
   }

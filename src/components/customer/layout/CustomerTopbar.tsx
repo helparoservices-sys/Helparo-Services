@@ -96,8 +96,8 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
   }, [showLogoutConfirm])
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 z-50">
-      {/* Spacer for status bar */}
+    <header className="fixed top-0 left-0 right-0 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 shadow-lg z-50">
+      {/* Spacer for status bar - now with matching gradient background */}
       <div className="h-8" />
       {/* Main header content */}
       <div className="flex items-center justify-between h-14 px-4">
@@ -105,13 +105,13 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
         <div className="flex items-center gap-3">
           <button
             onClick={onToggleSidebar}
-            className="flex items-center justify-center w-10 h-10 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="flex items-center justify-center w-10 h-10 hover:bg-white/20 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
-            <Menu className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+            <Menu className="h-5 w-5 text-white dark:text-gray-300" />
           </button>
           
           <Link href="/customer/dashboard" className="flex items-center">
-            <span className="text-lg font-bold text-gray-900 dark:text-white">helparo</span>
+            <span className="text-lg font-bold text-white dark:text-white">helparo</span>
           </Link>
         </div>
 
@@ -120,22 +120,22 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
           {/* Dark Mode Toggle */}
           <button
             onClick={toggleDarkMode}
-            className="flex items-center justify-center w-10 h-10 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="flex items-center justify-center w-10 h-10 hover:bg-white/20 dark:hover:bg-slate-800 rounded-lg transition-colors"
             aria-label="Toggle dark mode"
           >
             {isDarkMode ? (
-              <Sun className="h-5 w-5 text-yellow-500" />
+              <Sun className="h-5 w-5 text-yellow-300" />
             ) : (
-              <Moon className="h-5 w-5 text-gray-600" />
+              <Moon className="h-5 w-5 text-white" />
             )}
           </button>
 
           {/* Notifications */}
           <Link
             href="/customer/notifications"
-            className="relative flex items-center justify-center w-10 h-10 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="relative flex items-center justify-center w-10 h-10 hover:bg-white/20 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
-            <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+            <Bell className="h-5 w-5 text-white dark:text-gray-300" />
             {unreadCount > 0 && (
               <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-slate-900"></span>
             )}
@@ -145,9 +145,9 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center justify-center w-10 h-10 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              className="flex items-center justify-center w-10 h-10 hover:bg-white/20 dark:hover:bg-slate-800 rounded-lg transition-colors"
             >
-              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-full bg-white/20 dark:bg-gradient-to-r dark:from-emerald-500 dark:to-teal-500 flex items-center justify-center ring-2 ring-white/50">
                 <User className="h-4 w-4 text-white" />
               </div>
             </button>
