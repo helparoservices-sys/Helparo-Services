@@ -39,6 +39,7 @@ export default function HelperServicesPage() {
   const [expandedCategories, setExpandedCategories] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryNameMap, setCategoryNameMap] = useState<CategoryNameMap>({})
+  const [categoriesLoading, setCategoriesLoading] = useState(true)
 
   // Service area state
   const [states, setStates] = useState<any[]>([])
@@ -137,36 +138,53 @@ export default function HelperServicesPage() {
   }
 
   const loadCategories = async () => {
-    const supabase = createClient()
-    
-    const { data: rootCategories } = await supabase
-      .from('service_categories')
-      .select('id, name, slug')
-      .is('parent_id', null)
-      .eq('is_active', true)
-      .order('display_order', { ascending: true })
+    setCategoriesLoading(true)
+    try {
+      const supabase = createClient()
+      
+      const { data: rootCategories, error: rootError } = await supabase
+        .from('service_categories')
+        .select('id, name, slug')
+        .is('parent_id', null)
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
 
-    const { data: allSubcategories } = await supabase
-      .from('service_categories')
-      .select('id, name, slug, parent_id')
-      .not('parent_id', 'is', null)
-      .eq('is_active', true)
-      .order('display_order', { ascending: true })
+      if (rootError) {
+        console.error('Error loading root categories:', rootError)
+      }
 
-    setCategories(rootCategories || [])
-    setSubcategories(allSubcategories || [])
-    
-    // Build category name map for UUID -> name resolution
-    const nameMap: CategoryNameMap = {}
-    rootCategories?.forEach(cat => {
-      nameMap[cat.id] = cat.name
-      nameMap[cat.slug] = cat.name
-    })
-    allSubcategories?.forEach(cat => {
-      nameMap[cat.id] = cat.name
-      nameMap[cat.slug] = cat.name
-    })
-    setCategoryNameMap(nameMap)
+      const { data: allSubcategories, error: subError } = await supabase
+        .from('service_categories')
+        .select('id, name, slug, parent_id')
+        .not('parent_id', 'is', null)
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
+
+      if (subError) {
+        console.error('Error loading subcategories:', subError)
+      }
+
+      console.log('Loaded categories:', rootCategories?.length, 'subcategories:', allSubcategories?.length)
+
+      setCategories(rootCategories || [])
+      setSubcategories(allSubcategories || [])
+      
+      // Build category name map for UUID -> name resolution
+      const nameMap: CategoryNameMap = {}
+      rootCategories?.forEach(cat => {
+        nameMap[cat.id] = cat.name
+        nameMap[cat.slug] = cat.name
+      })
+      allSubcategories?.forEach(cat => {
+        nameMap[cat.id] = cat.name
+        nameMap[cat.slug] = cat.name
+      })
+      setCategoryNameMap(nameMap)
+    } catch (err) {
+      console.error('Error in loadCategories:', err)
+    } finally {
+      setCategoriesLoading(false)
+    }
   }
 
   const loadServiceAreaData = async () => {
@@ -597,7 +615,12 @@ export default function HelperServicesPage() {
 
                     {/* Categories */}
                     <div className="space-y-2 max-h-72 sm:max-h-96 overflow-y-auto -mx-2 px-2">
-                      {filteredCategories.length === 0 ? (
+                      {categoriesLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <LoadingSpinner size="md" />
+                          <span className="ml-2 text-gray-500">Loading categories...</span>
+                        </div>
+                      ) : filteredCategories.length === 0 ? (
                         <p className="text-gray-500 text-sm text-center py-4">No categories available</p>
                       ) : (
                         filteredCategories.map((rootCategory) => {
