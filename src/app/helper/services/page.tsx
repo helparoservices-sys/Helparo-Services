@@ -478,39 +478,41 @@ export default function HelperServicesPage() {
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 py-4 sm:py-8 px-3 sm:px-4">
       <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg border border-white/50 p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
-              My Services
-            </h1>
-            <p className="text-gray-600 text-xs sm:text-base mt-0.5 sm:mt-1">View and manage your service offerings</p>
-          </div>
-          {!editing ? (
-            <Button onClick={() => setEditing(true)} className="gap-2">
-              <Edit2 className="h-4 w-4" />
-              Edit Services
-            </Button>
-          ) : (
-            <div className="flex gap-2">
-              <Button onClick={cancelEdit} variant="outline" className="gap-2">
-                <X className="h-4 w-4" />
-                Cancel
-              </Button>
-              <Button onClick={handleSave} disabled={saving} className="gap-2">
-                {saving ? (
-                  <>
-                    <LoadingSpinner size="sm" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    Save Changes
-                  </>
-                )}
-              </Button>
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg border border-white/50 p-3 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-3xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
+                My Services
+              </h1>
+              <p className="text-gray-600 text-xs sm:text-base mt-0.5 sm:mt-1">View and manage your service offerings</p>
             </div>
-          )}
+            {!editing ? (
+              <Button onClick={() => setEditing(true)} className="gap-2 w-full sm:w-auto">
+                <Edit2 className="h-4 w-4" />
+                Edit Services
+              </Button>
+            ) : (
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button onClick={cancelEdit} variant="outline" className="gap-1.5 flex-1 sm:flex-none text-sm px-3">
+                  <X className="h-4 w-4" />
+                  Cancel
+                </Button>
+                <Button onClick={handleSave} disabled={saving} className="gap-1.5 flex-1 sm:flex-none text-sm px-3">
+                  {saving ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -580,7 +582,7 @@ export default function HelperServicesPage() {
                     </p>
                   </>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {/* Search */}
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -589,57 +591,62 @@ export default function HelperServicesPage() {
                         placeholder="Search categories..."
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
                       />
                     </div>
 
                     {/* Categories */}
-                    <div className="space-y-2 max-h-96 overflow-y-auto">
-                      {filteredCategories.map((rootCategory) => {
-                        const subs = subcategories.filter(sub => sub.parent_id === rootCategory.id)
-                        const isExpanded = expandedCategories.includes(rootCategory.id)
-                        const rootSelected = editedServiceCategories.includes(rootCategory.slug)
-                        const someSubSelected = subs.some((sub: any) => editedServiceCategories.includes(sub.slug))
+                    <div className="space-y-2 max-h-72 sm:max-h-96 overflow-y-auto -mx-2 px-2">
+                      {filteredCategories.length === 0 ? (
+                        <p className="text-gray-500 text-sm text-center py-4">No categories available</p>
+                      ) : (
+                        filteredCategories.map((rootCategory) => {
+                          const subs = subcategories.filter(sub => sub.parent_id === rootCategory.id)
+                          const isExpanded = expandedCategories.includes(rootCategory.id)
+                          const rootSelected = editedServiceCategories.includes(rootCategory.slug)
 
-                        return (
-                          <div key={rootCategory.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                            <div className="flex items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100">
-                              <input
-                                type="checkbox"
-                                checked={rootSelected}
-                                onChange={() => toggleCategory(rootCategory.slug)}
-                                className="w-4 h-4 text-green-600 rounded"
-                              />
-                              <button
-                                onClick={() => toggleCategoryExpansion(rootCategory.id)}
-                                className="flex-1 text-left font-medium flex items-center justify-between"
-                              >
-                                <span>{rootCategory.name}</span>
-                                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                              </button>
-                            </div>
-
-                            {isExpanded && subs.length > 0 && (
-                              <div className="p-2 space-y-1 bg-white">
-                                {subs.map((sub: any) => {
-                                  const subSelected = editedServiceCategories.includes(sub.slug)
-                                  return (
-                                    <label key={sub.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                                      <input
-                                        type="checkbox"
-                                        checked={subSelected}
-                                        onChange={() => toggleCategory(sub.slug)}
-                                        className="w-4 h-4 text-green-600 rounded"
-                                      />
-                                      <span className="text-sm">{sub.name}</span>
-                                    </label>
-                                  )
-                                })}
+                          return (
+                            <div key={rootCategory.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                              <div className="flex items-center gap-2 p-2.5 sm:p-3 bg-gray-50 hover:bg-gray-100">
+                                <input
+                                  type="checkbox"
+                                  checked={rootSelected}
+                                  onChange={() => toggleCategory(rootCategory.slug)}
+                                  className="w-4 h-4 min-w-[16px] text-green-600 rounded border-gray-300"
+                                />
+                                <button
+                                  onClick={() => toggleCategoryExpansion(rootCategory.id)}
+                                  className="flex-1 min-w-0 text-left font-medium text-sm sm:text-base flex items-center justify-between gap-2"
+                                >
+                                  <span className="truncate">{rootCategory.name || 'Unknown Category'}</span>
+                                  {subs.length > 0 && (
+                                    isExpanded ? <ChevronDown className="h-4 w-4 flex-shrink-0" /> : <ChevronRight className="h-4 w-4 flex-shrink-0" />
+                                  )}
+                                </button>
                               </div>
-                            )}
-                          </div>
-                        )
-                      })}
+
+                              {isExpanded && subs.length > 0 && (
+                                <div className="p-2 space-y-1 bg-white border-t border-gray-100">
+                                  {subs.map((sub: any) => {
+                                    const subSelected = editedServiceCategories.includes(sub.slug)
+                                    return (
+                                      <label key={sub.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          checked={subSelected}
+                                          onChange={() => toggleCategory(sub.slug)}
+                                          className="w-4 h-4 min-w-[16px] text-green-600 rounded border-gray-300"
+                                        />
+                                        <span className="text-xs sm:text-sm truncate">{sub.name || 'Unknown'}</span>
+                                      </label>
+                                    )
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })
+                      )}
                     </div>
                   </div>
                 )}
