@@ -3,17 +3,19 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════
-   HIDE SCROLLBARS - Clean mobile UI
+   HIDE ALL SCROLLBARS - Clean mobile app appearance
 ═══════════════════════════════════════════════════════════════════ */
 
-/* Hide scrollbars for all elements but keep scrollability */
+/* Hide scrollbars completely but keep scroll functionality */
 * {
   scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  -ms-overflow-style: none; /* IE/Edge */
 }
 
 *::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
+  width: 0;
+  height: 0;
 }
 
 /* ═══════════════════════════════════════════════════════════════════

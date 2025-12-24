@@ -91,8 +91,14 @@ export function CapacitorBackButton() {
               })
             }
           } else if (canGoBack || window.history.length > 1) {
-            // Not on dashboard: Normal back navigation
-            router.back()
+            // Not on dashboard: Dispatch custom event first to allow pages to handle internally
+            const event = new CustomEvent('capacitor-back-button', { cancelable: true })
+            const handled = !window.dispatchEvent(event) // Returns false if preventDefault() was called
+            
+            if (!handled) {
+              // Page didn't handle it, do normal back navigation
+              router.back()
+            }
           } else {
             // Can't go back: minimize app
             App.minimizeApp()

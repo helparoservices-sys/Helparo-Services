@@ -60,12 +60,17 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
         if (wallet) setBalance(Number(wallet.available_balance))
         
         // Fetch unread notifications count
-        const { data: notifications } = await supabase
+        const { count, error: notifError } = await supabase
           .from('notifications')
-          .select('id')
+          .select('*', { count: 'exact', head: true })
           .eq('user_id', user.id)
           .is('read_at', null)
-        setUnreadCount(notifications?.length || 0)
+        
+        if (!notifError && count !== null) {
+          setUnreadCount(count)
+        } else {
+          setUnreadCount(0)
+        }
       }
     }
     fetchUser()
@@ -96,7 +101,7 @@ export default function CustomerTopbar({ onToggleSidebar }: TopbarProps) {
   }, [showLogoutConfirm])
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 shadow-lg z-50">
+    <header className="fixed top-0 left-0 right-0 bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 shadow-lg z-50">
       {/* Spacer for status bar - now with matching gradient background */}
       <div className="h-8" />
       {/* Main header content */}

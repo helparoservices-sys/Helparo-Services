@@ -440,6 +440,24 @@ export default function AIRequestPage() {
     workOverview?: string;
   } | null>(null)
 
+  // Handle hardware back button for multi-step navigation
+  useEffect(() => {
+    const handleCapacitorBack = (event: Event) => {
+      if (step > 1) {
+        // Prevent default router.back() and go to previous step instead
+        event.preventDefault()
+        setStep(step - 1)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+      // If step === 1, let the event propagate and router.back() will be called
+    }
+
+    window.addEventListener('capacitor-back-button', handleCapacitorBack)
+    return () => {
+      window.removeEventListener('capacitor-back-button', handleCapacitorBack)
+    }
+  }, [step])
+
   // Pre-fill mobile number from profile if available
   useEffect(() => {
     const loadUserPhone = async () => {
@@ -1217,8 +1235,8 @@ export default function AIRequestPage() {
           </div>
 
           {/* Describe the Problem - Premium Card */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-md border border-slate-200 hover:shadow-lg transition-all duration-300">
-            <label className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2.5">
+          <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl p-4 shadow-md border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all duration-300">
+            <label className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2.5">
               <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
                 <AlertTriangle className="w-5 h-5 text-white" />
               </div>
@@ -1229,13 +1247,13 @@ export default function AIRequestPage() {
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={4}
-              className="text-base border-2 border-gray-200 focus:border-emerald-400 focus:ring-emerald-100 rounded-2xl resize-none mt-3 p-4"
+              className="text-base border-2 border-gray-200 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-400 focus:border-emerald-400 focus:ring-emerald-100 dark:focus:ring-emerald-900/40 rounded-2xl resize-none mt-3 p-4"
             />
           </div>
 
           {/* Additional Details - Premium Card */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-md border border-slate-200 hover:shadow-lg transition-all duration-300 space-y-4 relative z-10">
-            <h3 className="text-base font-bold text-gray-900 flex items-center gap-2.5">
+          <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl p-4 shadow-md border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all duration-300 space-y-4 relative z-10">
+            <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2.5">
               <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
                 <Lightbulb className="w-5 h-5 text-white" />
               </div>
@@ -1243,28 +1261,28 @@ export default function AIRequestPage() {
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">Error Code (if any)</label>
+                <label className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2 block">Error Code (if any)</label>
                 <Input
                   placeholder="E.g., E1, F03, NA"
                   value={formData.errorCode}
                   onChange={(e) => setFormData(prev => ({ ...prev, errorCode: e.target.value }))}
-                  className="h-12 text-base rounded-xl border-2 border-gray-200 focus:border-emerald-400 focus:ring-emerald-100 transition-all"
+                  className="h-12 text-base rounded-xl border-2 border-gray-200 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-400 focus:border-emerald-400 focus:ring-emerald-100 dark:focus:ring-emerald-900/40 transition-all"
                 />
               </div>
               <div>
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">How long?</label>
+                <label className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2 block">How long?</label>
                 <div className="relative">
                   <button
                     onClick={() => setShowHowLongDropdown(!showHowLongDropdown)}
-                    className="w-full h-12 px-4 bg-white border-2 border-gray-200 rounded-xl text-left flex items-center justify-between hover:border-emerald-400 transition-all"
+                    className="w-full h-12 px-4 bg-white dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-600 rounded-xl text-left flex items-center justify-between hover:border-emerald-400 dark:hover:border-emerald-500 transition-all"
                   >
-                    <span className={`font-medium ${selectedHowLong ? 'text-gray-900' : 'text-gray-400'}`}>
+                    <span className={`font-medium ${selectedHowLong ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-slate-400'}`}>
                       {selectedHowLong?.label || 'Select...'}
                     </span>
-                    <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showHowLongDropdown ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-5 h-5 text-gray-400 dark:text-slate-400 transition-transform ${showHowLongDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showHowLongDropdown && (
-                    <div className="absolute bottom-full left-0 right-0 mb-2 bg-white/95 backdrop-blur-xl border-2 border-gray-100 rounded-xl shadow-xl z-[100]">
+                    <div className="absolute bottom-full left-0 right-0 mb-2 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-2 border-gray-100 dark:border-slate-600 rounded-xl shadow-xl z-[100]">
                       {howLongOptions.map((opt) => (
                         <button
                           key={opt.id}
@@ -1272,8 +1290,8 @@ export default function AIRequestPage() {
                             setFormData(prev => ({ ...prev, howLong: opt.id }))
                             setShowHowLongDropdown(false)
                           }}
-                          className={`w-full p-3 text-left text-sm font-medium hover:bg-emerald-50 transition-colors first:rounded-t-xl last:rounded-b-xl ${
-                            formData.howLong === opt.id ? 'bg-emerald-50 text-emerald-700' : ''
+                          className={`w-full p-3 text-left text-sm font-medium text-gray-800 dark:text-white hover:bg-emerald-50 dark:hover:bg-emerald-900/40 transition-colors first:rounded-t-xl last:rounded-b-xl ${
+                            formData.howLong === opt.id ? 'bg-emerald-50 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400' : ''
                           }`}
                         >
                           {opt.label}
@@ -1285,20 +1303,20 @@ export default function AIRequestPage() {
               </div>
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 mb-2 block">Tried fixing yourself?</label>
+              <label className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2 block">Tried fixing yourself?</label>
               <Textarea
                 placeholder="What you've tried, or type 'NA'"
                 value={formData.triedFixing}
                 onChange={(e) => setFormData(prev => ({ ...prev, triedFixing: e.target.value }))}
                 rows={2}
-                className="text-base border-2 border-gray-200 focus:border-emerald-400 focus:ring-emerald-100 rounded-xl resize-none p-3"
+                className="text-base border-2 border-gray-200 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-400 focus:border-emerald-400 focus:ring-emerald-100 dark:focus:ring-emerald-900/40 rounded-xl resize-none p-3"
               />
             </div>
           </div>
 
           {/* Urgency - Premium Card */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-md border border-slate-200 hover:shadow-lg transition-all duration-300 relative z-10">
-            <label className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2.5">
+          <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl p-4 shadow-md border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all duration-300 relative z-10">
+            <label className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2.5">
               <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
                 <Clock className="w-5 h-5 text-white" />
               </div>
@@ -1307,17 +1325,17 @@ export default function AIRequestPage() {
             <div className="relative mt-3">
               <button
                 onClick={() => setShowUrgencyDropdown(!showUrgencyDropdown)}
-                className="w-full p-4 bg-gradient-to-r from-gray-50 to-white border-2 border-gray-200 rounded-2xl text-left flex items-center justify-between hover:border-emerald-400 hover:shadow-lg transition-all duration-300 group"
+                className="w-full p-4 bg-gradient-to-r from-gray-50 to-white dark:from-slate-800 dark:to-slate-900 border-2 border-gray-200 dark:border-slate-600 rounded-2xl text-left flex items-center justify-between hover:border-emerald-400 dark:hover:border-emerald-500 hover:shadow-lg transition-all duration-300 group"
               >
-                <span className={`text-base font-medium ${selectedUrgency ? 'text-gray-900' : 'text-gray-400'}`}>
+                <span className={`text-base font-medium ${selectedUrgency ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-slate-400'}`}>
                   {selectedUrgency?.label || 'Select urgency...'}
                 </span>
-                <div className={`w-8 h-8 rounded-xl bg-gray-100 group-hover:bg-emerald-100 flex items-center justify-center transition-all ${showUrgencyDropdown ? 'rotate-180 bg-emerald-100' : ''}`}>
-                  <ChevronDown className="w-5 h-5 text-gray-500 group-hover:text-emerald-600" />
+                <div className={`w-8 h-8 rounded-xl bg-gray-100 dark:bg-slate-700 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/50 flex items-center justify-center transition-all ${showUrgencyDropdown ? 'rotate-180 bg-emerald-100 dark:bg-emerald-900/50' : ''}`}>
+                  <ChevronDown className="w-5 h-5 text-gray-500 dark:text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400" />
                 </div>
               </button>
               {showUrgencyDropdown && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white/95 backdrop-blur-xl border-2 border-gray-100 rounded-2xl shadow-2xl z-[100] overflow-hidden">
+                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-2 border-gray-100 dark:border-slate-600 rounded-2xl shadow-2xl z-[100] overflow-hidden">
                   {urgencyOptions.map((opt) => (
                     <button
                       key={opt.id}
@@ -1325,12 +1343,12 @@ export default function AIRequestPage() {
                         setFormData(prev => ({ ...prev, urgency: opt.id }))
                         setShowUrgencyDropdown(false)
                       }}
-                      className={`w-full p-4 text-left hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 transition-all ${
-                        formData.urgency === opt.id ? 'bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border-l-4 border-emerald-500' : ''
+                      className={`w-full p-4 text-left hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 dark:hover:from-emerald-900/40 dark:hover:to-teal-900/40 transition-all ${
+                        formData.urgency === opt.id ? 'bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/50 dark:to-teal-900/50 text-emerald-700 dark:text-emerald-400 border-l-4 border-emerald-500' : ''
                       }`}
                     >
-                      <div className="font-semibold text-base">{opt.label}</div>
-                      <div className="text-sm text-gray-500 mt-0.5">{opt.description}</div>
+                      <div className="font-semibold text-base text-gray-900 dark:text-white">{opt.label}</div>
+                      <div className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{opt.description}</div>
                     </button>
                   ))}
                 </div>
@@ -1361,9 +1379,9 @@ export default function AIRequestPage() {
 
           {/* Photos reminder - Premium Style */}
           {images.length < 3 && (
-            <div className="flex items-center justify-center gap-2 p-3 bg-orange-50 rounded-2xl border border-orange-200">
-              <Camera className="w-4 h-4 text-orange-600" />
-              <p className="text-sm font-medium text-orange-700">
+            <div className="flex items-center justify-center gap-2 p-3 bg-orange-50 dark:bg-orange-900/30 rounded-2xl border border-orange-200 dark:border-orange-800">
+              <Camera className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">
                 Upload {3 - images.length} more photo(s) to continue
               </p>
             </div>
