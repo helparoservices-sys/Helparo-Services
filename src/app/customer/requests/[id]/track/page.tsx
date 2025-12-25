@@ -568,7 +568,7 @@ export default function JobTrackingPage() {
           // Update job state directly from realtime data (NO extra API call needed!)
           setJob(prev => {
             if (!prev) return prev
-            return {
+            const updated = {
               ...prev,
               work_started_at: newData.work_started_at !== undefined ? newData.work_started_at : prev.work_started_at,
               work_completed_at: newData.work_completed_at !== undefined ? newData.work_completed_at : prev.work_completed_at,
@@ -578,7 +578,15 @@ export default function JobTrackingPage() {
               helper_location_lat: newData.helper_location_lat !== undefined ? (newData.helper_location_lat !== null ? Number(newData.helper_location_lat) : null) : prev.helper_location_lat,
               helper_location_lng: newData.helper_location_lng !== undefined ? (newData.helper_location_lng !== null ? Number(newData.helper_location_lng) : null) : prev.helper_location_lng,
             }
+            console.log('🔄 Job state updated:', { work_started_at: updated.work_started_at, work_completed_at: updated.work_completed_at })
+            return updated
           })
+          
+          // Fetch full details when work starts or completes (for payment info)
+          if (newData.work_started_at || newData.work_completed_at) {
+            console.log('🔄 Work status changed, refreshing full details')
+            debouncedLoadJobDetails()
+          }
           
           // Only fetch full details if helper was just assigned (need helper profile info)
           if (newData.assigned_helper_id && newData.broadcast_status === 'accepted') {
@@ -960,7 +968,19 @@ export default function JobTrackingPage() {
 
                   {/* OTP Cards - Premium design */}
                   {(job.start_otp || job.end_otp) && (
-                    <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="mb-4">
+                      {/* Refresh hint */}
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-gray-500">Share OTP with helper</span>
+                        <button 
+                          onClick={() => loadJobDetails()}
+                          className="text-xs text-emerald-600 font-medium flex items-center gap-1 active:scale-95"
+                        >
+                          <Loader2 className="w-3 h-3" />
+                          Refresh status
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
                       {/* Start OTP */}
                       <div className={`rounded-2xl p-3 relative overflow-hidden transition-all duration-300 ${
                         job.work_started_at 
@@ -1016,6 +1036,20 @@ export default function JobTrackingPage() {
                           </div>
                         )}
                       </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Payment Reminder - Shows when work has started */}
+                  {job.work_started_at && !job.work_completed_at && (
+                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Banknote className="w-4 h-4 text-amber-600" />
+                        <span className="text-sm font-bold text-amber-800">Payment Ready</span>
+                      </div>
+                      <p className="text-xs text-amber-700">
+                        Please keep ₹{job.estimated_price} ready. Pay the helper after work is completed.
+                      </p>
                     </div>
                   )}
                 </>
