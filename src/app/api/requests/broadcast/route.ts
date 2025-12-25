@@ -352,46 +352,99 @@ async function processBackgroundTasks(
     // Get category slug for matching
     const { data: categoryInfo } = await supabase
       .from('service_categories')
-      .select('slug, parent_id')
+      .select('slug, parent_id, name')
       .eq('id', categoryId)
       .single()
 
     const categorySlug = categoryInfo?.slug || ''
+    const categoryNameFromDb = categoryInfo?.name || categoryName
     const NOTIFICATION_RADIUS_KM = 15
+
+    console.log('🔍 Looking for helpers matching:', {
+      categoryId,
+      categorySlug,
+      categoryName: categoryNameFromDb,
+      location: { lat: locationLat, lng: locationLng }
+    })
 
     // Filter helpers by distance and category
     const filteredHelpers = relevantHelpers.filter((helper: any) => {
       // Check distance
       if (locationLat && locationLng && helper.latitude && helper.longitude) {
         const distance = calculateDistanceKm(locationLat, locationLng, helper.latitude, helper.longitude)
-        if (distance > (helper.service_radius_km || NOTIFICATION_RADIUS_KM)) {
+        const maxRadius = helper.service_radius_km || NOTIFICATION_RADIUS_KM
+        if (distance > maxRadius) {
+          console.log(`❌ Helper ${helper.id} too far: ${distance.toFixed(1)}km > ${maxRadius}km`)
           return false
         }
         (helper as any).distance_km = distance
       } else {
+        console.log(`❌ Helper ${helper.id} missing location data`)
         return false // Skip helpers without location
       }
 
-      // Check category match (simplified)
+      // Check category match - be more flexible
       const categories = helper.service_categories || []
-      if (categories.length === 0) return false
+      if (categories.length === 0) {
+        console.log(`❌ Helper ${helper.id} has no service categories`)
+        return false
+      }
       
+      // More flexible category matching
       const categoryMatch = categories.some((cat: string) => {
-        const catLower = (cat || '').toLowerCase()
-        return cat === categoryId || 
-               catLower === categorySlug?.toLowerCase() ||
-               categoryName.toLowerCase().includes(catLower)
+        if (!cat) return false
+        const catLower = cat.toLowerCase().trim()
+        const slugLower = (categorySlug || '').toLowerCase().trim()
+        const nameLower = (categoryNameFromDb || '').toLowerCase().trim()
+        
+        // Match by: exact ID, slug, name contains, or common keywords
+        const matches = cat === categoryId || 
+               catLower === slugLower ||
+               catLower.includes(slugLower) ||
+               slugLower.includes(catLower) ||
+               nameLower.includes(catLower) ||
+               catLower.includes(nameLower.split(' ')[0]) // First word match
+               
+        if (matches) {
+          console.log(`✅ Category match: helper has "${cat}", looking for "${categoryNameFromDb}"`)
+        }
+        return matches
       })
+      
+      if (!categoryMatch) {
+        console.log(`❌ Helper ${helper.id} categories don't match:`, categories, 'vs', categoryNameFromDb)
+      }
       
       return categoryMatch
     })
 
-    console.log(`📢 Found ${filteredHelpers.length} matching helpers`)
+    console.log(`📢 Found ${filteredHelpers.length} matching helpers out of ${relevantHelpers.length} online`)
 
-    if (filteredHelpers.length === 0) return
+    // FALLBACK: If no category matches, notify nearest online helpers anyway
+    // This ensures jobs always get visibility during testing/launch phase
+    let helpersToNotify = filteredHelpers
+    if (filteredHelpers.length === 0 && relevantHelpers.length > 0) {
+      console.log('⚠️ No category matches, falling back to nearest helpers')
+      // Sort by distance and take closest 5
+      helpersToNotify = relevantHelpers
+        .filter((h: any) => h.latitude && h.longitude && locationLat && locationLng)
+        .map((h: any) => ({
+          ...h,
+          distance_km: calculateDistanceKm(locationLat, locationLng, h.latitude, h.longitude)
+        }))
+        .filter((h: any) => h.distance_km <= 25) // Within 25km
+        .sort((a: any, b: any) => a.distance_km - b.distance_km)
+        .slice(0, 5)
+      console.log(`📢 Fallback: notifying ${helpersToNotify.length} nearest helpers`)
+    }
+
+    if (helpersToNotify.length === 0) {
+      console.log('⚠️ No helpers available to notify')
+      return
+    }
 
     // 3. Create notifications (batch insert)
-    const broadcastNotifications = filteredHelpers.map((helper: any) => ({
+    const broadcastNotifications = helpersToNotify.map((helper: any) => ({
       request_id: requestId,
       helper_id: helper.id,
       status: 'sent',
@@ -399,11 +452,11 @@ async function processBackgroundTasks(
       sent_at: new Date().toISOString()
     }))
 
-    const notifications = filteredHelpers.map((helper: any) => ({
+    const notifications = helpersToNotify.map((helper: any) => ({
       user_id: helper.user_id,
       request_id: requestId,
       channel: 'push',
-      title: `🔔 New ${categoryName} Job!`,
+      title: `🔔 New ${categoryNameFromDb} Job!`,
       body: `${customerName} needs help! ₹${estimatedPrice}`,
       data: { type: 'new_job_broadcast', request_id: requestId },
       status: 'queued'
@@ -418,15 +471,16 @@ async function processBackgroundTasks(
         request_id: requestId,
         channel: 'push',
         title: '✅ Request Posted!',
-        body: `Notified ${filteredHelpers.length} helpers nearby`,
-        data: { type: 'request_broadcasted', helpers_notified: filteredHelpers.length },
+        body: `Notified ${helpersToNotify.length} helpers nearby`,
+        data: { type: 'request_broadcasted', helpers_notified: helpersToNotify.length },
         status: 'queued'
       })
     ])
 
     // 4. Send FCM push notifications
-    const helperUserIds = filteredHelpers.map((h: any) => h.user_id).filter(Boolean)
+    const helperUserIds = helpersToNotify.map((h: any) => h.user_id).filter(Boolean)
     if (helperUserIds.length > 0) {
+      console.log(`📱 Sending FCM to ${helperUserIds.length} helpers:`, helperUserIds)
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helparo.in'
       fetch(`${baseUrl}/api/push/job-alert`, {
         method: 'POST',
@@ -434,7 +488,7 @@ async function processBackgroundTasks(
         body: JSON.stringify({
           helperUserIds,
           jobId: requestId,
-          title: `New ${categoryName} Job!`,
+          title: `New ${categoryNameFromDb} Job!`,
           description,
           price: estimatedPrice,
           location: address,
@@ -443,6 +497,8 @@ async function processBackgroundTasks(
           expiresInSeconds: 30
         })
       }).catch(err => console.error('FCM error:', err))
+    } else {
+      console.log('⚠️ No helper user IDs to send FCM to')
     }
 
     console.log('✅ Background tasks completed')
