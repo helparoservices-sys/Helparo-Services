@@ -151,7 +151,7 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
           {isVerified && (
             <div className="hidden md:flex items-center gap-1 px-3 py-1 bg-white/20 text-white rounded-full text-xs font-medium">
               <Shield className="h-3 w-3" />
-              Verified
+              {t('helper.topbar.verified')}
             </div>
           )}
         </div>
@@ -267,8 +267,8 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
                 ></div>
                 <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-50">
                   <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-700">
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">{userName || 'My Account'}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{userPhone || 'Helper Account'}</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{userName || t('helper.topbar.myAccount')}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{userPhone || t('helper.topbar.helperAccount')}</p>
                   </div>
 
                   <Link
@@ -277,7 +277,7 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
                     onClick={() => setShowUserMenu(false)}
                   >
                     <Settings className="h-4 w-4" />
-                    Settings
+                    {t('helper.topbar.settings')}
                   </Link>
 
                   <Link
@@ -286,7 +286,7 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
                     onClick={() => setShowUserMenu(false)}
                   >
                     <Shield className="h-4 w-4" />
-                    Verification Status
+                    {t('helper.topbar.verificationStatus')}
                   </Link>
 
                   <button
@@ -297,7 +297,7 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
                     className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
                     <LogOut className="h-4 w-4" />
-                    Logout
+                    {t('helper.topbar.logout')}
                   </button>
                 </div>
               </>
@@ -319,8 +319,8 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
                 <LogOut className="h-5 w-5 text-red-600 dark:text-red-400" />
               </div>
               <div className="space-y-1">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Are you sure you want to log out?</h2>
-                <p className="text-sm text-slate-600 dark:text-slate-400">You will need to sign in again to access your helper dashboard.</p>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t('helper.topbar.logoutConfirmTitle')}</h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400">{t('helper.topbar.logoutConfirmDesc')}</p>
               </div>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
@@ -329,7 +329,7 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
                 onClick={() => setShowLogoutConfirm(false)}
                 className="w-full sm:w-auto rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800"
               >
-                Cancel
+                {t('helper.topbar.cancel')}
               </button>
               <button
                 onClick={async () => {
@@ -338,7 +338,7 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
                 }}
                 className="w-full sm:w-auto rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
               >
-                Yes, Logout
+                {t('helper.topbar.yesLogout')}
               </button>
             </div>
           </div>
