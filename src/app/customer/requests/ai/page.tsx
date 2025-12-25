@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import AddressInteractiveMap from '@/components/address-interactive-map'
-import { compressAndUploadImage, uploadVideoThumbnail } from '@/lib/firebase-storage-client'
+import { compressAndUploadImage, uploadVideoToFirebase, uploadVideoThumbnail } from '@/lib/firebase-storage-client'
 import { 
   ArrowLeft, 
   Sparkles,
@@ -660,7 +660,7 @@ export default function AIRequestPage() {
     }
   }
 
-  // Handle video selection - uploads thumbnail to Firebase Storage
+  // Handle video selection - uploads actual video to Firebase Storage
   const handleVideoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
@@ -682,22 +682,22 @@ export default function AIRequestPage() {
       const file = files[0]
       const fileSizeMB = file.size / (1024 * 1024)
       
-      // Strict size limit to prevent app crashes
-      if (fileSizeMB > 50) {
-        toast.error(`Video too large (${fileSizeMB.toFixed(1)}MB). Max 50MB allowed.`)
+      // Size limits
+      if (fileSizeMB > 25) {
+        toast.error(`Video too large (${fileSizeMB.toFixed(1)}MB). Max 25MB allowed.`)
         return
       }
       
-      console.log(`📹 Processing video: ${fileSizeMB.toFixed(1)}MB`)
+      console.log(`📹 Uploading video: ${fileSizeMB.toFixed(1)}MB`)
+      toast.info('Uploading video...')
       
-      // Upload video thumbnail to Firebase Storage
-      toast.info('Processing video preview...')
-      const thumbnailUrl = await uploadVideoThumbnail(file, user.id, videos.length)
-      setVideos(prev => [...prev, thumbnailUrl])
-      toast.success('Video preview uploaded!')
-    } catch (err) {
+      // Upload actual video to Firebase Storage
+      const videoUrl = await uploadVideoToFirebase(file, user.id, videos.length)
+      setVideos(prev => [...prev, videoUrl])
+      toast.success('Video uploaded!')
+    } catch (err: any) {
       console.error('Video error:', err)
-      toast.error('Failed to process video. Try a shorter clip.')
+      toast.error(err.message || 'Failed to upload video. Try a smaller file.')
     } finally {
       setUploading(false)
       e.target.value = ''

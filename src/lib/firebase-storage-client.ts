@@ -154,7 +154,49 @@ export async function compressAndUploadImage(
 }
 
 /**
- * Upload video thumbnail to Firebase Storage
+ * Upload video to Firebase Storage
+ * Returns Firebase Storage URL for playable video
+ */
+export async function uploadVideoToFirebase(
+  videoFile: File,
+  userId: string,
+  index: number = 0
+): Promise<string> {
+  const fileSizeMB = videoFile.size / (1024 * 1024)
+  
+  // Reject videos over 25MB (too large for quick upload)
+  if (fileSizeMB > 25) {
+    throw new Error(`Video too large (${fileSizeMB.toFixed(1)}MB). Max 25MB.`)
+  }
+  
+  console.log(`📹 Uploading video: ${fileSizeMB.toFixed(1)}MB`)
+  
+  const timestamp = Date.now()
+  const randomId = Math.random().toString(36).substring(2, 9)
+  const extension = videoFile.name.split('.').pop() || 'mp4'
+  const path = `service-requests/${userId}/video-${timestamp}-${randomId}-${index}.${extension}`
+  
+  const storageRef = ref(storage, path)
+  
+  // Upload the video file
+  const snapshot = await uploadBytes(storageRef, videoFile, {
+    contentType: videoFile.type || 'video/mp4',
+    customMetadata: {
+      uploadedAt: new Date().toISOString(),
+      source: 'helparo-web',
+      originalSize: String(videoFile.size)
+    }
+  })
+  
+  // Get public download URL
+  const downloadUrl = await getDownloadURL(snapshot.ref)
+  console.log(`✅ Video uploaded to Firebase: ${path}`)
+  
+  return downloadUrl
+}
+
+/**
+ * Upload video thumbnail to Firebase Storage (fallback for very large videos)
  * For large videos, we only store a thumbnail
  */
 export async function uploadVideoThumbnail(
