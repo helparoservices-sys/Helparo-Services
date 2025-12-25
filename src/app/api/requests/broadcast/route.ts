@@ -345,7 +345,38 @@ async function processBackgroundTasks(
       uploadImagesToFirebase(supabase, requestId, userId, images)
     }
 
-    // 2. Find relevant helpers
+    // 1.5 AUTO-FIX: Reset stuck is_on_job flags
+    // Find helpers marked as "on job" but have no active assignments
+    const { data: stuckHelpers } = await supabase
+      .from('helper_profiles')
+      .select('id, user_id')
+      .eq('is_approved', true)
+      .eq('is_online', true)
+      .eq('is_on_job', true)
+    
+    if (stuckHelpers && stuckHelpers.length > 0) {
+      // Check if they actually have active jobs
+      const { data: activeJobs } = await supabase
+        .from('service_requests')
+        .select('assigned_helper_id')
+        .in('assigned_helper_id', stuckHelpers.map(h => h.user_id))
+        .in('status', ['accepted', 'in_progress', 'arrived'])
+      
+      const actuallyBusyIds = new Set((activeJobs || []).map(j => j.assigned_helper_id))
+      
+      // Fix helpers who are marked busy but have no active jobs
+      for (const helper of stuckHelpers) {
+        if (!actuallyBusyIds.has(helper.user_id)) {
+          console.log(`🔧 Auto-fixing stuck helper ${helper.id} - is_on_job was true but no active job`)
+          await supabase
+            .from('helper_profiles')
+            .update({ is_on_job: false })
+            .eq('id', helper.id)
+        }
+      }
+    }
+
+    // 2. Find relevant helpers (now including freshly unstuck ones)
     const { data: relevantHelpers } = await supabase
       .from('helper_profiles')
       .select(`
