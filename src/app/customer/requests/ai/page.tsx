@@ -961,7 +961,7 @@ export default function AIRequestPage() {
       if (err.name === 'AbortError') {
         toast.error('Request timed out. Please try again.')
       } else {
-        toast.error('Failed to create request')
+        toast.error(err.message || 'Failed to create request')
       }
     } finally {
       setLoading(false)

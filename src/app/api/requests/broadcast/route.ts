@@ -203,8 +203,19 @@ export async function POST(request: NextRequest) {
 
     // Create the service request with OTPs
     console.log('📌 Creating service request...')
+    console.log('📌 Input data:', { 
+      categoryId: finalCategoryId, 
+      lat: locationLat, 
+      lng: locationLng,
+      price: estimatedPrice,
+      imagesCount: finalImages?.length || 0
+    })
     const startOtp = generateOTP()
     const endOtp = generateOTP()
+    
+    // Ensure lat/lng are numbers or null
+    const safeLat = typeof locationLat === 'number' ? locationLat : null
+    const safeLng = typeof locationLng === 'number' ? locationLng : null
     
     const { data: serviceRequest, error: requestError } = await supabase
       .from('service_requests')
@@ -212,34 +223,33 @@ export async function POST(request: NextRequest) {
         customer_id: user.id,
         category_id: finalCategoryId,
         title: `${finalCategoryName} Service Required`,
-        description: description,
-        address_line1: address,
-        address_line2: `${flatNumber || ''} ${floor ? ', Floor: ' + floor : ''}`.trim(),
-        landmark: landmark,
-        latitude: locationLat,
-        longitude: locationLng,
-        service_location_lat: locationLat,
-        service_location_lng: locationLng,
-        service_address: `${flatNumber || ''}, ${address}`,
-        images: finalImages, // PHASE-1: Firebase URLs or base64 fallback
-        estimated_price: estimatedPrice,
+        description: description || '',
+        address_line1: address || '',
+        address_line2: `${flatNumber || ''} ${floor ? ', Floor: ' + floor : ''}`.trim() || null,
+        landmark: landmark || null,
+        latitude: safeLat,
+        longitude: safeLng,
+        service_location_lat: safeLat,
+        service_location_lng: safeLng,
+        service_address: `${flatNumber || ''}, ${address || 'Not specified'}`.trim(),
+        images: finalImages || [],
+        estimated_price: estimatedPrice || 0,
         urgency_level: urgency === 'emergency' ? 'urgent' : 'normal',
         status: 'open',
         broadcast_status: 'broadcasting',
-        payment_method: paymentMethod,
+        payment_method: paymentMethod || 'cash',
         start_otp: startOtp,
         end_otp: endOtp,
-        broadcast_expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 mins expiry
+        broadcast_expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
         service_type_details: {
-          ai_analysis: aiAnalysis,
-          pricing_tier: selectedTier,
-          problem_duration: problemDuration,
-          error_code: errorCode,
-          preferred_time: preferredTime,
-          videos: videos || [], // Store videos with audio for helper to view
-          // AI estimation details for helper to view
-          estimated_duration: estimatedDuration,
-          confidence: confidence,
+          ai_analysis: aiAnalysis || null,
+          pricing_tier: selectedTier || null,
+          problem_duration: problemDuration || null,
+          error_code: errorCode || null,
+          preferred_time: preferredTime || null,
+          videos: videos || [],
+          estimated_duration: estimatedDuration || null,
+          confidence: confidence || null,
           helper_brings: helperBrings || [],
           customer_provides: customerProvides || [],
           work_overview: workOverview || '',
