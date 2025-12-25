@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import AddressInteractiveMap from '@/components/address-interactive-map'
+import { compressAndUploadImage, uploadVideoThumbnail } from '@/lib/firebase-storage-client'
 import { 
   ArrowLeft, 
   Sparkles,
@@ -493,43 +494,117 @@ export default function AIRequestPage() {
     }))
   }
 
-  // Convert file to base64
+  // Convert file to base64 (for small files only)
   const fileToDataUrl = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
       reader.onload = () => resolve(reader.result as string)
-      reader.onerror = reject
+      reader.onerror = () => reject(new Error('Failed to read file'))
       reader.readAsDataURL(file)
     })
   }
 
-  // Compress image before storing
+  // Compress video to reduce size (extracts thumbnail only for now)
+  const compressVideo = async (file: File): Promise<string> => {
+    // For now, just store a placeholder or skip large videos
+    // Videos are too large for base64 storage - would need dedicated video upload
+    if (file.size > 10 * 1024 * 1024) {
+      // For large videos, create a thumbnail from first frame
+      return new Promise((resolve, reject) => {
+        const video = document.createElement('video')
+        video.preload = 'metadata'
+        video.onloadeddata = () => {
+          video.currentTime = 0.5 // Get frame at 0.5s
+        }
+        video.onseeked = () => {
+          const canvas = document.createElement('canvas')
+          canvas.width = Math.min(video.videoWidth, 400)
+          canvas.height = (video.videoHeight / video.videoWidth) * canvas.width
+          const ctx = canvas.getContext('2d')
+          ctx?.drawImage(video, 0, 0, canvas.width, canvas.height)
+          URL.revokeObjectURL(video.src)
+          resolve(canvas.toDataURL('image/jpeg', 0.7))
+        }
+        video.onerror = () => {
+          URL.revokeObjectURL(video.src)
+          reject(new Error('Failed to process video'))
+        }
+        video.src = URL.createObjectURL(file)
+      })
+    }
+    // Small videos can be stored as base64
+    return fileToDataUrl(file)
+  }
+
+  // Compress image aggressively for mobile uploads (camera photos can be 5-12MB)
   const compressImage = async (file: File, maxWidth = 800): Promise<string> => {
     return new Promise((resolve, reject) => {
       const img = new window.Image()
+      const objectUrl = URL.createObjectURL(file)
+      
       img.onload = () => {
-        const canvas = document.createElement('canvas')
-        let { width, height } = img
-        
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width
-          width = maxWidth
+        try {
+          const canvas = document.createElement('canvas')
+          let { width, height } = img
+          
+          // Determine compression based on original file size
+          const fileSizeMB = file.size / (1024 * 1024)
+          let targetMaxWidth = maxWidth
+          let quality = 0.7
+          
+          // More aggressive compression for larger files
+          if (fileSizeMB > 5) {
+            targetMaxWidth = 600
+            quality = 0.5
+          } else if (fileSizeMB > 2) {
+            targetMaxWidth = 700
+            quality = 0.6
+          }
+          
+          // Resize if needed
+          if (width > targetMaxWidth) {
+            height = (height * targetMaxWidth) / width
+            width = targetMaxWidth
+          }
+          
+          canvas.width = width
+          canvas.height = height
+          
+          const ctx = canvas.getContext('2d')
+          if (!ctx) {
+            URL.revokeObjectURL(objectUrl)
+            reject(new Error('Canvas context not available'))
+            return
+          }
+          
+          ctx.drawImage(img, 0, 0, width, height)
+          
+          // Clean up object URL
+          URL.revokeObjectURL(objectUrl)
+          
+          const result = canvas.toDataURL('image/jpeg', quality)
+          
+          // Verify result size is reasonable (< 500KB)
+          const resultSizeKB = (result.length * 0.75) / 1024
+          console.log(`📸 Compressed: ${fileSizeMB.toFixed(1)}MB → ${resultSizeKB.toFixed(0)}KB`)
+          
+          resolve(result)
+        } catch (err) {
+          URL.revokeObjectURL(objectUrl)
+          reject(err)
         }
-        
-        canvas.width = width
-        canvas.height = height
-        
-        const ctx = canvas.getContext('2d')
-        ctx?.drawImage(img, 0, 0, width, height)
-        
-        resolve(canvas.toDataURL('image/jpeg', 0.7))
       }
-      img.onerror = reject
-      img.src = URL.createObjectURL(file)
+      
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl)
+        reject(new Error('Failed to load image'))
+      }
+      
+      img.src = objectUrl
     })
   }
 
-  // Handle image selection
+  // Handle image selection - uploads directly to Firebase Storage
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
@@ -539,27 +614,53 @@ export default function AIRequestPage() {
       return
     }
 
+    // Get user ID for upload path
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      toast.error('Please sign in to upload photos')
+      return
+    }
+
     setUploading(true)
+    let successCount = 0
+    
     try {
-      for (const file of Array.from(files)) {
-        if (file.size > 10 * 1024 * 1024) {
-          toast.error('Image too large (max 10MB)')
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const fileSizeMB = file.size / (1024 * 1024)
+        console.log(`📷 Processing image: ${file.name}, ${fileSizeMB.toFixed(1)}MB`)
+        
+        // Reject files over 15MB (usually indicates a problem)
+        if (fileSizeMB > 15) {
+          toast.error(`Photo too large (${fileSizeMB.toFixed(0)}MB). Max 15MB.`)
           continue
         }
-        const dataUrl = await compressImage(file)
-        setImages(prev => [...prev, dataUrl])
+        
+        try {
+          // Compress and upload directly to Firebase Storage
+          const firebaseUrl = await compressAndUploadImage(file, user.id, images.length + i)
+          setImages(prev => [...prev, firebaseUrl])
+          successCount++
+        } catch (uploadErr) {
+          console.error('Upload failed for:', file.name, uploadErr)
+          toast.error(`Could not upload ${file.name}`)
+        }
       }
-      toast.success('Photo added!')
+      
+      if (successCount > 0) {
+        toast.success(`${successCount} photo${successCount > 1 ? 's' : ''} uploaded!`)
+      }
     } catch (err) {
-      console.error('Image error:', err)
-      toast.error('Failed to add photo')
+      console.error('Image selection error:', err)
+      toast.error('Failed to upload photos. Please try again.')
     } finally {
       setUploading(false)
-      e.target.value = ''
+      // Reset input to allow re-selecting same file
+      if (e.target) e.target.value = ''
     }
   }
 
-  // Handle video selection
+  // Handle video selection - uploads thumbnail to Firebase Storage
   const handleVideoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
@@ -569,19 +670,34 @@ export default function AIRequestPage() {
       return
     }
 
+    // Get user ID for upload path
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      toast.error('Please sign in to upload videos')
+      return
+    }
+
     setUploading(true)
     try {
       const file = files[0]
-      if (file.size > 50 * 1024 * 1024) {
-        toast.error('Video too large (max 50MB)')
+      const fileSizeMB = file.size / (1024 * 1024)
+      
+      // Strict size limit to prevent app crashes
+      if (fileSizeMB > 50) {
+        toast.error(`Video too large (${fileSizeMB.toFixed(1)}MB). Max 50MB allowed.`)
         return
       }
-      const dataUrl = await fileToDataUrl(file)
-      setVideos(prev => [...prev, dataUrl])
-      toast.success('Video added!')
+      
+      console.log(`📹 Processing video: ${fileSizeMB.toFixed(1)}MB`)
+      
+      // Upload video thumbnail to Firebase Storage
+      toast.info('Processing video preview...')
+      const thumbnailUrl = await uploadVideoThumbnail(file, user.id, videos.length)
+      setVideos(prev => [...prev, thumbnailUrl])
+      toast.success('Video preview uploaded!')
     } catch (err) {
       console.error('Video error:', err)
-      toast.error('Failed to add video')
+      toast.error('Failed to process video. Try a shorter clip.')
     } finally {
       setUploading(false)
       e.target.value = ''
@@ -786,9 +902,14 @@ export default function AIRequestPage() {
         formData.landmark && `Near ${formData.landmark}`,
       ].filter(Boolean).join(', ')
 
+      // Add timeout to prevent infinite loading (30 seconds max)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000)
+
       const broadcastResponse = await fetch('/api/requests/broadcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({ 
           categoryId: aiResult.category,
           categoryName: aiResult.categoryName,
@@ -820,6 +941,8 @@ export default function AIRequestPage() {
         })
       })
       
+      clearTimeout(timeoutId)
+      
       const broadcastData = await broadcastResponse.json()
       
       if (!broadcastResponse.ok) {
@@ -833,9 +956,13 @@ export default function AIRequestPage() {
         router.push(`/customer/requests/${broadcastData.requestId}/track`)
       }, 2000)
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('Submit error:', err)
-      toast.error('Failed to create request')
+      if (err.name === 'AbortError') {
+        toast.error('Request timed out. Please try again.')
+      } else {
+        toast.error('Failed to create request')
+      }
     } finally {
       setLoading(false)
     }

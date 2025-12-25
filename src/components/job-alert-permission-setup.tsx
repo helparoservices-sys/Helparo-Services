@@ -86,9 +86,20 @@ export function JobAlertPermissionSetup({
         hasOverlay = true // Assume granted if can't check (older Android)
       }
       
-      // Battery optimization - we'll assume it needs setup (can't easily check)
-      // User marks this manually
-      const batterySetup = localStorage.getItem('battery_optimization_disabled') === 'true'
+      // Check battery optimization via native plugin
+      let batterySetup = false
+      try {
+        const batteryResult = await SettingsPlugin.isBatteryOptimizationDisabled()
+        batterySetup = batteryResult.disabled
+        // Sync to localStorage for offline reference
+        if (batterySetup) {
+          localStorage.setItem('battery_optimization_disabled', 'true')
+        }
+      } catch (e) {
+        console.log('Battery check not available, using localStorage:', e)
+        // Fallback to localStorage if native check fails
+        batterySetup = localStorage.getItem('battery_optimization_disabled') === 'true'
+      }
       
       setPermissions({
         notifications: hasNotifications,
@@ -503,9 +514,15 @@ export function JobAlertPermissionBanner({ onSetup }: { onSetup: () => void }) {
           // Can't check overlay - don't count as missing
         }
         
-        // Check battery (from localStorage)
-        const batterySetup = localStorage.getItem('battery_optimization_disabled') === 'true'
-        if (!batterySetup) missing++
+        // Check battery via native plugin first, fallback to localStorage
+        let batteryDisabled = false
+        try {
+          const batteryResult = await SettingsPlugin.isBatteryOptimizationDisabled()
+          batteryDisabled = batteryResult.disabled
+        } catch (e) {
+          batteryDisabled = localStorage.getItem('battery_optimization_disabled') === 'true'
+        }
+        if (!batteryDisabled) missing++
         
         setMissingCount(missing)
         setShow(missing > 0)
