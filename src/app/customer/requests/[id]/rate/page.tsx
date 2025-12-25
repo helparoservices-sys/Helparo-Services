@@ -220,7 +220,7 @@ export default function RateHelperPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <Loader2 className="h-10 w-10 animate-spin text-emerald-500" />
       </div>
     )
@@ -228,13 +228,13 @@ export default function RateHelperPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-900 dark:to-gray-800 p-4">
         <div className="text-center">
-          <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="h-10 w-10 text-emerald-600" />
+          <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="h-10 w-10 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Thank You!</h1>
-          <p className="text-gray-600 mb-6">Your feedback helps us improve</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Thank You!</h1>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">Your feedback helps us improve</p>
           <Button onClick={() => router.push('/customer/dashboard')}>
             Back to Home
           </Button>
@@ -244,21 +244,21 @@ export default function RateHelperPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 pb-24">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-900 dark:to-gray-800 pb-24">
       {/* Header */}
-      <div className="bg-white px-4 py-6 shadow-sm">
-        <h1 className="text-xl font-bold text-gray-900 text-center">Rate Your Experience</h1>
-        <p className="text-gray-500 text-sm text-center mt-1">
+      <div className="bg-white dark:bg-gray-800 px-4 py-6 shadow-sm dark:shadow-gray-900/50">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white text-center">Rate Your Experience</h1>
+        <p className="text-gray-500 dark:text-gray-400 text-sm text-center mt-1">
           Help {job?.assigned_helper?.profile?.full_name || 'the helper'} improve
         </p>
       </div>
 
       <div className="px-4 py-6 space-y-4">
         {/* Helper Card */}
-        <Card className="shadow-md">
+        <Card className="shadow-md dark:bg-gray-800 dark:border-gray-700">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-gray-100 overflow-hidden relative">
+              <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden relative">
                 {job?.assigned_helper?.profile?.avatar_url ? (
                   <Image 
                     src={job.assigned_helper.profile.avatar_url} 
@@ -273,23 +273,23 @@ export default function RateHelperPage() {
                 )}
               </div>
               <div>
-                <p className="font-semibold text-gray-900 text-lg">
+                <p className="font-semibold text-gray-900 dark:text-white text-lg">
                   {job?.assigned_helper?.profile?.full_name || 'Helper'}
                 </p>
-                <p className="text-sm text-gray-500">{job?.category?.name}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{job?.category?.name}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Overall Rating */}
-        <Card className="shadow-md">
+        <Card className="shadow-md dark:bg-gray-800 dark:border-gray-700">
           <CardContent className="p-5 text-center">
-            <p className="text-gray-600 mb-4">How was your overall experience?</p>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">How was your overall experience?</p>
             <div className="flex justify-center mb-2">
               <StarRating value={overallRating} onChange={setOverallRating} size="large" />
             </div>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               {overallRating === 5 && 'Excellent! 🌟'}
               {overallRating === 4 && 'Great! 😊'}
               {overallRating === 3 && 'Good 👍'}
@@ -300,14 +300,14 @@ export default function RateHelperPage() {
         </Card>
 
         {/* Detailed Ratings */}
-        <Card className="shadow-md">
+        <Card className="shadow-md dark:bg-gray-800 dark:border-gray-700">
           <CardContent className="p-5 space-y-4">
-            <h3 className="font-semibold text-gray-900 mb-2">Rate the details</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Rate the details</h3>
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-blue-500" />
-                <span className="text-gray-700">Punctuality</span>
+                <span className="text-gray-700 dark:text-gray-300">Punctuality</span>
               </div>
               <StarRating value={punctualityRating} onChange={setPunctualityRating} />
             </div>
@@ -315,7 +315,7 @@ export default function RateHelperPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Wrench className="h-5 w-5 text-orange-500" />
-                <span className="text-gray-700">Work Quality</span>
+                <span className="text-gray-700 dark:text-gray-300">Work Quality</span>
               </div>
               <StarRating value={qualityRating} onChange={setQualityRating} />
             </div>
@@ -323,7 +323,7 @@ export default function RateHelperPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Heart className="h-5 w-5 text-pink-500" />
-                <span className="text-gray-700">Behaviour</span>
+                <span className="text-gray-700 dark:text-gray-300">Behaviour</span>
               </div>
               <StarRating value={behaviourRating} onChange={setBehaviourRating} />
             </div>
@@ -331,16 +331,16 @@ export default function RateHelperPage() {
         </Card>
 
         {/* Would Recommend */}
-        <Card className="shadow-md">
+        <Card className="shadow-md dark:bg-gray-800 dark:border-gray-700">
           <CardContent className="p-5">
-            <p className="text-gray-700 mb-3">Would you recommend this helper?</p>
+            <p className="text-gray-700 dark:text-gray-300 mb-3">Would you recommend this helper?</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setWouldRecommend(true)}
                 className={`flex-1 py-3 rounded-xl border-2 transition-all ${
                   wouldRecommend 
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700' 
-                    : 'border-gray-200 text-gray-500'
+                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' 
+                    : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400'
                 }`}
               >
                 <ThumbsUp className={`h-5 w-5 mx-auto mb-1 ${wouldRecommend ? 'fill-emerald-500' : ''}`} />
@@ -350,8 +350,8 @@ export default function RateHelperPage() {
                 onClick={() => setWouldRecommend(false)}
                 className={`flex-1 py-3 rounded-xl border-2 transition-all ${
                   !wouldRecommend 
-                    ? 'border-red-500 bg-red-50 text-red-700' 
-                    : 'border-gray-200 text-gray-500'
+                    ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400' 
+                    : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400'
                 }`}
               >
                 <ThumbsUp className={`h-5 w-5 mx-auto mb-1 rotate-180 ${!wouldRecommend ? 'fill-red-500' : ''}`} />
@@ -362,13 +362,13 @@ export default function RateHelperPage() {
         </Card>
 
         {/* Tip Section */}
-        <Card className="shadow-md border-2 border-amber-200 bg-amber-50">
+        <Card className="shadow-md border-2 border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20">
           <CardContent className="p-5">
             <div className="flex items-center gap-2 mb-4">
-              <Gift className="h-5 w-5 text-amber-600" />
-              <span className="font-semibold text-amber-800">Add a Tip (Optional)</span>
+              <Gift className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              <span className="font-semibold text-amber-800 dark:text-amber-300">Add a Tip (Optional)</span>
             </div>
-            <p className="text-sm text-amber-700 mb-3">
+            <p className="text-sm text-amber-700 dark:text-amber-400 mb-3">
               100% of tips go directly to the helper
             </p>
             <div className="flex gap-2">
@@ -378,8 +378,8 @@ export default function RateHelperPage() {
                   onClick={() => setTipAmount(amount)}
                   className={`flex-1 py-3 rounded-xl border-2 transition-all ${
                     tipAmount === amount
-                      ? 'border-amber-500 bg-amber-100 text-amber-700'
-                      : 'border-amber-200 bg-white text-gray-600'
+                      ? 'border-amber-500 bg-amber-100 dark:bg-amber-800/50 text-amber-700 dark:text-amber-300'
+                      : 'border-amber-200 dark:border-amber-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300'
                   }`}
                 >
                   <span className="text-sm font-bold">
@@ -392,14 +392,14 @@ export default function RateHelperPage() {
         </Card>
 
         {/* Written Review */}
-        <Card className="shadow-md">
+        <Card className="shadow-md dark:bg-gray-800 dark:border-gray-700">
           <CardContent className="p-5">
-            <p className="text-gray-700 mb-3">Write a review (optional)</p>
+            <p className="text-gray-700 dark:text-gray-300 mb-3">Write a review (optional)</p>
             <Textarea
               value={review}
               onChange={(e) => setReview(e.target.value)}
               placeholder="Share your experience with the helper..."
-              className="min-h-[100px] resize-none"
+              className="min-h-[100px] resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
               maxLength={500}
             />
             <p className="text-xs text-gray-400 text-right mt-1">
@@ -431,7 +431,7 @@ export default function RateHelperPage() {
         {/* Skip Button */}
         <button
           onClick={() => router.push('/customer/dashboard')}
-          className="w-full text-center text-gray-500 py-3 text-sm"
+          className="w-full text-center text-gray-500 dark:text-gray-400 py-3 text-sm"
         >
           Skip for now
         </button>
