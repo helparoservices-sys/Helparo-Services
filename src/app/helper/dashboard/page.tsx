@@ -326,11 +326,22 @@ export default function HelperDashboard() {
     }
   }
 
+  // Debounce location updates - only update every 60 seconds to minimize egress
+  const lastLocationUpdateRef = useRef<number>(0)
+  const LOCATION_UPDATE_INTERVAL = 60000 // 60 seconds
+
   const startLocationTracking = (jobId: string) => {
     if (!navigator.geolocation) return
 
     const watchId = navigator.geolocation.watchPosition(
       async (position) => {
+        // CRITICAL: Debounce to prevent excessive API calls
+        const now = Date.now()
+        if (now - lastLocationUpdateRef.current < LOCATION_UPDATE_INTERVAL) {
+          return // Skip this update, too soon
+        }
+        lastLocationUpdateRef.current = now
+
         try {
           await fetch(`/api/requests/${jobId}/location`, {
             method: 'POST',
@@ -349,7 +360,7 @@ export default function HelperDashboard() {
           toast.error('Please enable location access for live tracking')
         }
       },
-      { enableHighAccuracy: true, timeout: 30000, maximumAge: 10000 }
+      { enableHighAccuracy: true, timeout: 30000, maximumAge: 60000 } // maximumAge 60s to reduce GPS calls
     )
 
     setLocationWatchId(watchId)

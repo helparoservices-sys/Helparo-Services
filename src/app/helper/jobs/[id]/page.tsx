@@ -436,9 +436,9 @@ export default function HelperJobPage() {
     }
   }
 
-  // Track last location update time to debounce (30 seconds minimum between updates)
+  // Track last location update time to debounce (60 seconds minimum between updates)
   const lastLocationUpdateRef = useRef<number>(0)
-  const LOCATION_UPDATE_INTERVAL = 30000 // 30 seconds
+  const LOCATION_UPDATE_INTERVAL = 60000 // 60 seconds - reduced from 30s to minimize egress
 
   function startLocationTracking() {
     if (!navigator.geolocation) {
