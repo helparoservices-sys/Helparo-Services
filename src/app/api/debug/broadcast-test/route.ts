@@ -1,71 +1,105 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 /**
- * Debug endpoint to test broadcast API components
+ * Debug endpoint to diagnose why helpers are not getting notifications
  * GET /api/debug/broadcast-test
+ * 
+ * This checks:
+ * 1. Online helpers
+ * 2. Their locations
+ * 3. Their FCM tokens
+ * 4. Their categories
  */
 export async function GET(request: NextRequest) {
   const results: Record<string, any> = {
     timestamp: new Date().toISOString(),
-    steps: []
+    diagnosis: []
   }
 
   try {
-    // Step 1: Create Supabase client
-    results.steps.push({ step: 1, name: 'Create Supabase client', status: 'starting' })
-    const startClient = Date.now()
-    const supabase = await createClient()
-    results.steps[0].status = 'success'
-    results.steps[0].duration = Date.now() - startClient
+    const supabase = createAdminClient()
 
-    // Step 2: Check auth
-    results.steps.push({ step: 2, name: 'Check auth', status: 'starting' })
-    const startAuth = Date.now()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    results.steps[1].status = authError ? 'error' : (user ? 'authenticated' : 'not_authenticated')
-    results.steps[1].duration = Date.now() - startAuth
-    results.steps[1].userId = user?.id?.substring(0, 8) + '...'
-    if (authError) results.steps[1].error = authError.message
-
-    // Step 3: Test profiles table
-    results.steps.push({ step: 3, name: 'Query profiles', status: 'starting' })
-    const startProfiles = Date.now()
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id')
-      .limit(1)
-      .single()
-    results.steps[2].status = profileError ? 'error' : 'success'
-    results.steps[2].duration = Date.now() - startProfiles
-    if (profileError) results.steps[2].error = profileError.message
-
-    // Step 4: Test service_categories table
-    results.steps.push({ step: 4, name: 'Query service_categories', status: 'starting' })
-    const startCategories = Date.now()
-    const { data: categories, error: catError } = await supabase
-      .from('service_categories')
-      .select('id, name')
-      .limit(3)
-    results.steps[3].status = catError ? 'error' : 'success'
-    results.steps[3].duration = Date.now() - startCategories
-    results.steps[3].count = categories?.length || 0
-    if (catError) results.steps[3].error = catError.message
-
-    // Step 5: Test helper_profiles table
-    results.steps.push({ step: 5, name: 'Query helper_profiles', status: 'starting' })
-    const startHelpers = Date.now()
-    const { count, error: helpersError } = await supabase
+    // 1. Find ALL helper profiles (not just online)
+    const { data: allHelpers, error: helpersError } = await supabase
       .from('helper_profiles')
-      .select('id', { count: 'exact', head: true })
+      .select(`
+        id,
+        user_id,
+        is_online,
+        is_on_job,
+        is_approved,
+        verification_status,
+        latitude,
+        longitude,
+        service_categories,
+        service_radius_km
+      `)
       .eq('is_approved', true)
-    results.steps[4].status = helpersError ? 'error' : 'success'
-    results.steps[4].duration = Date.now() - startHelpers
-    results.steps[4].count = count || 0
-    if (helpersError) results.steps[4].error = helpersError.message
 
-    results.totalDuration = results.steps.reduce((sum: number, s: any) => sum + (s.duration || 0), 0)
-    results.success = results.steps.every((s: any) => s.status !== 'error')
+    if (helpersError) {
+      results.error = 'Failed to query helpers: ' + helpersError.message
+      return NextResponse.json(results, { status: 500 })
+    }
+
+    results.totalApprovedHelpers = allHelpers?.length || 0
+    results.helpers = []
+
+    for (const helper of (allHelpers || [])) {
+      const helperInfo: Record<string, any> = {
+        id: helper.id,
+        user_id: helper.user_id,
+        is_online: helper.is_online,
+        is_on_job: helper.is_on_job,
+        verification_status: helper.verification_status,
+        has_location: !!(helper.latitude && helper.longitude),
+        location: helper.latitude && helper.longitude ? `${helper.latitude}, ${helper.longitude}` : 'NOT SET',
+        categories: helper.service_categories || [],
+        issues: []
+      }
+
+      // Check for issues
+      if (!helper.is_online) {
+        helperInfo.issues.push('NOT ONLINE')
+      }
+      if (helper.is_on_job) {
+        helperInfo.issues.push('ON ANOTHER JOB')
+      }
+      if (!helper.latitude || !helper.longitude) {
+        helperInfo.issues.push('NO LOCATION SET')
+      }
+      if (!helper.service_categories || helper.service_categories.length === 0) {
+        helperInfo.issues.push('NO SERVICE CATEGORIES')
+      }
+
+      // Check FCM token
+      const { data: tokens } = await supabase
+        .from('device_tokens')
+        .select('token, is_active, last_seen_at')
+        .eq('user_id', helper.user_id)
+
+      helperInfo.fcm_tokens = tokens?.length || 0
+      helperInfo.active_tokens = tokens?.filter((t: any) => t.is_active).length || 0
+      
+      if (!tokens || tokens.length === 0) {
+        helperInfo.issues.push('NO FCM TOKEN REGISTERED')
+      } else if (!tokens.some((t: any) => t.is_active)) {
+        helperInfo.issues.push('NO ACTIVE FCM TOKEN')
+      }
+
+      helperInfo.canReceiveNotifications = helperInfo.issues.length === 0
+
+      results.helpers.push(helperInfo)
+    }
+
+    // Summary
+    results.summary = {
+      totalApproved: results.totalApprovedHelpers,
+      online: results.helpers.filter((h: any) => h.is_online).length,
+      withLocation: results.helpers.filter((h: any) => h.has_location).length,
+      withFcmToken: results.helpers.filter((h: any) => h.fcm_tokens > 0).length,
+      canReceiveNotifications: results.helpers.filter((h: any) => h.canReceiveNotifications).length
+    }
 
     return NextResponse.json(results)
   } catch (error: any) {
