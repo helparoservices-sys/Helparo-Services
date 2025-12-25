@@ -2,130 +2,10 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { SupabaseClient } from '@supabase/supabase-js'
 import { useLocation } from '@/lib/use-location'
 import { AlertTriangle, Phone, MapPin, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from './ui/toast-notification'
-
-// Haversine formula to calculate distance between two points
-function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371 // Earth's radius in km
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLon = (lon2 - lon1) * Math.PI / 180
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
-  return R * c
-}
-
-// Notify nearby helpers about the emergency
-async function notifyNearbyHelpers(
-  supabase: SupabaseClient,
-  customerId: string,
-  alertId: string,
-  lat: number,
-  lng: number,
-  sosType: string,
-  customerName: string,
-  customerPhone: string
-) {
-  try {
-    console.log('🚨 SOS: Starting to notify helpers...', { alertId, lat, lng, sosType, customerName })
-    
-    // Get verified helpers - limit to 200 nearest for performance
-    const { data: helpers, error: helperError } = await supabase
-      .from('helper_profiles')
-      .select('id, user_id, latitude, longitude')
-      .eq('verification_status', 'approved')
-      .limit(200)  // Reasonable limit for emergency response
-
-    if (helperError) {
-      console.error('🚨 SOS: Error fetching helpers:', helperError)
-      return
-    }
-
-    console.log('🚨 SOS: Found helpers:', helpers?.length || 0)
-
-    if (!helpers || helpers.length === 0) {
-      console.log('🚨 SOS: No verified helpers found')
-      return
-    }
-
-    // Filter helpers within 30km radius - notify ALL helpers in range
-    let nearbyHelpers = helpers
-    
-    if (lat !== 0 && lng !== 0) {
-      nearbyHelpers = helpers.filter(helper => {
-        // If helper has no location, include them anyway for emergencies
-        if (!helper.latitude || !helper.longitude) return true
-        const distance = getDistanceKm(lat, lng, helper.latitude, helper.longitude)
-        console.log(`🚨 SOS: Helper ${helper.user_id} distance: ${distance.toFixed(2)}km`)
-        return distance <= 30 // 30km radius
-      })
-    }
-
-    console.log('🚨 SOS: Nearby helpers to notify:', nearbyHelpers.length)
-
-    // Create notifications for each nearby helper using user_id (NOT helper_profiles.id)
-    // Note: Using 'push' channel since 'sos_emergency' is not in the enum
-    // We identify SOS by the data.is_sos field
-    const notifications = nearbyHelpers.map(helper => ({
-      user_id: helper.user_id, // IMPORTANT: Use user_id, not id!
-      channel: 'push', // Must use existing enum value
-      title: '🚨 EMERGENCY SOS - Someone Needs Your Help!',
-      body: `${customerName} is in ${sosType} trouble and needs immediate help! 🙏 Everything is not about money - show some humanity.`,
-      data: { 
-        alert_id: alertId, 
-        type: 'sos_alert', 
-        link: `/helper/sos/${alertId}`,
-        is_sos: true,
-        sos_type: sosType,
-        customer_id: customerId,
-        customer_name: customerName,
-        customer_phone: customerPhone,
-        customer_lat: lat,
-        customer_lng: lng,
-        requires_action: true
-      },
-      status: 'sent',
-      created_at: new Date().toISOString(),
-    }))
-
-    if (notifications.length > 0) {
-      const { error: insertError } = await supabase.from('notifications').insert(notifications)
-      if (insertError) {
-        console.error('🚨 SOS: Error inserting notifications:', insertError)
-      } else {
-        console.log(`🚨 SOS: Successfully notified ${notifications.length} helpers!`)
-      }
-    }
-
-    // Also notify admins
-    const { data: admins } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('role', 'admin')
-
-    if (admins && admins.length > 0) {
-      const adminNotifications = admins.map(admin => ({
-        user_id: admin.id,
-        channel: 'push',
-        title: '🚨 SOS ALERT: Customer Emergency',
-        body: `A customer has triggered a ${sosType} emergency alert. Immediate attention required.`,
-        data: JSON.stringify({ alert_id: alertId, type: 'sos_alert', link: '/admin/sos' }),
-        status: 'sent',
-        created_at: new Date().toISOString(),
-      }))
-      await supabase.from('notifications').insert(adminNotifications)
-    }
-  } catch (error) {
-    console.error('Failed to notify helpers:', error)
-    // Don't throw - alert was already created successfully
-  }
-}
 
 interface EmergencySOSButtonProps {
   requestId?: string
@@ -185,11 +65,9 @@ export default function EmergencySOSButton({ requestId, className = '' }: Emerge
         }
       }
 
-      // OPTIMIZATION: Import singleton instead of createClient()
       const supabase = createClient()
       
-      // OPTIMIZATION: Single auth check instead of triple fallback
-      // getSession is faster and sufficient for client-side auth
+      // Single auth check
       const { data: { session } } = await supabase.auth.getSession()
       const user = session?.user
       
@@ -214,24 +92,24 @@ export default function EmergencySOSButton({ requestId, className = '' }: Emerge
         'dispute': 'dispute'
       }
 
-      // Create SOS alert using database function
-      const { data: alertId, error } = await supabase.rpc('create_sos_alert', {
+      // ZERO EGRESS: Use database function that creates alert AND notifies helpers within 5km
+      // All filtering happens in PostgreSQL - no helper data transferred to client
+      const { data: result, error } = await supabase.rpc('create_sos_alert_with_notifications', {
         p_alert_type: alertTypeMap[sosType] || 'emergency',
         p_latitude: lat,
         p_longitude: lng,
         p_description: description || `${sosType} emergency - immediate assistance needed`,
+        p_customer_name: customerName,
+        p_customer_phone: customerPhone,
         p_request_id: requestId || null,
-        p_contact_phone: customerPhone || null,
+        p_radius_km: 5.0  // Only notify helpers within 5km
       })
 
       if (error) throw error
 
-      console.log('🚨 SOS: Alert created with ID:', alertId)
+      console.log('🚨 SOS: Alert created and helpers notified (zero egress):', result)
 
-      // Notify nearby helpers about the emergency with customer details
-      await notifyNearbyHelpers(supabase, user.id, alertId, lat || 0, lng || 0, sosType, customerName, customerPhone)
-
-      showSuccess('🚨 Emergency Alert Sent', 'Help is on the way!')
+      showSuccess('🚨 Emergency Alert Sent', `Help is on the way! ${result?.helpers_notified || 0} nearby helpers notified.`)
       setShowModal(false)
       setDescription('')
     } catch (error) {
