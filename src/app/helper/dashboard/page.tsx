@@ -531,7 +531,8 @@ export default function HelperDashboard() {
       if (error) throw error
 
       // Update helper's earnings
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       if (user) {
         const { data: helperProfile } = await supabase
           .from('helper_profiles')
@@ -610,7 +611,8 @@ export default function HelperDashboard() {
     setCancelling(true)
     try {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       if (!user) {
         toast.error('Please login')
         return

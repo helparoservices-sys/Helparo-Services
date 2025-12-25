@@ -49,7 +49,8 @@ export default function CustomerSettingsPage() {
 
   const loadSettings = async () => {
     setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { session } } = await supabase.auth.getSession()
+    const user = session?.user
     if (!user) {
       router.push('/auth/login')
       return
@@ -97,7 +98,8 @@ export default function CustomerSettingsPage() {
     setMessage({ type: '', text: '' })
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       if (!user) throw new Error('Not authenticated')
 
       const { error } = await supabase
@@ -128,7 +130,8 @@ export default function CustomerSettingsPage() {
     setMessage({ type: '', text: '' })
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       if (!user) throw new Error('Not authenticated')
 
       const { error } = await supabase
@@ -151,7 +154,8 @@ export default function CustomerSettingsPage() {
     setMessage({ type: '', text: '' })
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       if (!user) throw new Error('Not authenticated')
 
       const { error } = await supabase

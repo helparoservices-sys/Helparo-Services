@@ -40,7 +40,8 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
 
   const loadUserData = async () => {
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { session } } = await supabase.auth.getSession()
+    const user = session?.user
     
     if (user) {
       const { data: profile } = await supabase
