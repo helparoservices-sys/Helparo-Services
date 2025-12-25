@@ -616,6 +616,51 @@ export default function JobTrackingPage() {
 
   useEffect(() => {
     loadJobDetails()
+    
+    // LIGHTWEIGHT POLLING FALLBACK (only when waiting for helper)
+    // Polls every 5s, checks only status field (~50 bytes)
+    // Stops immediately once helper is assigned
+    let pollingInterval: NodeJS.Timeout | null = null
+    
+    const startPolling = () => {
+      if (pollingInterval) return
+      pollingInterval = setInterval(async () => {
+        try {
+          // Ultra-lightweight status check - just 50 bytes response
+          const res = await fetch(`/api/requests/${requestId}/status`)
+          if (res.ok) {
+            const { status, broadcast_status, assigned_helper_id } = await res.json()
+            
+            // If helper assigned, stop polling and do full refresh
+            if (assigned_helper_id || broadcast_status === 'accepted') {
+              console.log('✅ Helper assigned! Stopping polling, refreshing...')
+              if (pollingInterval) {
+                clearInterval(pollingInterval)
+                pollingInterval = null
+              }
+              loadJobDetails() // Full refresh to get helper details
+            }
+          }
+        } catch (e) {
+          console.log('Polling check failed:', e)
+        }
+      }, 5000) // Every 5 seconds
+    }
+    
+    // Start polling only if still broadcasting
+    const checkAndStartPolling = () => {
+      setJob(prev => {
+        if (prev?.broadcast_status === 'broadcasting' && !prev?.assigned_helper_id) {
+          startPolling()
+        }
+        return prev
+      })
+    }
+    
+    // Initial check after load
+    setTimeout(checkAndStartPolling, 1000)
+    
+    // Also use Supabase Realtime as primary method (if it works)
     const supabase = createClient()
     const channel = supabase
       .channel(`job-${requestId}`)
@@ -624,6 +669,12 @@ export default function JobTrackingPage() {
         // This avoids debounce delay and doesn't add egress since payload is already received
         if (payload.new && typeof payload.new === 'object') {
           const newData = payload.new as Record<string, any>
+          
+          // Stop polling if helper assigned via realtime
+          if (newData.assigned_helper_id && pollingInterval) {
+            clearInterval(pollingInterval)
+            pollingInterval = null
+          }
           
           // Check for completion and show popup instantly (before debounced refresh)
           const isCompleted = newData.status === 'completed' || newData.broadcast_status === 'completed'
@@ -656,6 +707,7 @@ export default function JobTrackingPage() {
       .subscribe()
     
     return () => { 
+      if (pollingInterval) clearInterval(pollingInterval)
       supabase.removeChannel(channel)
       if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current)
     }
