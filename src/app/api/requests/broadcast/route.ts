@@ -268,34 +268,45 @@ export async function POST(request: NextRequest) {
     }
     console.log('✅ Service request created:', serviceRequest.id)
 
-    // IMMEDIATELY return success - do helper finding & notifications in background
-    // This ensures the API responds within Vercel's 10s timeout
+    // Run notification task with timeout (Vercel free tier = 10s limit)
+    // Must complete before returning, fire-and-forget doesn't work on serverless
     const requestId = serviceRequest.id
     
-    // Fire-and-forget: Start background tasks without waiting
-    // The function continues running after response is sent
-    processBackgroundTasks(
-      supabase,
-      requestId,
-      user.id,
-      finalCategoryId,
-      finalCategoryName,
-      estimatedPrice,
-      urgency,
-      address,
-      locationLat,
-      locationLng,
-      description,
-      customerProfile?.full_name || 'A customer',
-      finalImages
-    ).catch(err => console.error('Background task error:', err))
+    let helpersNotified = 0
+    try {
+      // Run with 8s timeout to stay within Vercel's 10s limit
+      helpersNotified = await Promise.race([
+        processBackgroundTasks(
+          supabase,
+          requestId,
+          user.id,
+          finalCategoryId,
+          finalCategoryName,
+          estimatedPrice || 0,
+          urgency,
+          address || '',
+          safeLat || 0,
+          safeLng || 0,
+          description || '',
+          customerProfile?.full_name || 'A customer',
+          finalImages
+        ),
+        new Promise<number>((_, reject) => 
+          setTimeout(() => reject(new Error('Notification timeout')), 8000)
+        )
+      ])
+      console.log(`✅ Notifications sent to ${helpersNotified} helpers`)
+    } catch (err: any) {
+      console.log('⚠️ Notification task:', err.message, '- job created, helpers may not be notified')
+      // Don't fail the request - job is created, notifications might just be slow
+    }
 
-    console.log('🎉 Returning immediate success, background tasks started')
+    console.log('🎉 Returning success')
     return NextResponse.json({
       success: true,
       message: 'Request created! Finding helpers...',
       requestId: requestId,
-      helpersNotified: 0 // Will be updated by background task
+      helpersNotified: helpersNotified
     })
 
   } catch (error: any) {
@@ -308,8 +319,8 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Background task processor - runs after API returns
- * Handles helper finding, notifications, and Firebase image upload
+ * Background task processor - finds helpers and sends notifications
+ * Returns number of helpers notified
  */
 async function processBackgroundTasks(
   supabase: any,
@@ -325,7 +336,7 @@ async function processBackgroundTasks(
   description: string,
   customerName: string,
   images: string[]
-) {
+): Promise<number> {
   console.log('🔄 Background tasks starting for request:', requestId)
   
   try {
@@ -494,28 +505,37 @@ async function processBackgroundTasks(
     if (helperUserIds.length > 0) {
       console.log(`📱 Sending FCM to ${helperUserIds.length} helpers:`, helperUserIds)
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helparo.in'
-      fetch(`${baseUrl}/api/push/job-alert`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          helperUserIds,
-          jobId: requestId,
-          title: `New ${categoryNameFromDb} Job!`,
-          description,
-          price: estimatedPrice,
-          location: address,
-          customerName,
-          urgency: urgency || 'urgent',
-          expiresInSeconds: 30
+      
+      // IMPORTANT: Await the FCM call to ensure it completes before function ends
+      try {
+        await fetch(`${baseUrl}/api/push/job-alert`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            helperUserIds,
+            jobId: requestId,
+            title: `New ${categoryNameFromDb} Job!`,
+            description,
+            price: estimatedPrice,
+            location: address,
+            customerName,
+            urgency: urgency || 'urgent',
+            expiresInSeconds: 30
+          })
         })
-      }).catch(err => console.error('FCM error:', err))
+        console.log('✅ FCM request sent')
+      } catch (err) {
+        console.error('FCM error:', err)
+      }
     } else {
       console.log('⚠️ No helper user IDs to send FCM to')
     }
 
     console.log('✅ Background tasks completed')
+    return helpersToNotify.length
   } catch (error) {
     console.error('❌ Background task error:', error)
+    return 0
   }
 }
 

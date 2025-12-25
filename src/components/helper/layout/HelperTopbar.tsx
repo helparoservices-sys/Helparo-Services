@@ -12,11 +12,14 @@ import {
   Moon,
   Sun,
   Shield,
-  Wallet
+  Wallet,
+  Globe,
+  Check
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { useDarkMode } from '@/lib/use-dark-mode'
+import { useLanguage, SUPPORTED_LANGUAGES, LanguageCode } from '@/lib/language-context'
 
 interface HelperTopbarProps {
   onToggleSidebar: () => void
@@ -25,7 +28,9 @@ interface HelperTopbarProps {
 export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
   const router = useRouter()
   const { isDarkMode, toggleDarkMode } = useDarkMode()
+  const { language, setLanguage, languageInfo, t } = useLanguage()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false)
   const [userName, setUserName] = useState('')
   const [userPhone, setUserPhone] = useState('')
   const [isVerified, setIsVerified] = useState(false)
@@ -153,6 +158,61 @@ export default function HelperTopbar({ onToggleSidebar }: HelperTopbarProps) {
 
         {/* Right Section */}
         <div className="flex items-center gap-2">
+          {/* Language Selector */}
+          <div className="relative">
+            <button
+              onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+              className="flex items-center justify-center w-10 h-10 hover:bg-white/20 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              aria-label={t('helper.topbar.changeLanguage')}
+              title={t('helper.topbar.changeLanguage')}
+            >
+              <Globe className="h-5 w-5 text-white dark:text-slate-400" />
+            </button>
+
+            {showLanguageMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowLanguageMenu(false)}
+                ></div>
+                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-50 max-h-[70vh] overflow-y-auto">
+                  <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-700">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-emerald-600" />
+                      {t('helper.topbar.selectLanguage')}
+                    </p>
+                  </div>
+                  <div className="p-2 space-y-1">
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => {
+                          setLanguage(lang.code)
+                          setShowLanguageMenu(false)
+                          toast.success(t('helper.topbar.languageChanged', { language: lang.name }))
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+                          language === lang.code
+                            ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                            : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <span className="text-xl">{lang.flag}</span>
+                        <div className="flex flex-col items-start flex-1">
+                          <span className="font-medium text-sm">{lang.nativeName}</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">{lang.name}</span>
+                        </div>
+                        {language === lang.code && (
+                          <Check className="w-4 h-4 text-emerald-600" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
           {/* Dark Mode Toggle */}
           <button
             onClick={toggleDarkMode}
