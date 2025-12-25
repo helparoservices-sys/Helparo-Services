@@ -559,34 +559,34 @@ export default function NewRequestPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Floating Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-300/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-40 right-10 w-96 h-96 bg-teal-300/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-cyan-300/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-300/20 dark:bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-40 right-10 w-96 h-96 bg-teal-300/20 dark:bg-teal-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-cyan-300/15 dark:bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
       {/* Premium Header with Glassmorphism */}
-      <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/50 shadow-sm pt-safe">
+      <div className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/90 backdrop-blur-xl border-b border-gray-200/50 dark:border-slate-700/50 shadow-sm pt-safe">
         <div className="max-w-3xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => router.back()}
-                className="p-2.5 hover:bg-gray-100 rounded-xl transition-all duration-300 group"
+                className="p-2.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-all duration-300 group"
               >
-                <ArrowLeft className="w-5 h-5 text-gray-700 group-hover:-translate-x-0.5 transition-transform" />
+                <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300 group-hover:-translate-x-0.5 transition-transform" />
               </button>
               <div>
-                <h1 className="text-lg font-bold text-gray-900">Post a Request</h1>
-                <p className="text-xs text-gray-500">Get help in minutes</p>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">Post a Request</h1>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Get help in minutes</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 rounded-full">
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 rounded-full">
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                <span className="text-xs font-medium text-emerald-700">{Math.floor(Math.random() * 50) + 80} helpers online</span>
+                <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{Math.floor(Math.random() * 50) + 80} helpers online</span>
               </div>
             </div>
           </div>
@@ -594,10 +594,10 @@ export default function NewRequestPage() {
           {/* Progress Bar */}
           <div className="mt-3">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-medium text-gray-500">Progress</span>
-              <span className="text-xs font-bold text-emerald-600">{calculateProgress()}%</span>
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Progress</span>
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{calculateProgress()}%</span>
             </div>
-            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${calculateProgress()}%` }}
@@ -611,33 +611,33 @@ export default function NewRequestPage() {
       <div className="relative max-w-3xl mx-auto px-4 py-6 space-y-5">
         
         {/* Service Selection - Searchable accordion */}
-        <div className="bg-white rounded-3xl p-5 shadow-xl shadow-gray-200/50 border border-gray-100 hover:shadow-2xl hover:shadow-emerald-100/50 transition-all duration-500">
+        <div className="bg-white dark:bg-slate-800/80 rounded-3xl p-5 shadow-xl shadow-gray-200/50 dark:shadow-black/20 border border-gray-100 dark:border-slate-700 hover:shadow-2xl hover:shadow-emerald-100/50 dark:hover:shadow-emerald-900/20 transition-all duration-500">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
               <Zap className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
-              <label className="text-base font-bold text-gray-900 block">Choose exact service</label>
-              <p className="text-xs text-gray-500">Search and pick a service to continue</p>
+              <label className="text-base font-bold text-gray-900 dark:text-white block">Choose exact service</label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Search and pick a service to continue</p>
             </div>
-            <span className="px-2 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+            <span className="px-2 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-800">
               Required
             </span>
           </div>
 
           <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
             <Input
               placeholder="Search services (e.g., plumber, cleaning)"
               value={serviceSearch}
               onChange={(e) => setServiceSearch(e.target.value)}
-              className="pl-9 h-11 text-sm border-gray-200 focus:border-emerald-500 focus:ring-emerald-500/20 rounded-xl bg-gray-50/70"
+              className="pl-9 h-11 text-sm border-gray-200 dark:border-slate-600 focus:border-emerald-500 focus:ring-emerald-500/20 rounded-xl bg-gray-50/70 dark:bg-slate-700/50 dark:text-white dark:placeholder:text-gray-400"
             />
           </div>
 
           <div className="space-y-3">
             {filteredCategories.length === 0 && (
-              <div className="text-sm text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-4 text-center">
+              <div className="text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-slate-700/50 border border-dashed border-gray-200 dark:border-slate-600 rounded-2xl p-4 text-center">
                 No services found. Try another keyword.
               </div>
             )}
@@ -648,7 +648,7 @@ export default function NewRequestPage() {
               return (
                 <div
                   key={cat.id}
-                  className="rounded-2xl border border-gray-100 bg-gray-50/60 shadow-sm hover:shadow-md transition-all duration-300"
+                  className="rounded-2xl border border-gray-100 dark:border-slate-700 bg-gray-50/60 dark:bg-slate-700/40 shadow-sm hover:shadow-md transition-all duration-300"
                 >
                   <button
                     type="button"
@@ -658,16 +658,16 @@ export default function NewRequestPage() {
                     <div className="text-2xl">{cat.emoji}</div>
                     <div className="flex-1 text-left">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-gray-900">{cat.name}</span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">{cat.name}</span>
                         {isCategorySelected && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700">
                             Selected
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-gray-500 line-clamp-1">{cat.description}</p>
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1">{cat.description}</p>
                     </div>
-                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                   </button>
 
                   {isExpanded && (
@@ -685,15 +685,15 @@ export default function NewRequestPage() {
                             }))}
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-left text-sm transition-all duration-200 ${
                               isSelected
-                                ? 'border-emerald-500 bg-emerald-50 text-emerald-800 shadow-sm'
-                                : 'border-gray-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/50'
+                                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 shadow-sm'
+                                : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 hover:border-emerald-200 dark:hover:border-emerald-700 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/20'
                             }`}
                           >
                             <span>{service}</span>
                             {isSelected ? (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                             ) : (
-                              <ChevronRight className="w-4 h-4 text-gray-400" />
+                              <ChevronRight className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                             )}
                           </button>
                         )
@@ -707,57 +707,57 @@ export default function NewRequestPage() {
         </div>
 
         {/* Title & Description - Enhanced */}
-        <div className="bg-white rounded-3xl p-5 shadow-xl shadow-gray-200/50 border border-gray-100 hover:shadow-2xl hover:shadow-emerald-100/50 transition-all duration-500 space-y-4">
+        <div className="bg-white dark:bg-slate-800/80 rounded-3xl p-5 shadow-xl shadow-gray-200/50 dark:shadow-black/20 border border-gray-100 dark:border-slate-700 hover:shadow-2xl hover:shadow-emerald-100/50 dark:hover:shadow-emerald-900/20 transition-all duration-500 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <label className="text-base font-bold text-gray-900 block">Describe Your Problem</label>
-              <p className="text-xs text-gray-500">Help us understand what you need</p>
+              <label className="text-base font-bold text-gray-900 dark:text-white block">Describe Your Problem</label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Help us understand what you need</p>
             </div>
           </div>
 
           <div>
-            <label className="text-sm font-semibold text-gray-700 mb-2 block flex items-center gap-2">
+            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block flex items-center gap-2">
               What's the problem? <span className="text-red-500">*</span>
-              <span className="ml-auto text-xs text-gray-400">{formData.title.length}/100</span>
+              <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">{formData.title.length}/100</span>
             </label>
             <Input
               placeholder="e.g., Fix leaking kitchen tap, AC not cooling..."
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value.slice(0, 100) }))}
-              className="h-12 text-base border-gray-200 focus:border-emerald-500 focus:ring-emerald-500/20 rounded-xl bg-gray-50/50 hover:bg-white transition-colors"
+              className="h-12 text-base border-gray-200 dark:border-slate-600 focus:border-emerald-500 focus:ring-emerald-500/20 rounded-xl bg-gray-50/50 dark:bg-slate-700/50 hover:bg-white dark:hover:bg-slate-700 transition-colors dark:text-white dark:placeholder:text-gray-400"
             />
           </div>
 
           <div>
-            <label className="text-sm font-semibold text-gray-700 mb-2 block flex items-center gap-2">
+            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block flex items-center gap-2">
               Additional details 
-              <span className="px-2 py-0.5 bg-gray-100 rounded-full text-xs text-gray-500 font-normal">Optional</span>
+              <span className="px-2 py-0.5 bg-gray-100 dark:bg-slate-700 rounded-full text-xs text-gray-500 dark:text-gray-400 font-normal">Optional</span>
             </label>
             <Textarea
               placeholder="Any specific details that would help the helper understand better..."
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
-              className="text-base border-gray-200 focus:border-emerald-500 focus:ring-emerald-500/20 rounded-xl resize-none bg-gray-50/50 hover:bg-white transition-colors"
+              className="text-base border-gray-200 dark:border-slate-600 focus:border-emerald-500 focus:ring-emerald-500/20 rounded-xl resize-none bg-gray-50/50 dark:bg-slate-700/50 hover:bg-white dark:hover:bg-slate-700 transition-colors dark:text-white dark:placeholder:text-gray-400"
             />
           </div>
         </div>
 
         {/* Photos & Videos - Modernized */}
-        <div className="bg-white rounded-3xl p-5 shadow-xl shadow-gray-200/50 border border-gray-100 hover:shadow-2xl hover:shadow-emerald-100/50 transition-all duration-500">
+        <div className="bg-white dark:bg-slate-800/80 rounded-3xl p-5 shadow-xl shadow-gray-200/50 dark:shadow-black/20 border border-gray-100 dark:border-slate-700 hover:shadow-2xl hover:shadow-emerald-100/50 dark:hover:shadow-emerald-900/20 transition-all duration-500">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
               <Camera className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
-              <label className="text-base font-bold text-gray-900 block">Add Photos/Videos</label>
-              <p className="text-xs text-gray-500">Visuals help helpers understand better</p>
+              <label className="text-base font-bold text-gray-900 dark:text-white block">Add Photos/Videos</label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Visuals help helpers understand better</p>
             </div>
             {(images.length > 0 || videos.length > 0) && (
-              <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold">
+              <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-semibold">
                 {images.length + videos.length} added
               </span>
             )}
@@ -768,7 +768,7 @@ export default function NewRequestPage() {
             <button
               onClick={() => cameraInputRef.current?.click()}
               disabled={uploading || images.length >= 5}
-              className="group flex flex-col items-center justify-center gap-2 py-4 px-3 bg-gradient-to-br from-emerald-50 to-teal-50 text-emerald-700 rounded-2xl border-2 border-dashed border-emerald-200 hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-100 disabled:opacity-50 transition-all duration-300"
+              className="group flex flex-col items-center justify-center gap-2 py-4 px-3 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30 text-emerald-700 dark:text-emerald-300 rounded-2xl border-2 border-dashed border-emerald-200 dark:border-emerald-700 hover:border-emerald-400 dark:hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-100 dark:hover:shadow-emerald-900/30 disabled:opacity-50 transition-all duration-300"
             >
               <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Camera className="w-5 h-5 text-white" />
@@ -778,7 +778,7 @@ export default function NewRequestPage() {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading || images.length >= 5}
-              className="group flex flex-col items-center justify-center gap-2 py-4 px-3 bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-700 rounded-2xl border-2 border-dashed border-blue-200 hover:border-blue-400 hover:shadow-lg hover:shadow-blue-100 disabled:opacity-50 transition-all duration-300"
+              className="group flex flex-col items-center justify-center gap-2 py-4 px-3 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-700 dark:text-blue-300 rounded-2xl border-2 border-dashed border-blue-200 dark:border-blue-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-lg hover:shadow-blue-100 dark:hover:shadow-blue-900/30 disabled:opacity-50 transition-all duration-300"
             >
               <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <ImageIcon className="w-5 h-5 text-white" />
@@ -788,7 +788,7 @@ export default function NewRequestPage() {
             <button
               onClick={() => videoInputRef.current?.click()}
               disabled={uploading || videos.length >= 2}
-              className="group flex flex-col items-center justify-center gap-2 py-4 px-3 bg-gradient-to-br from-purple-50 to-pink-50 text-purple-700 rounded-2xl border-2 border-dashed border-purple-200 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-100 disabled:opacity-50 transition-all duration-300"
+              className="group flex flex-col items-center justify-center gap-2 py-4 px-3 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 text-purple-700 dark:text-purple-300 rounded-2xl border-2 border-dashed border-purple-200 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-lg hover:shadow-purple-100 dark:hover:shadow-purple-900/30 disabled:opacity-50 transition-all duration-300"
             >
               <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Video className="w-5 h-5 text-white" />
@@ -797,7 +797,7 @@ export default function NewRequestPage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2 text-[11px] text-gray-500 mb-2">
+          <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 mb-2">
             <Video className="w-3 h-3 text-purple-500" />
             <span>Max 50MB per video (up to 2)</span>
           </div>
@@ -829,7 +829,7 @@ export default function NewRequestPage() {
 
           {/* Uploading indicator */}
           {uploading && (
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-500 py-3 bg-gray-50 rounded-xl mb-3">
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400 py-3 bg-gray-50 dark:bg-slate-700/50 rounded-xl mb-3">
               <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
               <span>Uploading your media...</span>
             </div>
@@ -839,7 +839,7 @@ export default function NewRequestPage() {
           {images.length > 0 && (
             <div className="flex gap-3 flex-wrap">
               {images.map((url, idx) => (
-                <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-gray-200 shadow-md group hover:shadow-xl transition-all">
+                <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-slate-600 shadow-md group hover:shadow-xl transition-all">
                   <img src={url} alt="" className="w-full h-full object-cover" />
                   <button
                     onClick={() => removeImage(idx)}
@@ -874,23 +874,23 @@ export default function NewRequestPage() {
         </div>
 
         {/* Location - Premium Map Section */}
-        <div className="bg-white rounded-3xl p-5 shadow-xl shadow-gray-200/50 border border-gray-100 hover:shadow-2xl hover:shadow-emerald-100/50 transition-all duration-500">
+        <div className="bg-white dark:bg-slate-800/80 rounded-3xl p-5 shadow-xl shadow-gray-200/50 dark:shadow-black/20 border border-gray-100 dark:border-slate-700 hover:shadow-2xl hover:shadow-emerald-100/50 dark:hover:shadow-emerald-900/20 transition-all duration-500">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg shadow-rose-500/30">
               <MapPin className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
-              <label className="text-base font-bold text-gray-900 block">Service Location</label>
-              <p className="text-xs text-gray-500">Where do you need the service?</p>
+              <label className="text-base font-bold text-gray-900 dark:text-white block">Service Location</label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Where do you need the service?</p>
             </div>
             {formData.latitude && (
-              <span className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+              <span className="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 rounded-full text-xs font-semibold">
                 <Check className="w-3 h-3" />
                 Located
               </span>
             )}
           </div>
-          <div className="rounded-2xl overflow-hidden border-2 border-gray-100 shadow-inner">
+          <div className="rounded-2xl overflow-hidden border-2 border-gray-100 dark:border-slate-600 shadow-inner">
             <AddressInteractiveMap
               value={formData.location}
               onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
@@ -904,41 +904,41 @@ export default function NewRequestPage() {
         {/* Budget & Urgency - Side by Side Premium Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Budget Card */}
-          <div className="bg-white rounded-3xl p-5 shadow-xl shadow-gray-200/50 border border-gray-100 hover:shadow-2xl hover:shadow-emerald-100/50 transition-all duration-500">
+          <div className="bg-white dark:bg-slate-800/80 rounded-3xl p-5 shadow-xl shadow-gray-200/50 dark:shadow-black/20 border border-gray-100 dark:border-slate-700 hover:shadow-2xl hover:shadow-emerald-100/50 dark:hover:shadow-emerald-900/20 transition-all duration-500">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
                 <IndianRupee className="w-5 h-5 text-white" />
               </div>
               <div>
-                <label className="text-base font-bold text-gray-900 block">Your Budget</label>
-                <p className="text-xs text-gray-500">Set your price</p>
+                <label className="text-base font-bold text-gray-900 dark:text-white block">Your Budget</label>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Set your price</p>
               </div>
             </div>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-gray-400">₹</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-gray-400 dark:text-gray-500">₹</span>
               <Input
                 type="number"
                 placeholder="500"
                 value={formData.budget}
                 onChange={(e) => setFormData(prev => ({ ...prev, budget: e.target.value }))}
-                className="h-14 text-2xl font-bold pl-10 border-gray-200 focus:border-amber-500 focus:ring-amber-500/20 rounded-xl bg-gradient-to-r from-amber-50/50 to-yellow-50/50"
+                className="h-14 text-2xl font-bold pl-10 border-gray-200 dark:border-slate-600 focus:border-amber-500 focus:ring-amber-500/20 rounded-xl bg-gradient-to-r from-amber-50/50 to-yellow-50/50 dark:from-amber-900/20 dark:to-yellow-900/20 dark:text-white dark:placeholder:text-gray-400"
               />
             </div>
-            <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 flex items-center gap-1">
               <TrendingUp className="w-3 h-3" />
               Avg. price: ₹300-800 for this category
             </p>
           </div>
 
           {/* Urgency Card */}
-          <div className="bg-white rounded-3xl p-5 shadow-xl shadow-gray-200/50 border border-gray-100 hover:shadow-2xl hover:shadow-emerald-100/50 transition-all duration-500">
+          <div className="bg-white dark:bg-slate-800/80 rounded-3xl p-5 shadow-xl shadow-gray-200/50 dark:shadow-black/20 border border-gray-100 dark:border-slate-700 hover:shadow-2xl hover:shadow-emerald-100/50 dark:hover:shadow-emerald-900/20 transition-all duration-500">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
                 <Clock className="w-5 h-5 text-white" />
               </div>
               <div>
-                <label className="text-base font-bold text-gray-900 block">Urgency Level</label>
-                <p className="text-xs text-gray-500">When do you need it?</p>
+                <label className="text-base font-bold text-gray-900 dark:text-white block">Urgency Level</label>
+                <p className="text-xs text-gray-500 dark:text-gray-400">When do you need it?</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -954,7 +954,7 @@ export default function NewRequestPage() {
                   >
                     <span className="text-sm mr-1">{opt.icon}</span>
                     <span className="text-xs font-bold">{opt.label}</span>
-                    <div className={`text-[10px] mt-0.5 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                    <div className={`text-[10px] mt-0.5 ${isSelected ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'}`}>
                       {opt.description}
                     </div>
                   </button>
@@ -965,14 +965,14 @@ export default function NewRequestPage() {
         </div>
 
         {/* Payment Method - Premium Selection */}
-        <div className="bg-white rounded-3xl p-5 shadow-xl shadow-gray-200/50 border border-gray-100 hover:shadow-2xl hover:shadow-emerald-100/50 transition-all duration-500">
+        <div className="bg-white dark:bg-slate-800/80 rounded-3xl p-5 shadow-xl shadow-gray-200/50 dark:shadow-black/20 border border-gray-100 dark:border-slate-700 hover:shadow-2xl hover:shadow-emerald-100/50 dark:hover:shadow-emerald-900/20 transition-all duration-500">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-green-500/30">
               <Banknote className="w-5 h-5 text-white" />
             </div>
             <div>
-              <label className="text-base font-bold text-gray-900 block">Payment Method</label>
-              <p className="text-xs text-gray-500">Choose how you want to pay</p>
+              <label className="text-base font-bold text-gray-900 dark:text-white block">Payment Method</label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Choose how you want to pay</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -980,54 +980,54 @@ export default function NewRequestPage() {
               onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'cash' }))}
               className={`relative p-4 rounded-2xl border-2 transition-all duration-300 flex items-center gap-4 overflow-hidden group ${
                 formData.paymentMethod === 'cash'
-                  ? 'border-amber-400 bg-gradient-to-br from-amber-50 to-yellow-50 shadow-lg shadow-amber-100'
-                  : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30'
+                  ? 'border-amber-400 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 shadow-lg shadow-amber-100 dark:shadow-amber-900/20'
+                  : 'border-gray-200 dark:border-slate-600 hover:border-amber-300 dark:hover:border-amber-700 hover:bg-amber-50/30 dark:hover:bg-amber-900/20'
               }`}
             >
               {formData.paymentMethod === 'cash' && (
                 <div className="absolute top-2 right-2">
-                  <CheckCircle2 className="w-5 h-5 text-amber-600" />
+                  <CheckCircle2 className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                 </div>
               )}
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
                 formData.paymentMethod === 'cash' 
                   ? 'bg-gradient-to-br from-amber-500 to-yellow-500 shadow-lg shadow-amber-500/30' 
-                  : 'bg-gray-100 group-hover:bg-amber-100'
+                  : 'bg-gray-100 dark:bg-slate-700 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/40'
               }`}>
-                <Banknote className={`w-6 h-6 ${formData.paymentMethod === 'cash' ? 'text-white' : 'text-gray-500 group-hover:text-amber-600'}`} />
+                <Banknote className={`w-6 h-6 ${formData.paymentMethod === 'cash' ? 'text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-amber-600 dark:group-hover:text-amber-400'}`} />
               </div>
               <div className="text-left">
-                <p className={`font-bold ${formData.paymentMethod === 'cash' ? 'text-amber-700' : 'text-gray-700'}`}>
+                <p className={`font-bold ${formData.paymentMethod === 'cash' ? 'text-amber-700 dark:text-amber-300' : 'text-gray-700 dark:text-gray-200'}`}>
                   Cash
                 </p>
-                <p className="text-xs text-gray-500">Pay after service</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Pay after service</p>
               </div>
             </button>
             <button
               onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'upi' }))}
               className={`relative p-4 rounded-2xl border-2 transition-all duration-300 flex items-center gap-4 overflow-hidden group ${
                 formData.paymentMethod === 'upi'
-                  ? 'border-blue-400 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg shadow-blue-100'
-                  : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/30'
+                  ? 'border-blue-400 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 shadow-lg shadow-blue-100 dark:shadow-blue-900/20'
+                  : 'border-gray-200 dark:border-slate-600 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50/30 dark:hover:bg-blue-900/20'
               }`}
             >
               {formData.paymentMethod === 'upi' && (
                 <div className="absolute top-2 right-2">
-                  <CheckCircle2 className="w-5 h-5 text-blue-600" />
+                  <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
               )}
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
                 formData.paymentMethod === 'upi' 
                   ? 'bg-gradient-to-br from-blue-500 to-indigo-500 shadow-lg shadow-blue-500/30' 
-                  : 'bg-gray-100 group-hover:bg-blue-100'
+                  : 'bg-gray-100 dark:bg-slate-700 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40'
               }`}>
-                <Smartphone className={`w-6 h-6 ${formData.paymentMethod === 'upi' ? 'text-white' : 'text-gray-500 group-hover:text-blue-600'}`} />
+                <Smartphone className={`w-6 h-6 ${formData.paymentMethod === 'upi' ? 'text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`} />
               </div>
               <div className="text-left">
-                <p className={`font-bold ${formData.paymentMethod === 'upi' ? 'text-blue-700' : 'text-gray-700'}`}>
+                <p className={`font-bold ${formData.paymentMethod === 'upi' ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200'}`}>
                   UPI/Online
                 </p>
-                <p className="text-xs text-gray-500">Pay securely online</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Pay securely online</p>
               </div>
             </button>
           </div>
@@ -1058,38 +1058,38 @@ export default function NewRequestPage() {
           </Button>
           
           {calculateProgress() < 100 && (
-            <p className="text-center text-sm text-gray-500">
+            <p className="text-center text-sm text-gray-500 dark:text-gray-400">
               Complete all required fields to post your request
             </p>
           )}
         </div>
 
         {/* Trust & Security Section */}
-        <div className="bg-gradient-to-r from-gray-50 to-emerald-50/50 rounded-3xl p-5 border border-gray-100">
+        <div className="bg-gradient-to-r from-gray-50 to-emerald-50/50 dark:from-slate-800/60 dark:to-emerald-900/20 rounded-3xl p-5 border border-gray-100 dark:border-slate-700">
           <div className="grid grid-cols-4 gap-4">
             <div className="text-center group">
-              <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-white shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Shield className="w-6 h-6 text-emerald-600" />
+              <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-white dark:bg-slate-700 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Shield className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
               </div>
-              <p className="text-xs font-semibold text-gray-700">Verified Helpers</p>
+              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Verified Helpers</p>
             </div>
             <div className="text-center group">
-              <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-white shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
-                <BadgeCheck className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-white dark:bg-slate-700 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
+                <BadgeCheck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
-              <p className="text-xs font-semibold text-gray-700">Background Check</p>
+              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Background Check</p>
             </div>
             <div className="text-center group">
-              <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-white shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-white dark:bg-slate-700 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Award className="w-6 h-6 text-amber-500" />
               </div>
-              <p className="text-xs font-semibold text-gray-700">Top Rated</p>
+              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Top Rated</p>
             </div>
             <div className="text-center group">
-              <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-white shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Headphones className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-white dark:bg-slate-700 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Headphones className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
-              <p className="text-xs font-semibold text-gray-700">24/7 Support</p>
+              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">24/7 Support</p>
             </div>
           </div>
         </div>
