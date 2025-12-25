@@ -550,6 +550,12 @@ export default function JobTrackingPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `id=eq.${requestId}` }, (payload) => {
         if (payload.new && typeof payload.new === 'object') {
           const newData = payload.new as Record<string, any>
+          console.log('🔄 Realtime update received:', {
+            status: newData.status,
+            broadcast_status: newData.broadcast_status,
+            work_started_at: newData.work_started_at,
+            work_completed_at: newData.work_completed_at
+          })
           
           // Check for completion and show popup instantly
           const isCompleted = newData.status === 'completed' || newData.broadcast_status === 'completed'
@@ -559,20 +565,26 @@ export default function JobTrackingPage() {
             setShowCompletionPopup(true)
           }
           
+          // Update job state directly from realtime data (NO extra API call needed!)
           setJob(prev => {
             if (!prev) return prev
-            const criticalUpdates: Partial<JobDetails> = {}
-            if (newData.work_started_at !== undefined) criticalUpdates.work_started_at = newData.work_started_at
-            if (newData.work_completed_at !== undefined) criticalUpdates.work_completed_at = newData.work_completed_at
-            if (newData.status !== undefined) criticalUpdates.status = newData.status
-            if (newData.broadcast_status !== undefined) criticalUpdates.broadcast_status = newData.broadcast_status
-            if (newData.assigned_helper_id !== undefined) criticalUpdates.assigned_helper_id = newData.assigned_helper_id
-            if (newData.helper_location_lat !== undefined) criticalUpdates.helper_location_lat = newData.helper_location_lat !== null ? Number(newData.helper_location_lat) : null
-            if (newData.helper_location_lng !== undefined) criticalUpdates.helper_location_lng = newData.helper_location_lng !== null ? Number(newData.helper_location_lng) : null
-            return { ...prev, ...criticalUpdates }
+            return {
+              ...prev,
+              work_started_at: newData.work_started_at !== undefined ? newData.work_started_at : prev.work_started_at,
+              work_completed_at: newData.work_completed_at !== undefined ? newData.work_completed_at : prev.work_completed_at,
+              status: newData.status !== undefined ? newData.status : prev.status,
+              broadcast_status: newData.broadcast_status !== undefined ? newData.broadcast_status : prev.broadcast_status,
+              assigned_helper_id: newData.assigned_helper_id !== undefined ? newData.assigned_helper_id : prev.assigned_helper_id,
+              helper_location_lat: newData.helper_location_lat !== undefined ? (newData.helper_location_lat !== null ? Number(newData.helper_location_lat) : null) : prev.helper_location_lat,
+              helper_location_lng: newData.helper_location_lng !== undefined ? (newData.helper_location_lng !== null ? Number(newData.helper_location_lng) : null) : prev.helper_location_lng,
+            }
           })
+          
+          // Only fetch full details if helper was just assigned (need helper profile info)
+          if (newData.assigned_helper_id && newData.broadcast_status === 'accepted') {
+            debouncedLoadJobDetails()
+          }
         }
-        debouncedLoadJobDetails()
       })
       .subscribe()
     
