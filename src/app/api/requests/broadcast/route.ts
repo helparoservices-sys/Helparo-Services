@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { uploadBase64ToFirebaseAdmin } from '@/lib/firebase-admin'
-import { after } from 'next/server'
 
 // Generate 6-digit OTP
 function generateOTP(): string {
@@ -273,27 +272,25 @@ export async function POST(request: NextRequest) {
     // This ensures the API responds within Vercel's 10s timeout
     const requestId = serviceRequest.id
     
-    // Use Next.js after() to run background tasks AFTER response is sent
-    // This keeps the serverless function alive until tasks complete
-    after(async () => {
-      await processBackgroundTasks(
-        supabase,
-        requestId,
-        user.id,
-        finalCategoryId,
-        finalCategoryName,
-        estimatedPrice,
-        urgency,
-        address,
-        locationLat,
-        locationLng,
-        description,
-        customerProfile?.full_name || 'A customer',
-        finalImages
-      )
-    })
+    // Fire-and-forget: Start background tasks without waiting
+    // The function continues running after response is sent
+    processBackgroundTasks(
+      supabase,
+      requestId,
+      user.id,
+      finalCategoryId,
+      finalCategoryName,
+      estimatedPrice,
+      urgency,
+      address,
+      locationLat,
+      locationLng,
+      description,
+      customerProfile?.full_name || 'A customer',
+      finalImages
+    ).catch(err => console.error('Background task error:', err))
 
-    console.log('🎉 Returning immediate success, background tasks scheduled')
+    console.log('🎉 Returning immediate success, background tasks started')
     return NextResponse.json({
       success: true,
       message: 'Request created! Finding helpers...',
