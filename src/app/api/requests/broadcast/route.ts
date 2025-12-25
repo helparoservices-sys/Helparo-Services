@@ -251,8 +251,9 @@ export async function POST(request: NextRequest) {
 
     if (requestError) {
       console.error('❌ Error creating service request:', requestError)
+      console.error('❌ Error details:', JSON.stringify(requestError, null, 2))
       return NextResponse.json(
-        { error: 'Failed to create service request' },
+        { error: `Failed to create service request: ${requestError.message}` },
         { status: 500 }
       )
     }
