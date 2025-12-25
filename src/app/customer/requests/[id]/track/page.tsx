@@ -44,128 +44,54 @@ import {
 import { toast } from 'sonner'
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PREMIUM SEARCHING ANIMATION - ULTRA MODERN WITH 3D FEEL
+// CLEAN SEARCHING ANIMATION - SIMPLE & ELEGANT
 // ═══════════════════════════════════════════════════════════════════════════
-function SearchingAnimation({ nearbyHelpers }: { nearbyHelpers: any[] }) {
-  const availableCount = nearbyHelpers.filter(h => h.isOnline && !h.isOnJob).length
-  const [dots, setDots] = useState('')
-  const [searchPhase, setSearchPhase] = useState(0)
+function SearchingAnimation({ nearbyHelpers, onRefresh }: { nearbyHelpers: any[]; onRefresh: () => void }) {
+  const [refreshing, setRefreshing] = useState(false)
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDots(prev => prev.length >= 3 ? '' : prev + '.')
-    }, 400)
-    return () => clearInterval(interval)
-  }, [])
-
-  useEffect(() => {
-    const phases = ['Scanning area', 'Finding experts', 'Matching skills', 'Almost there']
-    const interval = setInterval(() => {
-      setSearchPhase(prev => (prev + 1) % phases.length)
-    }, 2500)
-    return () => clearInterval(interval)
-  }, [])
-
-  const searchPhrases = ['Scanning area', 'Finding experts', 'Matching skills', 'Almost there']
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await onRefresh()
+    setTimeout(() => setRefreshing(false), 500)
+  }
 
   return (
-    <div className="relative flex flex-col items-center justify-center py-4 px-2">
-      {/* Main Radar Animation */}
-      <div className="relative w-48 h-48 mb-5">
-        {/* Outer glow ring */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-400/20 via-teal-400/20 to-emerald-400/20 blur-xl animate-pulse" />
-        
-        {/* 3D Ring effect */}
-        <div className="absolute inset-1 rounded-full bg-gradient-to-b from-white to-gray-100 shadow-[inset_0_-8px_16px_rgba(0,0,0,0.1)]">
-          {/* Rotating scanner */}
-          <div className="absolute inset-0 animate-spin" style={{ animationDuration: '4s' }}>
-            <div className="absolute top-1/2 left-1/2 w-full h-1 origin-left -translate-y-1/2 bg-gradient-to-r from-teal-500 via-teal-400 to-transparent opacity-60" />
-          </div>
-        </div>
-        
-        {/* Concentric circles */}
-        <div className="absolute inset-6 rounded-full border border-teal-200/60" />
-        <div className="absolute inset-12 rounded-full border border-teal-300/40" />
-        <div className="absolute inset-[4.5rem] rounded-full border border-teal-400/30" />
-        
-        {/* Pulse waves */}
-        <div className="absolute inset-4 rounded-full border-2 border-teal-400/30 animate-ping" style={{ animationDuration: '2s' }} />
-        <div className="absolute inset-8 rounded-full border border-teal-500/20 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.7s' }} />
-
-        {/* Center icon - 3D effect */}
+    <div className="flex flex-col items-center justify-center py-8 px-4">
+      {/* Simple pulsing circle */}
+      <div className="relative w-32 h-32 mb-6">
+        <div className="absolute inset-0 rounded-full bg-emerald-100 animate-ping opacity-30" />
+        <div className="absolute inset-2 rounded-full bg-emerald-50 animate-pulse" />
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-teal-400 via-emerald-500 to-cyan-500 flex items-center justify-center shadow-xl shadow-teal-500/40 transform hover:scale-105 transition-transform">
-            <div className="w-16 h-16 rounded-full bg-white/95 flex items-center justify-center shadow-inner">
-              <MapPinned className="w-8 h-8 text-teal-600 animate-bounce" style={{ animationDuration: '2s' }} />
-            </div>
+          <div className="w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg">
+            <MapPin className="w-10 h-10 text-white" />
           </div>
         </div>
-
-        {/* Floating helper dots */}
-        {nearbyHelpers.slice(0, 6).map((helper, idx) => {
-          const angle = (idx * 60 - 90) * (Math.PI / 180)
-          const radius = 72
-          const x = Math.cos(angle) * radius
-          const y = Math.sin(angle) * radius
-          const isAvailable = helper.isOnline && !helper.isOnJob
-          
-          return (
-            <div
-              key={helper.id}
-              className="absolute animate-bounce"
-              style={{
-                left: `calc(50% + ${x}px - 14px)`,
-                top: `calc(50% + ${y}px - 14px)`,
-                animationDelay: `${idx * 0.15}s`,
-                animationDuration: `${1.5 + idx * 0.2}s`
-              }}
-            >
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md border-2 border-white/80 backdrop-blur-sm ${
-                isAvailable 
-                  ? 'bg-emerald-500' 
-                  : 'bg-gray-400'
-              }`}>
-                {helper.name.charAt(0)}
-              </div>
-              {isAvailable && (
-                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white animate-pulse" />
-              )}
-            </div>
-          )
-        })}
       </div>
 
-      {/* Text with typing effect */}
-      <div className="text-center mb-4">
-        <h3 className="text-lg font-black text-gray-800 mb-1 flex items-center justify-center gap-2">
-          <Zap className="w-5 h-5 text-amber-500 animate-pulse" />
-          {searchPhrases[searchPhase]}{dots}
-        </h3>
-        <p className="text-gray-500 text-sm">Finding the perfect match for you</p>
-      </div>
-      
-      {/* Stats Cards - Clean */}
+      {/* Status text */}
+      <h3 className="text-xl font-semibold text-gray-800 mb-2">
+        Finding helpers nearby...
+      </h3>
+      <p className="text-gray-500 text-sm text-center mb-6 max-w-xs">
+        You&apos;ll receive a notification when a helper accepts your request
+      </p>
+
+      {/* Refresh button */}
+      <button
+        onClick={handleRefresh}
+        disabled={refreshing}
+        className="flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-700 font-medium transition-colors disabled:opacity-50"
+      >
+        <Loader2 className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+        {refreshing ? 'Checking...' : 'Check for updates'}
+      </button>
+
+      {/* Helper count */}
       {nearbyHelpers.length > 0 && (
-        <div className="flex items-center gap-2 w-full max-w-xs">
-          <div className="flex-1 bg-slate-700 text-white rounded-2xl px-4 py-3 shadow-md relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-x-4 -translate-y-8" />
-            <p className="text-xs font-medium text-white/80">Available</p>
-            <p className="text-2xl font-bold">{availableCount}</p>
-          </div>
-          <div className="flex-1 bg-gray-100 text-gray-800 rounded-2xl px-4 py-3 shadow-sm relative overflow-hidden border border-gray-200">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-gray-200/50 rounded-full -translate-x-4 -translate-y-8" />
-            <p className="text-xs font-medium text-gray-500">Nearby</p>
-            <p className="text-2xl font-bold">{nearbyHelpers.length}</p>
-          </div>
-        </div>
+        <p className="mt-4 text-sm text-gray-400">
+          {nearbyHelpers.length} helpers in your area
+        </p>
       )}
-
-      {/* Progress bar with shimmer */}
-      <div className="w-full max-w-xs mt-5">
-        <div className="h-2 bg-gray-200 rounded-full overflow-hidden relative">
-          <div className="absolute inset-0 bg-slate-500 rounded-full animate-pulse" />
-        </div>
-      </div>
     </div>
   )
 }
@@ -617,77 +543,24 @@ export default function JobTrackingPage() {
   useEffect(() => {
     loadJobDetails()
     
-    // LIGHTWEIGHT POLLING FALLBACK (only when waiting for helper)
-    // Polls every 5s, checks only status field (~50 bytes)
-    // Stops immediately once helper is assigned
-    let pollingInterval: NodeJS.Timeout | null = null
-    
-    const startPolling = () => {
-      if (pollingInterval) return
-      pollingInterval = setInterval(async () => {
-        try {
-          // Ultra-lightweight status check - just 50 bytes response
-          const res = await fetch(`/api/requests/${requestId}/status`)
-          if (res.ok) {
-            const { status, broadcast_status, assigned_helper_id } = await res.json()
-            
-            // If helper assigned, stop polling and do full refresh
-            if (assigned_helper_id || broadcast_status === 'accepted') {
-              console.log('✅ Helper assigned! Stopping polling, refreshing...')
-              if (pollingInterval) {
-                clearInterval(pollingInterval)
-                pollingInterval = null
-              }
-              loadJobDetails() // Full refresh to get helper details
-            }
-          }
-        } catch (e) {
-          console.log('Polling check failed:', e)
-        }
-      }, 5000) // Every 5 seconds
-    }
-    
-    // Start polling only if still broadcasting
-    const checkAndStartPolling = () => {
-      setJob(prev => {
-        if (prev?.broadcast_status === 'broadcasting' && !prev?.assigned_helper_id) {
-          startPolling()
-        }
-        return prev
-      })
-    }
-    
-    // Initial check after load
-    setTimeout(checkAndStartPolling, 1000)
-    
-    // Also use Supabase Realtime as primary method (if it works)
+    // Supabase Realtime for instant updates (no additional egress - already subscribed)
     const supabase = createClient()
     const channel = supabase
       .channel(`job-${requestId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `id=eq.${requestId}` }, (payload) => {
-        // For critical status fields (OTP verification), apply immediately from payload
-        // This avoids debounce delay and doesn't add egress since payload is already received
         if (payload.new && typeof payload.new === 'object') {
           const newData = payload.new as Record<string, any>
           
-          // Stop polling if helper assigned via realtime
-          if (newData.assigned_helper_id && pollingInterval) {
-            clearInterval(pollingInterval)
-            pollingInterval = null
-          }
-          
-          // Check for completion and show popup instantly (before debounced refresh)
+          // Check for completion and show popup instantly
           const isCompleted = newData.status === 'completed' || newData.broadcast_status === 'completed'
           if (isCompleted && !completionPopupShownRef.current) {
             completionPopupShownRef.current = true
             localStorage.setItem(`completion_popup_shown_${requestId}`, 'true')
             setShowCompletionPopup(true)
-            console.log('🎉 Job completed - showing popup instantly')
           }
           
           setJob(prev => {
             if (!prev) return prev
-            // Only update critical fields instantly from realtime payload
             const criticalUpdates: Partial<JobDetails> = {}
             if (newData.work_started_at !== undefined) criticalUpdates.work_started_at = newData.work_started_at
             if (newData.work_completed_at !== undefined) criticalUpdates.work_completed_at = newData.work_completed_at
@@ -696,18 +569,14 @@ export default function JobTrackingPage() {
             if (newData.assigned_helper_id !== undefined) criticalUpdates.assigned_helper_id = newData.assigned_helper_id
             if (newData.helper_location_lat !== undefined) criticalUpdates.helper_location_lat = newData.helper_location_lat !== null ? Number(newData.helper_location_lat) : null
             if (newData.helper_location_lng !== undefined) criticalUpdates.helper_location_lng = newData.helper_location_lng !== null ? Number(newData.helper_location_lng) : null
-            
-            console.log('🔄 Instant realtime update (no egress):', criticalUpdates)
             return { ...prev, ...criticalUpdates }
           })
         }
-        // Still do debounced full refresh for non-critical updates (helper info, etc.)
         debouncedLoadJobDetails()
       })
       .subscribe()
     
     return () => { 
-      if (pollingInterval) clearInterval(pollingInterval)
       supabase.removeChannel(channel)
       if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current)
     }
@@ -992,7 +861,7 @@ export default function JobTrackingPage() {
           {activeTab === 'track' && (
             <>
               {/* BROADCASTING - Search Animation */}
-              {isBroadcasting && <SearchingAnimation nearbyHelpers={nearbyHelpers} />}
+              {isBroadcasting && <SearchingAnimation nearbyHelpers={nearbyHelpers} onRefresh={loadJobDetails} />}
 
               {/* HELPER ASSIGNED - Premium Card */}
               {helperAssigned && job.assigned_helper && (
