@@ -365,6 +365,37 @@ export async function POST(
           console.error('Error creating notifications:', notifError)
         }
       }
+
+      // CRITICAL: Send FCM push notifications to helpers (same as initial broadcast)
+      const helperUserIds = filteredHelpers.map((h: any) => h.user_id).filter(Boolean)
+      if (helperUserIds.length > 0) {
+        console.log(`📱 Sending FCM re-broadcast to ${helperUserIds.length} helpers:`, helperUserIds)
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helparo.in'
+        
+        try {
+          await fetch(`${baseUrl}/api/push/job-alert`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              helperUserIds,
+              jobId: requestId,
+              title: `🔄 Job Available: ${finalCategoryName}!`,
+              description: serviceRequest.description || `${customerName} needs help!`,
+              price: serviceRequest.estimated_price,
+              location: serviceRequest.service_address,
+              customerName,
+              urgency: serviceRequest.urgency_level === 'urgent' ? 'urgent' : 'normal',
+              expiresInSeconds: 30
+            })
+          })
+          console.log('✅ FCM re-broadcast sent')
+        } catch (fcmErr) {
+          console.error('FCM re-broadcast error:', fcmErr)
+          // Don't fail - DB notifications are already created
+        }
+      } else {
+        console.log('⚠️ No helper user IDs to send FCM to')
+      }
     }
 
     // Notify customer that job is being re-broadcasted

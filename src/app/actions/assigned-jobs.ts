@@ -217,6 +217,25 @@ export async function updateJobStatus(jobId: string, newStatus: string) {
         .from('helper_profiles')
         .update({ is_on_job: false } as never)
         .eq('id', helperProfile.id)
+      
+      // CRITICAL: If cancelled, re-broadcast to other helpers
+      if (newStatus === 'cancelled') {
+        try {
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helparo.in'
+          const rebroadcastResponse = await fetch(`${baseUrl}/api/requests/${jobId}/rebroadcast`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          })
+          const rebroadcastData = await rebroadcastResponse.json()
+          logger.info('Job re-broadcasted after cancellation', {
+            job_id: jobId,
+            helpers_notified: rebroadcastData.helpersNotified || 0
+          })
+        } catch (rebroadcastError) {
+          logger.error('Failed to re-broadcast cancelled job', { error: rebroadcastError })
+          // Don't fail the cancellation if rebroadcast fails
+        }
+      }
     }
 
     logger.info('Job status updated', {
