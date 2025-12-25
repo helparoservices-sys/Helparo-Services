@@ -165,7 +165,8 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="@drawable/rounded_card_dark"
-            android:padding="16dp">
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -186,6 +187,17 @@
                 android:ellipsize="end" />
 
         </LinearLayout>
+
+        <!-- Info message for lock screen -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📱 Tap VIEW to open app and see photos, videos &amp; full details"
+            android:textColor="#FCD34D"
+            android:textSize="13sp"
+            android:gravity="center"
+            android:padding="12dp"
+            android:background="@drawable/rounded_card_dark" />
 
     </LinearLayout>
 
@@ -215,9 +227,9 @@
             android:layout_height="64dp"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
-            android:text="✓ ACCEPT"
+            android:text="VIEW &amp; ACCEPT"
             android:textColor="#FFFFFF"
-            android:textSize="18sp"
+            android:textSize="15sp"
             android:textStyle="bold"
             android:background="@drawable/btn_accept" />
 

@@ -157,27 +157,28 @@ public class JobAlertActivity extends AppCompatActivity {
             descriptionView.setText(jobDescription);
         }
         
-        // Accept button
+        // Accept button - opens app to show full details popup
         if (acceptButton != null) {
             acceptButton.setOnClickListener(v -> {
-                Log.d(TAG, "Accept button clicked for job: " + jobId);
+                Log.d(TAG, "View & Accept button clicked for job: " + jobId);
                 stopAllAlerts();
                 
-                // Open main app with job ID
+                // Open main app - the web popup will show with full details
                 Intent mainIntent = new Intent(this, MainActivity.class);
                 mainIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                mainIntent.putExtra("openJob", jobId);
-                mainIntent.putExtra("action", "accept");
+                // Pass job ID so web app can highlight this job
+                mainIntent.putExtra("jobId", jobId);
                 startActivity(mainIntent);
                 finish();
             });
         }
         
-        // Reject button
+        // Reject button - just dismiss and go back
         if (rejectButton != null) {
             rejectButton.setOnClickListener(v -> {
-                Log.d(TAG, "Reject button clicked");
+                Log.d(TAG, "Reject button clicked - dismissing alert");
                 stopAllAlerts();
+                // Don't open app, just close this screen
                 finish();
             });
         }
