@@ -494,13 +494,24 @@ export default function NewRequestPage() {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
 
+      // Convert service name to slug for proper helper matching
+      // e.g., "Electrical Work" -> "electrical-work", "AC Repair & Service" -> "ac-repair-service"
+      const serviceSlug = formData.service
+        .toLowerCase()
+        .replace(/&/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+
       const broadcastResponse = await fetch('/api/requests/broadcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
         body: JSON.stringify({ 
-          categoryId: formData.category,
-          categoryName: serviceCategories.find(c => c.id === formData.category)?.name,
+          // Use service slug for matching (same as AI request flow)
+          categoryId: serviceSlug,
+          categoryName: formData.service, // Use specific service name
+          parentCategory: formData.category, // Keep parent for reference
           serviceName: formData.service,
           description: formData.description || formData.title,
           address: formData.location,
