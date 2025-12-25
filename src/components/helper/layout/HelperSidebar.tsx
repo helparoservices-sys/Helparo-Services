@@ -25,6 +25,7 @@ import {
   ScrollText
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useLanguage } from '@/lib/language-context'
 
 interface HelperSidebarProps {
   collapsed: boolean
@@ -34,6 +35,7 @@ interface HelperSidebarProps {
 
 export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileClose }: HelperSidebarProps) {
   const pathname = usePathname()
+  const { t } = useLanguage()
   const [isVerified, setIsVerified] = useState(true) // Default to true to avoid flash of locked state
   const [checkingVerification, setCheckingVerification] = useState(true)
 
@@ -63,58 +65,58 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
 
   const navItems = [
     {
-      label: 'Dashboard',
+      labelKey: 'helper.sidebar.dashboard',
       icon: LayoutDashboard,
       href: '/helper/dashboard',
       requiresVerification: false
     },
     /* === HIDDEN - JOBS BROWSE PAGE ===
     {
-      label: 'Jobs',
+      labelKey: 'helper.sidebar.findJobs',
       icon: Search,
       href: '/helper/jobs',
       requiresVerification: true
     },
     === END HIDDEN JOBS BROWSE === */
     {
-      label: 'My Jobs',
+      labelKey: 'helper.sidebar.myJobs',
       icon: Briefcase,
       href: '/helper/assigned',
       requiresVerification: true
     },
     {
-      label: 'SOS Alerts',
+      labelKey: 'helper.sidebar.sos',
       icon: AlertTriangle,
       href: '/helper/sos',
       requiresVerification: true
     },
     {
-      label: 'My Services',
+      labelKey: 'helper.sidebar.services',
       icon: FileText,
       href: '/helper/services',
       requiresVerification: false
     },
     {
-      label: 'Ratings',
+      labelKey: 'helper.sidebar.reviews',
       icon: Star,
       href: '/helper/ratings',
       requiresVerification: true
     },
     {
-      label: 'Achievements',
+      labelKey: 'helper.sidebar.achievements',
       icon: Award,
       href: '/helper/gamification',
       requiresVerification: true
     },
     {
-      label: 'Referrals',
+      labelKey: 'helper.sidebar.referrals',
       icon: Gift,
       href: '/helper/referrals',
       requiresVerification: false
     },
     /* === HIDDEN - TIME TRACKING ===
     {
-      label: 'Time Tracking',
+      labelKey: 'helper.sidebar.timeTracking',
       icon: Clock,
       href: '/helper/time-tracking',
       requiresVerification: true
@@ -123,7 +125,7 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
     /* === HIDDEN FOR PLAY STORE DEPLOYMENT - SUBSCRIPTIONS ===
     * TODO: Uncomment when payment integration is complete
     {
-      label: 'Subscriptions',
+      labelKey: 'helper.sidebar.subscriptions',
       icon: TrendingUp,
       href: '/helper/subscriptions',
       requiresVerification: true
@@ -131,7 +133,7 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
     === END HIDDEN SUBSCRIPTIONS === */
     /* === HIDDEN - VIDEO CALLS ===
     {
-      label: 'Video Calls',
+      labelKey: 'helper.sidebar.videoCalls',
       icon: Video,
       href: '/helper/video-calls',
       requiresVerification: true
@@ -142,17 +144,17 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
   // Legal section items (no verification required, always accessible)
   const legalItems = [
     {
-      label: 'Privacy Policy',
+      labelKey: 'helper.sidebar.privacyPolicy',
       icon: Shield,
       href: '/legal/helper/privacy',
     },
     {
-      label: 'Terms & Conditions',
+      labelKey: 'helper.sidebar.termsConditions',
       icon: ScrollText,
       href: '/legal/helper/terms',
     },
     {
-      label: 'About',
+      labelKey: 'helper.sidebar.about',
       icon: Info,
       href: '/about',
     },
@@ -166,6 +168,7 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
       {navItems.map((item) => {
         const Icon = item.icon
         const active = isActive(item.href)
+        const label = t(item.labelKey)
         // Only show locked state after verification check completes and user is NOT verified
         const isLocked = !checkingVerification && item.requiresVerification && !isVerified
 
@@ -174,13 +177,13 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
             <div
               key={item.href}
               className="relative flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-60"
-              title={collapsed && !isMobile ? `${item.label} - Verification Required` : 'Verification Required'}
+              title={collapsed && !isMobile ? `${label} - ${t('helper.sidebar.verificationRequired')}` : t('helper.sidebar.verificationRequired')}
             >
               <Icon className="h-5 w-5 flex-shrink-0" />
               {(isMobile || !collapsed) && (
                 <>
                   <span className="text-sm font-medium truncate flex-1">
-                    {item.label}
+                    {label}
                   </span>
                   <Lock className="h-3 w-3" />
                 </>
@@ -199,12 +202,12 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg'
                 : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-50 dark:hover:bg-slate-800 hover:text-emerald-600 dark:hover:text-emerald-400'
             }`}
-            title={collapsed && !isMobile ? item.label : ''}
+            title={collapsed && !isMobile ? label : ''}
           >
             <Icon className={`h-5 w-5 flex-shrink-0 ${active ? 'text-white' : ''}`} />
             {(isMobile || !collapsed) && (
               <span className="text-sm font-medium truncate">
-                {item.label}
+                {label}
               </span>
             )}
           </Link>
@@ -214,7 +217,7 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
       {/* Legal Section Divider */}
       {(isMobile || !collapsed) && (
         <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-          <p className="px-4 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Legal</p>
+          <p className="px-4 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('helper.sidebar.legal')}</p>
         </div>
       )}
       {collapsed && !isMobile && <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700" />}
@@ -223,6 +226,7 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
       {legalItems.map((item) => {
         const Icon = item.icon
         const active = isActive(item.href)
+        const legalLabel = t(item.labelKey)
 
         return (
           <Link
@@ -234,12 +238,12 @@ export default function HelperSidebar({ collapsed, mobileOpen = false, onMobileC
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg'
                 : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-50 dark:hover:bg-slate-800 hover:text-emerald-600 dark:hover:text-emerald-400'
             }`}
-            title={collapsed && !isMobile ? item.label : ''}
+            title={collapsed && !isMobile ? legalLabel : ''}
           >
             <Icon className={`h-5 w-5 flex-shrink-0 ${active ? 'text-white' : ''}`} />
             {(isMobile || !collapsed) && (
               <span className="text-sm font-medium truncate">
-                {item.label}
+                {legalLabel}
               </span>
             )}
           </Link>

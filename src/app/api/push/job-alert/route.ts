@@ -59,6 +59,8 @@ export async function POST(request: Request) {
 
     const supabase = createAdminClient()
     
+    console.log(`📢 Job alert request for ${helperUserIds.length} helpers:`, helperUserIds)
+    
     // Get FCM tokens for specified helpers
     const { data: tokens, error } = await supabase
       .from('device_tokens')
@@ -71,9 +73,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to fetch tokens' }, { status: 500 })
     }
 
+    console.log(`📱 Found ${tokens?.length || 0} device tokens:`, tokens?.map(t => ({ user: t.user_id, token: t.token?.substring(0, 20) + '...' })))
+
     if (!tokens || tokens.length === 0) {
-      console.log('No active device tokens found for specified helpers')
-      return NextResponse.json({ sent: 0, failed: 0, message: 'No devices found' })
+      console.log('❌ No active device tokens found for specified helpers')
+      console.log('❌ Helper user IDs were:', helperUserIds)
+      return NextResponse.json({ sent: 0, failed: 0, message: 'No devices found', helperUserIds })
     }
 
     const tokenList = tokens.map(t => t.token)

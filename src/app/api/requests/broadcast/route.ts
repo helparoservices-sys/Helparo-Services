@@ -369,8 +369,13 @@ async function processBackgroundTasks(
 
     if (!relevantHelpers || relevantHelpers.length === 0) {
       console.log('⚠️ No online helpers found')
-      return
+      return 0
     }
+    
+    console.log(`✅ Found ${relevantHelpers.length} online helpers`)
+    relevantHelpers.forEach((h: any) => {
+      console.log(`  - Helper ${h.id}: user_id=${h.user_id}, location=${h.latitude},${h.longitude}, categories=${JSON.stringify(h.service_categories)}`)
+    })
 
     // Get category slug for matching
     const { data: categoryInfo } = await supabase
@@ -463,7 +468,7 @@ async function processBackgroundTasks(
 
     if (helpersToNotify.length === 0) {
       console.log('⚠️ No helpers available to notify')
-      return
+      return 0
     }
 
     // 3. Create notifications (batch insert)
