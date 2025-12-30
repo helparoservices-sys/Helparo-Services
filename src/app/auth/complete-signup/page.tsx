@@ -133,6 +133,12 @@ export default function CompleteSignupPage() {
           return
         }
 
+        // Admin - go directly to admin dashboard
+        if (profile?.role === 'admin') {
+          router.push('/admin/dashboard')
+          return
+        }
+
         // Helper with verified phone - go to dashboard
         if (profile?.role === 'helper' && profile?.phone && profile?.phone_verified) {
           router.push('/helper/dashboard')
