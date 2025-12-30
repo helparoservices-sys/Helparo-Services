@@ -127,6 +127,15 @@ export default function CompleteSignupPage() {
           .eq('id', authUser.id)
           .maybeSingle()
 
+        // Check if this is a demo account (skip all verification for demo accounts)
+        const isDemoAccount = authUser.email?.includes('demo@helparo.app')
+        
+        if (isDemoAccount && profile?.role) {
+          // Demo accounts go directly to their dashboard
+          router.push(`/${profile.role}/dashboard`)
+          return
+        }
+
         // Customer with role set - go directly to dashboard (phone collected during booking)
         if (profile?.role === 'customer') {
           router.push('/customer/dashboard')

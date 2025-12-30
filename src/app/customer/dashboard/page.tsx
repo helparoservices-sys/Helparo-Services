@@ -124,11 +124,16 @@ export default function CustomerDashboard() {
           .eq('id', userId)
           .single()
 
+        // Check if this is a demo account
+        const isDemoAccount = session.user.email?.includes('demo@helparo.app')
+
         // Check if user has customer role set
         if (!userProfile?.role || userProfile.role !== 'customer') {
           if (userProfile?.role === 'helper') {
             router.push('/helper/dashboard')
-          } else {
+          } else if (userProfile?.role === 'admin') {
+            router.push('/admin/dashboard')
+          } else if (!isDemoAccount) {
             router.push('/auth/complete-signup')
           }
           return

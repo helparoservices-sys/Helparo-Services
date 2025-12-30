@@ -140,15 +140,19 @@ export async function GET() {
     const userProfile = userProfileResult.data
     const helperProfile = helperProfileResult.data
 
+    // Check if this is a demo account (skip phone verification for demo accounts)
+    const isDemoAccount = user.email?.includes('demo@helparo.app')
+
     // Check if profile setup is complete
-    const needsPhoneVerification = !userProfile?.phone || !userProfile?.phone_verified
+    const needsPhoneVerification = !isDemoAccount && (!userProfile?.phone || !userProfile?.phone_verified)
     const needsOnboarding = !helperProfile?.address || !helperProfile?.service_categories?.length
 
     if (needsPhoneVerification) {
       return NextResponse.json({ redirect: '/auth/complete-signup' })
     }
 
-    if (needsOnboarding) {
+    // Skip onboarding for demo accounts too
+    if (needsOnboarding && !isDemoAccount) {
       return NextResponse.json({ redirect: '/helper/onboarding' })
     }
 
